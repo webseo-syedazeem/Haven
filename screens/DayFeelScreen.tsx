@@ -1,4 +1,3 @@
-import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import { useState } from 'react';
 import {
@@ -13,7 +12,8 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { SleepOptionCard } from '@/components/sleep-check/SleepOptionCard';
-import { wellnessColors, wellnessTypography } from '@/constants/wellness-theme';
+import { wellnessTypography } from '@/constants/wellness-theme';
+import { OnboardingContinueButton } from '../components/onboarding/OnboardingContinueButton';
 
 const dayFeelOptions = [
   { id: 'busy-mornings', label: 'Busy mornings', icon: require('@/assets/images/busy_mornings.svg') },
@@ -40,7 +40,10 @@ export function DayFeelScreen() {
   const handleContinuePress = () => {
     if (!selectedOption) {
       setValidationMessage('Please select how your day usually feels before continuing.');
+      return;
     }
+
+    router.push('/most-helpful');
   };
 
   return (
@@ -77,24 +80,7 @@ export function DayFeelScreen() {
               </Text>
             </View>
 
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel="Continue"
-              onPress={handleContinuePress}
-              style={styles.buttonShadow}>
-              <LinearGradient
-                colors={[
-                  wellnessColors.button.left,
-                  wellnessColors.button.center,
-                  wellnessColors.button.right,
-                ]}
-                locations={[0, 0.485, 1]}
-                start={{ x: 0, y: 0.5 }}
-                end={{ x: 1, y: 0.5 }}
-                style={styles.button}>
-                <Text style={styles.buttonText}>Continue</Text>
-              </LinearGradient>
-            </Pressable>
+            <OnboardingContinueButton onPress={handleContinuePress} />
 
             {validationMessage ? <Text style={styles.validationText}>{validationMessage}</Text> : null}
 
@@ -181,28 +167,6 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '400',
     lineHeight: 24,
-    textAlign: 'center',
-  },
-  buttonShadow: {
-    width: '100%',
-    height: 58,
-    borderRadius: 29,
-    shadowColor: wellnessColors.button.left,
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.22,
-    shadowRadius: 18,
-    elevation: 7,
-    marginBottom: 18,
-  },
-  button: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: 29,
-  },
-  buttonText: {
-    ...wellnessTypography.button,
-    color: '#FFFFFF',
     textAlign: 'center',
   },
   validationText: {
