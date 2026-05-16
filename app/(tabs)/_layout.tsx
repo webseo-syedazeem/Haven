@@ -31,6 +31,18 @@ export default function TabLayout() {
           tabBarIcon: ({ color }) => <IconSymbol size={28} name="paperplane.fill" color={color} />,
         }}
       />
+      <Tabs.Screen
+        name="screen2"
+        options={{
+          title: 'Time',
+        }}
+      />
+      <Tabs.Screen
+        name="screen3"
+        options={{
+          title: 'Plan',
+        }}
+      />
     </Tabs>
   );
 }
