@@ -44,7 +44,7 @@ export default function FirstPageScreen() {
         <View style={[styles.bottomArea, { paddingBottom: bottomPadding }]}>
           <Pressable
             accessibilityRole="button"
-            onPress={() => router.push('/welcome')}
+            onPress={() => router.push('/create-account')}
             style={({ pressed }) => [styles.getStartedButton, pressed && styles.pressed]}>
             <LinearGradient
               colors={['#6D67CE', '#528AE1', '#6AAFE9']}
@@ -59,7 +59,7 @@ export default function FirstPageScreen() {
 
           <Pressable
             accessibilityRole="button"
-            onPress={() => router.push('/login')}
+            onPress={() => router.push('/welcome')}
             style={styles.loginLinkButton}>
             <Text style={styles.loginPrompt}>
               Already have an account? <Text style={styles.loginLink}>Login</Text>

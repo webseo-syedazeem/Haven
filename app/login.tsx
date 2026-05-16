@@ -3,6 +3,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import {
+  ActivityIndicator,
   ImageBackground,
   KeyboardAvoidingView,
   Platform,
@@ -15,13 +16,43 @@ import {
 } from 'react-native';
 
 import { useBottomSafeSpacing } from '@/hooks/use-bottom-safe-spacing';
+import { signIn } from '@/lib/haven-api';
 
 const loginBackground = require('@/assets/images/login_page_background.png');
 
 export default function LoginScreen() {
   const router = useRouter();
   const bottomPadding = useBottomSafeSpacing();
+  const [email, setEmail] = useState('');
+  const [errorMessage, setErrorMessage] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [password, setPassword] = useState('');
   const [passwordVisible, setPasswordVisible] = useState(false);
+
+  const handleLogin = async () => {
+    if (isSubmitting) {
+      return;
+    }
+
+    const trimmedEmail = email.trim();
+
+    if (!trimmedEmail || !password) {
+      setErrorMessage('Please enter your email and password.');
+      return;
+    }
+
+    setErrorMessage('');
+    setIsSubmitting(true);
+
+    try {
+      await signIn({ email: trimmedEmail, password });
+      router.replace('/(tabs)');
+    } catch (error) {
+      setErrorMessage(error instanceof Error ? error.message : 'Unable to login right now.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   return (
     <ImageBackground source={loginBackground} resizeMode="cover" style={styles.background}>
@@ -40,9 +71,11 @@ export default function LoginScreen() {
                   autoCapitalize="none"
                   autoComplete="email"
                   keyboardType="email-address"
+                  onChangeText={setEmail}
                   placeholder="Enter Email"
                   placeholderTextColor="#7f8490"
                   style={styles.input}
+                  value={email}
                 />
               </View>
 
@@ -50,10 +83,12 @@ export default function LoginScreen() {
                 <Ionicons color="#111827" name="lock-closed" size={16} style={styles.inputIcon} />
                 <TextInput
                   autoCapitalize="none"
+                  onChangeText={setPassword}
                   placeholder="Password"
                   placeholderTextColor="#7f8490"
                   secureTextEntry={!passwordVisible}
                   style={[styles.input, styles.passwordInput]}
+                  value={password}
                 />
                 <Pressable
                   accessibilityLabel={passwordVisible ? 'Hide password' : 'Show password'}
@@ -74,13 +109,18 @@ export default function LoginScreen() {
                 style={styles.forgotButton}>
                 <Text style={styles.forgotText}>Forget Password?</Text>
               </Pressable>
+
+              {!!errorMessage && <Text style={styles.errorText}>{errorMessage}</Text>}
             </View>
           </View>
 
           <Pressable
             accessibilityRole="button"
+            disabled={isSubmitting}
+            onPress={handleLogin}
             style={({ pressed }) => [
               styles.loginButton,
+              isSubmitting && styles.disabled,
               { bottom: bottomPadding },
               pressed && styles.pressed,
             ]}>
@@ -103,7 +143,11 @@ export default function LoginScreen() {
                   style={styles.innerShadowLeft}
                 />
               </View>
-              <Text style={styles.loginText}>Login</Text>
+              {isSubmitting ? (
+                <ActivityIndicator color="#ffffff" />
+              ) : (
+                <Text style={styles.loginText}>Login</Text>
+              )}
             </LinearGradient>
           </Pressable>
         </KeyboardAvoidingView>
@@ -136,6 +180,22 @@ const styles = StyleSheet.create({
     right: 17,
     top: 0,
     width: 28,
+  },
+  disabled: {
+    opacity: 0.72,
+  },
+  errorText: {
+    alignSelf: 'center',
+    color: '#ffffff',
+    fontFamily: 'SF Pro',
+    fontSize: 13,
+    fontWeight: '700',
+    lineHeight: 18,
+    maxWidth: 310,
+    textAlign: 'center',
+    textShadowColor: 'rgba(0, 0, 0, 0.34)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 2,
   },
   forgotButton: {
     alignSelf: 'center',

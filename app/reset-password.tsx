@@ -1,6 +1,9 @@
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useState } from 'react';
 import {
+  ActivityIndicator,
+  Alert,
   ImageBackground,
   KeyboardAvoidingView,
   Platform,
@@ -13,6 +16,7 @@ import {
 } from 'react-native';
 
 import { useBottomSafeSpacing } from '@/hooks/use-bottom-safe-spacing';
+import { forgotPassword } from '@/lib/haven-api';
 
 const resetPasswordBackground = require('@/assets/images/reset-password-background-image.png');
 
@@ -37,6 +41,34 @@ function InnerShadow() {
 
 export default function ResetPasswordScreen() {
   const bottomPadding = useBottomSafeSpacing();
+  const [email, setEmail] = useState('');
+  const [errorMessage, setErrorMessage] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const handleSendResetLink = async () => {
+    if (isSubmitting) {
+      return;
+    }
+
+    const trimmedEmail = email.trim();
+
+    if (!trimmedEmail) {
+      setErrorMessage('Please enter your email.');
+      return;
+    }
+
+    setErrorMessage('');
+    setIsSubmitting(true);
+
+    try {
+      await forgotPassword(trimmedEmail);
+      Alert.alert('Reset link sent', 'Please check your inbox for the password reset link.');
+    } catch (error) {
+      setErrorMessage(error instanceof Error ? error.message : 'Unable to send reset link right now.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   return (
     <ImageBackground source={resetPasswordBackground} resizeMode="cover" style={styles.background}>
@@ -59,17 +91,24 @@ export default function ResetPasswordScreen() {
                 autoCapitalize="none"
                 autoComplete="email"
                 keyboardType="email-address"
+                onChangeText={setEmail}
                 placeholder="Enter Email"
                 placeholderTextColor="#8C8C8C"
                 style={styles.input}
+                value={email}
               />
             </View>
+
+            {!!errorMessage && <Text style={styles.errorText}>{errorMessage}</Text>}
           </View>
 
           <Pressable
             accessibilityRole="button"
+            disabled={isSubmitting}
+            onPress={handleSendResetLink}
             style={({ pressed }) => [
               styles.resetButton,
+              isSubmitting && styles.disabled,
               { bottom: bottomPadding },
               pressed && styles.pressed,
             ]}>
@@ -80,7 +119,11 @@ export default function ResetPasswordScreen() {
               start={{ x: 0, y: 0 }}
               style={styles.resetGradient}>
               <InnerShadow />
-              <Text style={styles.resetText}>Send reset Link</Text>
+              {isSubmitting ? (
+                <ActivityIndicator color="#ffffff" />
+              ) : (
+                <Text style={styles.resetText}>Send reset Link</Text>
+              )}
             </LinearGradient>
           </Pressable>
         </KeyboardAvoidingView>
@@ -113,6 +156,19 @@ const styles = StyleSheet.create({
     letterSpacing: 0,
     lineHeight: 26,
     maxWidth: 300,
+    textAlign: 'center',
+  },
+  disabled: {
+    opacity: 0.72,
+  },
+  errorText: {
+    color: '#173F5F',
+    fontFamily: 'SF Pro',
+    fontSize: 13,
+    fontWeight: '700',
+    lineHeight: 18,
+    marginTop: 14,
+    maxWidth: 310,
     textAlign: 'center',
   },
   heading: {
