@@ -1,4 +1,4 @@
-import { router } from 'expo-router';
+import { router, type Href } from 'expo-router';
 import { useState } from 'react';
 import {
   ImageBackground,
@@ -48,7 +48,10 @@ export function MostHelpfulScreen() {
   const handleContinuePress = () => {
     if (!selectedOption) {
       setValidationMessage('Please select what feels most helpful before continuing.');
+      return;
     }
+
+    router.push('/stress-step' as Href);
   };
 
   return (
