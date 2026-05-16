@@ -17,6 +17,22 @@ const sleepOptions = [
 
 export function SleepCheckScreen() {
   const [selectedOption, setSelectedOption] = useState<string | null>(null);
+  const [validationMessage, setValidationMessage] = useState('');
+
+  const handleOptionPress = (optionId: string) => {
+    setSelectedOption(optionId);
+    setValidationMessage('');
+  };
+
+  const handleContinuePress = () => {
+    if (!selectedOption) {
+      setValidationMessage('Please select your sleep status before continuing.');
+      return;
+    }
+
+    router.push('/day-feel');
+  };
+
   const handleBackPress = () => {
     router.back();
   };
@@ -41,7 +57,7 @@ export function SleepCheckScreen() {
                   icon={option.icon}
                   label={option.label}
                   selected={selectedOption === option.id}
-                  onPress={() => setSelectedOption(option.id)}
+                  onPress={() => handleOptionPress(option.id)}
                 />
               ))}
             </View>
@@ -55,7 +71,7 @@ export function SleepCheckScreen() {
             <Pressable
               accessibilityRole="button"
               accessibilityLabel="Continue"
-              onPress={() => router.push('/day-feel')}
+              onPress={handleContinuePress}
               style={styles.buttonShadow}>
               <LinearGradient
                 colors={[
@@ -70,6 +86,8 @@ export function SleepCheckScreen() {
                 <Text style={styles.buttonText}>Continue</Text>
               </LinearGradient>
             </Pressable>
+
+            {validationMessage ? <Text style={styles.validationText}>{validationMessage}</Text> : null}
 
             <Pressable
               accessibilityRole="button"
@@ -89,16 +107,21 @@ export function SleepCheckScreen() {
 const styles = StyleSheet.create({
   screen: {
     flex: 1,
+    width: '100%',
+    overflow: 'hidden',
     backgroundColor: '#020A45',
   },
   background: {
     flex: 1,
+    width: '100%',
   },
   safeArea: {
     flex: 1,
+    width: '100%',
   },
   content: {
     flex: 1,
+    width: '100%',
     justifyContent: 'flex-end',
     paddingHorizontal: 20,
     paddingBottom: 24,
@@ -121,6 +144,8 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   optionList: {
+    width: '100%',
+    maxWidth: '100%',
     gap: 10,
     marginBottom: 24,
   },
@@ -160,6 +185,14 @@ const styles = StyleSheet.create({
     ...wellnessTypography.button,
     color: '#FFFFFF',
     textAlign: 'center',
+  },
+  validationText: {
+    color: '#FFFFFF',
+    fontSize: 12,
+    fontWeight: '500',
+    lineHeight: 18,
+    textAlign: 'center',
+    marginBottom: 8,
   },
   backButton: {
     alignSelf: 'center',

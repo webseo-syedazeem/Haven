@@ -33,6 +33,7 @@ export function SleepOptionCard({ icon, label, selected, onPress }: SleepOptionC
 const styles = StyleSheet.create({
   card: {
     width: '100%',
+    maxWidth: '100%',
     height: 57,
     borderRadius: 10,
     backgroundColor: '#FFFFFF',
@@ -46,8 +47,10 @@ const styles = StyleSheet.create({
     opacity: 0.92,
   },
   content: {
+    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
+    paddingRight: 12,
   },
   icon: {
     width: 24,
@@ -59,6 +62,7 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     lineHeight: 24,
     marginLeft: 18,
+    flexShrink: 1,
   },
   selector: {
     width: 24,

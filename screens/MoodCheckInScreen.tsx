@@ -14,19 +14,44 @@ import {
 } from '@/constants/wellness-theme';
 
 const moodOptions = [
-  { label: 'Calm', icon: require('@/assets/images/Calm.svg') },
-  { label: 'Tense', icon: require('@/assets/images/tense.svg') },
-  { label: 'Anxious', icon: require('@/assets/images/anxious.svg') },
-  { label: 'Overwhelmed', icon: require('@/assets/images/overwhelmed.svg') },
+  { label: 'Calm', icon: require('@/assets/images/Calm.svg'), progress: 0 },
+  { label: 'Tense', icon: require('@/assets/images/tense.svg'), progress: 0.33 },
+  { label: 'Anxious', icon: require('@/assets/images/anxious.svg'), progress: 0.66 },
+  { label: 'Overwhelmed', icon: require('@/assets/images/overwhelmed.svg'), progress: 1 },
 ];
+
+const getMoodFromProgress = (value: number) => {
+  const moodIndex = Math.min(moodOptions.length - 1, Math.floor(value * moodOptions.length));
+
+  return moodOptions[moodIndex].label;
+};
 
 export function MoodCheckInScreen() {
   const [progress, setProgress] = useState(0.28);
-  const selectedMood = useMemo(() => {
-    const moodIndex = Math.min(moodOptions.length - 1, Math.floor(progress * moodOptions.length));
+  const [selectedMood, setSelectedMood] = useState<string | null>(null);
+  const [validationMessage, setValidationMessage] = useState('');
+  const accessibilityMood = useMemo(() => selectedMood ?? getMoodFromProgress(progress), [progress, selectedMood]);
 
-    return moodOptions[moodIndex].label;
-  }, [progress]);
+  const handleMoodChange = (nextProgress: number) => {
+    setProgress(nextProgress);
+    setSelectedMood(getMoodFromProgress(nextProgress));
+    setValidationMessage('');
+  };
+
+  const handleMoodPress = (nextProgress: number, label: string) => {
+    setProgress(nextProgress);
+    setSelectedMood(label);
+    setValidationMessage('');
+  };
+
+  const handleContinue = () => {
+    if (!selectedMood) {
+      setValidationMessage('Please select how you feel before continuing.');
+      return;
+    }
+
+    router.push('/sleep-check');
+  };
 
   return (
     <View style={styles.screen}>
@@ -40,20 +65,27 @@ export function MoodCheckInScreen() {
             <Text style={styles.heading}>How have you been{'\n'}feeling lately?</Text>
 
             <View style={styles.progressSection}>
-              <GradientProgressBar value={progress} onChange={setProgress} />
+              <GradientProgressBar value={progress} onChange={handleMoodChange} />
             </View>
 
             <View style={styles.moodRow}>
               {moodOptions.map((mood) => (
-                <MoodOption key={mood.label} icon={mood.icon} label={mood.label} />
+                <MoodOption
+                  key={mood.label}
+                  icon={mood.icon}
+                  label={mood.label}
+                  onPress={() => handleMoodPress(mood.progress, mood.label)}
+                />
               ))}
             </View>
+
+            {validationMessage ? <Text style={styles.validationText}>{validationMessage}</Text> : null}
 
             <Pressable
               accessibilityRole="button"
               accessibilityLabel="Continue"
-              accessibilityHint={`Selected mood is ${selectedMood}`}
-              onPress={() => router.push('/sleep-check')}
+              accessibilityHint={`Selected mood is ${accessibilityMood}`}
+              onPress={handleContinue}
               style={({ pressed }) => [styles.buttonShadow, pressed && styles.buttonPressed]}>
               <LinearGradient
                 colors={[
@@ -78,19 +110,24 @@ export function MoodCheckInScreen() {
 const styles = StyleSheet.create({
   screen: {
     flex: 1,
+    width: '100%',
+    overflow: 'hidden',
     backgroundColor: wellnessColors.surface,
   },
   background: {
     flex: 1,
+    width: '100%',
   },
   backgroundImage: {
     borderRadius: 0,
   },
   safeArea: {
     flex: 1,
+    width: '100%',
   },
   content: {
     flex: 1,
+    width: '100%',
     justifyContent: 'flex-end',
     alignItems: 'center',
     paddingHorizontal: wellnessSpacing.contentHorizontal,
@@ -109,6 +146,7 @@ const styles = StyleSheet.create({
   },
   moodRow: {
     width: '100%',
+    maxWidth: '100%',
     flexDirection: 'row',
     alignItems: 'flex-start',
     justifyContent: 'space-between',
@@ -123,6 +161,14 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.22,
     shadowRadius: 18,
     elevation: 7,
+  },
+  validationText: {
+    color: '#173F5F',
+    fontSize: 12,
+    fontWeight: '500',
+    lineHeight: 18,
+    textAlign: 'center',
+    marginBottom: 8,
   },
   buttonPressed: {
     opacity: 0.9,
