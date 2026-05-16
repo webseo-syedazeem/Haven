@@ -6,17 +6,18 @@ type SleepOptionCardProps = {
   label: string;
   selected: boolean;
   onPress: () => void;
+  softInsetShadow?: boolean;
 };
 
 const circleIcon = require('@/assets/images/circle.svg');
 
-export function SleepOptionCard({ icon, label, selected, onPress }: SleepOptionCardProps) {
+export function SleepOptionCard({ icon, label, selected, onPress, softInsetShadow }: SleepOptionCardProps) {
   return (
     <Pressable
       accessibilityRole="button"
       accessibilityState={{ selected }}
       onPress={onPress}
-      style={({ pressed }) => [styles.card, pressed && styles.pressed]}>
+      style={({ pressed }) => [styles.card, softInsetShadow && styles.softInsetShadow, pressed && styles.pressed]}>
       <View style={styles.content}>
         <Image source={icon} style={styles.icon} contentFit="contain" />
         <Text style={styles.label}>{label}</Text>
@@ -33,6 +34,7 @@ export function SleepOptionCard({ icon, label, selected, onPress }: SleepOptionC
 const styles = StyleSheet.create({
   card: {
     width: '100%',
+    maxWidth: '100%',
     height: 57,
     borderRadius: 10,
     backgroundColor: '#FFFFFF',
@@ -45,9 +47,17 @@ const styles = StyleSheet.create({
   pressed: {
     opacity: 0.92,
   },
+  softInsetShadow: {
+    shadowColor: '#FFFFFF',
+    shadowOffset: { width: 4, height: 4 },
+    shadowOpacity: 0.5,
+    shadowRadius: 16,
+  },
   content: {
+    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
+    paddingRight: 12,
   },
   icon: {
     width: 24,
@@ -59,6 +69,7 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     lineHeight: 24,
     marginLeft: 18,
+    flexShrink: 1,
   },
   selector: {
     width: 24,

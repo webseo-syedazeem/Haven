@@ -56,6 +56,20 @@ export function GradientProgressBar({ value = 0.28, onChange }: GradientProgress
     [getMaxPosition, getProgressFromPosition, translateX]
   );
 
+  const animateKnobTo = useCallback(
+    (position: number) => {
+      const nextPosition = Math.min(getMaxPosition(), Math.max(0, position));
+
+      currentPosition.current = nextPosition;
+      Animated.timing(translateX, {
+        toValue: nextPosition,
+        duration: 180,
+        useNativeDriver: true,
+      }).start();
+    },
+    [getMaxPosition, translateX]
+  );
+
   useEffect(() => {
     const nextValue = clampProgress(value);
 
@@ -67,16 +81,25 @@ export function GradientProgressBar({ value = 0.28, onChange }: GradientProgress
 
     const nextPosition = nextValue * getMaxPosition();
 
-    currentPosition.current = nextPosition;
     lastMoodIndex.current = getMoodIndex(nextValue);
-    translateX.setValue(nextPosition);
-  }, [getMaxPosition, translateX, value]);
+    animateKnobTo(nextPosition);
+  }, [animateKnobTo, getMaxPosition, value]);
 
   const finishDrag = useCallback(() => {
     isDragging.current = false;
 
     onChangeRef.current?.(getProgressFromPosition(currentPosition.current));
   }, [getProgressFromPosition]);
+
+  const moveKnobToTap = useCallback(
+    (locationX: number) => {
+      const nextPosition = Math.min(getMaxPosition(), Math.max(0, locationX - THUMB_SIZE / 2));
+
+      animateKnobTo(nextPosition);
+      onChangeRef.current?.(getProgressFromPosition(currentPosition.current));
+    },
+    [animateKnobTo, getMaxPosition, getProgressFromPosition]
+  );
 
   const panResponder = useMemo(
     () =>
@@ -95,10 +118,16 @@ export function GradientProgressBar({ value = 0.28, onChange }: GradientProgress
 
           moveKnobTo(dragStartPosition.current + gestureState.dx);
         },
-        onPanResponderRelease: finishDrag,
+        onPanResponderRelease: (event, gestureState) => {
+          if (Math.abs(gestureState.dx) < 3 && Math.abs(gestureState.dy) < 3) {
+            moveKnobToTap(event.nativeEvent.locationX);
+          }
+
+          finishDrag();
+        },
         onPanResponderTerminate: finishDrag,
       }),
-    [finishDrag, moveKnobTo]
+    [finishDrag, moveKnobTo, moveKnobToTap]
   );
 
   return (
