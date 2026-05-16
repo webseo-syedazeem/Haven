@@ -17,6 +17,9 @@ const sleepOptions = [
 
 export function SleepCheckScreen() {
   const [selectedOption, setSelectedOption] = useState<string | null>(null);
+  const handleBackPress = () => {
+    router.back();
+  };
 
   return (
     <View style={styles.screen}>
@@ -49,7 +52,11 @@ export function SleepCheckScreen() {
               </Text>
             </View>
 
-            <Pressable accessibilityRole="button" accessibilityLabel="Continue" style={styles.buttonShadow}>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Continue"
+              onPress={() => router.push('/day-feel')}
+              style={styles.buttonShadow}>
               <LinearGradient
                 colors={[
                   wellnessColors.button.left,
@@ -67,7 +74,8 @@ export function SleepCheckScreen() {
             <Pressable
               accessibilityRole="button"
               accessibilityLabel="Back"
-              onPress={() => router.back()}
+              hitSlop={12}
+              onPress={handleBackPress}
               style={styles.backButton}>
               <Text style={styles.backText}>Back</Text>
             </Pressable>
