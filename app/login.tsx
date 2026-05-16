@@ -9,6 +9,7 @@ import {
   Platform,
   Pressable,
   SafeAreaView,
+  ScrollView,
   StyleSheet,
   Text,
   TextInput,
@@ -61,95 +62,103 @@ export default function LoginScreen() {
         <KeyboardAvoidingView
           behavior={Platform.OS === 'ios' ? 'padding' : undefined}
           style={styles.keyboardView}>
-          <View style={styles.content}>
-            <Text style={styles.heading}>{`Let's check in\ngently`}</Text>
+          <ScrollView
+            contentContainerStyle={[
+              styles.content,
+              { paddingBottom: bottomPadding + 24, paddingTop: bottomPadding + 24 },
+            ]}
+            keyboardShouldPersistTaps="handled"
+            showsVerticalScrollIndicator={false}
+            style={styles.scrollView}>
+            <View style={styles.formContent}>
+              <Text style={styles.heading}>{`Let's check in\ngently`}</Text>
 
-            <View style={styles.form}>
-              <View style={styles.inputWrap}>
-                <Ionicons color="#273044" name="mail-outline" size={18} style={styles.inputIcon} />
-                <TextInput
-                  autoCapitalize="none"
-                  autoComplete="email"
-                  keyboardType="email-address"
-                  onChangeText={setEmail}
-                  placeholder="Enter Email"
-                  placeholderTextColor="#7f8490"
-                  style={styles.input}
-                  value={email}
-                />
-              </View>
-
-              <View style={styles.inputWrap}>
-                <Ionicons color="#111827" name="lock-closed" size={16} style={styles.inputIcon} />
-                <TextInput
-                  autoCapitalize="none"
-                  onChangeText={setPassword}
-                  placeholder="Password"
-                  placeholderTextColor="#7f8490"
-                  secureTextEntry={!passwordVisible}
-                  style={[styles.input, styles.passwordInput]}
-                  value={password}
-                />
-                <Pressable
-                  accessibilityLabel={passwordVisible ? 'Hide password' : 'Show password'}
-                  hitSlop={10}
-                  onPress={() => setPasswordVisible((visible) => !visible)}
-                  style={styles.eyeButton}>
-                  <Ionicons
-                    color="#1f2937"
-                    name={passwordVisible ? 'eye-off-outline' : 'eye-outline'}
-                    size={18}
+              <View style={styles.form}>
+                <View style={styles.inputWrap}>
+                  <Ionicons color="#273044" name="mail-outline" size={18} style={styles.inputIcon} />
+                  <TextInput
+                    autoCapitalize="none"
+                    autoComplete="email"
+                    keyboardType="email-address"
+                    onChangeText={setEmail}
+                    placeholder="Enter Email"
+                    placeholderTextColor="#7f8490"
+                    style={styles.input}
+                    value={email}
                   />
+                </View>
+
+                <View style={styles.inputWrap}>
+                  <Ionicons color="#111827" name="lock-closed" size={16} style={styles.inputIcon} />
+                  <TextInput
+                    autoCapitalize="none"
+                    onChangeText={setPassword}
+                    placeholder="Password"
+                    placeholderTextColor="#7f8490"
+                    secureTextEntry={!passwordVisible}
+                    style={[styles.input, styles.passwordInput]}
+                    value={password}
+                  />
+                  <Pressable
+                    accessibilityLabel={passwordVisible ? 'Hide password' : 'Show password'}
+                    hitSlop={10}
+                    onPress={() => setPasswordVisible((visible) => !visible)}
+                    style={styles.eyeButton}>
+                    <Ionicons
+                      color="#1f2937"
+                      name={passwordVisible ? 'eye-off-outline' : 'eye-outline'}
+                      size={18}
+                    />
+                  </Pressable>
+                </View>
+
+                <Pressable
+                  accessibilityRole="button"
+                  onPress={() => router.push('/reset-password')}
+                  style={styles.forgotButton}>
+                  <Text style={styles.forgotText}>Forget Password?</Text>
                 </Pressable>
+
+                {!!errorMessage && <Text style={styles.errorText}>{errorMessage}</Text>}
               </View>
 
               <Pressable
                 accessibilityRole="button"
-                onPress={() => router.push('/reset-password')}
-                style={styles.forgotButton}>
-                <Text style={styles.forgotText}>Forget Password?</Text>
+                disabled={isSubmitting}
+                onPress={handleLogin}
+                style={({ pressed }) => [
+                  styles.loginButton,
+                  isSubmitting && styles.disabled,
+                  pressed && styles.pressed,
+                ]}>
+                <LinearGradient
+                  colors={['#5AA1E2', '#0D6FD0']}
+                  end={{ x: 1, y: 1 }}
+                  start={{ x: 0, y: 0 }}
+                  style={styles.loginGradient}>
+                  <View pointerEvents="none" style={styles.innerShadow}>
+                    <LinearGradient
+                      colors={['rgba(255, 255, 255, 0.5)', 'rgba(255, 255, 255, 0)']}
+                      end={{ x: 0, y: 1 }}
+                      start={{ x: 0, y: 0 }}
+                      style={styles.innerShadowTop}
+                    />
+                    <LinearGradient
+                      colors={['rgba(255, 255, 255, 0.5)', 'rgba(255, 255, 255, 0)']}
+                      end={{ x: 1, y: 0 }}
+                      start={{ x: 0, y: 0 }}
+                      style={styles.innerShadowLeft}
+                    />
+                  </View>
+                  {isSubmitting ? (
+                    <ActivityIndicator color="#ffffff" />
+                  ) : (
+                    <Text style={styles.loginText}>Login</Text>
+                  )}
+                </LinearGradient>
               </Pressable>
-
-              {!!errorMessage && <Text style={styles.errorText}>{errorMessage}</Text>}
             </View>
-          </View>
-
-          <Pressable
-            accessibilityRole="button"
-            disabled={isSubmitting}
-            onPress={handleLogin}
-            style={({ pressed }) => [
-              styles.loginButton,
-              isSubmitting && styles.disabled,
-              { bottom: bottomPadding },
-              pressed && styles.pressed,
-            ]}>
-            <LinearGradient
-              colors={['#5AA1E2', '#0D6FD0']}
-              end={{ x: 1, y: 1 }}
-              start={{ x: 0, y: 0 }}
-              style={styles.loginGradient}>
-              <View pointerEvents="none" style={styles.innerShadow}>
-                <LinearGradient
-                  colors={['rgba(255, 255, 255, 0.5)', 'rgba(255, 255, 255, 0)']}
-                  end={{ x: 0, y: 1 }}
-                  start={{ x: 0, y: 0 }}
-                  style={styles.innerShadowTop}
-                />
-                <LinearGradient
-                  colors={['rgba(255, 255, 255, 0.5)', 'rgba(255, 255, 255, 0)']}
-                  end={{ x: 1, y: 0 }}
-                  start={{ x: 0, y: 0 }}
-                  style={styles.innerShadowLeft}
-                />
-              </View>
-              {isSubmitting ? (
-                <ActivityIndicator color="#ffffff" />
-              ) : (
-                <Text style={styles.loginText}>Login</Text>
-              )}
-            </LinearGradient>
-          </Pressable>
+          </ScrollView>
         </KeyboardAvoidingView>
       </SafeAreaView>
     </ImageBackground>
@@ -166,9 +175,8 @@ const styles = StyleSheet.create({
   },
   content: {
     alignItems: 'center',
-    flex: 1,
+    flexGrow: 1,
     justifyContent: 'center',
-    paddingBottom: 68,
     paddingHorizontal: 18,
     width: '100%',
   },
@@ -217,6 +225,10 @@ const styles = StyleSheet.create({
   },
   form: {
     marginTop: 84,
+    width: '100%',
+  },
+  formContent: {
+    alignItems: 'center',
     width: '100%',
   },
   heading: {
@@ -295,9 +307,9 @@ const styles = StyleSheet.create({
     borderRadius: 27,
     elevation: 0,
     height: 54,
+    marginTop: 68,
     maxWidth: 348,
     overflow: 'hidden',
-    position: 'absolute',
     width: '91%',
   },
   loginGradient: {
@@ -323,6 +335,9 @@ const styles = StyleSheet.create({
     transform: [{ scale: 0.99 }],
   },
   safeArea: {
+    flex: 1,
+  },
+  scrollView: {
     flex: 1,
   },
 });

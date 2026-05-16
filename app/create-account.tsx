@@ -10,6 +10,7 @@ import {
   Platform,
   Pressable,
   SafeAreaView,
+  ScrollView,
   StyleSheet,
   Text,
   TextInput,
@@ -88,118 +89,127 @@ export default function CreateAccountScreen() {
         <KeyboardAvoidingView
           behavior={Platform.OS === 'ios' ? 'padding' : undefined}
           style={styles.keyboardView}>
-          <View style={styles.content}>
-            <View style={styles.copy}>
-              <Text style={styles.heading}>Create Account</Text>
-              <Text style={styles.description}>Start checking in and feel better slowly</Text>
-            </View>
-
-            <Pressable
-              accessibilityRole="button"
-              onPress={() => {}}
-              style={({ pressed }) => [styles.googleButton, pressed && styles.pressed]}>
-              <Image source={googleIcon} resizeMode="contain" style={styles.googleIcon} />
-              <Text adjustsFontSizeToFit numberOfLines={1} style={styles.googleText}>
-                Continue with google
-              </Text>
-            </Pressable>
-
-            <View style={styles.separatorRow}>
-              <View style={styles.separatorLine} />
-              <Text style={styles.separatorText}>or</Text>
-              <View style={styles.separatorLine} />
-            </View>
-
-            <View style={styles.form}>
-              <View style={styles.inputWrap}>
-                <Ionicons color="#173F5F" name="person-outline" size={18} style={styles.inputIcon} />
-                <TextInput
-                  autoCapitalize="words"
-                  autoComplete="name"
-                  onChangeText={setUsername}
-                  placeholder="Name"
-                  placeholderTextColor="#8C8C8C"
-                  style={styles.input}
-                  value={username}
-                />
+          <ScrollView
+            contentContainerStyle={[
+              styles.scrollContent,
+              { paddingBottom: bottomPadding + 24, paddingTop: bottomPadding + 24 },
+            ]}
+            keyboardShouldPersistTaps="handled"
+            showsVerticalScrollIndicator={false}
+            style={styles.scrollView}>
+            <View style={styles.content}>
+              <View style={styles.copy}>
+                <Text style={styles.heading}>Create Account</Text>
+                <Text style={styles.description}>Start checking in and feel better slowly</Text>
               </View>
 
-              <View style={styles.inputWrap}>
-                <Ionicons color="#173F5F" name="mail-outline" size={18} style={styles.inputIcon} />
-                <TextInput
-                  autoCapitalize="none"
-                  autoComplete="email"
-                  keyboardType="email-address"
-                  onChangeText={setEmail}
-                  placeholder="Enter Email"
-                  placeholderTextColor="#8C8C8C"
-                  style={styles.input}
-                  value={email}
-                />
+              <Pressable
+                accessibilityRole="button"
+                onPress={() => {}}
+                style={({ pressed }) => [styles.googleButton, pressed && styles.pressed]}>
+                <Image source={googleIcon} resizeMode="contain" style={styles.googleIcon} />
+                <Text adjustsFontSizeToFit numberOfLines={1} style={styles.googleText}>
+                  Continue with google
+                </Text>
+              </Pressable>
+
+              <View style={styles.separatorRow}>
+                <View style={styles.separatorLine} />
+                <Text style={styles.separatorText}>or</Text>
+                <View style={styles.separatorLine} />
               </View>
 
-              <View style={styles.inputWrap}>
-                <Ionicons color="#173F5F" name="lock-closed" size={16} style={styles.inputIcon} />
-                <TextInput
-                  autoCapitalize="none"
-                  onChangeText={setPassword}
-                  placeholder="Password"
-                  placeholderTextColor="#8C8C8C"
-                  secureTextEntry={!passwordVisible}
-                  style={[styles.input, styles.passwordInput]}
-                  value={password}
-                />
-                <Pressable
-                  accessibilityLabel={passwordVisible ? 'Hide password' : 'Show password'}
-                  hitSlop={10}
-                  onPress={() => setPasswordVisible((visible) => !visible)}
-                  style={styles.eyeButton}>
-                  <Ionicons
-                    color="#1f2937"
-                    name={passwordVisible ? 'eye-off-outline' : 'eye-outline'}
-                    size={18}
+              <View style={styles.form}>
+                <View style={styles.inputWrap}>
+                  <Ionicons color="#173F5F" name="person-outline" size={18} style={styles.inputIcon} />
+                  <TextInput
+                    autoCapitalize="words"
+                    autoComplete="name"
+                    onChangeText={setUsername}
+                    placeholder="Name"
+                    placeholderTextColor="#8C8C8C"
+                    style={styles.input}
+                    value={username}
                   />
-                </Pressable>
+                </View>
+
+                <View style={styles.inputWrap}>
+                  <Ionicons color="#173F5F" name="mail-outline" size={18} style={styles.inputIcon} />
+                  <TextInput
+                    autoCapitalize="none"
+                    autoComplete="email"
+                    keyboardType="email-address"
+                    onChangeText={setEmail}
+                    placeholder="Enter Email"
+                    placeholderTextColor="#8C8C8C"
+                    style={styles.input}
+                    value={email}
+                  />
+                </View>
+
+                <View style={styles.inputWrap}>
+                  <Ionicons color="#173F5F" name="lock-closed" size={16} style={styles.inputIcon} />
+                  <TextInput
+                    autoCapitalize="none"
+                    onChangeText={setPassword}
+                    placeholder="Password"
+                    placeholderTextColor="#8C8C8C"
+                    secureTextEntry={!passwordVisible}
+                    style={[styles.input, styles.passwordInput]}
+                    value={password}
+                  />
+                  <Pressable
+                    accessibilityLabel={passwordVisible ? 'Hide password' : 'Show password'}
+                    hitSlop={10}
+                    onPress={() => setPasswordVisible((visible) => !visible)}
+                    style={styles.eyeButton}>
+                    <Ionicons
+                      color="#1f2937"
+                      name={passwordVisible ? 'eye-off-outline' : 'eye-outline'}
+                      size={18}
+                    />
+                  </Pressable>
+                </View>
               </View>
+
+              <Text style={styles.termsText}>
+                By continuing, you agree to our Terms of Service and Privacy Policy.
+              </Text>
+
+              {!!errorMessage && <Text style={styles.errorText}>{errorMessage}</Text>}
             </View>
 
-            <Text style={styles.termsText}>
-              By continuing, you agree to our Terms of Service and Privacy Policy.
-            </Text>
+            <View style={styles.bottomArea}>
+              <Pressable
+                accessibilityRole="button"
+                disabled={isSubmitting}
+                onPress={handleCreateAccount}
+                style={({ pressed }) => [styles.createButton, pressed && styles.pressed]}>
+                <LinearGradient
+                  colors={['#B087E5', '#7863DC']}
+                  end={{ x: 0, y: 1 }}
+                  locations={[0.0379, 0.75]}
+                  start={{ x: 0, y: 0 }}
+                  style={styles.createGradient}>
+                  <InnerShadow />
+                  {isSubmitting ? (
+                    <ActivityIndicator color="#ffffff" />
+                  ) : (
+                    <Text style={styles.createText}>Create Account</Text>
+                  )}
+                </LinearGradient>
+              </Pressable>
 
-            {!!errorMessage && <Text style={styles.errorText}>{errorMessage}</Text>}
-          </View>
-
-          <View style={[styles.bottomArea, { paddingBottom: bottomPadding }]}>
-            <Pressable
-              accessibilityRole="button"
-              disabled={isSubmitting}
-              onPress={handleCreateAccount}
-              style={({ pressed }) => [styles.createButton, pressed && styles.pressed]}>
-              <LinearGradient
-                colors={['#B087E5', '#7863DC']}
-                end={{ x: 0, y: 1 }}
-                locations={[0.0379, 0.75]}
-                start={{ x: 0, y: 0 }}
-                style={styles.createGradient}>
-                <InnerShadow />
-                {isSubmitting ? (
-                  <ActivityIndicator color="#ffffff" />
-                ) : (
-                  <Text style={styles.createText}>Create Account</Text>
-                )}
-              </LinearGradient>
-            </Pressable>
-
-            <Pressable
-              accessibilityRole="button"
-              onPress={() => router.push('/welcome')}
-              style={styles.loginLinkButton}>
-              <Text style={styles.loginPrompt}>
-                Already have an account? <Text style={styles.loginLink}>Login</Text>
-              </Text>
-            </Pressable>
-          </View>
+              <Pressable
+                accessibilityRole="button"
+                onPress={() => router.push('/welcome')}
+                style={styles.loginLinkButton}>
+                <Text style={styles.loginPrompt}>
+                  Already have an account? <Text style={styles.loginLink}>Login</Text>
+                </Text>
+              </Pressable>
+            </View>
+          </ScrollView>
         </KeyboardAvoidingView>
       </SafeAreaView>
     </ImageBackground>
@@ -211,17 +221,14 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   bottomArea: {
-    bottom: 0,
-    left: 0,
     paddingHorizontal: 12,
-    position: 'absolute',
-    right: 0,
+    width: '100%',
   },
   content: {
     alignItems: 'center',
-    flex: 1,
+    flexGrow: 1,
     justifyContent: 'center',
-    paddingBottom: 78,
+    paddingBottom: 24,
     paddingHorizontal: 18,
     width: '100%',
   },
@@ -414,6 +421,13 @@ const styles = StyleSheet.create({
   },
   safeArea: {
     flex: 1,
+  },
+  scrollView: {
+    flex: 1,
+  },
+  scrollContent: {
+    flexGrow: 1,
+    justifyContent: 'center',
   },
   separatorLine: {
     backgroundColor: 'rgba(23, 63, 95, 0.32)',

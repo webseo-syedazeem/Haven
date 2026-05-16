@@ -9,6 +9,7 @@ import {
   Platform,
   Pressable,
   SafeAreaView,
+  ScrollView,
   StyleSheet,
   Text,
   TextInput,
@@ -76,56 +77,64 @@ export default function ResetPasswordScreen() {
         <KeyboardAvoidingView
           behavior={Platform.OS === 'ios' ? 'padding' : undefined}
           style={styles.keyboardView}>
-          <View style={styles.content}>
-            <View style={styles.copy}>
-              <Text style={styles.heading}>{`Reset your\npassword`}</Text>
-              <Text style={styles.description}>
-                {"Enter your email and we'll send you a reset link"}
-              </Text>
+          <ScrollView
+            contentContainerStyle={[
+              styles.content,
+              { paddingBottom: bottomPadding + 24, paddingTop: bottomPadding + 24 },
+            ]}
+            keyboardShouldPersistTaps="handled"
+            showsVerticalScrollIndicator={false}
+            style={styles.scrollView}>
+            <View style={styles.formContent}>
+              <View style={styles.copy}>
+                <Text style={styles.heading}>{`Reset your\npassword`}</Text>
+                <Text style={styles.description}>
+                  {"Enter your email and we'll send you a reset link"}
+                </Text>
+              </View>
+
+              <View style={styles.inputWrap}>
+                <InnerShadow />
+                <Ionicons color="#173F5F" name="mail-outline" size={18} style={styles.inputIcon} />
+                <TextInput
+                  autoCapitalize="none"
+                  autoComplete="email"
+                  keyboardType="email-address"
+                  onChangeText={setEmail}
+                  placeholder="Enter Email"
+                  placeholderTextColor="#8C8C8C"
+                  style={styles.input}
+                  value={email}
+                />
+              </View>
+
+              {!!errorMessage && <Text style={styles.errorText}>{errorMessage}</Text>}
+
+              <Pressable
+                accessibilityRole="button"
+                disabled={isSubmitting}
+                onPress={handleSendResetLink}
+                style={({ pressed }) => [
+                  styles.resetButton,
+                  isSubmitting && styles.disabled,
+                  pressed && styles.pressed,
+                ]}>
+                <LinearGradient
+                  colors={['#B087E5', '#7863DC']}
+                  end={{ x: 0, y: 1 }}
+                  locations={[0.0379, 0.75]}
+                  start={{ x: 0, y: 0 }}
+                  style={styles.resetGradient}>
+                  <InnerShadow />
+                  {isSubmitting ? (
+                    <ActivityIndicator color="#ffffff" />
+                  ) : (
+                    <Text style={styles.resetText}>Send reset Link</Text>
+                  )}
+                </LinearGradient>
+              </Pressable>
             </View>
-
-            <View style={styles.inputWrap}>
-              <InnerShadow />
-              <Ionicons color="#173F5F" name="mail-outline" size={18} style={styles.inputIcon} />
-              <TextInput
-                autoCapitalize="none"
-                autoComplete="email"
-                keyboardType="email-address"
-                onChangeText={setEmail}
-                placeholder="Enter Email"
-                placeholderTextColor="#8C8C8C"
-                style={styles.input}
-                value={email}
-              />
-            </View>
-
-            {!!errorMessage && <Text style={styles.errorText}>{errorMessage}</Text>}
-          </View>
-
-          <Pressable
-            accessibilityRole="button"
-            disabled={isSubmitting}
-            onPress={handleSendResetLink}
-            style={({ pressed }) => [
-              styles.resetButton,
-              isSubmitting && styles.disabled,
-              { bottom: bottomPadding },
-              pressed && styles.pressed,
-            ]}>
-            <LinearGradient
-              colors={['#B087E5', '#7863DC']}
-              end={{ x: 0, y: 1 }}
-              locations={[0.0379, 0.75]}
-              start={{ x: 0, y: 0 }}
-              style={styles.resetGradient}>
-              <InnerShadow />
-              {isSubmitting ? (
-                <ActivityIndicator color="#ffffff" />
-              ) : (
-                <Text style={styles.resetText}>Send reset Link</Text>
-              )}
-            </LinearGradient>
-          </Pressable>
+          </ScrollView>
         </KeyboardAvoidingView>
       </SafeAreaView>
     </ImageBackground>
@@ -138,9 +147,8 @@ const styles = StyleSheet.create({
   },
   content: {
     alignItems: 'center',
-    flex: 1,
+    flexGrow: 1,
     justifyContent: 'center',
-    paddingBottom: 102,
     paddingHorizontal: 18,
     width: '100%',
   },
@@ -170,6 +178,10 @@ const styles = StyleSheet.create({
     marginTop: 14,
     maxWidth: 310,
     textAlign: 'center',
+  },
+  formContent: {
+    alignItems: 'center',
+    width: '100%',
   },
   heading: {
     color: '#173F5F',
@@ -239,9 +251,9 @@ const styles = StyleSheet.create({
     backgroundColor: '#7863dc',
     borderRadius: 27,
     height: 54,
+    marginTop: 68,
     maxWidth: 348,
     overflow: 'hidden',
-    position: 'absolute',
     width: '91%',
   },
   resetGradient: {
@@ -260,6 +272,9 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   safeArea: {
+    flex: 1,
+  },
+  scrollView: {
     flex: 1,
   },
 });

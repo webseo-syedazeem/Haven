@@ -1,7 +1,7 @@
+import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { ImageBackground, Pressable, StyleSheet, Text, View } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
+import { ImageBackground, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { useBottomSafeSpacing } from '@/hooks/use-bottom-safe-spacing';
 
@@ -33,7 +33,13 @@ export default function FirstPageScreen() {
   return (
     <ImageBackground source={firstPageBackground} resizeMode="cover" style={styles.background}>
       <StatusBar hidden />
-      <View style={styles.screen}>
+      <ScrollView
+        contentContainerStyle={[
+          styles.screen,
+          { paddingBottom: bottomPadding + 24, paddingTop: bottomPadding + 24 },
+        ]}
+        showsVerticalScrollIndicator={false}
+        style={styles.scrollView}>
         <View style={styles.content}>
           <View style={styles.copy}>
             <Text style={styles.heading}>{`Feel better now.\nThink clearer later`}</Text>
@@ -41,7 +47,7 @@ export default function FirstPageScreen() {
           </View>
         </View>
 
-        <View style={[styles.bottomArea, { paddingBottom: bottomPadding }]}>
+        <View style={styles.bottomArea}>
           <Pressable
             accessibilityRole="button"
             onPress={() => router.push('/create-account')}
@@ -66,7 +72,7 @@ export default function FirstPageScreen() {
             </Text>
           </Pressable>
         </View>
-      </View>
+      </ScrollView>
     </ImageBackground>
   );
 }
@@ -74,21 +80,18 @@ export default function FirstPageScreen() {
 const styles = StyleSheet.create({
   background: {
     flex: 1,
-    height: '100%',
+    minHeight: '100%',
     width: '100%',
   },
   bottomArea: {
-    bottom: 0,
-    left: 0,
     paddingHorizontal: 12,
-    position: 'absolute',
-    right: 0,
+    width: '100%',
   },
   content: {
     alignItems: 'center',
-    flex: 1,
+    flexGrow: 1,
     justifyContent: 'center',
-    paddingBottom: 146,
+    paddingVertical: 20,
     paddingHorizontal: 20,
     width: '100%',
   },
@@ -180,7 +183,12 @@ const styles = StyleSheet.create({
     opacity: 0.86,
     transform: [{ scale: 0.99 }],
   },
-  screen: {
+  scrollView: {
     flex: 1,
+  },
+  screen: {
+    flexGrow: 1,
+    justifyContent: 'space-between',
+    minHeight: '100%',
   },
 });
