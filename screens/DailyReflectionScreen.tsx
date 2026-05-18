@@ -75,6 +75,7 @@ export function DailyReflectionScreen() {
     }
 
     setValidationMessage('');
+    router.push('/thank-you');
   };
 
   return (

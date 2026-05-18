@@ -31,19 +31,25 @@ const SF_PRO_FONT = Platform.select({
 type StressSliderProps = {
   value: number;
   onChange: (value: number) => void;
+  onInteract?: () => void;
 };
 
-function StressSlider({ value, onChange }: StressSliderProps) {
+function StressSlider({ value, onChange, onInteract }: StressSliderProps) {
   const translateX = useRef(new Animated.Value(0)).current;
   const barWidth = useRef(0);
   const currentPosition = useRef(0);
   const dragStartPosition = useRef(0);
   const valueRef = useRef(value);
   const onChangeRef = useRef(onChange);
+  const onInteractRef = useRef(onInteract);
 
   useEffect(() => {
     onChangeRef.current = onChange;
   }, [onChange]);
+
+  useEffect(() => {
+    onInteractRef.current = onInteract;
+  }, [onInteract]);
 
   const getMaxPosition = useCallback(() => Math.max(0, barWidth.current - SLIDER_THUMB_SIZE), []);
 
@@ -98,6 +104,7 @@ function StressSlider({ value, onChange }: StressSliderProps) {
         onMoveShouldSetPanResponder: () => true,
         onPanResponderTerminationRequest: () => false,
         onPanResponderGrant: () => {
+          onInteractRef.current?.();
           dragStartPosition.current = currentPosition.current;
         },
         onPanResponderMove: (_, gestureState) => {
@@ -114,6 +121,7 @@ function StressSlider({ value, onChange }: StressSliderProps) {
 
   const bubbleTranslateX = Animated.add(translateX, (SLIDER_THUMB_SIZE - VALUE_BUBBLE_SIZE) / 2);
   const moveToScaleValue = (nextValue: number) => {
+    onInteractRef.current?.();
     moveKnobTo((nextValue / 10) * getMaxPosition(), true);
   };
 
@@ -172,10 +180,11 @@ function StressSlider({ value, onChange }: StressSliderProps) {
 
 export function StressStepScreen() {
   const [stressValue, setStressValue] = useState<number | null>(7);
+  const [hasSelectedStressValue, setHasSelectedStressValue] = useState(false);
   const [validationMessage, setValidationMessage] = useState('');
 
   const handleContinuePress = () => {
-    if (stressValue === null || stressValue === undefined) {
+    if (!hasSelectedStressValue || stressValue === null || stressValue === undefined) {
       setValidationMessage('Please select your stress level before continuing.');
       return;
     }
@@ -186,6 +195,12 @@ export function StressStepScreen() {
 
   const handleStressValueChange = (value: number) => {
     setStressValue(value);
+    setHasSelectedStressValue(true);
+    setValidationMessage('');
+  };
+
+  const handleStressInteraction = () => {
+    setHasSelectedStressValue(true);
     setValidationMessage('');
   };
 
@@ -207,7 +222,11 @@ export function StressStepScreen() {
               <Text style={styles.subtitle}>There is no right or wrong answer</Text>
             </View>
 
-            <StressSlider value={stressValue ?? 7} onChange={handleStressValueChange} />
+            <StressSlider
+              value={stressValue ?? 7}
+              onChange={handleStressValueChange}
+              onInteract={handleStressInteraction}
+            />
 
             <View style={styles.infoCard}>
               <Image source={LOTUS_ICON} style={styles.lotusIcon} contentFit="contain" />
