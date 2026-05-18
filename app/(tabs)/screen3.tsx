@@ -1,23 +1,16 @@
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Platform, Pressable, ScrollView, StyleSheet, Text, TextStyle, View } from 'react-native';
+import { useRouter } from 'expo-router';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+
+import { AppFonts } from '@/constants/theme';
 
 const backgroundImage = require('@/assets/images/third-bg.png');
 const heartIcon = require('@/assets/images/heart.svg');
 const monnIcon = require('@/assets/images/monn.svg');
 const sunIcon = require('@/assets/images/sun.svg');
 const linesIcon = require('@/assets/images/lines.svg');
-
-const sfProFont = Platform.select({
-  web: "'SF Pro Text', 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
-  ios: 'SF Pro Text',
-  default: 'sans-serif',
-});
-const playfairFont = Platform.select({
-  web: "'Playfair Display', Georgia, serif",
-  default: 'serif',
-});
 
 const planItems = [
   {
@@ -74,6 +67,8 @@ const planItems = [
 ] as const;
 
 export default function PlanScreen() {
+  const router = useRouter();
+
   return (
     <View style={styles.screen}>
       <Image source={backgroundImage} style={styles.backgroundImage} contentFit="cover" />
@@ -84,7 +79,7 @@ export default function PlanScreen() {
           showsVerticalScrollIndicator={false}
           bounces={false}>
           <View style={styles.header}>
-            <Text style={styles.title}>Your first clam plan is ready.</Text>
+            <Text style={styles.title}>Your first calm plan{'\n'}is ready.</Text>
             <Text style={styles.subtitle}>Small actions to help lower stress</Text>
           </View>
 
@@ -150,7 +145,7 @@ export default function PlanScreen() {
 
           <View style={styles.actions}>
             <View style={styles.actionsInner}>
-              <Pressable>
+              <Pressable onPress={() => router.push('/screen4')}>
                 <LinearGradient
                   colors={['#6339FB', '#3770FC', '#6AAFE9']}
                   locations={[0.0247, 0.5499, 1]}
@@ -188,37 +183,31 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   content: {
-    minHeight: 852,
     alignItems: 'center',
-    paddingBottom: 17,
+    paddingBottom: 28,
   },
   header: {
-    width: 279,
-    height: 118,
-    marginTop: 80,
+    width: 315,
+    marginTop: 58,
     alignItems: 'center',
     gap: 8,
     opacity: 1,
   },
   title: {
-    width: 279,
-    height: 84,
+    width: 315,
     color: '#173F5F',
-    fontFamily: playfairFont,
-    fontSize: 32,
-    fontWeight: '600',
-    lineHeight: 42,
+    fontFamily: AppFonts.displaySemiBold,
+    fontSize: 30,
+    lineHeight: 38,
     letterSpacing: 0,
     textAlign: 'center',
     opacity: 1,
   },
   subtitle: {
-    width: 279,
-    height: 26,
+    width: 315,
     color: '#173F5F',
-    fontFamily: sfProFont,
+    fontFamily: AppFonts.sansMedium,
     fontSize: 16,
-    fontWeight: '510' as TextStyle['fontWeight'],
     lineHeight: 26,
     letterSpacing: 0,
     textAlign: 'center',
@@ -227,7 +216,7 @@ const styles = StyleSheet.create({
   planList: {
     width: 345,
     gap: 8,
-    marginTop: 66,
+    marginTop: 54,
     opacity: 1,
   },
   planCard: {
@@ -283,9 +272,8 @@ const styles = StyleSheet.create({
   planTitle: {
     height: 24,
     color: '#000000',
-    fontFamily: sfProFont,
+    fontFamily: AppFonts.sansSemiBold,
     fontSize: 14,
-    fontWeight: '590' as TextStyle['fontWeight'],
     lineHeight: 24,
     letterSpacing: 0,
     opacity: 1,
@@ -293,9 +281,8 @@ const styles = StyleSheet.create({
   planSubtitle: {
     height: 22,
     color: '#8C8C8C',
-    fontFamily: sfProFont,
+    fontFamily: AppFonts.sansSemiBold,
     fontSize: 12,
-    fontWeight: '590' as TextStyle['fontWeight'],
     lineHeight: 22,
     letterSpacing: 0,
     opacity: 1,
@@ -347,17 +334,15 @@ const styles = StyleSheet.create({
     width: 247,
     height: 44,
     color: '#173F5F',
-    fontFamily: sfProFont,
+    fontFamily: AppFonts.sansRegular,
     fontSize: 12,
-    fontWeight: '400',
     lineHeight: 22,
     letterSpacing: 0,
   },
   actions: {
     width: 345,
     height: 102,
-    marginTop: 71.21368408203125,
-    gap: 340,
+    marginTop: 44,
     opacity: 1,
   },
   actionsInner: {
@@ -384,9 +369,8 @@ const styles = StyleSheet.create({
   },
   continueText: {
     color: '#FFFFFF',
-    fontFamily: sfProFont,
+    fontFamily: AppFonts.sansBold,
     fontSize: 18,
-    fontWeight: '700',
     lineHeight: 26,
     letterSpacing: 0,
     textAlign: 'center',
@@ -395,16 +379,15 @@ const styles = StyleSheet.create({
     width: 345,
     height: 26,
     justifyContent: 'center',
-    paddingHorizontal: 24,
+    alignItems: 'center',
     opacity: 1,
   },
   backText: {
     width: 345,
     height: 26,
     color: '#FFFFFF',
-    fontFamily: sfProFont,
+    fontFamily: AppFonts.sansBold,
     fontSize: 16,
-    fontWeight: '700',
     lineHeight: 26,
     letterSpacing: 0,
     textAlign: 'center',

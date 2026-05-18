@@ -1,23 +1,16 @@
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Platform, Pressable, ScrollView, StyleSheet, Text, TextStyle, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+
+import { AppFonts } from '@/constants/theme';
 
 const quoteIcon = require('@/assets/images/simple.svg');
 const starIcon = require('@/assets/images/Star 3.svg');
 const verifiedIcon = require('@/assets/images/Vector.svg');
 const avatarImage = require('@/assets/images/Ellipse 15.png');
 const backgroundImage = require('@/assets/images/bg1.png');
-const sfProFont = Platform.select({
-  web: "'SF Pro Text', 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
-  ios: 'SF Pro Text',
-  default: 'sans-serif',
-});
-const playfairFont = Platform.select({
-  web: "'Playfair Display', Georgia, serif",
-  default: 'serif',
-});
 
 export default function HomeScreen() {
   const router = useRouter();
@@ -152,9 +145,8 @@ const styles = StyleSheet.create({
     width: 205,
     minHeight: 272,
     color: '#173F5F',
-    fontFamily: playfairFont,
+    fontFamily: AppFonts.displaySemiBold,
     fontSize: 24,
-    fontWeight: '600',
     lineHeight: 34,
     letterSpacing: 0,
     textAlign: 'center',
@@ -187,9 +179,8 @@ const styles = StyleSheet.create({
     width: 106,
     height: 24,
     color: '#173F5F',
-    fontFamily: sfProFont,
+    fontFamily: AppFonts.sansSemiBold,
     fontSize: 16,
-    fontWeight: '590' as TextStyle['fontWeight'],
     lineHeight: 24,
     letterSpacing: 0,
     textAlign: 'center',
@@ -199,9 +190,8 @@ const styles = StyleSheet.create({
     width: 79,
     height: 22,
     color: '#173F5F',
-    fontFamily: sfProFont,
+    fontFamily: AppFonts.sansBold,
     fontSize: 12,
-    fontWeight: '700',
     lineHeight: 22,
     letterSpacing: 0,
     textAlign: 'center',
@@ -256,9 +246,8 @@ const styles = StyleSheet.create({
     width: 180,
     height: 24,
     color: '#173F5F',
-    fontFamily: sfProFont,
+    fontFamily: AppFonts.sansSemiBold,
     fontSize: 16,
-    fontWeight: '590' as TextStyle['fontWeight'],
     lineHeight: 24,
     letterSpacing: 0,
     textAlign: 'center',
@@ -295,9 +284,8 @@ const styles = StyleSheet.create({
   },
   continueText: {
     color: '#FFFFFF',
-    fontFamily: sfProFont,
+    fontFamily: AppFonts.sansBold,
     fontSize: 18,
-    fontWeight: '700',
     lineHeight: 26,
     letterSpacing: 0,
     textAlign: 'center',
@@ -306,16 +294,14 @@ const styles = StyleSheet.create({
     width: 345,
     height: 26,
     justifyContent: 'center',
-    paddingHorizontal: 24,
     opacity: 1,
   },
   backText: {
     width: 345,
     height: 26,
     color: '#FFFFFF',
-    fontFamily: sfProFont,
+    fontFamily: AppFonts.sansBold,
     fontSize: 16,
-    fontWeight: '700',
     lineHeight: 26,
     letterSpacing: 0,
     textAlign: 'center',

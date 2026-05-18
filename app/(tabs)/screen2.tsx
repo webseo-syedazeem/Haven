@@ -2,8 +2,10 @@ import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useState } from 'react';
-import { Platform, Pressable, ScrollView, StyleSheet, Text, TextStyle, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+
+import { AppFonts } from '@/constants/theme';
 
 const backgroundImage = require('@/assets/images/screen 2.png');
 const heartIcon = require('@/assets/images/mdi_heart.svg');
@@ -15,23 +17,13 @@ const roundBorderIcon = require('@/assets/images/round-border.svg');
 const roundFillIcon = require('@/assets/images/round-fill.svg');
 const starsNoteIcon = require('@/assets/images/gm-stars.svg');
 
-const sfProFont = Platform.select({
-  web: "'SF Pro Text', 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
-  ios: 'SF Pro Text',
-  default: 'sans-serif',
-});
-const playfairFont = Platform.select({
-  web: "'Playfair Display', Georgia, serif",
-  default: 'serif',
-});
-
 const times = ['3 min', '5 min', '10 min', '15 min'];
 const supportOptions = [
-  { label: 'Breathwork', icon: heartIcon, textWidth: 80, iconWidth: 20, iconHeight: 18.35, iconTop: 3, iconLeft: 2 },
-  { label: 'Soundscapes', icon: moonIcon, textWidth: 93, iconWidth: 20, iconHeight: 18.35, iconTop: 3, iconLeft: 2 },
-  { label: 'Movements', icon: focusIcon, textWidth: 80, iconWidth: 20, iconHeight: 20, iconTop: 2, iconLeft: 2 },
-  { label: 'Check-ins', icon: leafIcon, textWidth: 70, iconWidth: 17.172945022583008, iconHeight: 19.00011444091797, iconTop: 3, iconLeft: 2.9 },
-  { label: 'Reflection', icon: roundIcon, textWidth: 70, iconWidth: 24, iconHeight: 20.756000518798828, iconTop: 1.62, iconLeft: 0 },
+  { label: 'Breathwork', icon: heartIcon, iconWidth: 20, iconHeight: 18.35, iconTop: 3, iconLeft: 2 },
+  { label: 'Soundscapes', icon: moonIcon, iconWidth: 20, iconHeight: 18.35, iconTop: 3, iconLeft: 2 },
+  { label: 'Movements', icon: focusIcon, iconWidth: 20, iconHeight: 20, iconTop: 2, iconLeft: 2 },
+  { label: 'Check-ins', icon: leafIcon, iconWidth: 17.172945022583008, iconHeight: 19.00011444091797, iconTop: 3, iconLeft: 2.9 },
+  { label: 'Reflection', icon: roundIcon, iconWidth: 24, iconHeight: 20.756000518798828, iconTop: 1.62, iconLeft: 0 },
 ] as const;
 
 export default function TimeScreen() {
@@ -54,7 +46,7 @@ export default function TimeScreen() {
           bounces={false}>
           <View style={styles.header}>
             <Text style={styles.title}>How much time feels realistic for you?</Text>
-            <Text style={styles.subtitle}>Choose what fit best</Text>
+            <Text style={styles.subtitle}>Choose what fits best</Text>
           </View>
 
           <View style={styles.timeButtons}>
@@ -83,7 +75,7 @@ export default function TimeScreen() {
 
           <View style={styles.supportHeader}>
             <Text style={styles.supportTitle}>What support do you prefer?</Text>
-            <Text style={styles.supportSubtitle}>Pik What help most</Text>
+            <Text style={styles.supportSubtitle}>Pick what helps most</Text>
           </View>
 
           <View style={styles.optionList}>
@@ -116,9 +108,7 @@ export default function TimeScreen() {
                         contentFit="contain"
                       />
                     </View>
-                    <Text style={[styles.optionText, { width: option.textWidth }]}>
-                      {option.label}
-                    </Text>
+                    <Text style={styles.optionText}>{option.label}</Text>
                     <View style={styles.checkIconFrame}>
                       <Image
                         source={isSelected ? roundFillIcon : roundBorderIcon}
@@ -181,37 +171,31 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   content: {
-    minHeight: 1000,
     alignItems: 'center',
-    paddingBottom: 17,
+    paddingBottom: 28,
   },
   header: {
-    width: 279,
-    height: 160,
-    marginTop: 46,
+    width: 330,
+    marginTop: 38,
     alignItems: 'center',
     gap: 8,
     opacity: 1,
   },
   title: {
-    width: 279,
-    height: 126,
+    width: 330,
     color: '#173F5F',
-    fontFamily: playfairFont,
-    fontSize: 32,
-    fontWeight: '600',
-    lineHeight: 42,
+    fontFamily: AppFonts.displaySemiBold,
+    fontSize: 29,
+    lineHeight: 36,
     letterSpacing: 0,
     textAlign: 'center',
     opacity: 1,
   },
   subtitle: {
-    width: 279,
-    height: 26,
+    width: 330,
     color: '#173F5F',
-    fontFamily: sfProFont,
+    fontFamily: AppFonts.sansMedium,
     fontSize: 16,
-    fontWeight: '510' as TextStyle['fontWeight'],
     lineHeight: 26,
     letterSpacing: 0,
     textAlign: 'center',
@@ -220,35 +204,29 @@ const styles = StyleSheet.create({
   timeButtons: {
     width: 343,
     height: 40,
-    marginTop: 24,
+    marginTop: 26,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 16,
+    justifyContent: 'space-between',
     opacity: 1,
   },
   timeButton: {
-    width: 70,
+    width: 72,
     height: 40,
     alignItems: 'center',
     justifyContent: 'center',
     borderRadius: 8,
     paddingTop: 8,
-    paddingRight: 16,
     paddingBottom: 8,
-    paddingLeft: 16,
-    gap: 10,
     opacity: 1,
   },
   timeButtonInactive: {
     backgroundColor: '#FFFFFF',
   },
   timeText: {
-    width: 46,
-    height: 24,
     color: '#173F5F',
-    fontFamily: sfProFont,
+    fontFamily: AppFonts.sansSemiBold,
     fontSize: 14,
-    fontWeight: '590' as TextStyle['fontWeight'],
     lineHeight: 24,
     letterSpacing: 0,
     textAlign: 'center',
@@ -258,32 +236,27 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
   },
   supportHeader: {
-    width: 279,
-    height: 64,
+    width: 330,
     alignItems: 'center',
     gap: 8,
     marginTop: 32,
     opacity: 1,
   },
   supportTitle: {
-    width: 279,
-    height: 30,
+    width: 330,
     color: '#173F5F',
-    fontFamily: sfProFont,
+    fontFamily: AppFonts.sansBold,
     fontSize: 18,
-    fontWeight: '700',
     lineHeight: 30,
     letterSpacing: 0,
     textAlign: 'center',
     opacity: 1,
   },
   supportSubtitle: {
-    width: 279,
-    height: 26,
+    width: 330,
     color: '#173F5F',
-    fontFamily: sfProFont,
+    fontFamily: AppFonts.sansMedium,
     fontSize: 16,
-    fontWeight: '510' as TextStyle['fontWeight'],
     lineHeight: 26,
     letterSpacing: 0,
     textAlign: 'center',
@@ -291,7 +264,6 @@ const styles = StyleSheet.create({
   },
   optionList: {
     width: 345,
-    height: 332,
     gap: 8,
     marginTop: 24,
     opacity: 1,
@@ -303,16 +275,15 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderRadius: 12,
     backgroundColor: '#FFFFFF',
-    position: 'relative',
+    paddingHorizontal: 24,
+    gap: 16,
     opacity: 1,
     boxShadow: 'inset 4px 4px 16px 0px #FFFFFF80',
   },
   optionIconFrame: {
     width: 24,
     height: 24,
-    position: 'absolute',
-    top: 18,
-    left: 24,
+    position: 'relative',
     opacity: 1,
   },
   optionIcon: {
@@ -320,24 +291,15 @@ const styles = StyleSheet.create({
     opacity: 1,
   },
   optionText: {
-    position: 'absolute',
-    top: 18,
-    left: 64,
-    width: 80,
-    height: 24,
+    flex: 1,
     color: '#000000',
-    fontFamily: sfProFont,
+    fontFamily: AppFonts.sansSemiBold,
     fontSize: 14,
-    fontWeight: '590' as TextStyle['fontWeight'],
     lineHeight: 24,
     letterSpacing: 0,
-    textAlign: 'center',
     opacity: 1,
   },
   checkIconFrame: {
-    position: 'absolute',
-    top: 18,
-    left: 305,
     width: 24,
     height: 24,
     borderRadius: 12,
@@ -365,7 +327,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFFE5',
     borderWidth: 1,
     borderColor: '#FFFFFF80',
-    marginTop: 35,
+    marginTop: 28,
     paddingTop: 8,
     paddingRight: 24,
     paddingBottom: 8,
@@ -392,17 +354,15 @@ const styles = StyleSheet.create({
     width: 247,
     height: 44,
     color: '#173F5F',
-    fontFamily: sfProFont,
+    fontFamily: AppFonts.sansRegular,
     fontSize: 12,
-    fontWeight: '400',
     lineHeight: 22,
     letterSpacing: 0,
   },
   actions: {
     width: 345,
     height: 102,
-    marginTop: 71.21368408203125,
-    gap: 340,
+    marginTop: 44,
     opacity: 1,
   },
   actionsInner: {
@@ -429,9 +389,8 @@ const styles = StyleSheet.create({
   },
   continueText: {
     color: '#FFFFFF',
-    fontFamily: sfProFont,
+    fontFamily: AppFonts.sansBold,
     fontSize: 18,
-    fontWeight: '700',
     lineHeight: 26,
     letterSpacing: 0,
     textAlign: 'center',
@@ -440,16 +399,15 @@ const styles = StyleSheet.create({
     width: 345,
     height: 26,
     justifyContent: 'center',
-    paddingHorizontal: 24,
+    alignItems: 'center',
     opacity: 1,
   },
   backText: {
     width: 345,
     height: 26,
     color: '#FFFFFF',
-    fontFamily: sfProFont,
+    fontFamily: AppFonts.sansBold,
     fontSize: 16,
-    fontWeight: '700',
     lineHeight: 26,
     letterSpacing: 0,
     textAlign: 'center',

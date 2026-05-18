@@ -43,6 +43,12 @@ export default function TabLayout() {
           title: 'Plan',
         }}
       />
+      <Tabs.Screen
+        name="screen4"
+        options={{
+          title: 'Privacy',
+        }}
+      />
     </Tabs>
   );
 }
