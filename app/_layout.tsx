@@ -8,8 +8,8 @@ import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import * as SystemUI from 'expo-system-ui';
 import { useEffect } from 'react';
-import { SafeAreaProvider } from 'react-native-safe-area-context';
 import 'react-native-reanimated';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { useColorScheme } from '@/hooks/use-color-scheme';
 
@@ -48,6 +48,8 @@ export default function RootLayout() {
           <Stack.Screen name="day-feel" options={{ headerShown: false }} />
           <Stack.Screen name="most-helpful" options={{ headerShown: false }} />
           <Stack.Screen name="stress-step" options={{ headerShown: false }} />
+            <Stack.Screen name="daily-reflection" options={{ headerShown: false }} />
+        <Stack.Screen name="thank-you" options={{ headerShown: false }} />
           <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />
         </Stack>
         <StatusBar backgroundColor="transparent" style="light" translucent />

@@ -4,14 +4,15 @@ import { Pressable, StyleSheet, Text } from 'react-native';
 import { wellnessColors, wellnessTypography } from '@/constants/wellness-theme';
 
 type OnboardingContinueButtonProps = {
+  label?: string;
   onPress?: () => void;
 };
 
-export function OnboardingContinueButton({ onPress }: OnboardingContinueButtonProps) {
+export function OnboardingContinueButton({ label = 'Continue', onPress }: OnboardingContinueButtonProps) {
   return (
     <Pressable
       accessibilityRole="button"
-      accessibilityLabel="Continue"
+      accessibilityLabel={label}
       onPress={onPress}
       style={styles.buttonShadow}>
       <LinearGradient
@@ -20,7 +21,7 @@ export function OnboardingContinueButton({ onPress }: OnboardingContinueButtonPr
         start={{ x: 0, y: 0.5 }}
         end={{ x: 1, y: 0.5 }}
         style={styles.button}>
-        <Text style={styles.buttonText}>Continue</Text>
+        <Text style={styles.buttonText}>{label}</Text>
       </LinearGradient>
     </Pressable>
   );

@@ -1,4 +1,5 @@
 import { Image } from 'expo-image';
+import { router, type Href } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
@@ -30,19 +31,25 @@ const SF_PRO_FONT = Platform.select({
 type StressSliderProps = {
   value: number;
   onChange: (value: number) => void;
+  onInteract?: () => void;
 };
 
-function StressSlider({ value, onChange }: StressSliderProps) {
+function StressSlider({ value, onChange, onInteract }: StressSliderProps) {
   const translateX = useRef(new Animated.Value(0)).current;
   const barWidth = useRef(0);
   const currentPosition = useRef(0);
   const dragStartPosition = useRef(0);
   const valueRef = useRef(value);
   const onChangeRef = useRef(onChange);
+  const onInteractRef = useRef(onInteract);
 
   useEffect(() => {
     onChangeRef.current = onChange;
   }, [onChange]);
+
+  useEffect(() => {
+    onInteractRef.current = onInteract;
+  }, [onInteract]);
 
   const getMaxPosition = useCallback(() => Math.max(0, barWidth.current - SLIDER_THUMB_SIZE), []);
 
@@ -97,6 +104,7 @@ function StressSlider({ value, onChange }: StressSliderProps) {
         onMoveShouldSetPanResponder: () => true,
         onPanResponderTerminationRequest: () => false,
         onPanResponderGrant: () => {
+          onInteractRef.current?.();
           dragStartPosition.current = currentPosition.current;
         },
         onPanResponderMove: (_, gestureState) => {
@@ -113,6 +121,7 @@ function StressSlider({ value, onChange }: StressSliderProps) {
 
   const bubbleTranslateX = Animated.add(translateX, (SLIDER_THUMB_SIZE - VALUE_BUBBLE_SIZE) / 2);
   const moveToScaleValue = (nextValue: number) => {
+    onInteractRef.current?.();
     moveKnobTo((nextValue / 10) * getMaxPosition(), true);
   };
 
@@ -170,7 +179,30 @@ function StressSlider({ value, onChange }: StressSliderProps) {
 }
 
 export function StressStepScreen() {
-  const [stressValue, setStressValue] = useState(7);
+  const [stressValue, setStressValue] = useState<number | null>(7);
+  const [hasSelectedStressValue, setHasSelectedStressValue] = useState(false);
+  const [validationMessage, setValidationMessage] = useState('');
+
+  const handleContinuePress = () => {
+    if (!hasSelectedStressValue || stressValue === null || stressValue === undefined) {
+      setValidationMessage('Please select your stress level before continuing.');
+      return;
+    }
+
+    setValidationMessage('');
+    router.push('/daily-reflection' as Href);
+  };
+
+  const handleStressValueChange = (value: number) => {
+    setStressValue(value);
+    setHasSelectedStressValue(true);
+    setValidationMessage('');
+  };
+
+  const handleStressInteraction = () => {
+    setHasSelectedStressValue(true);
+    setValidationMessage('');
+  };
 
   return (
     <View style={styles.screen}>
@@ -190,7 +222,11 @@ export function StressStepScreen() {
               <Text style={styles.subtitle}>There is no right or wrong answer</Text>
             </View>
 
-            <StressSlider value={stressValue} onChange={setStressValue} />
+            <StressSlider
+              value={stressValue ?? 7}
+              onChange={handleStressValueChange}
+              onInteract={handleStressInteraction}
+            />
 
             <View style={styles.infoCard}>
               <Image source={LOTUS_ICON} style={styles.lotusIcon} contentFit="contain" />
@@ -201,7 +237,18 @@ export function StressStepScreen() {
 
             <View style={styles.spacer} />
 
-            <OnboardingContinueButton />
+            <OnboardingContinueButton onPress={handleContinuePress} />
+
+            {validationMessage ? <Text style={styles.validationText}>{validationMessage}</Text> : null}
+
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Back"
+              hitSlop={12}
+              onPress={() => router.back()}
+              style={styles.backButton}>
+              <Text style={styles.backText}>Back</Text>
+            </Pressable>
           </ScrollView>
         </SafeAreaView>
       </ImageBackground>
@@ -367,5 +414,25 @@ const styles = StyleSheet.create({
   spacer: {
     flex: 1,
     minHeight: 138,
+  },
+  validationText: {
+    color: '#FFFFFF',
+    fontSize: 12,
+    fontWeight: '500',
+    lineHeight: 18,
+    textAlign: 'center',
+    marginBottom: 8,
+  },
+  backButton: {
+    alignSelf: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 2,
+  },
+  backText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '700',
+    lineHeight: 24,
+    textAlign: 'center',
   },
 });
