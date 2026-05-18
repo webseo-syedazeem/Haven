@@ -1,9 +1,9 @@
+import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { ImageBackground, Pressable, StyleSheet, Text, View } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 
-import { useBottomSafeSpacing } from '@/hooks/use-bottom-safe-spacing';
+import { ScreenWrapper } from '@/components/ScreenWrapper';
 
 const firstPageBackground = require('@/assets/images/first-page-background-image.png');
 
@@ -28,69 +28,59 @@ function InnerShadow() {
 
 export default function FirstPageScreen() {
   const router = useRouter();
-  const bottomPadding = useBottomSafeSpacing();
 
   return (
-    <ImageBackground source={firstPageBackground} resizeMode="cover" style={styles.background}>
+    <>
       <StatusBar hidden />
-      <View style={styles.screen}>
-        <View style={styles.content}>
+      <ScreenWrapper
+        backgroundImage={firstPageBackground}
+        bottomReserve={170}
+        bottomContent={
+          <>
+            <Pressable
+              accessibilityRole="button"
+              onPress={() => router.push('/create-account')}
+              style={({ pressed }) => [styles.getStartedButton, pressed && styles.pressed]}>
+              <LinearGradient
+                colors={['#6D67CE', '#528AE1', '#6AAFE9']}
+                end={{ x: 1, y: 0.58 }}
+                locations={[0.0254, 0.5327, 0.9044]}
+                start={{ x: 0, y: 0.42 }}
+                style={styles.getStartedGradient}>
+                <InnerShadow />
+                <Text style={styles.getStartedText}>Get Started</Text>
+              </LinearGradient>
+            </Pressable>
+
+            <Pressable
+              accessibilityRole="button"
+              onPress={() => router.push('/welcome')}
+              style={styles.loginLinkButton}>
+              <Text style={styles.loginPrompt}>
+                Already have an account? <Text style={styles.loginLink}>Login</Text>
+              </Text>
+            </Pressable>
+          </>
+        }
+        bottomContentStyle={styles.bottomArea}
+        middleContent={
           <View style={styles.copy}>
             <Text style={styles.heading}>{`Feel better now.\nThink clearer later`}</Text>
             <Text style={styles.description}>Understand your stress, sleep</Text>
           </View>
-        </View>
-
-        <View style={[styles.bottomArea, { paddingBottom: bottomPadding }]}>
-          <Pressable
-            accessibilityRole="button"
-            onPress={() => router.push('/create-account')}
-            style={({ pressed }) => [styles.getStartedButton, pressed && styles.pressed]}>
-            <LinearGradient
-              colors={['#6D67CE', '#528AE1', '#6AAFE9']}
-              end={{ x: 1, y: 0.58 }}
-              locations={[0.0254, 0.5327, 0.9044]}
-              start={{ x: 0, y: 0.42 }}
-              style={styles.getStartedGradient}>
-              <InnerShadow />
-              <Text style={styles.getStartedText}>Get Started</Text>
-            </LinearGradient>
-          </Pressable>
-
-          <Pressable
-            accessibilityRole="button"
-            onPress={() => router.push('/welcome')}
-            style={styles.loginLinkButton}>
-            <Text style={styles.loginPrompt}>
-              Already have an account? <Text style={styles.loginLink}>Login</Text>
-            </Text>
-          </Pressable>
-        </View>
-      </View>
-    </ImageBackground>
+        }
+        middleContentStyle={styles.content}
+      />
+    </>
   );
 }
 
 const styles = StyleSheet.create({
-  background: {
-    flex: 1,
-    height: '100%',
-    width: '100%',
-  },
   bottomArea: {
-    bottom: 0,
-    left: 0,
     paddingHorizontal: 12,
-    position: 'absolute',
-    right: 0,
   },
   content: {
-    alignItems: 'center',
-    flex: 1,
-    justifyContent: 'center',
-    paddingBottom: 146,
     paddingHorizontal: 20,
-    width: '100%',
   },
   copy: {
     alignItems: 'center',
@@ -179,8 +169,5 @@ const styles = StyleSheet.create({
   pressed: {
     opacity: 0.86,
     transform: [{ scale: 0.99 }],
-  },
-  screen: {
-    flex: 1,
   },
 });

@@ -5,18 +5,16 @@ import { useState } from 'react';
 import {
   ActivityIndicator,
   Image,
-  ImageBackground,
   KeyboardAvoidingView,
   Platform,
   Pressable,
-  SafeAreaView,
   StyleSheet,
   Text,
   TextInput,
   View,
 } from 'react-native';
 
-import { useBottomSafeSpacing } from '@/hooks/use-bottom-safe-spacing';
+import { ScreenWrapper, useScreenBottomPadding } from '@/components/ScreenWrapper';
 import { signUp } from '@/lib/haven-api';
 
 const createAccountBackground = require('@/assets/images/create-account-page-background-image.png');
@@ -43,7 +41,7 @@ function InnerShadow() {
 
 export default function CreateAccountScreen() {
   const router = useRouter();
-  const bottomPadding = useBottomSafeSpacing();
+  const bottomPadding = useScreenBottomPadding();
   const [email, setEmail] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -83,11 +81,11 @@ export default function CreateAccountScreen() {
   };
 
   return (
-    <ImageBackground source={createAccountBackground} resizeMode="cover" style={styles.background}>
-      <SafeAreaView style={styles.safeArea}>
-        <KeyboardAvoidingView
-          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-          style={styles.keyboardView}>
+    <ScreenWrapper backgroundImage={createAccountBackground}>
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        style={styles.keyboardView}>
+        <View style={styles.contentWrapper}>
           <View style={styles.content}>
             <View style={styles.copy}>
               <Text style={styles.heading}>Create Account</Text>
@@ -200,30 +198,27 @@ export default function CreateAccountScreen() {
               </Text>
             </Pressable>
           </View>
-        </KeyboardAvoidingView>
-      </SafeAreaView>
-    </ImageBackground>
+        </View>
+      </KeyboardAvoidingView>
+    </ScreenWrapper>
   );
 }
 
 const styles = StyleSheet.create({
-  background: {
-    flex: 1,
-  },
   bottomArea: {
-    bottom: 0,
-    left: 0,
     paddingHorizontal: 12,
-    position: 'absolute',
-    right: 0,
+    width: '100%',
   },
   content: {
     alignItems: 'center',
     flex: 1,
     justifyContent: 'center',
-    paddingBottom: 78,
     paddingHorizontal: 18,
     width: '100%',
+  },
+  contentWrapper: {
+    flex: 1,
+    justifyContent: 'space-between',
   },
   copy: {
     alignItems: 'center',
@@ -411,9 +406,6 @@ const styles = StyleSheet.create({
   pressed: {
     opacity: 0.86,
     transform: [{ scale: 0.99 }],
-  },
-  safeArea: {
-    flex: 1,
   },
   separatorLine: {
     backgroundColor: 'rgba(23, 63, 95, 0.32)',

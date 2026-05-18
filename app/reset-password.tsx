@@ -4,18 +4,16 @@ import { useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
-  ImageBackground,
   KeyboardAvoidingView,
   Platform,
   Pressable,
-  SafeAreaView,
   StyleSheet,
   Text,
   TextInput,
   View,
 } from 'react-native';
 
-import { useBottomSafeSpacing } from '@/hooks/use-bottom-safe-spacing';
+import { ScreenWrapper, useScreenBottomPadding } from '@/components/ScreenWrapper';
 import { forgotPassword } from '@/lib/haven-api';
 
 const resetPasswordBackground = require('@/assets/images/reset-password-background-image.png');
@@ -40,7 +38,7 @@ function InnerShadow() {
 }
 
 export default function ResetPasswordScreen() {
-  const bottomPadding = useBottomSafeSpacing();
+  const bottomPadding = useScreenBottomPadding();
   const [email, setEmail] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -71,11 +69,11 @@ export default function ResetPasswordScreen() {
   };
 
   return (
-    <ImageBackground source={resetPasswordBackground} resizeMode="cover" style={styles.background}>
-      <SafeAreaView style={styles.safeArea}>
-        <KeyboardAvoidingView
-          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-          style={styles.keyboardView}>
+    <ScreenWrapper backgroundImage={resetPasswordBackground}>
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        style={styles.keyboardView}>
+        <View style={styles.contentWrapper}>
           <View style={styles.content}>
             <View style={styles.copy}>
               <Text style={styles.heading}>{`Reset your\npassword`}</Text>
@@ -102,51 +100,57 @@ export default function ResetPasswordScreen() {
             {!!errorMessage && <Text style={styles.errorText}>{errorMessage}</Text>}
           </View>
 
-          <Pressable
-            accessibilityRole="button"
-            disabled={isSubmitting}
-            onPress={handleSendResetLink}
-            style={({ pressed }) => [
-              styles.resetButton,
-              isSubmitting && styles.disabled,
-              { bottom: bottomPadding },
-              pressed && styles.pressed,
-            ]}>
-            <LinearGradient
-              colors={['#B087E5', '#7863DC']}
-              end={{ x: 0, y: 1 }}
-              locations={[0.0379, 0.75]}
-              start={{ x: 0, y: 0 }}
-              style={styles.resetGradient}>
-              <InnerShadow />
-              {isSubmitting ? (
-                <ActivityIndicator color="#ffffff" />
-              ) : (
-                <Text style={styles.resetText}>Send reset Link</Text>
-              )}
-            </LinearGradient>
-          </Pressable>
-        </KeyboardAvoidingView>
-      </SafeAreaView>
-    </ImageBackground>
+          <View style={[styles.bottomArea, { paddingBottom: bottomPadding }]}>
+            <Pressable
+              accessibilityRole="button"
+              disabled={isSubmitting}
+              onPress={handleSendResetLink}
+              style={({ pressed }) => [
+                styles.resetButton,
+                isSubmitting && styles.disabled,
+                pressed && styles.pressed,
+              ]}>
+              <LinearGradient
+                colors={['#B087E5', '#7863DC']}
+                end={{ x: 0, y: 1 }}
+                locations={[0.0379, 0.75]}
+                start={{ x: 0, y: 0 }}
+                style={styles.resetGradient}>
+                <InnerShadow />
+                {isSubmitting ? (
+                  <ActivityIndicator color="#ffffff" />
+                ) : (
+                  <Text style={styles.resetText}>Send reset Link</Text>
+                )}
+              </LinearGradient>
+            </Pressable>
+          </View>
+        </View>
+      </KeyboardAvoidingView>
+    </ScreenWrapper>
   );
 }
 
 const styles = StyleSheet.create({
-  background: {
-    flex: 1,
+  bottomArea: {
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    width: '100%',
   },
   content: {
     alignItems: 'center',
     flex: 1,
     justifyContent: 'center',
-    paddingBottom: 102,
     paddingHorizontal: 18,
     width: '100%',
   },
+  contentWrapper: {
+    flex: 1,
+    justifyContent: 'space-between',
+  },
   copy: {
     alignItems: 'center',
-    marginBottom: 64,
+    marginBottom: 32,
   },
   description: {
     color: '#173F5F',
@@ -241,8 +245,7 @@ const styles = StyleSheet.create({
     height: 54,
     maxWidth: 348,
     overflow: 'hidden',
-    position: 'absolute',
-    width: '91%',
+    width: '100%',
   },
   resetGradient: {
     alignItems: 'center',
@@ -258,8 +261,5 @@ const styles = StyleSheet.create({
     letterSpacing: 0,
     lineHeight: 26,
     textAlign: 'center',
-  },
-  safeArea: {
-    flex: 1,
   },
 });

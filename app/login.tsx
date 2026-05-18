@@ -4,25 +4,23 @@ import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import {
   ActivityIndicator,
-  ImageBackground,
   KeyboardAvoidingView,
   Platform,
   Pressable,
-  SafeAreaView,
   StyleSheet,
   Text,
   TextInput,
   View,
 } from 'react-native';
 
-import { useBottomSafeSpacing } from '@/hooks/use-bottom-safe-spacing';
+import { ScreenWrapper, useScreenBottomPadding } from '@/components/ScreenWrapper';
 import { signIn } from '@/lib/haven-api';
 
 const loginBackground = require('@/assets/images/login_page_background.png');
 
 export default function LoginScreen() {
   const router = useRouter();
-  const bottomPadding = useBottomSafeSpacing();
+  const bottomPadding = useScreenBottomPadding();
   const [email, setEmail] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -55,12 +53,11 @@ export default function LoginScreen() {
   };
 
   return (
-    <ImageBackground source={loginBackground} resizeMode="cover" style={styles.background}>
-      <View style={styles.blueOverlay} />
-      <SafeAreaView style={styles.safeArea}>
-        <KeyboardAvoidingView
-          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-          style={styles.keyboardView}>
+    <ScreenWrapper backgroundImage={loginBackground} overlay={<View style={styles.blueOverlay} />}>
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        style={styles.keyboardView}>
+        <View style={styles.contentWrapper}>
           <View style={styles.content}>
             <Text style={styles.heading}>{`Let's check in\ngently`}</Text>
 
@@ -114,63 +111,78 @@ export default function LoginScreen() {
             </View>
           </View>
 
-          <Pressable
-            accessibilityRole="button"
-            disabled={isSubmitting}
-            onPress={handleLogin}
-            style={({ pressed }) => [
-              styles.loginButton,
-              isSubmitting && styles.disabled,
-              { bottom: bottomPadding },
-              pressed && styles.pressed,
-            ]}>
-            <LinearGradient
-              colors={['#5AA1E2', '#0D6FD0']}
-              end={{ x: 1, y: 1 }}
-              start={{ x: 0, y: 0 }}
-              style={styles.loginGradient}>
-              <View pointerEvents="none" style={styles.innerShadow}>
-                <LinearGradient
-                  colors={['rgba(255, 255, 255, 0.5)', 'rgba(255, 255, 255, 0)']}
-                  end={{ x: 0, y: 1 }}
-                  start={{ x: 0, y: 0 }}
-                  style={styles.innerShadowTop}
-                />
-                <LinearGradient
-                  colors={['rgba(255, 255, 255, 0.5)', 'rgba(255, 255, 255, 0)']}
-                  end={{ x: 1, y: 0 }}
-                  start={{ x: 0, y: 0 }}
-                  style={styles.innerShadowLeft}
-                />
-              </View>
-              {isSubmitting ? (
-                <ActivityIndicator color="#ffffff" />
-              ) : (
-                <Text style={styles.loginText}>Login</Text>
-              )}
-            </LinearGradient>
-          </Pressable>
-        </KeyboardAvoidingView>
-      </SafeAreaView>
-    </ImageBackground>
+          <View style={[styles.bottomArea, { paddingBottom: bottomPadding }]}>
+            <Pressable
+              accessibilityRole="button"
+              disabled={isSubmitting}
+              onPress={handleLogin}
+              style={({ pressed }) => [
+                styles.loginButton,
+                isSubmitting && styles.disabled,
+                pressed && styles.pressed,
+              ]}>
+              <LinearGradient
+                colors={['#5AA1E2', '#0D6FD0']}
+                end={{ x: 1, y: 1 }}
+                start={{ x: 0, y: 0 }}
+                style={styles.loginGradient}>
+                <View pointerEvents="none" style={styles.innerShadow}>
+                  <LinearGradient
+                    colors={['rgba(255, 255, 255, 0.5)', 'rgba(255, 255, 255, 0)']}
+                    end={{ x: 0, y: 1 }}
+                    start={{ x: 0, y: 0 }}
+                    style={styles.innerShadowTop}
+                  />
+                  <LinearGradient
+                    colors={['rgba(255, 255, 255, 0.5)', 'rgba(255, 255, 255, 0)']}
+                    end={{ x: 1, y: 0 }}
+                    start={{ x: 0, y: 0 }}
+                    style={styles.innerShadowLeft}
+                  />
+                </View>
+                {isSubmitting ? (
+                  <ActivityIndicator color="#ffffff" />
+                ) : (
+                  <Text style={styles.loginText}>Login</Text>
+                )}
+              </LinearGradient>
+            </Pressable>
+
+            <Pressable
+              accessibilityRole="button"
+              onPress={() => router.push('/create-account')}
+              style={styles.signupLinkButton}>
+              <Text style={styles.signupPrompt}>
+                Not registered yet? <Text style={styles.signupLink}>Sign up</Text>
+              </Text>
+            </Pressable>
+          </View>
+        </View>
+      </KeyboardAvoidingView>
+    </ScreenWrapper>
   );
 }
 
 const styles = StyleSheet.create({
-  background: {
-    flex: 1,
-  },
   blueOverlay: {
     ...StyleSheet.absoluteFillObject,
     backgroundColor: 'rgba(20, 135, 220, 0.12)',
+  },
+  bottomArea: {
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    width: '100%',
   },
   content: {
     alignItems: 'center',
     flex: 1,
     justifyContent: 'center',
-    paddingBottom: 68,
     paddingHorizontal: 18,
     width: '100%',
+  },
+  contentWrapper: {
+    flex: 1,
+    justifyContent: 'space-between',
   },
   eyeButton: {
     alignItems: 'center',
@@ -297,8 +309,7 @@ const styles = StyleSheet.create({
     height: 54,
     maxWidth: 348,
     overflow: 'hidden',
-    position: 'absolute',
-    width: '91%',
+    width: '100%',
   },
   loginGradient: {
     alignItems: 'center',
@@ -322,7 +333,25 @@ const styles = StyleSheet.create({
     opacity: 0.86,
     transform: [{ scale: 0.99 }],
   },
-  safeArea: {
-    flex: 1,
+  signupLink: {
+    color: '#ffffff',
+  },
+  signupLinkButton: {
+    alignSelf: 'center',
+    marginTop: 14,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+  },
+  signupPrompt: {
+    color: '#ffffff',
+    fontFamily: 'SF Pro',
+    fontSize: 12,
+    fontWeight: '700',
+    letterSpacing: 0,
+    lineHeight: 18,
+    textAlign: 'center',
+    textShadowColor: 'rgba(0, 0, 0, 0.34)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 2,
   },
 });

@@ -1,9 +1,15 @@
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import { useState } from 'react';
-import { ImageBackground, Pressable, StyleSheet, Text, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import {
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native';
 
+import { ScreenWrapper, useScreenBottomPadding } from '@/components/ScreenWrapper';
 import { SleepOptionCard } from '@/components/sleep-check/SleepOptionCard';
 import { wellnessColors, wellnessTypography } from '@/constants/wellness-theme';
 
@@ -17,18 +23,22 @@ const sleepOptions = [
 
 export function SleepCheckScreen() {
   const [selectedOption, setSelectedOption] = useState<string | null>(null);
+  const bottomPadding = useScreenBottomPadding();
   const handleBackPress = () => {
     router.back();
   };
 
   return (
     <View style={styles.screen}>
-      <ImageBackground
-        source={require('@/assets/images/sleep-background.png')}
-        resizeMode="cover"
-        style={styles.background}>
-        <SafeAreaView style={styles.safeArea} edges={['top', 'right', 'bottom', 'left']}>
-          <View style={styles.content}>
+      <ScreenWrapper
+        backgroundImage={require('@/assets/images/sleep-background.png')}
+        bottomReserve={0}
+        middleContent={
+          <ScrollView
+            bounces={false}
+            contentContainerStyle={[styles.scrollContent, { paddingBottom: bottomPadding }]}
+            showsVerticalScrollIndicator={false}
+            style={styles.scrollView}>
             <View style={styles.header}>
               <Text style={styles.heading}>How has your{'\n'}sleep been lately?</Text>
               <Text style={styles.subtitle}>Choose what fit best</Text>
@@ -48,7 +58,8 @@ export function SleepCheckScreen() {
 
             <View style={styles.infoBox}>
               <Text style={styles.infoText}>
-                Science Shows sleep quality shapes stress{'\n'}resilience and focus fot the day ahead
+                Science Shows sleep quality shapes stress{'\n'}resilience and focus for the day{' '}
+                ahead
               </Text>
             </View>
 
@@ -79,9 +90,10 @@ export function SleepCheckScreen() {
               style={styles.backButton}>
               <Text style={styles.backText}>Back</Text>
             </Pressable>
-          </View>
-        </SafeAreaView>
-      </ImageBackground>
+          </ScrollView>
+        }
+        middleContentStyle={styles.content}
+      />
     </View>
   );
 }
@@ -91,17 +103,9 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#020A45',
   },
-  background: {
-    flex: 1,
-  },
-  safeArea: {
-    flex: 1,
-  },
   content: {
-    flex: 1,
-    justifyContent: 'flex-end',
     paddingHorizontal: 20,
-    paddingBottom: 24,
+    width: '100%',
   },
   header: {
     alignItems: 'center',
@@ -123,6 +127,7 @@ const styles = StyleSheet.create({
   optionList: {
     gap: 10,
     marginBottom: 24,
+    width: '100%',
   },
   infoBox: {
     height: 85,
@@ -130,6 +135,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255,255,255,0.86)',
     alignItems: 'center',
     justifyContent: 'center',
+    width: '100%',
     marginBottom: 33,
   },
   infoText: {
@@ -138,6 +144,15 @@ const styles = StyleSheet.create({
     fontWeight: '400',
     lineHeight: 24,
     textAlign: 'center',
+  },
+  scrollContent: {
+    flexGrow: 1,
+    justifyContent: 'center',
+    paddingTop: 60,
+    width: '100%',
+  },
+  scrollView: {
+    width: '100%',
   },
   buttonShadow: {
     width: '100%',

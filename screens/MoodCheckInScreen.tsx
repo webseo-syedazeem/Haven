@@ -1,14 +1,13 @@
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import { useMemo, useState } from 'react';
-import { ImageBackground, Pressable, StyleSheet, Text, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 
+import { ScreenWrapper } from '@/components/ScreenWrapper';
 import { GradientProgressBar } from '@/components/feeling-lately/GradientProgressBar';
 import { MoodOption } from '@/components/feeling-lately/MoodOption';
 import {
   wellnessColors,
-  wellnessRadius,
   wellnessSpacing,
   wellnessTypography,
 } from '@/constants/wellness-theme';
@@ -30,13 +29,33 @@ export function MoodCheckInScreen() {
 
   return (
     <View style={styles.screen}>
-      <ImageBackground
-        source={require('@/assets/images/feeling-lately-background.png')}
-        resizeMode="cover"
-        style={styles.background}
-        imageStyle={styles.backgroundImage}>
-        <SafeAreaView style={styles.safeArea} edges={[]}>
-          <View style={styles.content}>
+      <ScreenWrapper
+        backgroundImage={require('@/assets/images/feeling-lately-background.png')}
+        bottomReserve={0}
+        bottomContent={
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Continue"
+            accessibilityHint={`Selected mood is ${selectedMood}`}
+            onPress={() => router.push('/sleep-check')}
+            style={({ pressed }) => [styles.buttonShadow, pressed && styles.buttonPressed]}>
+            <LinearGradient
+              colors={[
+                wellnessColors.button.left,
+                wellnessColors.button.center,
+                wellnessColors.button.right,
+              ]}
+              locations={[0, 0.485, 1]}
+              start={{ x: 0, y: 0.5 }}
+              end={{ x: 1, y: 0.5 }}
+              style={styles.button}>
+              <Text style={styles.buttonText}>Continue</Text>
+            </LinearGradient>
+          </Pressable>
+        }
+        bottomContentStyle={styles.bottomContent}
+        middleContent={
+          <>
             <Text style={styles.heading}>How have you been{'\n'}feeling lately?</Text>
 
             <View style={styles.progressSection}>
@@ -48,29 +67,10 @@ export function MoodCheckInScreen() {
                 <MoodOption key={mood.label} icon={mood.icon} label={mood.label} />
               ))}
             </View>
-
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel="Continue"
-              accessibilityHint={`Selected mood is ${selectedMood}`}
-              onPress={() => router.push('/sleep-check')}
-              style={({ pressed }) => [styles.buttonShadow, pressed && styles.buttonPressed]}>
-              <LinearGradient
-                colors={[
-                  wellnessColors.button.left,
-                  wellnessColors.button.center,
-                  wellnessColors.button.right,
-                ]}
-                locations={[0, 0.485, 1]}
-                start={{ x: 0, y: 0.5 }}
-                end={{ x: 1, y: 0.5 }}
-                style={styles.button}>
-                <Text style={styles.buttonText}>Continue</Text>
-              </LinearGradient>
-            </Pressable>
-          </View>
-        </SafeAreaView>
-      </ImageBackground>
+          </>
+        }
+        middleContentStyle={styles.content}
+      />
     </View>
   );
 }
@@ -80,21 +80,12 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: wellnessColors.surface,
   },
-  background: {
-    flex: 1,
-  },
-  backgroundImage: {
-    borderRadius: 0,
-  },
-  safeArea: {
-    flex: 1,
+  bottomContent: {
+    paddingHorizontal: wellnessSpacing.contentHorizontal,
   },
   content: {
-    flex: 1,
-    justifyContent: 'flex-end',
     alignItems: 'center',
     paddingHorizontal: wellnessSpacing.contentHorizontal,
-    paddingBottom: wellnessSpacing.bottom,
   },
   heading: {
     ...wellnessTypography.heading,
@@ -112,7 +103,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'flex-start',
     justifyContent: 'space-between',
-    marginBottom: wellnessSpacing.moodsToButton,
   },
   buttonShadow: {
     width: '100%',

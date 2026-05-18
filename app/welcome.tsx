@@ -1,8 +1,8 @@
 import { useRouter } from 'expo-router';
-import { ImageBackground, SafeAreaView, StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 
 import { AuthButton } from '@/components/AuthButton';
-import { useBottomSafeSpacing } from '@/hooks/use-bottom-safe-spacing';
+import { ScreenWrapper } from '@/components/ScreenWrapper';
 
 const welcomeBackground = require('@/assets/images/welcome-background.png');
 const googleIcon = require('@/assets/icons/google.png');
@@ -11,7 +11,6 @@ const emailIcon = require('@/assets/icons/email.png');
 
 export default function WelcomeScreen() {
   const router = useRouter();
-  const bottomPadding = useBottomSafeSpacing();
   const handleGooglePress = () => {};
   const handleApplePress = () => {};
   const handleEmailPress = () => {
@@ -19,9 +18,17 @@ export default function WelcomeScreen() {
   };
 
   return (
-    <ImageBackground source={welcomeBackground} resizeMode="cover" style={styles.background}>
-      <View style={styles.readabilityOverlay} />
-      <SafeAreaView style={styles.safeArea}>
+    <ScreenWrapper
+      backgroundImage={welcomeBackground}
+      bottomContent={
+        <Text style={styles.footer}>
+          By continuing, you agree to our{' '}
+          <Text style={styles.footerLink}>Terms of Service</Text>
+          {' and '}
+          <Text style={styles.footerLink}>Privacy Policy</Text>.
+        </Text>
+      }
+      middleContent={
         <View style={styles.centerContent}>
           <Text style={styles.heading}>{`Welcome!\nTake a breath and\ncome in`}</Text>
 
@@ -43,22 +50,13 @@ export default function WelcomeScreen() {
             />
           </View>
         </View>
-
-        <Text style={[styles.footer, { bottom: bottomPadding }]}>
-          By continuing, you agree to our{' '}
-          <Text style={styles.footerLink}>Terms of Service</Text>
-          {' and '}
-          <Text style={styles.footerLink}>Privacy Policy</Text>.
-        </Text>
-      </SafeAreaView>
-    </ImageBackground>
+      }
+      overlay={<View style={styles.readabilityOverlay} />}
+    />
   );
 }
 
 const styles = StyleSheet.create({
-  background: {
-    flex: 1,
-  },
   buttonGroup: {
     gap: 11,
     marginTop: 25,
@@ -66,13 +64,10 @@ const styles = StyleSheet.create({
   },
   centerContent: {
     alignItems: 'center',
-    flex: 1,
     justifyContent: 'center',
-    paddingBottom: 74,
     width: '100%',
   },
   footer: {
-    alignSelf: 'center',
     color: '#ffffff',
     fontFamily: 'SF Pro',
     fontSize: 16,
@@ -81,7 +76,6 @@ const styles = StyleSheet.create({
     lineHeight: 26,
     maxWidth: 310,
     paddingHorizontal: 24,
-    position: 'absolute',
     textAlign: 'center',
     textShadowColor: 'rgba(0, 0, 0, 0.32)',
     textShadowOffset: { width: 0, height: 1 },
@@ -103,8 +97,5 @@ const styles = StyleSheet.create({
   readabilityOverlay: {
     ...StyleSheet.absoluteFillObject,
     backgroundColor: 'rgba(255, 255, 255, 0.08)',
-  },
-  safeArea: {
-    flex: 1,
   },
 });

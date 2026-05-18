@@ -1,17 +1,9 @@
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import { useState } from 'react';
-import {
-  ImageBackground,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  type TextStyle,
-  View,
-} from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { Pressable, ScrollView, StyleSheet, Text, type TextStyle, View } from 'react-native';
 
+import { ScreenWrapper, useScreenBottomPadding } from '@/components/ScreenWrapper';
 import { SleepOptionCard } from '@/components/sleep-check/SleepOptionCard';
 import { wellnessColors, wellnessTypography } from '@/constants/wellness-theme';
 
@@ -30,18 +22,19 @@ const dayFeelOptions = [
 
 export function DayFeelScreen() {
   const [selectedOption, setSelectedOption] = useState<string | null>(null);
+  const bottomPadding = useScreenBottomPadding();
 
   return (
     <View style={styles.screen}>
-      <ImageBackground
-        source={require('@/assets/images/dayfeel.png')}
-        resizeMode="cover"
-        style={styles.background}>
-        <SafeAreaView style={styles.safeArea} edges={['top', 'right', 'bottom', 'left']}>
+      <ScreenWrapper
+        backgroundImage={require('@/assets/images/dayfeel.png')}
+        bottomReserve={0}
+        middleContent={
           <ScrollView
             bounces={false}
-            contentContainerStyle={styles.scrollContent}
-            showsVerticalScrollIndicator={false}>
+            contentContainerStyle={[styles.scrollContent, { paddingBottom: bottomPadding }]}
+            showsVerticalScrollIndicator={false}
+            style={styles.scrollView}>
             <View style={styles.header}>
               <Text style={styles.heading}>How does your day{'\n'}usually feel?</Text>
               <Text style={styles.subtitle}>Choose what fit best</Text>
@@ -65,7 +58,10 @@ export function DayFeelScreen() {
               </Text>
             </View>
 
-            <Pressable accessibilityRole="button" accessibilityLabel="Continue" style={styles.buttonShadow}>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Continue"
+              style={styles.buttonShadow}>
               <LinearGradient
                 colors={[
                   wellnessColors.button.left,
@@ -89,8 +85,9 @@ export function DayFeelScreen() {
               <Text style={styles.backText}>Back</Text>
             </Pressable>
           </ScrollView>
-        </SafeAreaView>
-      </ImageBackground>
+        }
+        middleContentStyle={styles.middleContent}
+      />
     </View>
   );
 }
@@ -100,18 +97,14 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#020A45',
   },
-  background: {
-    flex: 1,
-  },
-  safeArea: {
-    flex: 1,
+  middleContent: {
+    paddingHorizontal: 20,
   },
   scrollContent: {
     flexGrow: 1,
-    justifyContent: 'flex-end',
-    paddingHorizontal: 20,
-    paddingBottom: 24,
+    justifyContent: 'center',
     paddingTop: 24,
+    width: '100%',
   },
   header: {
     alignItems: 'center',
@@ -135,6 +128,10 @@ const styles = StyleSheet.create({
   optionList: {
     gap: 10,
     marginBottom: 24,
+    width: '100%',
+  },
+  scrollView: {
+    width: '100%',
   },
   infoBox: {
     height: 85,
@@ -144,12 +141,13 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFFE5',
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 33,
+    width: '100%',
     shadowColor: '#000000',
     shadowOpacity: 0.08,
     shadowRadius: 16,
     shadowOffset: { width: 0, height: 4 },
     elevation: 3,
+    marginBottom: 33,
   },
   infoText: {
     color: '#000000',

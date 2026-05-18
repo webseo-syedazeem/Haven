@@ -2,6 +2,7 @@ import { Image, type ImageSource } from 'expo-image';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 type SleepOptionCardProps = {
+  compact?: boolean;
   icon: ImageSource;
   label: string;
   selected: boolean;
@@ -10,13 +11,23 @@ type SleepOptionCardProps = {
 
 const circleIcon = require('@/assets/images/circle.svg');
 
-export function SleepOptionCard({ icon, label, selected, onPress }: SleepOptionCardProps) {
+export function SleepOptionCard({
+  compact = false,
+  icon,
+  label,
+  selected,
+  onPress,
+}: SleepOptionCardProps) {
   return (
     <Pressable
       accessibilityRole="button"
       accessibilityState={{ selected }}
       onPress={onPress}
-      style={({ pressed }) => [styles.card, pressed && styles.pressed]}>
+      style={({ pressed }) => [
+        styles.card,
+        compact && styles.compactCard,
+        pressed && styles.pressed,
+      ]}>
       <View style={styles.content}>
         <Image source={icon} style={styles.icon} contentFit="contain" />
         <Text style={styles.label}>{label}</Text>
@@ -41,6 +52,9 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingLeft: 24,
     paddingRight: 17,
+  },
+  compactCard: {
+    height: 51,
   },
   pressed: {
     opacity: 0.92,
