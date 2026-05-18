@@ -1,4 +1,5 @@
 import { Image } from 'expo-image';
+import { router, type Href } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
@@ -170,7 +171,23 @@ function StressSlider({ value, onChange }: StressSliderProps) {
 }
 
 export function StressStepScreen() {
-  const [stressValue, setStressValue] = useState(7);
+  const [stressValue, setStressValue] = useState<number | null>(7);
+  const [validationMessage, setValidationMessage] = useState('');
+
+  const handleContinuePress = () => {
+    if (stressValue === null || stressValue === undefined) {
+      setValidationMessage('Please select your stress level before continuing.');
+      return;
+    }
+
+    setValidationMessage('');
+    router.push('/daily-reflection' as Href);
+  };
+
+  const handleStressValueChange = (value: number) => {
+    setStressValue(value);
+    setValidationMessage('');
+  };
 
   return (
     <View style={styles.screen}>
@@ -190,7 +207,7 @@ export function StressStepScreen() {
               <Text style={styles.subtitle}>There is no right or wrong answer</Text>
             </View>
 
-            <StressSlider value={stressValue} onChange={setStressValue} />
+            <StressSlider value={stressValue ?? 7} onChange={handleStressValueChange} />
 
             <View style={styles.infoCard}>
               <Image source={LOTUS_ICON} style={styles.lotusIcon} contentFit="contain" />
@@ -201,7 +218,18 @@ export function StressStepScreen() {
 
             <View style={styles.spacer} />
 
-            <OnboardingContinueButton />
+            <OnboardingContinueButton onPress={handleContinuePress} />
+
+            {validationMessage ? <Text style={styles.validationText}>{validationMessage}</Text> : null}
+
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Back"
+              hitSlop={12}
+              onPress={() => router.back()}
+              style={styles.backButton}>
+              <Text style={styles.backText}>Back</Text>
+            </Pressable>
           </ScrollView>
         </SafeAreaView>
       </ImageBackground>
@@ -367,5 +395,25 @@ const styles = StyleSheet.create({
   spacer: {
     flex: 1,
     minHeight: 138,
+  },
+  validationText: {
+    color: '#FFFFFF',
+    fontSize: 12,
+    fontWeight: '500',
+    lineHeight: 18,
+    textAlign: 'center',
+    marginBottom: 8,
+  },
+  backButton: {
+    alignSelf: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 2,
+  },
+  backText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '700',
+    lineHeight: 24,
+    textAlign: 'center',
   },
 });
