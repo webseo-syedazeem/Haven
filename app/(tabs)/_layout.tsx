@@ -12,7 +12,8 @@ export default function TabLayout() {
         tabBarInactiveTintColor: '#777D8B',
         headerShown: false,
         tabBarButton: HapticTab,
-        tabBarLabelStyle: {
+        tabBarStyle: { display: 'none' },
+         tabBarLabelStyle: {
           fontSize: 10,
           fontWeight: '500',
           marginTop: 2,
@@ -48,6 +49,8 @@ export default function TabLayout() {
         name="explore"
         options={{
           title: 'Mood',
+                    tabBarIcon: ({ color }) => <IconSymbol size={28} name="paperplane.fill" color={color} />,
+
           tabBarIcon: ({ color, focused }) => (
             <Ionicons name={focused ? 'happy' : 'happy-outline'} size={20} color={color} />
           ),
@@ -78,6 +81,42 @@ export default function TabLayout() {
           tabBarIcon: ({ color, focused }) => (
             <Ionicons name={focused ? 'person' : 'person-outline'} size={20} color={color} />
           ),
+        }}
+      />
+      <Tabs.Screen
+        name="screen2"
+        options={{
+          title: 'Time',
+        }}
+      />
+      <Tabs.Screen
+        name="screen3"
+        options={{
+          title: 'Plan',
+        }}
+      />
+      <Tabs.Screen
+        name="screen4"
+        options={{
+          title: 'Privacy',
+        }}
+      />
+      <Tabs.Screen
+        name="screen2"
+        options={{
+          title: 'Time',
+        }}
+      />
+      <Tabs.Screen
+        name="screen3"
+        options={{
+          title: 'Plan',
+        }}
+      />
+      <Tabs.Screen
+        name="screen4"
+        options={{
+          title: 'Privacy',
         }}
       />
     </Tabs>

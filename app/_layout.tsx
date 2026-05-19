@@ -1,4 +1,10 @@
 import {
+  Inter_400Regular,
+  Inter_500Medium,
+  Inter_600SemiBold,
+  Inter_700Bold,
+} from '@expo-google-fonts/inter';
+import {
   PlayfairDisplay_600SemiBold,
   PlayfairDisplay_700Bold,
   useFonts,
@@ -9,6 +15,8 @@ import { StatusBar } from 'expo-status-bar';
 import * as SystemUI from 'expo-system-ui';
 import { useEffect } from 'react';
 import 'react-native-reanimated';
+
+import { AppFonts } from '@/constants/theme';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { useColorScheme } from '@/hooks/use-color-scheme';
@@ -19,7 +27,7 @@ export const unstable_settings = {
 
 export default function RootLayout() {
   const colorScheme = useColorScheme();
-  const [fontsLoaded] = useFonts({
+    const [fontsLoaded] = useFonts({
     PlayfairDisplay_600SemiBold,
     PlayfairDisplay_700Bold,
     'Playfair Display': PlayfairDisplay_700Bold,
@@ -29,6 +37,17 @@ export default function RootLayout() {
   useEffect(() => {
     SystemUI.setBackgroundColorAsync('transparent');
   }, []);
+
+  if (!fontsLoaded) {
+    return null;
+  }
+  const [fontsLoaded] = useFonts({
+    [AppFonts.sansRegular]: Inter_400Regular,
+    [AppFonts.sansMedium]: Inter_500Medium,
+    [AppFonts.sansSemiBold]: Inter_600SemiBold,
+    [AppFonts.sansBold]: Inter_700Bold,
+    [AppFonts.displaySemiBold]: PlayfairDisplay_600SemiBold,
+  });
 
   if (!fontsLoaded) {
     return null;
