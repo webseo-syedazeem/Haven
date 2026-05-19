@@ -1,4 +1,4 @@
-const API_BASE_URL = 'https://haven-back-one.vercel.app';
+const API_BASE_URL = 'https://haven-back-pied.vercel.app';
 
 type ApiBody = Record<string, unknown>;
 
