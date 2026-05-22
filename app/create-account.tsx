@@ -15,10 +15,12 @@ import {
 } from 'react-native';
 
 import { ScreenWrapper, useScreenBottomPadding } from '@/components/ScreenWrapper';
+import { AppFonts } from '@/constants/theme';
 import { signUp } from '@/lib/haven-api';
 
 const createAccountBackground = require('@/assets/images/create-account-page-background-image.png');
 const googleIcon = require('@/assets/icons/google.png');
+const noFocusOutline = Platform.OS === 'web' ? ({ outlineStyle: 'none' } as any) : null;
 
 function InnerShadow() {
   return (
@@ -86,6 +88,14 @@ export default function CreateAccountScreen() {
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         style={styles.keyboardView}>
         <View style={styles.contentWrapper}>
+          <Pressable
+            accessibilityLabel="Go back"
+            hitSlop={12}
+            onPress={() => router.back()}
+            style={({ pressed }) => [styles.backButton, pressed && styles.pressed]}>
+            <Ionicons color="#000000" name="chevron-back" size={18} />
+          </Pressable>
+
           <View style={styles.content}>
             <View style={styles.copy}>
               <Text style={styles.heading}>Create Account</Text>
@@ -110,6 +120,7 @@ export default function CreateAccountScreen() {
 
             <View style={styles.form}>
               <View style={styles.inputWrap}>
+                <InnerShadow />
                 <Ionicons color="#173F5F" name="person-outline" size={18} style={styles.inputIcon} />
                 <TextInput
                   autoCapitalize="words"
@@ -117,12 +128,13 @@ export default function CreateAccountScreen() {
                   onChangeText={setUsername}
                   placeholder="Name"
                   placeholderTextColor="#8C8C8C"
-                  style={styles.input}
+                  style={[styles.input, noFocusOutline]}
                   value={username}
                 />
               </View>
 
               <View style={styles.inputWrap}>
+                <InnerShadow />
                 <Ionicons color="#173F5F" name="mail-outline" size={18} style={styles.inputIcon} />
                 <TextInput
                   autoCapitalize="none"
@@ -131,12 +143,13 @@ export default function CreateAccountScreen() {
                   onChangeText={setEmail}
                   placeholder="Enter Email"
                   placeholderTextColor="#8C8C8C"
-                  style={styles.input}
+                  style={[styles.input, noFocusOutline]}
                   value={email}
                 />
               </View>
 
               <View style={styles.inputWrap}>
+                <InnerShadow />
                 <Ionicons color="#173F5F" name="lock-closed" size={16} style={styles.inputIcon} />
                 <TextInput
                   autoCapitalize="none"
@@ -144,7 +157,7 @@ export default function CreateAccountScreen() {
                   placeholder="Password"
                   placeholderTextColor="#8C8C8C"
                   secureTextEntry={!passwordVisible}
-                  style={[styles.input, styles.passwordInput]}
+                  style={[styles.input, styles.passwordInput, noFocusOutline]}
                   value={password}
                 />
                 <Pressable
@@ -162,7 +175,10 @@ export default function CreateAccountScreen() {
             </View>
 
             <Text style={styles.termsText}>
-              By continuing, you agree to our Terms of Service and Privacy Policy.
+              By continuing, you agree to our{' '}
+              <Text style={styles.textLink}>Terms of Service</Text>
+              {' and '}
+              <Text style={styles.textLink}>Privacy Policy</Text>.
             </Text>
 
             {!!errorMessage && <Text style={styles.errorText}>{errorMessage}</Text>}
@@ -189,14 +205,16 @@ export default function CreateAccountScreen() {
               </LinearGradient>
             </Pressable>
 
-            <Pressable
-              accessibilityRole="button"
-              onPress={() => router.push('/welcome')}
-              style={styles.loginLinkButton}>
-              <Text style={styles.loginPrompt}>
-                Already have an account? <Text style={styles.loginLink}>Login</Text>
-              </Text>
-            </Pressable>
+            <Text style={styles.loginPrompt}>
+              Already have an account?{' '}
+              <Pressable
+                accessibilityRole="button"
+                hitSlop={6}
+                onPress={() => router.push('/welcome')}
+                style={styles.loginLinkButton}>
+                <Text style={styles.loginLink}>Login</Text>
+              </Pressable>
+            </Text>
           </View>
         </View>
       </KeyboardAvoidingView>
@@ -208,6 +226,18 @@ const styles = StyleSheet.create({
   bottomArea: {
     paddingHorizontal: 12,
     width: '100%',
+  },
+  backButton: {
+    alignItems: 'center',
+    backgroundColor: 'rgba(255, 255, 255, 0.5)',
+    borderRadius: 16,
+    height: 32,
+    justifyContent: 'center',
+    left: 18,
+    position: 'absolute',
+    top: 15,
+    width: 32,
+    zIndex: 3,
   },
   content: {
     alignItems: 'center',
@@ -242,16 +272,16 @@ const styles = StyleSheet.create({
   },
   createText: {
     color: '#ffffff',
-    fontFamily: 'SF Pro',
+    fontFamily: AppFonts.sansMedium,
     fontSize: 18,
-    fontWeight: '700',
+    fontWeight: '500',
     letterSpacing: 0,
     lineHeight: 26,
     textAlign: 'center',
   },
   description: {
     color: '#173F5F',
-    fontFamily: 'SF Pro',
+    fontFamily: AppFonts.sansMedium,
     fontSize: 16,
     fontWeight: '500',
     letterSpacing: 0,
@@ -269,9 +299,9 @@ const styles = StyleSheet.create({
   },
   errorText: {
     color: '#173F5F',
-    fontFamily: 'SF Pro',
+    fontFamily: AppFonts.sansMedium,
     fontSize: 13,
-    fontWeight: '700',
+    fontWeight: '500',
     lineHeight: 18,
     marginTop: 8,
     maxWidth: 310,
@@ -285,7 +315,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     alignSelf: 'center',
     backgroundColor: '#ffffff',
-    borderRadius: 9,
+    borderRadius: 12,
     elevation: 4,
     height: 54,
     justifyContent: 'center',
@@ -308,9 +338,9 @@ const styles = StyleSheet.create({
   },
   googleText: {
     color: '#000000',
-    fontFamily: 'SF Pro',
+    fontFamily: AppFonts.sansMedium,
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: '500',
     letterSpacing: 0,
     lineHeight: 26,
     paddingHorizontal: 62,
@@ -319,7 +349,7 @@ const styles = StyleSheet.create({
   },
   heading: {
     color: '#173F5F',
-    fontFamily: 'PlayfairDisplay-SemiBold',
+    fontFamily: AppFonts.displaySemiBold,
     fontSize: 32,
     fontWeight: '600',
     letterSpacing: 0,
@@ -344,11 +374,11 @@ const styles = StyleSheet.create({
     top: 0,
   },
   input: {
-    color: '#173F5F',
+    color: '#000000',
     flex: 1,
-    fontFamily: 'SF Pro',
+    fontFamily: AppFonts.sansMedium,
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: '500',
     height: '100%',
     letterSpacing: 0,
     lineHeight: 26,
@@ -364,7 +394,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     alignSelf: 'center',
     backgroundColor: '#ffffff',
-    borderRadius: 10,
+    borderRadius: 12,
+    borderWidth: 0,
     elevation: 5,
     flexDirection: 'row',
     height: 54,
@@ -384,18 +415,21 @@ const styles = StyleSheet.create({
   },
   loginLink: {
     color: '#173F5F',
+    fontFamily: AppFonts.sansMedium,
+    fontSize: 16,
+    fontWeight: '500',
+    letterSpacing: 0,
+    lineHeight: 26,
   },
   loginLinkButton: {
-    alignSelf: 'center',
-    marginTop: 14,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
+    margin: 0,
+    padding: 0,
   },
   loginPrompt: {
     color: '#173F5F',
-    fontFamily: 'SF Pro',
+    fontFamily: AppFonts.sansMedium,
     fontSize: 16,
-    fontWeight: '700',
+    fontWeight: '500',
     letterSpacing: 0,
     lineHeight: 26,
     textAlign: 'center',
@@ -422,21 +456,25 @@ const styles = StyleSheet.create({
   },
   separatorText: {
     color: '#173F5F',
-    fontFamily: 'SF Pro',
-    fontSize: 14,
-    fontWeight: '600',
+    fontFamily: AppFonts.sansMedium,
+    fontSize: 16,
+    fontWeight: '500',
     letterSpacing: 0,
-    lineHeight: 20,
+    lineHeight: 26,
   },
   termsText: {
     color: '#173F5F',
-    fontFamily: 'SF Pro',
-    fontSize: 12,
+    fontFamily: AppFonts.sansMedium,
+    fontSize: 16,
     fontWeight: '500',
     letterSpacing: 0,
-    lineHeight: 18,
+    lineHeight: 26,
     marginTop: 12,
     maxWidth: 310,
     textAlign: 'center',
+  },
+  textLink: {
+    textDecorationLine: 'underline',
+    textDecorationStyle: 'solid',
   },
 });

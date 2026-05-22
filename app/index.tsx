@@ -4,6 +4,7 @@ import { StatusBar } from 'expo-status-bar';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { ScreenWrapper } from '@/components/ScreenWrapper';
+import { AppFonts } from '@/constants/theme';
 
 const firstPageBackground = require('@/assets/images/first-page-background-image.png');
 
@@ -87,7 +88,7 @@ const styles = StyleSheet.create({
   },
   description: {
     color: '#173F5F',
-    fontFamily: 'SF Pro',
+    fontFamily: AppFonts.sansMedium,
     fontSize: 16,
     fontWeight: '500',
     letterSpacing: 0,
@@ -112,16 +113,16 @@ const styles = StyleSheet.create({
   },
   getStartedText: {
     color: '#ffffff',
-    fontFamily: 'SF Pro',
+    fontFamily: AppFonts.sansMedium,
     fontSize: 18,
-    fontWeight: '700',
+    fontWeight: '500',
     letterSpacing: 0,
     lineHeight: 26,
     textAlign: 'center',
   },
   heading: {
     color: '#173F5F',
-    fontFamily: 'PlayfairDisplay-SemiBold',
+    fontFamily: AppFonts.displaySemiBold,
     fontSize: 32,
     fontWeight: '600',
     letterSpacing: 0,
@@ -156,9 +157,9 @@ const styles = StyleSheet.create({
   },
   loginPrompt: {
     color: '#ffffff',
-    fontFamily: 'SF Pro',
+    fontFamily: AppFonts.sansMedium,
     fontSize: 16,
-    fontWeight: '700',
+    fontWeight: '500',
     letterSpacing: 0,
     lineHeight: 26,
     textAlign: 'center',

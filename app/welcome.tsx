@@ -1,8 +1,10 @@
+import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import { StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { AuthButton } from '@/components/AuthButton';
 import { ScreenWrapper } from '@/components/ScreenWrapper';
+import { AppFonts } from '@/constants/theme';
 
 const welcomeBackground = require('@/assets/images/welcome-background.png');
 const googleIcon = require('@/assets/icons/google.png');
@@ -20,6 +22,16 @@ export default function WelcomeScreen() {
   return (
     <ScreenWrapper
       backgroundImage={welcomeBackground}
+      topContent={
+        <Pressable
+          accessibilityLabel="Go back"
+          hitSlop={12}
+          onPress={() => router.back()}
+          style={({ pressed }) => [styles.backButton, pressed && styles.pressed]}>
+          <Ionicons color="#000000" name="chevron-back" size={18} />
+        </Pressable>
+      }
+      topContentStyle={styles.topContent}
       bottomContent={
         <Text style={styles.footer}>
           By continuing, you agree to our{' '}
@@ -57,6 +69,14 @@ export default function WelcomeScreen() {
 }
 
 const styles = StyleSheet.create({
+  backButton: {
+    alignItems: 'center',
+    backgroundColor: 'rgba(255, 255, 255, 0.5)',
+    borderRadius: 16,
+    height: 32,
+    justifyContent: 'center',
+    width: 32,
+  },
   buttonGroup: {
     gap: 11,
     marginTop: 25,
@@ -69,9 +89,9 @@ const styles = StyleSheet.create({
   },
   footer: {
     color: '#ffffff',
-    fontFamily: 'SF Pro',
+    fontFamily: AppFonts.sansMedium,
     fontSize: 16,
-    fontWeight: '700',
+    fontWeight: '500',
     letterSpacing: 0,
     lineHeight: 26,
     maxWidth: 310,
@@ -84,18 +104,29 @@ const styles = StyleSheet.create({
   },
   footerLink: {
     textDecorationLine: 'underline',
+    textDecorationStyle: 'solid',
   },
   heading: {
     color: '#173F5F',
-    fontFamily: 'PlayfairDisplay-SemiBold',
+    fontFamily: AppFonts.displaySemiBold,
     fontSize: 32,
     fontWeight: '600',
     letterSpacing: 0,
     lineHeight: 42,
     textAlign: 'center',
   },
+  pressed: {
+    opacity: 0.86,
+    transform: [{ scale: 0.99 }],
+  },
   readabilityOverlay: {
     ...StyleSheet.absoluteFillObject,
     backgroundColor: 'rgba(255, 255, 255, 0.08)',
+  },
+  topContent: {
+    left: 18,
+    position: 'absolute',
+    top: 15,
+    zIndex: 3,
   },
 });

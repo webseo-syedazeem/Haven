@@ -1,14 +1,19 @@
-import { Image, type ImageSource } from 'expo-image';
-import { Pressable, StyleSheet, Text, type TextStyle, View } from 'react-native';
+import { Image } from 'expo-image';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
+
+import { AppFonts } from '@/constants/theme';
+import { DailyReflectionIcon, type DailyReflectionIconName } from './DailyReflectionIcon';
 
 type MultiSelectOptionCardProps = {
-  icon: ImageSource;
+  icon: DailyReflectionIconName;
   label: string;
   selected: boolean;
   onPress: () => void;
 };
 
 const selectedCheckIcon = require('@/assets/images/list.svg');
+const defaultIconColor = '#54555A';
+const selectedIconColor = '#7B61FF';
 
 export function MultiSelectOptionCard({ icon, label, selected, onPress }: MultiSelectOptionCardProps) {
   return (
@@ -22,7 +27,9 @@ export function MultiSelectOptionCard({ icon, label, selected, onPress }: MultiS
         pressed && styles.pressed,
       ]}>
       <View style={styles.content}>
-        <Image source={icon} style={styles.icon} contentFit="contain" />
+        <View style={styles.icon}>
+          <DailyReflectionIcon color={selected ? selectedIconColor : defaultIconColor} name={icon} />
+        </View>
         <Text numberOfLines={1} style={styles.label}>
           {label}
         </Text>
@@ -72,8 +79,8 @@ const styles = StyleSheet.create({
   },
   label: {
     flex: 1,
-    fontFamily: 'SF Pro',
-    fontWeight: '510' as TextStyle['fontWeight'],
+    fontFamily: AppFonts.sansMedium,
+    fontWeight: '500',
     fontSize: 14,
     lineHeight: 22,
     color: '#54555A',

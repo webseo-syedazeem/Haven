@@ -14,9 +14,11 @@ import {
 } from 'react-native';
 
 import { ScreenWrapper, useScreenBottomPadding } from '@/components/ScreenWrapper';
+import { AppFonts } from '@/constants/theme';
 import { signIn } from '@/lib/haven-api';
 
 const loginBackground = require('@/assets/images/login_page_background.png');
+const noFocusOutline = Platform.OS === 'web' ? ({ outlineStyle: 'none' } as any) : null;
 
 export default function LoginScreen() {
   const router = useRouter();
@@ -58,11 +60,33 @@ export default function LoginScreen() {
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         style={styles.keyboardView}>
         <View style={styles.contentWrapper}>
+          <Pressable
+            accessibilityLabel="Go back"
+            hitSlop={12}
+            onPress={() => router.back()}
+            style={({ pressed }) => [styles.backButton, pressed && styles.pressed]}>
+            <Ionicons color="#000000" name="chevron-back" size={18} />
+          </Pressable>
+
           <View style={styles.content}>
             <Text style={styles.heading}>{`Let's check in\ngently`}</Text>
 
             <View style={styles.form}>
               <View style={styles.inputWrap}>
+                <View pointerEvents="none" style={styles.innerShadow}>
+                  <LinearGradient
+                    colors={['rgba(255, 255, 255, 0.5)', 'rgba(255, 255, 255, 0)']}
+                    end={{ x: 0, y: 1 }}
+                    start={{ x: 0, y: 0 }}
+                    style={styles.innerShadowTop}
+                  />
+                  <LinearGradient
+                    colors={['rgba(255, 255, 255, 0.5)', 'rgba(255, 255, 255, 0)']}
+                    end={{ x: 1, y: 0 }}
+                    start={{ x: 0, y: 0 }}
+                    style={styles.innerShadowLeft}
+                  />
+                </View>
                 <Ionicons color="#273044" name="mail-outline" size={18} style={styles.inputIcon} />
                 <TextInput
                   autoCapitalize="none"
@@ -70,21 +94,35 @@ export default function LoginScreen() {
                   keyboardType="email-address"
                   onChangeText={setEmail}
                   placeholder="Enter Email"
-                  placeholderTextColor="#7f8490"
-                  style={styles.input}
+                  placeholderTextColor="#8C8C8C"
+                  style={[styles.input, noFocusOutline]}
                   value={email}
                 />
               </View>
 
               <View style={styles.inputWrap}>
+                <View pointerEvents="none" style={styles.innerShadow}>
+                  <LinearGradient
+                    colors={['rgba(255, 255, 255, 0.5)', 'rgba(255, 255, 255, 0)']}
+                    end={{ x: 0, y: 1 }}
+                    start={{ x: 0, y: 0 }}
+                    style={styles.innerShadowTop}
+                  />
+                  <LinearGradient
+                    colors={['rgba(255, 255, 255, 0.5)', 'rgba(255, 255, 255, 0)']}
+                    end={{ x: 1, y: 0 }}
+                    start={{ x: 0, y: 0 }}
+                    style={styles.innerShadowLeft}
+                  />
+                </View>
                 <Ionicons color="#111827" name="lock-closed" size={16} style={styles.inputIcon} />
                 <TextInput
                   autoCapitalize="none"
                   onChangeText={setPassword}
                   placeholder="Password"
-                  placeholderTextColor="#7f8490"
+                  placeholderTextColor="#8C8C8C"
                   secureTextEntry={!passwordVisible}
-                  style={[styles.input, styles.passwordInput]}
+                  style={[styles.input, styles.passwordInput, noFocusOutline]}
                   value={password}
                 />
                 <Pressable
@@ -123,7 +161,8 @@ export default function LoginScreen() {
               ]}>
               <LinearGradient
                 colors={['#5AA1E2', '#0D6FD0']}
-                end={{ x: 1, y: 1 }}
+                end={{ x: 0, y: 1 }}
+                locations={[0.0379, 0.75]}
                 start={{ x: 0, y: 0 }}
                 style={styles.loginGradient}>
                 <View pointerEvents="none" style={styles.innerShadow}>
@@ -180,6 +219,18 @@ const styles = StyleSheet.create({
     paddingHorizontal: 18,
     width: '100%',
   },
+  backButton: {
+    alignItems: 'center',
+    backgroundColor: 'rgba(255, 255, 255, 0.5)',
+    borderRadius: 16,
+    height: 32,
+    justifyContent: 'center',
+    left: 18,
+    position: 'absolute',
+    top: 15,
+    width: 32,
+    zIndex: 3,
+  },
   contentWrapper: {
     flex: 1,
     justifyContent: 'space-between',
@@ -199,9 +250,9 @@ const styles = StyleSheet.create({
   errorText: {
     alignSelf: 'center',
     color: '#ffffff',
-    fontFamily: 'SF Pro',
+    fontFamily: AppFonts.sansMedium,
     fontSize: 13,
-    fontWeight: '700',
+    fontWeight: '500',
     lineHeight: 18,
     maxWidth: 310,
     textAlign: 'center',
@@ -211,15 +262,14 @@ const styles = StyleSheet.create({
   },
   forgotButton: {
     alignSelf: 'center',
-    marginTop: 16,
     paddingHorizontal: 12,
     paddingVertical: 6,
   },
   forgotText: {
     color: '#ffffff',
-    fontFamily: 'SF Pro',
+    fontFamily: AppFonts.sansMedium,
     fontSize: 16,
-    fontWeight: '700',
+    fontWeight: '500',
     letterSpacing: 0,
     lineHeight: 26,
     textAlign: 'center',
@@ -228,12 +278,13 @@ const styles = StyleSheet.create({
     textShadowRadius: 2,
   },
   form: {
-    marginTop: 84,
+    gap: 14,
+    marginTop: 32,
     width: '100%',
   },
   heading: {
     color: '#173F5F',
-    fontFamily: 'PlayfairDisplay-SemiBold',
+    fontFamily: AppFonts.displaySemiBold,
     fontSize: 32,
     fontWeight: '600',
     letterSpacing: 0,
@@ -244,11 +295,11 @@ const styles = StyleSheet.create({
     textShadowRadius: 2,
   },
   input: {
-    color: '#1f2937',
+    color: '#000000',
     flex: 1,
-    fontFamily: 'SF Pro',
+    fontFamily: AppFonts.sansMedium,
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: '500',
     height: '100%',
     letterSpacing: 0,
     lineHeight: 26,
@@ -264,11 +315,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     alignSelf: 'center',
     backgroundColor: '#ffffff',
-    borderRadius: 10,
+    borderRadius: 12,
+    borderWidth: 0,
     elevation: 5,
     flexDirection: 'row',
     height: 54,
-    marginBottom: 19,
     maxWidth: 310,
     overflow: 'hidden',
     shadowColor: '#ffffff',
@@ -319,9 +370,9 @@ const styles = StyleSheet.create({
   },
   loginText: {
     color: '#ffffff',
-    fontFamily: 'SF Pro',
+    fontFamily: AppFonts.sansMedium,
     fontSize: 18,
-    fontWeight: '700',
+    fontWeight: '500',
     letterSpacing: 0,
     lineHeight: 26,
     textAlign: 'center',
@@ -344,11 +395,11 @@ const styles = StyleSheet.create({
   },
   signupPrompt: {
     color: '#ffffff',
-    fontFamily: 'SF Pro',
-    fontSize: 12,
-    fontWeight: '700',
+    fontFamily: AppFonts.sansMedium,
+    fontSize: 16,
+    fontWeight: '500',
     letterSpacing: 0,
-    lineHeight: 18,
+    lineHeight: 26,
     textAlign: 'center',
     textShadowColor: 'rgba(0, 0, 0, 0.34)',
     textShadowOffset: { width: 0, height: 1 },

@@ -1,5 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import {
   ActivityIndicator,
@@ -14,9 +15,11 @@ import {
 } from 'react-native';
 
 import { ScreenWrapper, useScreenBottomPadding } from '@/components/ScreenWrapper';
+import { AppFonts } from '@/constants/theme';
 import { forgotPassword } from '@/lib/haven-api';
 
 const resetPasswordBackground = require('@/assets/images/reset-password-background-image.png');
+const noFocusOutline = Platform.OS === 'web' ? ({ outlineStyle: 'none' } as any) : null;
 
 function InnerShadow() {
   return (
@@ -38,6 +41,7 @@ function InnerShadow() {
 }
 
 export default function ResetPasswordScreen() {
+  const router = useRouter();
   const bottomPadding = useScreenBottomPadding();
   const [email, setEmail] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
@@ -74,6 +78,14 @@ export default function ResetPasswordScreen() {
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         style={styles.keyboardView}>
         <View style={styles.contentWrapper}>
+          <Pressable
+            accessibilityLabel="Go back"
+            hitSlop={12}
+            onPress={() => router.back()}
+            style={({ pressed }) => [styles.backButton, pressed && styles.pressed]}>
+            <Ionicons color="#000000" name="chevron-back" size={18} />
+          </Pressable>
+
           <View style={styles.content}>
             <View style={styles.copy}>
               <Text style={styles.heading}>{`Reset your\npassword`}</Text>
@@ -92,7 +104,7 @@ export default function ResetPasswordScreen() {
                 onChangeText={setEmail}
                 placeholder="Enter Email"
                 placeholderTextColor="#8C8C8C"
-                style={styles.input}
+                style={[styles.input, noFocusOutline]}
                 value={email}
               />
             </View>
@@ -137,6 +149,18 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     width: '100%',
   },
+  backButton: {
+    alignItems: 'center',
+    backgroundColor: 'rgba(255, 255, 255, 0.5)',
+    borderRadius: 16,
+    height: 32,
+    justifyContent: 'center',
+    left: 18,
+    position: 'absolute',
+    top: 15,
+    width: 32,
+    zIndex: 3,
+  },
   content: {
     alignItems: 'center',
     flex: 1,
@@ -154,7 +178,7 @@ const styles = StyleSheet.create({
   },
   description: {
     color: '#173F5F',
-    fontFamily: 'SF Pro',
+    fontFamily: AppFonts.sansMedium,
     fontSize: 16,
     fontWeight: '500',
     letterSpacing: 0,
@@ -167,9 +191,9 @@ const styles = StyleSheet.create({
   },
   errorText: {
     color: '#173F5F',
-    fontFamily: 'SF Pro',
+    fontFamily: AppFonts.sansMedium,
     fontSize: 13,
-    fontWeight: '700',
+    fontWeight: '500',
     lineHeight: 18,
     marginTop: 14,
     maxWidth: 310,
@@ -177,7 +201,7 @@ const styles = StyleSheet.create({
   },
   heading: {
     color: '#173F5F',
-    fontFamily: 'PlayfairDisplay-SemiBold',
+    fontFamily: AppFonts.displaySemiBold,
     fontSize: 32,
     fontWeight: '600',
     letterSpacing: 0,
@@ -203,11 +227,11 @@ const styles = StyleSheet.create({
     top: 0,
   },
   input: {
-    color: '#173F5F',
+    color: '#000000',
     flex: 1,
-    fontFamily: 'SF Pro',
+    fontFamily: AppFonts.sansMedium,
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: '500',
     height: '100%',
     letterSpacing: 0,
     lineHeight: 26,
@@ -223,7 +247,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     alignSelf: 'center',
     backgroundColor: '#ffffff',
-    borderRadius: 10,
+    borderRadius: 12,
+    borderWidth: 0,
     flexDirection: 'row',
     height: 54,
     maxWidth: 310,
@@ -255,9 +280,9 @@ const styles = StyleSheet.create({
   },
   resetText: {
     color: '#ffffff',
-    fontFamily: 'SF Pro',
+    fontFamily: AppFonts.sansMedium,
     fontSize: 18,
-    fontWeight: '700',
+    fontWeight: '500',
     letterSpacing: 0,
     lineHeight: 26,
     textAlign: 'center',

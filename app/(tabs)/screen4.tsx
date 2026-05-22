@@ -161,7 +161,7 @@ const styles = StyleSheet.create({
     paddingRight: 4,
     paddingBottom: 8,
     paddingLeft: 4,
-    backgroundColor: '#FFFFFF66',
+    backgroundColor: 'rgba(255, 255, 255, 0.5)',
     opacity: 1,
   },
   backIcon: {

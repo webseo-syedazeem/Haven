@@ -1,15 +1,5 @@
-import {
-  Inter_400Regular,
-  Inter_500Medium,
-  Inter_600SemiBold,
-  Inter_700Bold,
-} from '@expo-google-fonts/inter';
-import {
-  PlayfairDisplay_600SemiBold,
-  PlayfairDisplay_700Bold,
-  useFonts,
-} from '@expo-google-fonts/playfair-display';
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
+import { useFonts } from 'expo-font';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import * as SystemUI from 'expo-system-ui';
@@ -27,27 +17,21 @@ export const unstable_settings = {
 
 export default function RootLayout() {
   const colorScheme = useColorScheme();
-    const [fontsLoaded] = useFonts({
-    PlayfairDisplay_600SemiBold,
-    PlayfairDisplay_700Bold,
-    'Playfair Display': PlayfairDisplay_700Bold,
-    'PlayfairDisplay-SemiBold': require('@/assets/fonts/PlayfairDisplay-SemiBold.ttf'),
+  const [fontsLoaded] = useFonts({
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    [AppFonts.sansRegular]: require('../assets/fonts/SFPro-400.OTF'),
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    [AppFonts.sansMedium]: require('../assets/fonts/SFPro-500.OTF'),
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    [AppFonts.sansSemiBold]: require('../assets/fonts/SFPro-500.OTF'),
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    [AppFonts.sansBold]: require('../assets/fonts/SFPro-700.OTF'),
+    [AppFonts.displaySemiBold]: require('../assets/fonts/PlayfairDisplay-SemiBold.ttf'),
   });
 
   useEffect(() => {
     SystemUI.setBackgroundColorAsync('transparent');
   }, []);
-
-  if (!fontsLoaded) {
-    return null;
-  }
-  const [fontsLoaded] = useFonts({
-    [AppFonts.sansRegular]: Inter_400Regular,
-    [AppFonts.sansMedium]: Inter_500Medium,
-    [AppFonts.sansSemiBold]: Inter_600SemiBold,
-    [AppFonts.sansBold]: Inter_700Bold,
-    [AppFonts.displaySemiBold]: PlayfairDisplay_600SemiBold,
-  });
 
   if (!fontsLoaded) {
     return null;
@@ -62,13 +46,14 @@ export default function RootLayout() {
           <Stack.Screen name="welcome" options={{ headerShown: false }} />
           <Stack.Screen name="login" options={{ headerShown: false }} />
           <Stack.Screen name="reset-password" options={{ headerShown: false }} />
+          <Stack.Screen name="change-password" options={{ headerShown: false }} />
           <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
           <Stack.Screen name="sleep-check" options={{ headerShown: false }} />
           <Stack.Screen name="day-feel" options={{ headerShown: false }} />
           <Stack.Screen name="most-helpful" options={{ headerShown: false }} />
           <Stack.Screen name="stress-step" options={{ headerShown: false }} />
-            <Stack.Screen name="daily-reflection" options={{ headerShown: false }} />
-        <Stack.Screen name="thank-you" options={{ headerShown: false }} />
+          <Stack.Screen name="daily-reflection" options={{ headerShown: false }} />
+          <Stack.Screen name="thank-you" options={{ headerShown: false }} />
           <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />
         </Stack>
         <StatusBar backgroundColor="transparent" style="light" translucent />

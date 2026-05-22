@@ -10,11 +10,19 @@ This is an [Expo](https://expo.dev) project created with [`create-expo-app`](htt
    npm install
    ```
 
-2. Start the app
+2. Start the app with the project script
 
    ```bash
-   npx expo start
+   npm start
    ```
+
+This project starts Expo in offline mode by default so daily development does
+not depend on Expo's remote dependency check. If you intentionally want the
+online check, run:
+
+```bash
+npm run start:online
+```
 
 In the output, you'll find options to open the app in a
 

@@ -1,27 +1,20 @@
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Image } from 'expo-image';
-import { useRouter } from 'expo-router';
-
 import {
   ImageBackground,
-  Pressable,
   ScrollView,
   StyleSheet,
   Text,
   View,
 } from 'react-native';
-
 import { SafeAreaView } from 'react-native-safe-area-context';
-
 import Svg, {
   Circle,
   Defs,
   LinearGradient as SvgLinearGradient,
   Stop,
 } from 'react-native-svg';
-
-import { AppFonts } from '@/constants/theme';
 
 const dailyEaseProgress = 74;
 const progressSize = 112;
@@ -38,17 +31,9 @@ const progressDotX =
   progressDotCenter + progressDotDistance * Math.cos((progressAngle * Math.PI) / 180);
 const progressDotY =
   progressDotCenter + progressDotDistance * Math.sin((progressAngle * Math.PI) / 180);
-const quoteIcon = require('@/assets/images/simple.svg');
-const starIcon = require('@/assets/images/Star 3.svg');
-const verifiedIcon = require('@/assets/images/Vector.svg');
 
-const firstPageBackgroundImage = require('@/assets/images/first-page-background-image.png');
-
-const iconAvatarImage = require('@/assets/images/icon.png');
-
-const profileAvatarImage = require('@/assets/images/Ellipse 15.png');
-
-const secondaryBackgroundImage = require('@/assets/images/bg1.png');
+const backgroundImage = require('@/assets/images/first-page-background-image.png');
+const avatarImage = require('@/assets/images/Ellipse 15.png');
 
 const todayPlans = [
   {
@@ -61,22 +46,20 @@ const todayPlans = [
   {
     icon: 'leaf-outline' as const,
     iconColor: '#34C759',
-    title: 'Morning Sunlight',
-    meta: '10 min',
+    title: 'Breathing Practice',
+    meta: '5 min',
     checked: false,
   },
   {
     icon: 'gift-outline' as const,
     iconColor: '#5E7BFF',
-    title: 'Morning Sunlight',
-    meta: '10 min',
+    title: 'Evening Reflection',
+    meta: '3 min',
     checked: false,
   },
 ];
 
 export default function HomeScreen() {
-  const router = useRouter();
-
   return (
     <ImageBackground
       source={backgroundImage}
@@ -91,7 +74,7 @@ export default function HomeScreen() {
           <View style={styles.header}>
             <View>
               <Text style={styles.greeting}>Good morning, Joi</Text>
-              <Text style={styles.subtitle}>Small stress today, stranger you{'\n'}tommorow</Text>
+              <Text style={styles.subtitle}>Small stress today, stronger you{'\n'}tomorrow</Text>
             </View>
 
             <View style={styles.avatarRing}>
@@ -101,7 +84,9 @@ export default function HomeScreen() {
 
           <View style={styles.easeCard}>
             <View style={styles.easeCopy}>
-              <Text style={styles.easeTitle}>You are Building Calm,{'\n'}and consistency. keep{'\n'}Going!</Text>
+              <Text style={styles.easeTitle}>
+                You are building calm,{'\n'}and consistency. Keep{'\n'}going!
+              </Text>
             </View>
 
             <View style={styles.easeMeter}>
@@ -172,7 +157,7 @@ export default function HomeScreen() {
           </View>
 
           <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Today's Plan</Text>
+            <Text style={styles.sectionTitle}>Today&apos;s Plan</Text>
             <Text style={styles.viewAll}>View All</Text>
           </View>
 
@@ -229,123 +214,11 @@ export default function HomeScreen() {
         </ScrollView>
       </SafeAreaView>
     </ImageBackground>
-    
-    <View style={styles.screen}>
-      <Image source={backgroundImage} style={styles.backgroundImage} contentFit="cover" />
-
-      <SafeAreaView style={styles.safeArea}>
-        <ScrollView
-          contentContainerStyle={styles.content}
-          showsVerticalScrollIndicator={false}
-          bounces={false}>
-          <View style={styles.testimonial}>
-            <View style={styles.quoteContainer}>
-              <View style={styles.quoteIcons}>
-                <Image source={quoteIcon} style={styles.quoteIcon} tintColor="#B13AB1" />
-                <Image source={quoteIcon} style={styles.quoteIcon} tintColor="#B13AB1" />
-              </View>
-              <Text style={styles.quoteText}>
-                I started with Five{'\n'}
-                minutes a day{'\n'}
-                within two weeks I{'\n'}
-                felt steadier sleep{'\n'}
-                better, and stop{'\n'}
-                Crying work{'\n'}
-                stress{'\n'}
-                into the evening
-              </Text>
-            </View>
-
-            <View style={styles.profileContainer}>
-              <Image source={avatarImage} style={styles.avatar} contentFit="cover" />
-              <View style={styles.profileTextContainer}>
-                <Text style={styles.name}>Ayesha, 34</Text>
-                <View style={styles.verifiedRow}>
-                  <Text style={styles.role}>Verified User</Text>
-                  <View style={styles.verifiedIconFrame}>
-                    <Image source={verifiedIcon} style={styles.verifiedIcon} tintColor="#3770FC" />
-                  </View>
-                </View>
-              </View>
-            </View>
-
-            <View style={styles.ratingContainer}>
-              <View style={styles.stars}>
-                {Array.from({ length: 5 }).map((_, index) => (
-                  <Image
-                    key={index}
-                    source={starIcon}
-                    style={styles.star}
-                    tintColor="#B13AB1"
-                  />
-                ))}
-              </View>
-              <Text style={styles.rating}>4.8 avg Rating</Text>
-            </View>
-          </View>
-
-          <View style={styles.actions}>
-            <View style={styles.actionsInner}>
-              <Pressable onPress={() => router.push('/screen2')}>
-                <LinearGradient
-                colors={['#6339FB', '#3770FC', '#6AAFE9']}
-                locations={[0.0247, 0.5499, 1]}
-                start={{ x: 0.02, y: 0.5 }}
-                end={{ x: 1.06, y: 0.5 }}
-                style={styles.continueButton}>
-                  <Text style={styles.continueText}>Continue</Text>
-                </LinearGradient>
-              </Pressable>
-              <Pressable style={styles.backButton}>
-                <Text style={styles.backText}>Back</Text>
-              </Pressable>
-            </View>
-          </View>
-        </ScrollView>
-      </SafeAreaView>
-    </View>
   );
 }
 
 const styles = StyleSheet.create({
   screen: {
-    flex: 1,
-    overflow: 'hidden',
-    backgroundColor: '#7d82c8',
-  },
-  backgroundImage: {
-    position: 'absolute',
-    top: 0,
-    right: 0,
-    bottom: 0,
-    left: 0,
-  },
-  safeArea: {
-    flex: 1,
-  },
-  content: {
-    minHeight: 940,
-    alignItems: 'center',
-    paddingHorizontal: 24,
-    paddingTop: 30,
-    paddingBottom: 17,
-  },
-  testimonial: {
-    alignItems: 'center',
-  },
-  quoteContainer: {
-    width: 205,
-    minHeight: 320.78631591796875,
-    marginTop: 50,
-    alignItems: 'center',
-    gap: 24,
-    opacity: 1,
-  },
-  quoteIcons: {
-    width: 205,
-    height: 24,
-    flexDirection: 'row',
-    screen: {
     flex: 1,
     backgroundColor: '#F4EAF8',
   },
@@ -398,15 +271,15 @@ const styles = StyleSheet.create({
     width: 32,
   },
   easeCard: {
-    minHeight: 185,
-    borderRadius: 10,
     backgroundColor: 'rgba(255,255,255,0.76)',
+    borderRadius: 10,
     flexDirection: 'row',
     justifyContent: 'space-between',
+    minHeight: 185,
     overflow: 'hidden',
+    paddingBottom: 18,
     paddingHorizontal: 18,
     paddingTop: 20,
-    paddingBottom: 18,
     width: '100%',
   },
   easeCopy: {
@@ -432,9 +305,9 @@ const styles = StyleSheet.create({
     marginBottom: 6,
   },
   progressWrap: {
-    height: 112,
+    height: progressSize,
     position: 'relative',
-    width: 112,
+    width: progressSize,
   },
   progressCenter: {
     alignItems: 'center',
@@ -456,26 +329,53 @@ const styles = StyleSheet.create({
   progressDot: {
     backgroundColor: '#FFFFFF',
     borderColor: '#FFFFFF',
-    borderRadius: 8,
+    borderRadius: progressDotRadius,
     borderWidth: 2,
-    height: 16,
+    elevation: 4,
+    height: progressDotRadius * 2,
     position: 'absolute',
     shadowColor: '#173F5F',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.18,
     shadowRadius: 4,
-    width: 16,
-    elevation: 4,
+    width: progressDotRadius * 2,
   },
   nextCard: {
     alignItems: 'center',
     backgroundColor: 'rgba(255,255,255,0.94)',
     borderRadius: 12,
-    alignItems: 'center',
-    gap: 8,
-    opacity: 1,
+    flexDirection: 'row',
+    marginTop: 13,
+    minHeight: 78,
+    paddingHorizontal: 14,
   },
-     borderRadius: 24,
+  nextIconWrap: {
+    alignItems: 'center',
+    backgroundColor: '#F0EBFF',
+    borderRadius: 20,
+    height: 40,
+    justifyContent: 'center',
+    marginRight: 12,
+    width: 40,
+  },
+  nextCopy: {
+    flex: 1,
+  },
+  nextTitle: {
+    color: '#173F5F',
+    fontSize: 13,
+    fontWeight: '800',
+    lineHeight: 17,
+  },
+  nextSubtitle: {
+    color: '#7C8592',
+    fontSize: 10,
+    lineHeight: 14,
+    marginTop: 2,
+  },
+  startButton: {
+    alignItems: 'center',
+    borderRadius: 24,
     height: 48,
     justifyContent: 'center',
     width: 96,
@@ -489,57 +389,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginTop: 12,
     marginBottom: 8,
+    marginTop: 12,
   },
-  avatar: {
-    width: 80,
-    height: 80,
-    backgroundColor: '#D9D9D9',
-    borderRadius: 40,
-    borderWidth: 3,
-    borderColor: '#FFFFFF',
-    opacity: 1,
-  },
-  profileTextContainer: {
-    width: 106,
-    height: 50,
-    alignItems: 'center',
-    gap: 4,
-    opacity: 1,
-  },
-  name: {
-    width: 106,
-    height: 24,
-    color: '#173F5F',
-    fontFamily: AppFonts.sansSemiBold,
-    fontSize: 16,
-    lineHeight: 24,
-    letterSpacing: 0,
-    textAlign: 'center',
-    opacity: 1,
-  },
-  role: {
-    width: 79,
-    height: 22,
-    color: '#173F5F',
-    fontFamily: AppFonts.sansBold,
-    fontSize: 12,
-    lineHeight: 22,
-    letterSpacing: 0,
-    textAlign: 'center',
-    opacity: 1,
-  },
-  verifiedRow: {
-    width: 112,
-    height: 22,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    opacity: 1,
-  },
-   sectionTitle: {
+  sectionTitle: {
     color: '#173F5F',
     fontFamily: 'PlayfairDisplay-SemiBold',
     fontSize: 14,
@@ -692,105 +545,5 @@ const styles = StyleSheet.create({
     color: '#7863DC',
     fontSize: 11,
     fontWeight: '700',
-  verifiedIconFrame: {
-    width: 18,
-    height: 18,
-    position: 'relative',
-    opacity: 1,
-  },
-  verifiedIcon: {
-    position: 'absolute',
-    top: 1.16,
-    left: 0.75,
-    width: 16.5,
-    height: 15.6975,
-    opacity: 1,
-  },
-  ratingContainer: {
-    width: 180,
-    height: 66,
-    alignItems: 'center',
-    gap: 10,
-    marginTop: 18,
-    opacity: 1,
-  },
-  stars: {
-    width: 180,
-    height: 32,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 5,
-    opacity: 1,
-  },
-  star: {
-    width: 32,
-    height: 32,
-    opacity: 1,
-  },
-  rating: {
-    width: 180,
-    height: 24,
-    color: '#173F5F',
-    fontFamily: AppFonts.sansSemiBold,
-    fontSize: 16,
-    lineHeight: 24,
-    letterSpacing: 0,
-    textAlign: 'center',
-    opacity: 1,
-  },
-  actions: {
-    width: 345,
-    height: 102,
-    marginTop: 71.21368408203125,
-    gap: 340,
-    opacity: 1,
-  },
-  actionsInner: {
-    width: 345,
-    height: 102,
-    alignItems: 'center',
-    gap: 16,
-    opacity: 1,
-  },
-  continueButton: {
-    width: 345,
-    height: 60,
-    alignItems: 'center',
-    justifyContent: 'center',
-    overflow: 'hidden',
-    borderRadius: 50,
-    paddingTop: 16,
-    paddingRight: 24,
-    paddingBottom: 16,
-    paddingLeft: 24,
-    gap: 10,
-    opacity: 1,
-    boxShadow: 'inset 4px 4px 16px 0px #FFFFFF80',
-  },
-  continueText: {
-    color: '#FFFFFF',
-    fontFamily: AppFonts.sansBold,
-    fontSize: 18,
-    lineHeight: 26,
-    letterSpacing: 0,
-    textAlign: 'center',
-  },
-  backButton: {
-    width: 345,
-    height: 26,
-    justifyContent: 'center',
-    opacity: 1,
-  },
-  backText: {
-    width: 345,
-    height: 26,
-    color: '#FFFFFF',
-    fontFamily: AppFonts.sansBold,
-    fontSize: 16,
-    lineHeight: 26,
-    letterSpacing: 0,
-    textAlign: 'center',
-    opacity: 1,
   },
 });

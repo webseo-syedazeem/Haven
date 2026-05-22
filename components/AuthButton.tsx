@@ -9,6 +9,8 @@ import {
   type ViewStyle,
 } from 'react-native';
 
+import { AppFonts } from '@/constants/theme';
+
 type AuthButtonProps = {
   iconSource: ImageSourcePropType;
   label: string;
@@ -28,6 +30,7 @@ export function AuthButton({ iconSource, label, onPress, style }: AuthButtonProp
       <Text adjustsFontSizeToFit numberOfLines={1} style={styles.label}>
         {label}
       </Text>
+      <View pointerEvents="none" style={styles.innerShadow} />
     </Pressable>
   );
 }
@@ -47,6 +50,7 @@ const styles = StyleSheet.create({
     paddingRight: 24,
     paddingTop: 16,
     position: 'relative',
+    overflow: 'hidden',
     shadowColor: '#ffffff',
     shadowOffset: {
       width: 4,
@@ -67,10 +71,16 @@ const styles = StyleSheet.create({
     height: 20,
     width: 20,
   },
+  innerShadow: {
+    ...StyleSheet.absoluteFillObject,
+    borderRadius: 9,
+    boxShadow: 'inset 4px 4px 16px rgba(255, 255, 255, 0.5)',
+  },
   label: {
     color: '#000000',
+    fontFamily: AppFonts.sansMedium,
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: '500',
     lineHeight: 26,
     letterSpacing: 0,
     paddingHorizontal: 34,

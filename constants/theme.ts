@@ -7,11 +7,11 @@ const tintColorLight = '#0a7ea4';
 const tintColorDark = '#fff';
 
 export const AppFonts = {
-  sansRegular: 'Inter_400Regular',
-  sansMedium: 'Inter_500Medium',
-  sansSemiBold: 'Inter_600SemiBold',
-  sansBold: 'Inter_700Bold',
-  displaySemiBold: 'PlayfairDisplay_600SemiBold',
+  sansRegular: 'SFPro-400',
+  sansMedium: 'SFPro-500',
+  sansSemiBold: 'SFPro-500',
+  sansBold: 'SFPro-700',
+  displaySemiBold: 'PlayfairDisplay-SemiBold',
 };
 
 export const Colors = {

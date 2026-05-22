@@ -8,41 +8,35 @@ import {
   StyleSheet,
   Text,
   TextInput,
-  type TextStyle,
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { MultiSelectOptionCard } from '@/components/onboarding/MultiSelectOptionCard';
+import { AppFonts } from '@/constants/theme';
 import { OnboardingContinueButton } from '../components/onboarding/OnboardingContinueButton';
 
-const SF_PRO_FONT = Platform.select({
-  ios: 'SF Pro',
-  web: "system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
-  default: 'sans-serif',
-});
-
 const stressOptions = [
-  { id: 'work-study', label: 'Work/study', icon: require('@/assets/images/work.svg') },
-  { id: 'overthinking', label: 'Overthinking', icon: require('@/assets/images/overthinking.svg') },
-  { id: 'poor-sleep', label: 'Poor sleep', icon: require('@/assets/images/poor_sleep.svg') },
-  { id: 'social-stress', label: 'Social stress', icon: require('@/assets/images/social_stress.svg') },
-  { id: 'finances', label: 'Finances', icon: require('@/assets/images/dashicons_money-alt.svg') },
-  { id: 'health', label: 'Health', icon: require('@/assets/images/boxicons_brain.svg') },
-];
+  { id: 'work-study', label: 'Work/study', icon: 'work-study' },
+  { id: 'overthinking', label: 'Overthinking', icon: 'overthinking' },
+  { id: 'poor-sleep', label: 'Poor sleep', icon: 'poor-sleep' },
+  { id: 'social-stress', label: 'Social stress', icon: 'social-stress' },
+  { id: 'finances', label: 'Finances', icon: 'finances' },
+  { id: 'health', label: 'Health', icon: 'health' },
+] as const;
 
 const helpedOptions = [
-  { id: 'breathwork', label: 'Breathwork', icon: require('@/assets/images/ph_flower-lotus-light.svg') },
-  { id: 'movement', label: 'Movement', icon: require('@/assets/images/hugeicons_running-shoes.svg') },
+  { id: 'breathwork', label: 'Breathwork', icon: 'breathwork' },
+  { id: 'movement', label: 'Movement', icon: 'movement' },
   {
     id: 'soundscape',
     label: 'Soundscape',
-    icon: require('@/assets/images/ph_flower-lotus-light.svg'),
+    icon: 'breathwork',
   },
-  { id: 'meditation', label: 'Meditation', icon: require('@/assets/images/solar_meditation-linear.svg') },
-  { id: 'journaling', label: 'Journaling', icon: require('@/assets/images/icon-park-outline_journey.svg') },
-  { id: 'rest', label: 'Rest', icon: require('@/assets/images/boxicons_brain.svg') },
-];
+  { id: 'meditation', label: 'Meditation', icon: 'meditation' },
+  { id: 'journaling', label: 'Journaling', icon: 'journaling' },
+  { id: 'rest', label: 'Rest', icon: 'health' },
+] as const;
 
 function toggleOption(selectedValues: string[], optionId: string) {
   if (selectedValues.includes(optionId)) {
@@ -172,7 +166,7 @@ const styles = StyleSheet.create({
     flex: 1,
     width: '100%',
     overflow: 'hidden',
-    backgroundColor: '#F3F3F7',
+    backgroundColor: '#F4F5F9',
   },
   safeArea: {
     flex: 1,
@@ -194,8 +188,8 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   stepText: {
-    fontFamily: SF_PRO_FONT,
-    fontWeight: '590' as TextStyle['fontWeight'],
+    fontFamily: AppFonts.sansMedium,
+    fontWeight: '500',
     fontSize: 16,
     lineHeight: 26,
     textAlign: 'center',
@@ -203,8 +197,8 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   heading: {
-    fontFamily: 'PlayfairDisplay_700Bold',
-    fontWeight: '700',
+    fontFamily: AppFonts.displaySemiBold,
+    fontWeight: '600',
     fontSize: 32,
     lineHeight: 34,
     letterSpacing: 0,
@@ -213,8 +207,8 @@ const styles = StyleSheet.create({
     marginBottom: 7,
   },
   subtitle: {
-    fontFamily: SF_PRO_FONT,
-    fontWeight: '590' as TextStyle['fontWeight'],
+    fontFamily: AppFonts.sansMedium,
+    fontWeight: '500',
     fontSize: 16,
     lineHeight: 26,
     textAlign: 'center',
@@ -225,8 +219,8 @@ const styles = StyleSheet.create({
     marginBottom: 22,
   },
   sectionTitle: {
-    fontFamily: SF_PRO_FONT,
-    fontWeight: '590' as TextStyle['fontWeight'],
+    fontFamily: AppFonts.sansMedium,
+    fontWeight: '500',
     fontSize: 16,
     lineHeight: 26,
     letterSpacing: 0,
@@ -252,8 +246,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingTop: 12,
     paddingBottom: 12,
-    fontFamily: SF_PRO_FONT,
-    fontWeight: '510' as TextStyle['fontWeight'],
+    fontFamily: AppFonts.sansMedium,
+    fontWeight: '500',
     fontSize: 14,
     lineHeight: 22,
     color: '#54555A',
@@ -261,6 +255,7 @@ const styles = StyleSheet.create({
   validationText: {
     color: '#7B61FF',
     fontSize: 12,
+    fontFamily: AppFonts.sansMedium,
     fontWeight: '500',
     lineHeight: 18,
     textAlign: 'center',
@@ -273,6 +268,7 @@ const styles = StyleSheet.create({
   },
   backText: {
     color: '#7B61FF',
+    fontFamily: AppFonts.sansBold,
     fontSize: 16,
     fontWeight: '700',
     lineHeight: 24,

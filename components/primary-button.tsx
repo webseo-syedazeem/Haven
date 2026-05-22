@@ -1,6 +1,6 @@
 import { Pressable, StyleSheet, Text, type PressableProps, type StyleProp, type ViewStyle } from 'react-native';
 
-import { AppColors, AppRadius, AppShadow, AppSpacing, AppTypography } from '@/constants/design';
+import { AppColors, AppShadow, AppSpacing } from '@/constants/design';
 
 type PrimaryButtonProps = PressableProps & {
   label: string;

@@ -1,6 +1,4 @@
-const API_BASE_URL = 'https://haven-back-pied.vercel.app';
-
-type ApiBody = Record<string, unknown>;
+const API_BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL ?? 'https://haven-back-one.vercel.app';
 
 export type AuthUser = {
   id?: string;
@@ -47,14 +45,21 @@ async function parseResponse(response: Response) {
 }
 
 async function apiRequest<T>(path: string, options: RequestInit = {}) {
-  const response = await fetch(`${API_BASE_URL}${path}`, {
-    ...options,
-    headers: {
-      'Content-Type': 'application/json',
-      ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
-      ...options.headers,
-    },
-  });
+  let response: Response;
+
+  try {
+    response = await fetch(`${API_BASE_URL}${path}`, {
+      ...options,
+      headers: {
+        'Content-Type': 'application/json',
+        ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
+        ...options.headers,
+      },
+    });
+  } catch {
+    throw new Error('Unable to reach the API server. Please check the backend URL or deployment.');
+  }
+
   const data = await parseResponse(response);
 
   if (!response.ok) {
