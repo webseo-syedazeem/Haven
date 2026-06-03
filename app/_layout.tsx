@@ -26,7 +26,9 @@ export default function RootLayout() {
     [AppFonts.sansSemiBold]: require('../assets/fonts/SFPro-500.OTF'),
     // eslint-disable-next-line @typescript-eslint/no-require-imports
     [AppFonts.sansBold]: require('../assets/fonts/SFPro-700.OTF'),
+    [AppFonts.displayMedium]: require('../assets/fonts/PlayfairDisplay-500.ttf'),
     [AppFonts.displaySemiBold]: require('../assets/fonts/PlayfairDisplay-SemiBold.ttf'),
+    [AppFonts.displayBold]: require('../assets/fonts/PlayfairDisplay-700.ttf'),
   });
 
   useEffect(() => {
@@ -48,6 +50,8 @@ export default function RootLayout() {
           <Stack.Screen name="reset-password" options={{ headerShown: false }} />
           <Stack.Screen name="change-password" options={{ headerShown: false }} />
           <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+          <Stack.Screen name="feeling-lately" options={{ headerShown: false }} />
+          <Stack.Screen name="feels-realistic" options={{ headerShown: false }} />
           <Stack.Screen name="sleep-check" options={{ headerShown: false }} />
           <Stack.Screen name="day-feel" options={{ headerShown: false }} />
           <Stack.Screen name="most-helpful" options={{ headerShown: false }} />

@@ -251,7 +251,6 @@ const styles = StyleSheet.create({
     borderWidth: 0,
     flexDirection: 'row',
     height: 54,
-    maxWidth: 310,
     overflow: 'hidden',
     width: '100%',
   },

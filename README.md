@@ -17,8 +17,9 @@ This is an [Expo](https://expo.dev) project created with [`create-expo-app`](htt
    ```
 
 This project starts Expo in offline mode by default so daily development does
-not depend on Expo's remote dependency check. If you intentionally want the
-online check, run:
+not depend on Expo's remote dependency check. It also uses port `8082` to avoid
+local Metro port conflicts. Use `npm start` instead of plain `npx expo start`.
+If you intentionally want the online check, run:
 
 ```bash
 npm run start:online

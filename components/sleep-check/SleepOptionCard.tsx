@@ -1,10 +1,11 @@
 import { Image, type ImageSource } from 'expo-image';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, type StyleProp, type TextStyle, View } from 'react-native';
 
 type SleepOptionCardProps = {
   compact?: boolean;
   icon: ImageSource;
   label: string;
+  labelStyle?: StyleProp<TextStyle>;
   selected: boolean;
   onPress: () => void;
   softInsetShadow?: boolean;
@@ -16,6 +17,7 @@ export function SleepOptionCard({
   compact = false,
   icon,
   label,
+  labelStyle,
   selected,
   onPress,
   softInsetShadow = false,
@@ -33,7 +35,7 @@ export function SleepOptionCard({
       ]}>
       <View style={styles.content}>
         <Image source={icon} style={styles.icon} contentFit="contain" />
-        <Text style={styles.label}>{label}</Text>
+        <Text style={[styles.label, labelStyle]}>{label}</Text>
       </View>
 
       <View style={styles.selector}>

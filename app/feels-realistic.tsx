@@ -22,18 +22,14 @@ const supportOptions = [
   { label: 'Breathwork', icon: heartIcon, iconWidth: 20, iconHeight: 18.35, iconTop: 3, iconLeft: 2 },
   { label: 'Soundscapes', icon: moonIcon, iconWidth: 20, iconHeight: 18.35, iconTop: 3, iconLeft: 2 },
   { label: 'Movements', icon: focusIcon, iconWidth: 20, iconHeight: 20, iconTop: 2, iconLeft: 2 },
-  { label: 'Check-ins', icon: leafIcon, iconWidth: 17.172945022583008, iconHeight: 19.00011444091797, iconTop: 3, iconLeft: 2.9 },
-  { label: 'Reflection', icon: roundIcon, iconWidth: 24, iconHeight: 20.756000518798828, iconTop: 1.62, iconLeft: 0 },
+  { label: 'Check-ins', icon: leafIcon, iconWidth: 20, iconHeight: 20, iconTop: 2, iconLeft: 2 },
+  { label: 'Reflection', icon: roundIcon, iconWidth: 20, iconHeight: 20, iconTop: 2, iconLeft: 2 },
 ] as const;
 
 export default function TimeScreen() {
   const router = useRouter();
   const [selectedTime, setSelectedTime] = useState('3 min');
-  const [selectedSupport, setSelectedSupport] = useState<string[]>([
-    'Breathwork',
-    'Soundscapes',
-    'Movements',
-  ]);
+  const [selectedSupport, setSelectedSupport] = useState<string[]>([]);
 
   return (
     <View style={styles.screen}>
@@ -46,7 +42,7 @@ export default function TimeScreen() {
           bounces={false}>
           <View style={styles.header}>
             <Text style={styles.title}>How much time feels realistic for you?</Text>
-            <Text style={styles.subtitle}>Choose what fits best</Text>
+            <Text style={styles.subtitle}>Choose what fit best</Text>
           </View>
 
           <View style={styles.timeButtons}>
@@ -133,13 +129,29 @@ export default function TimeScreen() {
 
           <View style={styles.actions}>
             <View style={styles.actionsInner}>
-              <Pressable onPress={() => router.push('/screen3')}>
+              <Pressable
+                onPress={() => router.push('/screen3')}
+                style={({ pressed }) => [styles.continueButton, pressed && styles.pressed]}>
                 <LinearGradient
-                  colors={['#6339FB', '#3770FC', '#6AAFE9']}
-                  locations={[0.0247, 0.5499, 1]}
-                  start={{ x: 0.02, y: 0.5 }}
-                  end={{ x: 1.06, y: 0.5 }}
-                  style={styles.continueButton}>
+                  colors={['#5AA1E2', '#0D6FD0']}
+                  end={{ x: 0, y: 1 }}
+                  locations={[0.0379, 0.75]}
+                  start={{ x: 0, y: 0 }}
+                  style={styles.continueGradient}>
+                  <View pointerEvents="none" style={styles.innerShadow}>
+                    <LinearGradient
+                      colors={['rgba(255, 255, 255, 0.5)', 'rgba(255, 255, 255, 0)']}
+                      end={{ x: 0, y: 1 }}
+                      start={{ x: 0, y: 0 }}
+                      style={styles.innerShadowTop}
+                    />
+                    <LinearGradient
+                      colors={['rgba(255, 255, 255, 0.5)', 'rgba(255, 255, 255, 0)']}
+                      end={{ x: 1, y: 0 }}
+                      start={{ x: 0, y: 0 }}
+                      style={styles.innerShadowLeft}
+                    />
+                  </View>
                   <Text style={styles.continueText}>Continue</Text>
                 </LinearGradient>
               </Pressable>
@@ -173,10 +185,11 @@ const styles = StyleSheet.create({
   content: {
     alignItems: 'center',
     paddingBottom: 28,
+    paddingHorizontal: 20,
+    paddingTop: 60,
   },
   header: {
     width: 330,
-    marginTop: 38,
     alignItems: 'center',
     gap: 8,
     opacity: 1,
@@ -185,8 +198,9 @@ const styles = StyleSheet.create({
     width: 330,
     color: '#173F5F',
     fontFamily: AppFonts.displaySemiBold,
-    fontSize: 29,
-    lineHeight: 36,
+    fontSize: 32,
+    fontWeight: '600',
+    lineHeight: 42,
     letterSpacing: 0,
     textAlign: 'center',
     opacity: 1,
@@ -196,6 +210,7 @@ const styles = StyleSheet.create({
     color: '#173F5F',
     fontFamily: AppFonts.sansMedium,
     fontSize: 16,
+    fontWeight: '500',
     lineHeight: 26,
     letterSpacing: 0,
     textAlign: 'center',
@@ -224,9 +239,10 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
   },
   timeText: {
-    color: '#173F5F',
-    fontFamily: AppFonts.sansSemiBold,
+    color: '#000000',
+    fontFamily: AppFonts.sansMedium,
     fontSize: 14,
+    fontWeight: '500',
     lineHeight: 24,
     letterSpacing: 0,
     textAlign: 'center',
@@ -247,6 +263,7 @@ const styles = StyleSheet.create({
     color: '#173F5F',
     fontFamily: AppFonts.sansBold,
     fontSize: 18,
+    fontWeight: '700',
     lineHeight: 30,
     letterSpacing: 0,
     textAlign: 'center',
@@ -257,6 +274,7 @@ const styles = StyleSheet.create({
     color: '#173F5F',
     fontFamily: AppFonts.sansMedium,
     fontSize: 16,
+    fontWeight: '500',
     lineHeight: 26,
     letterSpacing: 0,
     textAlign: 'center',
@@ -293,10 +311,12 @@ const styles = StyleSheet.create({
   optionText: {
     flex: 1,
     color: '#000000',
-    fontFamily: AppFonts.sansSemiBold,
+    fontFamily: AppFonts.sansMedium,
     fontSize: 14,
+    fontWeight: '500',
     lineHeight: 24,
     letterSpacing: 0,
+    textAlign: 'left',
     opacity: 1,
   },
   checkIconFrame: {
@@ -344,10 +364,10 @@ const styles = StyleSheet.create({
   },
   noteIcon: {
     position: 'absolute',
-    top: 5.33,
-    left: 5.33,
-    width: 22.66666603088379,
-    height: 21.33333396911621,
+    top: 4.5,
+    left: 4.5,
+    width: 23,
+    height: 23,
     opacity: 1,
   },
   noteText: {
@@ -356,6 +376,7 @@ const styles = StyleSheet.create({
     color: '#173F5F',
     fontFamily: AppFonts.sansRegular,
     fontSize: 12,
+    fontWeight: '400',
     lineHeight: 22,
     letterSpacing: 0,
   },
@@ -373,27 +394,51 @@ const styles = StyleSheet.create({
     opacity: 1,
   },
   continueButton: {
-    width: 345,
-    height: 60,
     alignItems: 'center',
-    justifyContent: 'center',
+    alignSelf: 'center',
+    backgroundColor: '#0d6fd0',
+    borderRadius: 27,
+    elevation: 0,
+    height: 54,
+    maxWidth: 348,
     overflow: 'hidden',
-    borderRadius: 50,
-    paddingTop: 16,
-    paddingRight: 24,
-    paddingBottom: 16,
-    paddingLeft: 24,
-    gap: 10,
-    opacity: 1,
-    boxShadow: 'inset 4px 4px 16px 0px #FFFFFF80',
+    width: '100%',
+  },
+  continueGradient: {
+    alignItems: 'center',
+    height: '100%',
+    justifyContent: 'center',
+    width: '100%',
   },
   continueText: {
     color: '#FFFFFF',
-    fontFamily: AppFonts.sansBold,
+    fontFamily: AppFonts.sansMedium,
     fontSize: 18,
+    fontWeight: '500',
     lineHeight: 26,
     letterSpacing: 0,
     textAlign: 'center',
+  },
+  innerShadow: {
+    ...StyleSheet.absoluteFillObject,
+  },
+  innerShadowLeft: {
+    bottom: 0,
+    left: 0,
+    position: 'absolute',
+    top: 4,
+    width: 16,
+  },
+  innerShadowTop: {
+    height: 16,
+    left: 4,
+    position: 'absolute',
+    right: 0,
+    top: 0,
+  },
+  pressed: {
+    opacity: 0.86,
+    transform: [{ scale: 0.99 }],
   },
   backButton: {
     width: 345,

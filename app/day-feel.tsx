@@ -1,4 +1,4 @@
-import { DayFeelScreen } from '@/screens/DayFeelScreen';
+import { DayFeelScreen } from '@/app/_screens/DayFeelScreen';
 
 export default function DayFeelRoute() {
   return <DayFeelScreen />;

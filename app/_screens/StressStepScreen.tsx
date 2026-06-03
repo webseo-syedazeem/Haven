@@ -4,29 +4,21 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   Animated,
-  ImageBackground,
   PanResponder,
-  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
   Text,
-  type TextStyle,
   View,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { OnboardingContinueButton } from '../components/onboarding/OnboardingContinueButton';
+import { ScreenWrapper, useScreenBottomPadding } from '@/components/ScreenWrapper';
+import { AppFonts } from '@/constants/theme';
 
 const HEART_ICON = require('@/assets/images/step_heart.svg');
 const LOTUS_ICON = require('@/assets/images/flower-lotus.svg');
 const SLIDER_THUMB_SIZE = 26;
-const VALUE_BUBBLE_SIZE = 51;
-const SF_PRO_FONT = Platform.select({
-  ios: 'SF Pro',
-  web: "system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
-  default: 'sans-serif',
-});
+const VALUE_BUBBLE_SIZE = 35;
 
 type StressSliderProps = {
   value: number;
@@ -182,6 +174,7 @@ export function StressStepScreen() {
   const [stressValue, setStressValue] = useState<number | null>(7);
   const [hasSelectedStressValue, setHasSelectedStressValue] = useState(false);
   const [validationMessage, setValidationMessage] = useState('');
+  const bottomPadding = useScreenBottomPadding();
 
   const handleContinuePress = () => {
     if (!hasSelectedStressValue || stressValue === null || stressValue === undefined) {
@@ -206,15 +199,15 @@ export function StressStepScreen() {
 
   return (
     <View style={styles.screen}>
-      <ImageBackground
-        source={require('@/assets/images/step_background.png')}
-        resizeMode="cover"
-        style={styles.background}>
-        <SafeAreaView style={styles.safeArea} edges={['top', 'right', 'bottom', 'left']}>
+      <ScreenWrapper
+        backgroundImage={require('@/assets/images/step_background.png')}
+        bottomReserve={0}
+        middleContent={
           <ScrollView
             bounces={false}
-            contentContainerStyle={styles.scrollContent}
-            showsVerticalScrollIndicator={false}>
+            contentContainerStyle={[styles.scrollContent, { paddingBottom: bottomPadding }]}
+            showsVerticalScrollIndicator={false}
+            style={styles.scrollView}>
             <View style={styles.header}>
               <Image source={HEART_ICON} style={styles.heartIcon} contentFit="contain" />
               <Text style={styles.stepText}>Step 1 of 3</Text>
@@ -237,7 +230,33 @@ export function StressStepScreen() {
 
             <View style={styles.spacer} />
 
-            <OnboardingContinueButton onPress={handleContinuePress} />
+            <Pressable
+              accessibilityRole="button"
+              onPress={handleContinuePress}
+              style={({ pressed }) => [styles.continueButton, pressed && styles.pressed]}>
+              <LinearGradient
+                colors={['#5AA1E2', '#0D6FD0']}
+                end={{ x: 0, y: 1 }}
+                locations={[0.0379, 0.75]}
+                start={{ x: 0, y: 0 }}
+                style={styles.continueGradient}>
+                <View pointerEvents="none" style={styles.innerShadow}>
+                  <LinearGradient
+                    colors={['rgba(255, 255, 255, 0.5)', 'rgba(255, 255, 255, 0)']}
+                    end={{ x: 0, y: 1 }}
+                    start={{ x: 0, y: 0 }}
+                    style={styles.innerShadowTop}
+                  />
+                  <LinearGradient
+                    colors={['rgba(255, 255, 255, 0.5)', 'rgba(255, 255, 255, 0)']}
+                    end={{ x: 1, y: 0 }}
+                    start={{ x: 0, y: 0 }}
+                    style={styles.innerShadowLeft}
+                  />
+                </View>
+                <Text style={styles.continueText}>Continue</Text>
+              </LinearGradient>
+            </Pressable>
 
             {validationMessage ? <Text style={styles.validationText}>{validationMessage}</Text> : null}
 
@@ -250,8 +269,9 @@ export function StressStepScreen() {
               <Text style={styles.backText}>Back</Text>
             </Pressable>
           </ScrollView>
-        </SafeAreaView>
-      </ImageBackground>
+        }
+        middleContentStyle={styles.middleContent}
+      />
     </View>
   );
 }
@@ -263,21 +283,17 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     backgroundColor: '#7667C7',
   },
-  background: {
-    flex: 1,
-    width: '100%',
-  },
-  safeArea: {
-    flex: 1,
-    width: '100%',
+  middleContent: {
+    paddingHorizontal: 20,
   },
   scrollContent: {
     flexGrow: 1,
-    width: '100%',
     justifyContent: 'flex-end',
-    paddingHorizontal: 20,
-    paddingBottom: 22,
     paddingTop: 82,
+    width: '100%',
+  },
+  scrollView: {
+    width: '100%',
   },
   header: {
     alignItems: 'center',
@@ -289,8 +305,8 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   stepText: {
-    fontFamily: SF_PRO_FONT,
-    fontWeight: '590' as TextStyle['fontWeight'],
+    fontFamily: AppFonts.sansMedium,
+    fontWeight: '500',
     fontSize: 16,
     lineHeight: 26,
     textAlign: 'center',
@@ -298,7 +314,8 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   heading: {
-    fontFamily: 'Playfair Display',
+    fontFamily: AppFonts.displaySemiBold,
+    fontWeight: '600',
     fontSize: 32,
     lineHeight: 42,
     textAlign: 'center',
@@ -306,8 +323,8 @@ const styles = StyleSheet.create({
     marginBottom: 3,
   },
   subtitle: {
-    fontFamily: SF_PRO_FONT,
-    fontWeight: '510' as TextStyle['fontWeight'],
+    fontFamily: AppFonts.sansMedium,
+    fontWeight: '500',
     fontSize: 16,
     lineHeight: 26,
     textAlign: 'center',
@@ -340,10 +357,10 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   valueText: {
-    fontFamily: SF_PRO_FONT,
-    fontWeight: '700',
-    fontSize: 24,
-    lineHeight: 22,
+    fontFamily: AppFonts.sansMedium,
+    fontWeight: '500',
+    fontSize: 18,
+    lineHeight: 18,
     color: '#173F5F',
   },
   sliderThumb: {
@@ -376,15 +393,15 @@ const styles = StyleSheet.create({
     alignItems: 'flex-end',
   },
   scaleNumber: {
-    fontFamily: SF_PRO_FONT,
-    fontWeight: '700',
+    fontFamily: AppFonts.sansMedium,
+    fontWeight: '500',
     fontSize: 12,
     lineHeight: 22,
     color: '#FFFFFF',
   },
   scaleLabel: {
-    fontFamily: SF_PRO_FONT,
-    fontWeight: '700',
+    fontFamily: AppFonts.sansMedium,
+    fontWeight: '500',
     fontSize: 12,
     lineHeight: 22,
     color: '#FFFFFF',
@@ -405,23 +422,72 @@ const styles = StyleSheet.create({
   },
   infoText: {
     flex: 1,
-    fontFamily: SF_PRO_FONT,
-    fontWeight: '510' as TextStyle['fontWeight'],
+    fontFamily: AppFonts.sansMedium,
+    fontWeight: '500',
     fontSize: 14,
     lineHeight: 22,
     color: '#54555A',
   },
   spacer: {
     flex: 1,
-    minHeight: 138,
+    minHeight: 92,
   },
   validationText: {
     color: '#FFFFFF',
+    fontFamily: AppFonts.sansMedium,
     fontSize: 12,
     fontWeight: '500',
     lineHeight: 18,
     textAlign: 'center',
     marginBottom: 8,
+  },
+  continueButton: {
+    alignItems: 'center',
+    alignSelf: 'center',
+    backgroundColor: '#0d6fd0',
+    borderRadius: 27,
+    elevation: 0,
+    height: 54,
+    marginBottom: 18,
+    maxWidth: 348,
+    overflow: 'hidden',
+    width: '100%',
+  },
+  continueGradient: {
+    alignItems: 'center',
+    height: '100%',
+    justifyContent: 'center',
+    width: '100%',
+  },
+  continueText: {
+    color: '#ffffff',
+    fontFamily: AppFonts.sansMedium,
+    fontSize: 18,
+    fontWeight: '500',
+    letterSpacing: 0,
+    lineHeight: 26,
+    textAlign: 'center',
+  },
+  innerShadow: {
+    ...StyleSheet.absoluteFillObject,
+  },
+  innerShadowLeft: {
+    bottom: 0,
+    left: 0,
+    position: 'absolute',
+    top: 4,
+    width: 16,
+  },
+  innerShadowTop: {
+    height: 16,
+    left: 4,
+    position: 'absolute',
+    right: 0,
+    top: 0,
+  },
+  pressed: {
+    opacity: 0.86,
+    transform: [{ scale: 0.99 }],
   },
   backButton: {
     alignSelf: 'center',
@@ -430,8 +496,9 @@ const styles = StyleSheet.create({
   },
   backText: {
     color: '#FFFFFF',
+    fontFamily: AppFonts.sansMedium,
     fontSize: 16,
-    fontWeight: '700',
+    fontWeight: '500',
     lineHeight: 24,
     textAlign: 'center',
   },

@@ -1,4 +1,5 @@
 import { router } from 'expo-router';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useState } from 'react';
 import {
   KeyboardAvoidingView,
@@ -14,7 +15,6 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { MultiSelectOptionCard } from '@/components/onboarding/MultiSelectOptionCard';
 import { AppFonts } from '@/constants/theme';
-import { OnboardingContinueButton } from '../components/onboarding/OnboardingContinueButton';
 
 const stressOptions = [
   { id: 'work-study', label: 'Work/study', icon: 'work-study' },
@@ -142,7 +142,33 @@ export function DailyReflectionScreen() {
               />
             </View>
 
-            <OnboardingContinueButton onPress={handleContinuePress} />
+            <Pressable
+              accessibilityRole="button"
+              onPress={handleContinuePress}
+              style={({ pressed }) => [styles.continueButton, pressed && styles.pressed]}>
+              <LinearGradient
+                colors={['#5AA1E2', '#0D6FD0']}
+                end={{ x: 0, y: 1 }}
+                locations={[0.0379, 0.75]}
+                start={{ x: 0, y: 0 }}
+                style={styles.continueGradient}>
+                <View pointerEvents="none" style={styles.innerShadow}>
+                  <LinearGradient
+                    colors={['rgba(255, 255, 255, 0.5)', 'rgba(255, 255, 255, 0)']}
+                    end={{ x: 0, y: 1 }}
+                    start={{ x: 0, y: 0 }}
+                    style={styles.innerShadowTop}
+                  />
+                  <LinearGradient
+                    colors={['rgba(255, 255, 255, 0.5)', 'rgba(255, 255, 255, 0)']}
+                    end={{ x: 1, y: 0 }}
+                    start={{ x: 0, y: 0 }}
+                    style={styles.innerShadowLeft}
+                  />
+                </View>
+                <Text style={styles.continueText}>Continue</Text>
+              </LinearGradient>
+            </Pressable>
 
             {validationMessage ? <Text style={styles.validationText}>{validationMessage}</Text> : null}
 
@@ -251,6 +277,54 @@ const styles = StyleSheet.create({
     fontSize: 14,
     lineHeight: 22,
     color: '#54555A',
+  },
+  continueButton: {
+    alignItems: 'center',
+    alignSelf: 'center',
+    backgroundColor: '#0d6fd0',
+    borderRadius: 27,
+    elevation: 0,
+    height: 54,
+    marginBottom: 18,
+    maxWidth: 348,
+    overflow: 'hidden',
+    width: '100%',
+  },
+  continueGradient: {
+    alignItems: 'center',
+    height: '100%',
+    justifyContent: 'center',
+    width: '100%',
+  },
+  continueText: {
+    color: '#ffffff',
+    fontFamily: AppFonts.sansMedium,
+    fontSize: 18,
+    fontWeight: '500',
+    letterSpacing: 0,
+    lineHeight: 26,
+    textAlign: 'center',
+  },
+  innerShadow: {
+    ...StyleSheet.absoluteFillObject,
+  },
+  innerShadowLeft: {
+    bottom: 0,
+    left: 0,
+    position: 'absolute',
+    top: 4,
+    width: 16,
+  },
+  innerShadowTop: {
+    height: 16,
+    left: 4,
+    position: 'absolute',
+    right: 0,
+    top: 0,
+  },
+  pressed: {
+    opacity: 0.86,
+    transform: [{ scale: 0.99 }],
   },
   validationText: {
     color: '#7B61FF',

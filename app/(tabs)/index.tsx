@@ -16,6 +16,8 @@ import Svg, {
   Stop,
 } from 'react-native-svg';
 
+import { AppFonts } from '@/constants/theme';
+
 const dailyEaseProgress = 74;
 const progressSize = 112;
 const progressStroke = 8;
@@ -32,27 +34,33 @@ const progressDotX =
 const progressDotY =
   progressDotCenter + progressDotDistance * Math.sin((progressAngle * Math.PI) / 180);
 
-const backgroundImage = require('@/assets/images/first-page-background-image.png');
-const avatarImage = require('@/assets/images/Ellipse 15.png');
+const backgroundImage = require('@/assets/images/dashbord-background-img.png');
+const avatarImage = require('@/assets/images/profile-pic.jpg');
+const nextStepIcon = require('@/assets/icons/dashbord-flower-icon.svg');
+const stressHeartIcon = require('@/assets/icons/dashbord-heart-icon.svg');
+const resetClockIcon = require('@/assets/icons/dashbord-clock-icon.svg');
 
 const todayPlans = [
   {
-    icon: 'sunny-outline' as const,
+    icon: require('@/assets/icons/dashbord-morning-icon.svg'),
+    iconBackground: '#FFC1031A',
     iconColor: '#FFC43D',
     title: 'Morning Sunlight',
     meta: '10 min',
     checked: true,
   },
   {
-    icon: 'leaf-outline' as const,
-    iconColor: '#34C759',
+    icon: require('@/assets/icons/dashbord-breathing-icon.svg'),
+    iconBackground: '#3770FC14',
+    iconColor: '#3770FC',
     title: 'Breathing Practice',
     meta: '5 min',
     checked: false,
   },
   {
-    icon: 'gift-outline' as const,
-    iconColor: '#5E7BFF',
+    icon: require('@/assets/icons/dashbord-speed-icon.svg'),
+    iconBackground: '#28B92A14',
+    iconColor: '#2EB668',
     title: 'Evening Reflection',
     meta: '3 min',
     checked: false,
@@ -141,23 +149,23 @@ export default function HomeScreen() {
 
           <View style={styles.nextCard}>
             <View style={styles.nextIconWrap}>
-              <Ionicons name="flower-outline" size={25} color="#7863DC" />
+              <Image source={nextStepIcon} style={styles.nextIcon} contentFit="contain" />
             </View>
             <View style={styles.nextCopy}>
               <Text style={styles.nextTitle}>Your next best step</Text>
               <Text style={styles.nextSubtitle}>Box breathing{'\n'}5 min. Reduce stress</Text>
             </View>
             <LinearGradient
-              colors={['#B087E5', '#7863DC']}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
+              colors={['#7E5EFB', '#6AAFE9']}
+              start={{ x: 1, y: 0.5 }}
+              end={{ x: 0, y: 0.5 }}
               style={styles.startButton}>
               <Text style={styles.startText}>Start Now</Text>
             </LinearGradient>
           </View>
 
           <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Today&apos;s Plan</Text>
+            <Text style={styles.sectionTitle}>Today’s Plan</Text>
             <Text style={styles.viewAll}>View All</Text>
           </View>
 
@@ -166,8 +174,12 @@ export default function HomeScreen() {
               <View
                 key={`${plan.title}-${plan.icon}`}
                 style={[styles.planRow, index < todayPlans.length - 1 && styles.planDivider]}>
-                <View style={[styles.planIconWrap, { borderColor: `${plan.iconColor}33` }]}>
-                  <Ionicons name={plan.icon} size={18} color={plan.iconColor} />
+                <View style={[styles.planIconWrap, { backgroundColor: plan.iconBackground }]}>
+                  <Image
+                    source={plan.icon}
+                    style={[styles.planIcon, { tintColor: plan.iconColor }]}
+                    contentFit="contain"
+                  />
                 </View>
                 <View style={styles.planCopy}>
                   <Text style={styles.planTitle}>{plan.title}</Text>
@@ -182,33 +194,34 @@ export default function HomeScreen() {
           </View>
 
           <View style={styles.stressCard}>
-            <View style={styles.stressHeader}>
-              <View style={styles.heartIcon}>
-                <Ionicons name="heart-outline" size={19} color="#FF2F7D" />
-              </View>
+            <View style={styles.stressIconWrap}>
+              <Image source={stressHeartIcon} style={styles.stressIcon} contentFit="contain" />
+            </View>
+            <View style={styles.stressCopy}>
               <Text style={styles.stressTitle}>Stress today?</Text>
+              <Text style={styles.stressSubtitle}>
+                Your nightly check-in helps heaven learn support You
+              </Text>
             </View>
-            <View style={styles.stressMeterTrack}>
-              <LinearGradient
-                colors={['#C06CE6', '#EE6B9A']}
-                start={{ x: 0, y: 0.5 }}
-                end={{ x: 1, y: 0.5 }}
-                style={styles.stressMeterFill}
-              />
-            </View>
+            <LinearGradient
+              colors={['#F38190', '#7B61FF']}
+              start={{ x: 1, y: 0.5 }}
+              end={{ x: 0, y: 0.5 }}
+              style={styles.stressButton}>
+              <Text style={styles.stressButtonText}>Log stress</Text>
+            </LinearGradient>
           </View>
 
           <View style={styles.resetCard}>
             <View style={styles.clockIcon}>
-              <Ionicons name="time-outline" size={20} color="#7863DC" />
+              <Image source={resetClockIcon} style={styles.resetIcon} contentFit="contain" />
             </View>
             <View style={styles.resetCopy}>
               <Text style={styles.resetTitle}>2 minute Reset</Text>
-              <Text style={styles.resetSubtitle}>A quick reset for busy{'\n'}moments</Text>
+              <Text style={styles.resetSubtitle}>A quick reset for busy moments</Text>
             </View>
             <View style={styles.resetButton}>
               <Text style={styles.resetButtonText}>Start</Text>
-              <Ionicons name="play" size={13} color="#7863DC" />
             </View>
           </View>
         </ScrollView>
@@ -223,7 +236,9 @@ const styles = StyleSheet.create({
     backgroundColor: '#F4EAF8',
   },
   backgroundImage: {
-    opacity: 0.86,
+    height: '100%',
+    opacity: 1,
+    width: '100%',
   },
   safeArea: {
     flex: 1,
@@ -241,38 +256,38 @@ const styles = StyleSheet.create({
   },
   greeting: {
     color: '#173F5F',
-    fontFamily: 'PlayfairDisplay-SemiBold',
-    fontSize: 30,
-    fontWeight: '600',
-    lineHeight: 37,
+    fontFamily: AppFonts.displayBold,
+    fontSize: 32,
+    fontWeight: '700',
+    letterSpacing: 0,
+    lineHeight: 34,
   },
   subtitle: {
     color: '#173F5F',
-    fontFamily: 'SF Pro',
-    fontSize: 13,
-    fontWeight: '700',
-    lineHeight: 18,
+    fontFamily: AppFonts.sansMedium,
+    fontSize: 16,
+    fontWeight: '500',
+    letterSpacing: 0,
+    lineHeight: 26,
     marginTop: 4,
   },
   avatarRing: {
     alignItems: 'center',
-    backgroundColor: '#F0E1CF',
-    borderColor: '#FFFFFF',
-    borderRadius: 19,
-    borderWidth: 2,
-    height: 38,
+    borderRadius: 20,
+    height: 40,
     justifyContent: 'center',
     marginTop: 5,
-    width: 38,
+    overflow: 'hidden',
+    width: 40,
   },
   avatar: {
-    borderRadius: 16,
-    height: 32,
-    width: 32,
+    borderRadius: 20,
+    height: 40,
+    width: 40,
   },
   easeCard: {
-    backgroundColor: 'rgba(255,255,255,0.76)',
-    borderRadius: 10,
+    backgroundColor: 'rgba(255,255,255,0.6)',
+    borderRadius: 12,
     flexDirection: 'row',
     justifyContent: 'space-between',
     minHeight: 185,
@@ -280,6 +295,11 @@ const styles = StyleSheet.create({
     paddingBottom: 18,
     paddingHorizontal: 18,
     paddingTop: 20,
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 3,
     width: '100%',
   },
   easeCopy: {
@@ -287,11 +307,12 @@ const styles = StyleSheet.create({
     maxWidth: 150,
   },
   easeTitle: {
-    color: '#173F5F',
-    fontFamily: 'SF Pro',
-    fontSize: 12,
-    fontWeight: '500',
+    color: '#54555A',
+    fontFamily: AppFonts.sansRegular,
+    fontSize: 14,
+    fontWeight: '400',
     lineHeight: 20,
+    letterSpacing: 0,
   },
   easeMeter: {
     alignItems: 'center',
@@ -299,10 +320,14 @@ const styles = StyleSheet.create({
     width: 120,
   },
   easeLabel: {
-    color: '#111827',
-    fontSize: 10,
-    fontWeight: '700',
+    color: '#000000',
+    fontFamily: AppFonts.sansMedium,
+    fontSize: 12,
+    fontWeight: '500',
+    letterSpacing: 0,
+    lineHeight: 22,
     marginBottom: 6,
+    textAlign: 'center',
   },
   progressWrap: {
     height: progressSize,
@@ -317,14 +342,22 @@ const styles = StyleSheet.create({
   },
   progressValue: {
     color: '#173F5F',
-    fontSize: 42,
-    fontWeight: '400',
-    lineHeight: 46,
+    fontFamily: AppFonts.displayMedium,
+    fontSize: 48,
+    fontWeight: '500',
+    letterSpacing: 0,
+    lineHeight: 58,
+    marginTop: -10,
+    textAlign: 'center',
   },
   progressCaption: {
-    color: '#7863DC',
-    fontSize: 10,
-    fontWeight: '700',
+    color: '#7B61FF',
+    fontFamily: AppFonts.sansMedium,
+    fontSize: 14,
+    fontWeight: '500',
+    letterSpacing: 0,
+    lineHeight: 24,
+    textAlign: 'center',
   },
   progressDot: {
     backgroundColor: '#FFFFFF',
@@ -351,27 +384,36 @@ const styles = StyleSheet.create({
   },
   nextIconWrap: {
     alignItems: 'center',
-    backgroundColor: '#F0EBFF',
+    backgroundColor: '#7B61FF4D',
     borderRadius: 20,
     height: 40,
     justifyContent: 'center',
     marginRight: 12,
     width: 40,
   },
+  nextIcon: {
+    height: 30,
+    tintColor: '#6339FB',
+    width: 30,
+  },
   nextCopy: {
     flex: 1,
   },
   nextTitle: {
     color: '#173F5F',
-    fontSize: 13,
-    fontWeight: '800',
-    lineHeight: 17,
+    fontFamily: AppFonts.displaySemiBold,
+    fontSize: 14,
+    fontWeight: '600',
+    letterSpacing: 0,
+    lineHeight: 22,
   },
   nextSubtitle: {
-    color: '#7C8592',
-    fontSize: 10,
-    lineHeight: 14,
-    marginTop: 2,
+    color: '#8C8C8C',
+    fontFamily: AppFonts.sansMedium,
+    fontSize: 12,
+    fontWeight: '500',
+    letterSpacing: 0,
+    lineHeight: 22,
   },
   startButton: {
     alignItems: 'center',
@@ -394,14 +436,19 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     color: '#173F5F',
-    fontFamily: 'PlayfairDisplay-SemiBold',
+    fontFamily: AppFonts.displaySemiBold,
     fontSize: 14,
-    lineHeight: 18,
+    fontWeight: '600',
+    letterSpacing: 0,
+    lineHeight: 26,
   },
   viewAll: {
-    color: '#7863DC',
-    fontSize: 11,
+    color: '#7B61FF',
+    fontFamily: AppFonts.sansBold,
+    fontSize: 12,
     fontWeight: '700',
+    letterSpacing: 0,
+    lineHeight: 22,
   },
   planCard: {
     backgroundColor: 'rgba(255,255,255,0.94)',
@@ -421,29 +468,41 @@ const styles = StyleSheet.create({
   planIconWrap: {
     alignItems: 'center',
     borderRadius: 16,
-    borderWidth: 1,
     height: 32,
     justifyContent: 'center',
     marginRight: 12,
     width: 32,
   },
+  planIcon: {
+    height: 18,
+    width: 18,
+  },
   planCopy: {
     flex: 1,
   },
   planTitle: {
-    color: '#173F5F',
-    fontSize: 11,
-    fontWeight: '800',
-    lineHeight: 15,
+    color: '#000000',
+    fontFamily: AppFonts.sansSemiBold,
+    fontSize: 12,
+    fontWeight: '500',
+    letterSpacing: 0,
+    lineHeight: 22,
   },
   planSubtitle: {
-    color: '#7C8592',
-    fontSize: 9,
-    lineHeight: 13,
+    color: '#8C8C8C',
+    fontFamily: AppFonts.sansRegular,
+    fontSize: 10,
+    fontWeight: '400',
+    letterSpacing: 0,
+    lineHeight: 18,
   },
   planMeta: {
-    color: '#8A93A1',
-    fontSize: 9,
+    color: '#8C8C8C',
+    fontFamily: AppFonts.sansRegular,
+    fontSize: 10,
+    fontWeight: '400',
+    letterSpacing: 0,
+    lineHeight: 18,
     marginRight: 8,
   },
   checkCircle: {
@@ -460,42 +519,65 @@ const styles = StyleSheet.create({
     borderColor: '#7863DC',
   },
   stressCard: {
+    alignItems: 'center',
     backgroundColor: 'rgba(255,255,255,0.94)',
     borderRadius: 12,
-    marginTop: 13,
-    padding: 14,
-  },
-  stressHeader: {
-    alignItems: 'center',
     flexDirection: 'row',
-    marginBottom: 10,
+    justifyContent: 'space-between',
+    marginTop: 13,
+    minHeight: 72,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
   },
-  heartIcon: {
+  stressCopy: {
+    flex: 1,
+    paddingRight: 12,
+  },
+  stressIconWrap: {
     alignItems: 'center',
-    backgroundColor: '#FFF1F6',
-    borderRadius: 18,
-    height: 36,
+    backgroundColor: '#FF005914',
+    borderRadius: 20,
+    height: 40,
     justifyContent: 'center',
-    marginRight: 10,
-    width: 36,
+    marginRight: 12,
+    width: 40,
+  },
+  stressIcon: {
+    height: 18,
+    tintColor: '#FF0059',
+    width: 18,
   },
   stressTitle: {
     color: '#173F5F',
-    fontSize: 13,
+    fontFamily: AppFonts.displaySemiBold,
+    fontSize: 14,
+    fontWeight: '600',
+    letterSpacing: 0,
+    lineHeight: 22,
+  },
+  stressSubtitle: {
+    color: '#8C8C8C',
+    fontFamily: AppFonts.sansMedium,
+    fontSize: 12,
+    fontWeight: '500',
+    letterSpacing: 0,
+    lineHeight: 22,
+  },
+  stressButton: {
+    alignItems: 'center',
+    borderRadius: 24,
+    height: 42,
+    justifyContent: 'center',
+    width: 96,
+  },
+  stressButtonText: {
+    color: '#FFFFFF',
+    fontFamily: AppFonts.sansBold,
+    fontSize: 12,
     fontWeight: '700',
-  },
-  stressMeterTrack: {
-    alignSelf: 'flex-end',
-    backgroundColor: '#F2E7FB',
-    borderRadius: 16,
-    height: 24,
-    overflow: 'hidden',
-    width: 122,
-  },
-  stressMeterFill: {
-    borderRadius: 16,
-    height: '100%',
-    width: '80%',
+    letterSpacing: 0,
+    lineHeight: 26,
+    textAlign: 'center',
   },
   resetCard: {
     alignItems: 'center',
@@ -508,31 +590,40 @@ const styles = StyleSheet.create({
   },
   clockIcon: {
     alignItems: 'center',
-    backgroundColor: '#F0EBFF',
-    borderRadius: 18,
-    height: 36,
+    backgroundColor: '#7B61FF14',
+    borderRadius: 20,
+    height: 40,
     justifyContent: 'center',
     marginRight: 12,
-    width: 36,
+    width: 40,
+  },
+  resetIcon: {
+    height: 18,
+    tintColor: '#7B61FF',
+    width: 18,
   },
   resetCopy: {
     flex: 1,
   },
   resetTitle: {
     color: '#173F5F',
-    fontSize: 12,
-    fontWeight: '800',
-    lineHeight: 16,
+    fontFamily: AppFonts.displaySemiBold,
+    fontSize: 14,
+    fontWeight: '600',
+    letterSpacing: 0,
+    lineHeight: 22,
   },
   resetSubtitle: {
-    color: '#7C8592',
-    fontSize: 10,
-    lineHeight: 14,
-    marginTop: 2,
+    color: '#8C8C8C',
+    fontFamily: AppFonts.sansMedium,
+    fontSize: 12,
+    fontWeight: '500',
+    letterSpacing: 0,
+    lineHeight: 22,
   },
   resetButton: {
     alignItems: 'center',
-    borderColor: '#E7E0FC',
+    borderColor: '#EDEDED',
     borderRadius: 22,
     borderWidth: 1,
     flexDirection: 'row',
@@ -542,8 +633,12 @@ const styles = StyleSheet.create({
     width: 83,
   },
   resetButtonText: {
-    color: '#7863DC',
-    fontSize: 11,
+    color: '#7B61FF',
+    fontFamily: AppFonts.sansBold,
+    fontSize: 14,
     fontWeight: '700',
+    letterSpacing: 0,
+    lineHeight: 26,
+    textAlign: 'center',
   },
 });

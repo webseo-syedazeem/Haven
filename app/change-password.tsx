@@ -244,7 +244,6 @@ const styles = StyleSheet.create({
     elevation: 4,
     flexDirection: 'row',
     height: 54,
-    maxWidth: 310,
     overflow: 'hidden',
     shadowColor: '#ffffff',
     shadowOffset: {

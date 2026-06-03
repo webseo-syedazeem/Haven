@@ -66,17 +66,27 @@ export function MoodCheckInScreen() {
             accessibilityLabel="Continue"
             accessibilityHint={`Selected mood is ${accessibilityMood}`}
             onPress={handleContinue}
-            style={({ pressed }) => [styles.buttonShadow, pressed && styles.buttonPressed]}>
+            style={({ pressed }) => [styles.continueButton, pressed && styles.buttonPressed]}>
             <LinearGradient
-              colors={[
-                wellnessColors.button.left,
-                wellnessColors.button.center,
-                wellnessColors.button.right,
-              ]}
-              locations={[0, 0.485, 1]}
-              start={{ x: 0, y: 0.5 }}
-              end={{ x: 1, y: 0.5 }}
-              style={styles.button}>
+              colors={['#5AA1E2', '#0D6FD0']}
+              end={{ x: 0, y: 1 }}
+              locations={[0.0379, 0.75]}
+              start={{ x: 0, y: 0 }}
+              style={styles.continueGradient}>
+              <View pointerEvents="none" style={styles.innerShadow}>
+                <LinearGradient
+                  colors={['rgba(255, 255, 255, 0.5)', 'rgba(255, 255, 255, 0)']}
+                  end={{ x: 0, y: 1 }}
+                  start={{ x: 0, y: 0 }}
+                  style={styles.innerShadowTop}
+                />
+                <LinearGradient
+                  colors={['rgba(255, 255, 255, 0.5)', 'rgba(255, 255, 255, 0)']}
+                  end={{ x: 1, y: 0 }}
+                  start={{ x: 0, y: 0 }}
+                  style={styles.innerShadowLeft}
+                />
+              </View>
               <Text style={styles.buttonText}>Continue</Text>
             </LinearGradient>
           </Pressable>
@@ -118,7 +128,7 @@ const styles = StyleSheet.create({
     backgroundColor: wellnessColors.surface,
   },
   bottomContent: {
-    paddingHorizontal: wellnessSpacing.contentHorizontal,
+    paddingHorizontal: 12,
   },
   content: {
     alignItems: 'center',
@@ -142,15 +152,39 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
     justifyContent: 'space-between',
   },
-  buttonShadow: {
+  continueButton: {
+    alignItems: 'center',
+    alignSelf: 'center',
+    backgroundColor: '#0d6fd0',
+    borderRadius: 27,
+    elevation: 0,
+    height: 54,
+    maxWidth: 348,
+    overflow: 'hidden',
     width: '100%',
-    height: 58,
-    borderRadius: 29,
-    shadowColor: wellnessColors.button.left,
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.22,
-    shadowRadius: 18,
-    elevation: 7,
+  },
+  continueGradient: {
+    alignItems: 'center',
+    height: '100%',
+    justifyContent: 'center',
+    width: '100%',
+  },
+  innerShadow: {
+    ...StyleSheet.absoluteFillObject,
+  },
+  innerShadowLeft: {
+    bottom: 0,
+    left: 0,
+    position: 'absolute',
+    top: 4,
+    width: 16,
+  },
+  innerShadowTop: {
+    height: 16,
+    left: 4,
+    position: 'absolute',
+    right: 0,
+    top: 0,
   },
   validationText: {
     color: '#173F5F',
@@ -163,12 +197,6 @@ const styles = StyleSheet.create({
   buttonPressed: {
     opacity: 0.9,
     transform: [{ scale: 0.99 }],
-  },
-  button: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: 29,
   },
   buttonText: {
     ...wellnessTypography.button,

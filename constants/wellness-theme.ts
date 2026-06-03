@@ -1,4 +1,4 @@
-import { Platform } from 'react-native';
+import { AppFonts } from '@/constants/theme';
 
 export const wellnessColors = {
   surface: '#E9E9E9',
@@ -35,23 +35,23 @@ export const wellnessRadius = {
 
 export const wellnessTypography = {
   heading: {
-    fontFamily: 'PlayfairDisplay_600SemiBold',
+    fontFamily: AppFonts.displaySemiBold,
     fontSize: 32,
     fontWeight: '600' as const,
     lineHeight: 42,
     letterSpacing: 0,
   },
   moodLabel: {
-    fontFamily: Platform.select({ ios: 'SF Pro', default: undefined }),
+    fontFamily: AppFonts.sansSemiBold,
     fontSize: 14,
-    fontWeight: '600' as const,
+    fontWeight: '500' as const,
     lineHeight: 24,
     letterSpacing: 0,
   },
   button: {
-    fontFamily: Platform.select({ ios: 'SF Pro', default: undefined }),
+    fontFamily: AppFonts.sansMedium,
     fontSize: 18,
-    fontWeight: '700' as const,
+    fontWeight: '500' as const,
     lineHeight: 26,
     letterSpacing: 0,
   },

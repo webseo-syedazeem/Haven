@@ -1,24 +1,18 @@
 import { Image } from 'expo-image';
+import { LinearGradient } from 'expo-linear-gradient';
 import {
-  ImageBackground,
-  Platform,
+  Pressable,
   ScrollView,
   StyleSheet,
   Text,
-  type TextStyle,
   View,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { OnboardingContinueButton } from '../components/onboarding/OnboardingContinueButton';
+import { ScreenWrapper, useScreenBottomPadding } from '@/components/ScreenWrapper';
+import { AppFonts } from '@/constants/theme';
 
 const CHECK_ICON = require('@/assets/images/done.svg');
 const LEAF_ICON = require('@/assets/images/leves.svg');
-const SF_PRO_FONT = Platform.select({
-  ios: 'SF Pro',
-  web: "system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
-  default: 'sans-serif',
-});
 
 const summaryStats = [
   { id: 'stress-today', label: 'Stress Today', status: 'High' },
@@ -26,16 +20,26 @@ const summaryStats = [
 ];
 
 export function ThankYouScreen() {
+  const bottomPadding = useScreenBottomPadding();
+
   return (
     <View style={styles.screen}>
-      <ImageBackground
-        source={require('@/assets/images/thankyou_page.png')}
-        resizeMode="cover"
-        style={styles.background}>
-        <SafeAreaView style={styles.safeArea} edges={['top', 'right', 'bottom', 'left']}>
+      <ScreenWrapper
+        backgroundImage={require('@/assets/images/thankyou_page.png')}
+        bottomReserve={0}
+        overlay={
+          <LinearGradient
+            colors={['rgba(244, 245, 249, 0)', '#FFFFFF']}
+            locations={[0.4871, 0.7218]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 0, y: 1 }}
+            style={styles.backgroundFade}
+          />
+        }
+        middleContent={
           <ScrollView
             bounces={false}
-            contentContainerStyle={styles.scrollContent}
+            contentContainerStyle={[styles.scrollContent, { paddingBottom: bottomPadding }]}
             showsVerticalScrollIndicator={false}>
             <View style={styles.topSpacer} />
 
@@ -94,10 +98,36 @@ export function ThankYouScreen() {
 
             <View style={styles.bottomSpacer} />
 
-            <OnboardingContinueButton label="Done" />
+            <Pressable
+              accessibilityRole="button"
+              style={({ pressed }) => [styles.doneButton, pressed && styles.pressed]}>
+              <LinearGradient
+                colors={['#5AA1E2', '#0D6FD0']}
+                end={{ x: 0, y: 1 }}
+                locations={[0.0379, 0.75]}
+                start={{ x: 0, y: 0 }}
+                style={styles.doneGradient}>
+                <View pointerEvents="none" style={styles.innerShadow}>
+                  <LinearGradient
+                    colors={['rgba(255, 255, 255, 0.5)', 'rgba(255, 255, 255, 0)']}
+                    end={{ x: 0, y: 1 }}
+                    start={{ x: 0, y: 0 }}
+                    style={styles.innerShadowTop}
+                  />
+                  <LinearGradient
+                    colors={['rgba(255, 255, 255, 0.5)', 'rgba(255, 255, 255, 0)']}
+                    end={{ x: 1, y: 0 }}
+                    start={{ x: 0, y: 0 }}
+                    style={styles.innerShadowLeft}
+                  />
+                </View>
+                <Text style={styles.doneText}>Done</Text>
+              </LinearGradient>
+            </Pressable>
           </ScrollView>
-        </SafeAreaView>
-      </ImageBackground>
+        }
+        middleContentStyle={styles.middleContent}
+      />
     </View>
   );
 }
@@ -109,23 +139,20 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     backgroundColor: '#8E78D8',
   },
-  background: {
-    flex: 1,
-    width: '100%',
+  backgroundFade: {
+    ...StyleSheet.absoluteFillObject,
   },
-  safeArea: {
-    flex: 1,
+  middleContent: {
+    paddingHorizontal: 16,
     width: '100%',
   },
   scrollContent: {
     flexGrow: 1,
     width: '100%',
-    paddingHorizontal: 16,
-    paddingBottom: 10,
   },
   topSpacer: {
     flex: 1,
-    minHeight: 96,
+    minHeight: 48,
   },
   header: {
     alignItems: 'center',
@@ -137,23 +164,23 @@ const styles = StyleSheet.create({
     marginBottom: 21,
   },
   heading: {
-    fontFamily: 'Playfair Display',
-    fontWeight: '700',
+    fontFamily: AppFonts.displaySemiBold,
+    fontWeight: '600',
     fontSize: 32,
     lineHeight: 34,
     letterSpacing: 0,
     textAlign: 'center',
-    color: '#173F5F',
+    color: '#FFFFFF',
     marginBottom: 4,
   },
   subtitle: {
     maxWidth: 270,
-    fontFamily: SF_PRO_FONT,
-    fontWeight: '510' as TextStyle['fontWeight'],
+    fontFamily: AppFonts.sansMedium,
+    fontWeight: '500',
     fontSize: 16,
     lineHeight: 26,
     textAlign: 'center',
-    color: '#54555A',
+    color: '#FFFFFF',
   },
   statsRow: {
     width: '100%',
@@ -178,8 +205,8 @@ const styles = StyleSheet.create({
     elevation: 1,
   },
   statLabel: {
-    fontFamily: SF_PRO_FONT,
-    fontWeight: '400',
+    fontFamily: AppFonts.sansMedium,
+    fontWeight: '500',
     fontSize: 14,
     lineHeight: 26,
     textAlign: 'center',
@@ -191,23 +218,23 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   statValue: {
-    fontFamily: SF_PRO_FONT,
-    fontWeight: '700',
+    fontFamily: AppFonts.sansMedium,
+    fontWeight: '500',
     fontSize: 30,
     lineHeight: 34,
     textAlign: 'center',
     color: '#000000',
   },
   statValueSmall: {
-    fontFamily: SF_PRO_FONT,
-    fontWeight: '400',
+    fontFamily: AppFonts.sansMedium,
+    fontWeight: '500',
     fontSize: 14,
     lineHeight: 24,
     color: '#000000',
   },
   statStatus: {
-    fontFamily: SF_PRO_FONT,
-    fontWeight: '400',
+    fontFamily: AppFonts.sansMedium,
+    fontWeight: '500',
     fontSize: 14,
     lineHeight: 26,
     textAlign: 'center',
@@ -249,15 +276,15 @@ const styles = StyleSheet.create({
     minWidth: 0,
   },
   supportText: {
-    fontFamily: SF_PRO_FONT,
-    fontWeight: '510' as TextStyle['fontWeight'],
+    fontFamily: AppFonts.sansMedium,
+    fontWeight: '500',
     fontSize: 14,
     lineHeight: 20,
     color: '#54555A',
   },
   supportGreenText: {
-    fontFamily: SF_PRO_FONT,
-    fontWeight: '510' as TextStyle['fontWeight'],
+    fontFamily: AppFonts.sansMedium,
+    fontWeight: '500',
     fontSize: 14,
     lineHeight: 22,
     color: '#2EB668',
@@ -266,5 +293,52 @@ const styles = StyleSheet.create({
   bottomSpacer: {
     flex: 1,
     minHeight: 31,
+  },
+  doneButton: {
+    alignItems: 'center',
+    alignSelf: 'center',
+    backgroundColor: '#0d6fd0',
+    borderRadius: 27,
+    elevation: 0,
+    height: 54,
+    maxWidth: 348,
+    overflow: 'hidden',
+    width: '100%',
+  },
+  doneGradient: {
+    alignItems: 'center',
+    height: '100%',
+    justifyContent: 'center',
+    width: '100%',
+  },
+  doneText: {
+    color: '#ffffff',
+    fontFamily: AppFonts.sansMedium,
+    fontSize: 18,
+    fontWeight: '500',
+    letterSpacing: 0,
+    lineHeight: 26,
+    textAlign: 'center',
+  },
+  innerShadow: {
+    ...StyleSheet.absoluteFillObject,
+  },
+  innerShadowLeft: {
+    bottom: 0,
+    left: 0,
+    position: 'absolute',
+    top: 4,
+    width: 16,
+  },
+  innerShadowTop: {
+    height: 16,
+    left: 4,
+    position: 'absolute',
+    right: 0,
+    top: 0,
+  },
+  pressed: {
+    opacity: 0.86,
+    transform: [{ scale: 0.99 }],
   },
 });
