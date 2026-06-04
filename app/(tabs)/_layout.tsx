@@ -89,13 +89,6 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
-        name="screen3"
-        options={{
-          title: 'Plan',
-          href: null,
-        }}
-      />
-      <Tabs.Screen
         name="screen4"
         options={{
           title: 'Privacy',
