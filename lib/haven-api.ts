@@ -1,4 +1,10 @@
-const API_BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL ?? 'https://haven-back-one.vercel.app';
+import * as SecureStore from 'expo-secure-store';
+import { Platform } from 'react-native';
+
+const API_BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL ?? 'http://18.171.253.186';
+const AUTH_SESSION_STORAGE_KEY = 'haven.auth.session';
+const AUTH_USER_STORAGE_KEY = 'haven.auth.user';
+const AUTH_PROFILE_STORAGE_KEY = 'haven.auth.profile';
 
 export type AuthUser = {
   id?: string;
@@ -10,12 +16,36 @@ export type AuthUser = {
 
 export type AuthResponse = {
   access_token?: string;
+  data?: {
+    profile?: AuthUser;
+    session?: AuthSession;
+    user?: AuthUser;
+  };
+  profile?: AuthUser;
+  session?: AuthSession;
   token?: string;
   user?: AuthUser;
   [key: string]: unknown;
 };
 
+export type AuthSession = {
+  access_token?: string;
+  refresh_token?: string;
+  [key: string]: unknown;
+};
+
 let accessToken: string | null = null;
+
+async function setStoredValue(key: string, value: unknown) {
+  const serializedValue = JSON.stringify(value);
+
+  if (Platform.OS === 'web' && typeof localStorage !== 'undefined') {
+    localStorage.setItem(key, serializedValue);
+    return;
+  }
+
+  await SecureStore.setItemAsync(key, serializedValue);
+}
 
 function getErrorMessage(status: number, data: unknown) {
   if (data && typeof data === 'object') {
@@ -70,7 +100,30 @@ async function apiRequest<T>(path: string, options: RequestInit = {}) {
 }
 
 function rememberToken(response: AuthResponse) {
-  accessToken = response.access_token ?? response.token ?? null;
+  accessToken =
+    response.access_token ??
+    response.token ??
+    response.session?.access_token ??
+    response.data?.session?.access_token ??
+    null;
+}
+
+async function saveAuthData(response: AuthResponse) {
+  const session = response.session ?? response.data?.session;
+  const user = response.user ?? response.data?.user;
+  const profile = response.profile ?? response.data?.profile;
+
+  if (session) {
+    await setStoredValue(AUTH_SESSION_STORAGE_KEY, session);
+  }
+
+  if (user) {
+    await setStoredValue(AUTH_USER_STORAGE_KEY, user);
+  }
+
+  if (profile) {
+    await setStoredValue(AUTH_PROFILE_STORAGE_KEY, profile);
+  }
 }
 
 export function getAccessToken() {
@@ -84,6 +137,7 @@ export async function signUp(payload: { email: string; password: string; usernam
   });
 
   rememberToken(response);
+  await saveAuthData(response);
   return response;
 }
 
@@ -94,8 +148,26 @@ export async function signIn(payload: { email: string; password: string }) {
   });
 
   rememberToken(response);
+  await saveAuthData(response);
   return response;
 }
+
+export const googleSignIn = async (id_token: string) => {
+  const response = await fetch(`${API_BASE_URL}/api/auth/google`, {
+    body: JSON.stringify({ id_token }),
+    headers: { 'Content-Type': 'application/json' },
+    method: 'POST',
+  });
+  const data = (await response.json()) as AuthResponse & { success?: boolean; error?: string };
+
+  if (!data.success) {
+    throw new Error(data.error ?? 'Google sign in failed');
+  }
+
+  rememberToken(data);
+  await saveAuthData(data);
+  return data.data;
+};
 
 export function forgotPassword(email: string) {
   return apiRequest<{ message?: string }>('/api/forgot-password', {

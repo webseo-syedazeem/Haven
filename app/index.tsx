@@ -151,7 +151,7 @@ const styles = StyleSheet.create({
   },
   loginLinkButton: {
     alignSelf: 'center',
-    marginTop: 13,
+    marginTop: 6,
     paddingHorizontal: 10,
     paddingVertical: 4,
   },

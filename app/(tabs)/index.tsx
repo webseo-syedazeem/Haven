@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
 import { Image } from 'expo-image';
+import { LinearGradient } from 'expo-linear-gradient';
 import {
   ImageBackground,
   ScrollView,
@@ -12,8 +12,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import Svg, {
   Circle,
   Defs,
-  LinearGradient as SvgLinearGradient,
   Stop,
+  LinearGradient as SvgLinearGradient,
 } from 'react-native-svg';
 
 import { AppFonts } from '@/constants/theme';
