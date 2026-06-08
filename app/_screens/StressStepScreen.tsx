@@ -28,6 +28,7 @@ type StressSliderProps = {
 
 function StressSlider({ value, onChange, onInteract }: StressSliderProps) {
   const translateX = useRef(new Animated.Value(0)).current;
+  const bubbleX = useRef(new Animated.Value(0)).current;
   const barWidth = useRef(0);
   const currentPosition = useRef(0);
   const dragStartPosition = useRef(0);
@@ -44,6 +45,15 @@ function StressSlider({ value, onChange, onInteract }: StressSliderProps) {
   }, [onInteract]);
 
   const getMaxPosition = useCallback(() => Math.max(0, barWidth.current - SLIDER_THUMB_SIZE), []);
+  const getBubblePosition = useCallback(
+    (position: number) => {
+      const centeredPosition = position + (SLIDER_THUMB_SIZE - VALUE_BUBBLE_SIZE) / 2;
+      const maxBubblePosition = Math.max(0, barWidth.current - VALUE_BUBBLE_SIZE);
+
+      return Math.min(maxBubblePosition, Math.max(0, centeredPosition));
+    },
+    []
+  );
 
   const getValueFromPosition = useCallback(
     (position: number) => {
@@ -62,12 +72,18 @@ function StressSlider({ value, onChange, onInteract }: StressSliderProps) {
       currentPosition.current = nextPosition;
 
       if (animated) {
+        Animated.timing(bubbleX, {
+          toValue: getBubblePosition(nextPosition),
+          duration: 160,
+          useNativeDriver: true,
+        }).start();
         Animated.timing(translateX, {
           toValue: nextPosition,
           duration: 160,
           useNativeDriver: true,
         }).start();
       } else {
+        bubbleX.setValue(getBubblePosition(nextPosition));
         translateX.setValue(nextPosition);
       }
 
@@ -76,7 +92,7 @@ function StressSlider({ value, onChange, onInteract }: StressSliderProps) {
         onChangeRef.current(nextValue);
       }
     },
-    [getMaxPosition, getValueFromPosition, translateX]
+    [bubbleX, getBubblePosition, getMaxPosition, getValueFromPosition, translateX]
   );
 
   useEffect(() => {
@@ -111,7 +127,6 @@ function StressSlider({ value, onChange, onInteract }: StressSliderProps) {
     [moveKnobTo]
   );
 
-  const bubbleTranslateX = Animated.add(translateX, (SLIDER_THUMB_SIZE - VALUE_BUBBLE_SIZE) / 2);
   const moveToScaleValue = (nextValue: number) => {
     onInteractRef.current?.();
     moveKnobTo((nextValue / 10) * getMaxPosition(), true);
@@ -134,7 +149,7 @@ function StressSlider({ value, onChange, onInteract }: StressSliderProps) {
           end={{ x: 1, y: 0.5 }}
           style={styles.sliderTrack}
         />
-        <Animated.View style={[styles.valueBubble, { transform: [{ translateX: bubbleTranslateX }] }]}>
+        <Animated.View style={[styles.valueBubble, { transform: [{ translateX: bubbleX }] }]}>
           <Text style={styles.valueText}>{value}</Text>
         </Animated.View>
         <Animated.View style={[styles.sliderThumb, { transform: [{ translateX }] }]} />
@@ -285,11 +300,12 @@ const styles = StyleSheet.create({
   },
   middleContent: {
     paddingHorizontal: 20,
+    width: '100%',
   },
   scrollContent: {
     flexGrow: 1,
-    justifyContent: 'flex-end',
-    paddingTop: 82,
+    justifyContent: 'center',
+    paddingTop: 60,
     width: '100%',
   },
   scrollView: {
@@ -333,11 +349,13 @@ const styles = StyleSheet.create({
   sliderSection: {
     width: '100%',
     marginBottom: 28,
+    overflow: 'visible',
   },
   sliderTouchable: {
     width: '100%',
     height: 75,
     justifyContent: 'flex-end',
+    overflow: 'visible',
     paddingBottom: 15,
   },
   sliderTrack: {
@@ -355,6 +373,8 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     alignItems: 'center',
     justifyContent: 'center',
+    zIndex: 9999,
+    elevation: 9999,
   },
   valueText: {
     fontFamily: AppFonts.sansMedium,

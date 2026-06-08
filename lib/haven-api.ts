@@ -1,4 +1,4 @@
-const API_BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL ?? 'https://haven-back-one.vercel.app';
+const API_BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL ?? 'http://18.171.253.186';
 
 export type AuthUser = {
   id?: string;
@@ -11,11 +11,40 @@ export type AuthUser = {
 export type AuthResponse = {
   access_token?: string;
   token?: string;
+  refresh_token?: string;
+  accessToken?: string;
+  refreshToken?: string;
+  data?: {
+    session?: {
+      access_token?: string;
+      refresh_token?: string;
+      accessToken?: string;
+      refreshToken?: string;
+      token?: string;
+      [key: string]: unknown;
+    };
+    user?: AuthUser;
+    [key: string]: unknown;
+  };
   user?: AuthUser;
   [key: string]: unknown;
 };
 
+export type ApiResponse<T = unknown> = {
+  success?: boolean;
+  data?: T;
+  message?: string;
+  [key: string]: unknown;
+};
+
+export type ProfileImageUpload = {
+  uri: string;
+  name: string;
+  type: string;
+};
+
 let accessToken: string | null = null;
+let refreshToken: string | null = null;
 
 function getErrorMessage(status: number, data: unknown) {
   if (data && typeof data === 'object') {
@@ -44,20 +73,35 @@ async function parseResponse(response: Response) {
   }
 }
 
+function isFormDataBody(body: BodyInit | null | undefined) {
+  return typeof FormData !== 'undefined' && body instanceof FormData;
+}
+
+function buildHeaders(options: RequestInit) {
+  const headers = new Headers(options.headers);
+
+  if (!isFormDataBody(options.body) && !headers.has('Content-Type')) {
+    headers.set('Content-Type', 'application/json');
+  }
+
+  if (accessToken && !headers.has('Authorization')) {
+    headers.set('Authorization', `Bearer ${accessToken}`);
+  }
+
+  return headers;
+}
+
 async function apiRequest<T>(path: string, options: RequestInit = {}) {
   let response: Response;
 
   try {
     response = await fetch(`${API_BASE_URL}${path}`, {
       ...options,
-      headers: {
-        'Content-Type': 'application/json',
-        ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
-        ...options.headers,
-      },
+      headers: buildHeaders(options),
     });
-  } catch {
-    throw new Error('Unable to reach the API server. Please check the backend URL or deployment.');
+  } catch (error) {
+    const details = error instanceof Error && error.message ? ` (${error.message})` : '';
+    throw new Error(`Unable to reach the API server. Please check the backend URL or deployment.${details}`);
   }
 
   const data = await parseResponse(response);
@@ -70,11 +114,54 @@ async function apiRequest<T>(path: string, options: RequestInit = {}) {
 }
 
 function rememberToken(response: AuthResponse) {
-  accessToken = response.access_token ?? response.token ?? null;
+  const session = response.data?.session;
+
+  accessToken =
+    response.access_token ??
+    response.accessToken ??
+    response.token ??
+    session?.access_token ??
+    session?.accessToken ??
+    session?.token ??
+    accessToken;
+  refreshToken =
+    response.refresh_token ??
+    response.refreshToken ??
+    session?.refresh_token ??
+    session?.refreshToken ??
+    refreshToken;
 }
 
 export function getAccessToken() {
   return accessToken;
+}
+
+export function getRefreshToken() {
+  return refreshToken;
+}
+
+export function setAuthTokens(tokens: { accessToken?: string | null; refreshToken?: string | null }) {
+  accessToken = tokens.accessToken ?? accessToken;
+  refreshToken = tokens.refreshToken ?? refreshToken;
+}
+
+export function clearAuthTokens() {
+  accessToken = null;
+  refreshToken = null;
+}
+
+export async function refreshSession(token = refreshToken) {
+  if (!token) {
+    throw new Error('No refresh token is available.');
+  }
+
+  const response = await apiRequest<AuthResponse>('/api/refresh-token', {
+    body: JSON.stringify({ refresh_token: token }),
+    method: 'POST',
+  });
+
+  rememberToken(response);
+  return response;
 }
 
 export async function signUp(payload: { email: string; password: string; username: string }) {
@@ -104,9 +191,12 @@ export function forgotPassword(email: string) {
   });
 }
 
-export function resetPassword(payload: { access_token: string; newPassword: string }) {
+export function resetPassword(payload: { newPassword: string; access_token?: string; token?: string }) {
+  const resetToken = payload.access_token ?? payload.token;
+
   return apiRequest<{ message?: string }>('/api/reset-password', {
-    body: JSON.stringify(payload),
+    body: JSON.stringify({ newPassword: payload.newPassword }),
+    headers: resetToken ? { Authorization: `Bearer ${resetToken}` } : undefined,
     method: 'POST',
   });
 }
@@ -119,5 +209,40 @@ export function changePassword(payload: { oldPassword: string; newPassword: stri
 }
 
 export function getCurrentUser() {
-  return apiRequest<AuthUser>('/api/me');
+  return apiRequest<ApiResponse<{ user?: AuthUser }> | AuthUser>('/api/me');
+}
+
+export function updateName(payload: { first_name: string; last_name: string }) {
+  return apiRequest<ApiResponse<{ user?: AuthUser; profile?: unknown }>>('/api/update-name', {
+    body: JSON.stringify(payload),
+    method: 'PUT',
+  });
+}
+
+export function uploadProfileImage(image: ProfileImageUpload) {
+  const formData = new FormData();
+  formData.append('image', image as unknown as Blob);
+
+  return apiRequest<ApiResponse>('/api/upload-profile-image', {
+    body: formData,
+    method: 'POST',
+  });
+}
+
+export async function logout() {
+  const response = await apiRequest<ApiResponse<{ message?: string }>>('/api/logout', {
+    method: 'POST',
+  });
+
+  clearAuthTokens();
+  return response;
+}
+
+export async function deleteAccount() {
+  const response = await apiRequest<ApiResponse<{ message?: string }>>('/api/delete-account', {
+    method: 'DELETE',
+  });
+
+  clearAuthTokens();
+  return response;
 }

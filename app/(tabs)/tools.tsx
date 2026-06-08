@@ -1,23 +1,172 @@
-import { StyleSheet, Text, View } from 'react-native';
+import { Image } from 'expo-image';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+
+import { AppFonts } from '@/constants/theme';
+
+const backgroundImage = require('@/assets/images/tool-page-bg-image.png');
+
+type ToolOption = {
+  icon: number;
+  iconBackground: string;
+  subtitle: string;
+  title: string;
+};
+
+const toolOptions: ToolOption[] = [
+  {
+    icon: require('@/assets/images/tool-breathing-icon.svg'),
+    iconBackground: '#7B61FF14',
+    subtitle: 'Clam Your mind',
+    title: 'Breathing',
+  },
+  {
+    icon: require('@/assets/images/tool-focus-hub-icon.svg'),
+    iconBackground: '#3770FC14',
+    subtitle: 'Improve focus',
+    title: 'Focus Hub',
+  },
+  {
+    icon: require('@/assets/images/tool-checklist-icon.svg'),
+    iconBackground: '#28B92A14',
+    subtitle: 'Daily habits',
+    title: 'Checklist',
+  },
+];
 
 export default function ToolsScreen() {
   return (
     <View style={styles.screen}>
-      <Text style={styles.title}>Tools</Text>
+      <Image source={backgroundImage} style={styles.backgroundImage} contentFit="cover" />
+
+      <SafeAreaView edges={['top']} style={styles.safeArea}>
+        <ScrollView
+          bounces={false}
+          contentContainerStyle={styles.content}
+          showsVerticalScrollIndicator={false}>
+          <View style={styles.header}>
+            <Text style={styles.title}>Tools</Text>
+            <Text style={styles.subtitle}>Find Your clam</Text>
+          </View>
+
+          <View style={styles.options}>
+            {toolOptions.map((option) => (
+              <Pressable
+                accessibilityRole="button"
+                key={option.title}
+                style={({ pressed }) => [styles.optionCard, pressed && styles.pressed]}>
+                <View style={[styles.iconWrap, { backgroundColor: option.iconBackground }]}>
+                  <Image source={option.icon} style={styles.optionIcon} contentFit="contain" />
+                </View>
+
+                <View style={styles.optionCopy}>
+                  <Text style={styles.optionTitle}>{option.title}</Text>
+                  <Text style={styles.optionSubtitle}>{option.subtitle}</Text>
+                </View>
+              </Pressable>
+            ))}
+          </View>
+        </ScrollView>
+      </SafeAreaView>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  screen: {
+  backgroundImage: {
+    bottom: 0,
+    left: 0,
+    position: 'absolute',
+    right: 0,
+    top: 0,
+  },
+  content: {
     alignItems: 'center',
-    backgroundColor: '#F7F2FF',
-    flex: 1,
+    paddingBottom: 112,
+    paddingHorizontal: 17,
+    paddingTop: 72,
+  },
+  header: {
+    alignItems: 'center',
+    marginBottom: 30,
+  },
+  iconWrap: {
+    alignItems: 'center',
+    borderRadius: 12,
+    height: 48,
     justifyContent: 'center',
+    width: 48,
+  },
+  optionCard: {
+    alignItems: 'center',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    flexDirection: 'row',
+    gap: 16,
+    height: 88,
+    paddingHorizontal: 17,
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.07,
+    shadowRadius: 14,
+    width: '100%',
+  },
+  optionCopy: {
+    flex: 1,
+    gap: 2,
+  },
+  optionIcon: {
+    height: 37,
+    width: 37,
+  },
+  options: {
+    gap: 10,
+    maxWidth: 348,
+    width: '100%',
+  },
+  optionSubtitle: {
+    color: '#000000',
+    fontFamily: AppFonts.sansRegular,
+    fontSize: 14,
+    fontWeight: '400',
+    letterSpacing: 0,
+    lineHeight: 24,
+  },
+  optionTitle: {
+    color: '#173F5F',
+    fontFamily: AppFonts.sansBold,
+    fontSize: 18,
+    fontWeight: '700',
+    letterSpacing: 0,
+    lineHeight: 24,
+  },
+  pressed: {
+    opacity: 0.88,
+    transform: [{ scale: 0.99 }],
+  },
+  safeArea: {
+    flex: 1,
+  },
+  screen: {
+    backgroundColor: '#EEF0FF',
+    flex: 1,
+    overflow: 'hidden',
+  },
+  subtitle: {
+    color: '#54555A',
+    fontFamily: AppFonts.sansMedium,
+    fontSize: 16,
+    fontWeight: '500',
+    letterSpacing: 0,
+    lineHeight: 26,
   },
   title: {
     color: '#173F5F',
-    fontSize: 24,
+    fontFamily: AppFonts.displayBold,
+    fontSize: 32,
     fontWeight: '700',
+    letterSpacing: 0,
+    lineHeight: 34,
+    textAlign: 'center',
   },
 });

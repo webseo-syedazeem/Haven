@@ -3,6 +3,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import {
+  ActivityIndicator,
   Alert,
   KeyboardAvoidingView,
   Platform,
@@ -15,6 +16,7 @@ import {
 
 import { ScreenWrapper } from '@/components/ScreenWrapper';
 import { AppFonts } from '@/constants/theme';
+import { changePassword } from '@/lib/haven-api';
 
 const changePasswordBackground = require('@/assets/images/change-pass-image.png');
 const noFocusOutline = Platform.OS === 'web' ? ({ outlineStyle: 'none' } as any) : null;
@@ -43,12 +45,19 @@ export default function ChangePasswordScreen() {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [confirmVisible, setConfirmVisible] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [newPassword, setNewPassword] = useState('');
   const [newVisible, setNewVisible] = useState(false);
+  const [oldPassword, setOldPassword] = useState('');
+  const [oldVisible, setOldVisible] = useState(false);
 
-  const handleUpdatePassword = () => {
-    if (!newPassword || !confirmPassword) {
-      setErrorMessage('Please enter and confirm your new password.');
+  const handleUpdatePassword = async () => {
+    if (isSubmitting) {
+      return;
+    }
+
+    if (!oldPassword || !newPassword || !confirmPassword) {
+      setErrorMessage('Please enter your current password and confirm the new password.');
       return;
     }
 
@@ -63,7 +72,19 @@ export default function ChangePasswordScreen() {
     }
 
     setErrorMessage('');
-    Alert.alert('Password updated', 'Your password has been updated successfully.');
+    setIsSubmitting(true);
+
+    try {
+      await changePassword({ oldPassword, newPassword });
+      Alert.alert('Password updated', 'Your password has been updated successfully.');
+      setOldPassword('');
+      setNewPassword('');
+      setConfirmPassword('');
+    } catch (error) {
+      setErrorMessage(error instanceof Error ? error.message : 'Unable to update password right now.');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -83,6 +104,30 @@ export default function ChangePasswordScreen() {
           <Text style={styles.heading}>Change Password</Text>
 
           <View style={styles.form}>
+            <View style={styles.inputWrap}>
+              <InnerShadow />
+              <TextInput
+                autoCapitalize="none"
+                onChangeText={setOldPassword}
+                placeholder="Current password"
+                placeholderTextColor="#8C8C8C"
+                secureTextEntry={!oldVisible}
+                style={[styles.input, noFocusOutline]}
+                value={oldPassword}
+              />
+              <Pressable
+                accessibilityLabel={oldVisible ? 'Hide password' : 'Show password'}
+                hitSlop={10}
+                onPress={() => setOldVisible((visible) => !visible)}
+                style={styles.eyeButton}>
+                <Ionicons
+                  color="#1F2937"
+                  name={oldVisible ? 'eye-off-outline' : 'eye-outline'}
+                  size={17}
+                />
+              </Pressable>
+            </View>
+
             <View style={styles.inputWrap}>
               <InnerShadow />
               <TextInput
@@ -135,8 +180,13 @@ export default function ChangePasswordScreen() {
 
             <Pressable
               accessibilityRole="button"
+              disabled={isSubmitting}
               onPress={handleUpdatePassword}
-              style={({ pressed }) => [styles.updateButton, pressed && styles.pressed]}>
+              style={({ pressed }) => [
+                styles.updateButton,
+                isSubmitting && styles.disabled,
+                pressed && styles.pressed,
+              ]}>
               <LinearGradient
                 colors={['#B087E5', '#7863DC']}
                 end={{ x: 0, y: 1 }}
@@ -144,7 +194,11 @@ export default function ChangePasswordScreen() {
                 start={{ x: 0, y: 0 }}
                 style={styles.updateGradient}>
                 <InnerShadow />
-                <Text style={styles.updateText}>Update Password</Text>
+                {isSubmitting ? (
+                  <ActivityIndicator color="#ffffff" />
+                ) : (
+                  <Text style={styles.updateText}>Update Password</Text>
+                )}
               </LinearGradient>
             </Pressable>
           </View>
@@ -182,6 +236,9 @@ const styles = StyleSheet.create({
     lineHeight: 18,
     marginTop: -4,
     textAlign: 'center',
+  },
+  disabled: {
+    opacity: 0.72,
   },
   eyeButton: {
     alignItems: 'center',

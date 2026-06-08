@@ -3,12 +3,12 @@
   "main": "expo-router/entry",
   "version": "1.0.0",
   "scripts": {
-    "start": "expo start --offline --clear --port 8082",
-    "start:online": "expo start --clear --port 8082",
+    "start": "expo start --offline --clear --port 8081",
+    "start:online": "expo start --clear --port 8081",
     "reset-project": "node ./scripts/reset-project.js",
-    "android": "expo start --android --offline --clear --port 8082",
-    "ios": "expo start --ios --offline --clear --port 8082",
-    "web": "expo start --web --offline --clear --port 8082",
+    "android": "expo start --android --offline --clear --port 8081",
+    "ios": "expo start --ios --offline --clear --port 8081",
+    "web": "expo start --web --offline --clear --port 8081",
     "check:deps": "node scripts/check-expo-deps.js",
     "lint": "expo lint"
   },

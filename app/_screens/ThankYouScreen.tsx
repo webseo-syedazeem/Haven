@@ -143,11 +143,12 @@ const styles = StyleSheet.create({
     ...StyleSheet.absoluteFillObject,
   },
   middleContent: {
-    paddingHorizontal: 16,
+    paddingHorizontal: 20,
     width: '100%',
   },
   scrollContent: {
     flexGrow: 1,
+    paddingTop: 60,
     width: '100%',
   },
   topSpacer: {

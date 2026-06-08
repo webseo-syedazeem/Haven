@@ -1,8 +1,10 @@
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useRouter } from 'expo-router';
 import { Image } from 'expo-image';
 import {
   ImageBackground,
+  Pressable,
   ScrollView,
   StyleSheet,
   Text,
@@ -46,6 +48,7 @@ const todayPlans = [
     iconBackground: '#FFC1031A',
     iconColor: '#FFC43D',
     title: 'Morning Sunlight',
+    subtitle: 'Boost mood and regulate your body check',
     meta: '10 min',
     checked: true,
   },
@@ -53,7 +56,8 @@ const todayPlans = [
     icon: require('@/assets/icons/dashbord-breathing-icon.svg'),
     iconBackground: '#3770FC14',
     iconColor: '#3770FC',
-    title: 'Breathing Practice',
+    title: 'Movement',
+    subtitle: 'A short walk to refresh',
     meta: '5 min',
     checked: false,
   },
@@ -61,13 +65,16 @@ const todayPlans = [
     icon: require('@/assets/icons/dashbord-speed-icon.svg'),
     iconBackground: '#28B92A14',
     iconColor: '#2EB668',
-    title: 'Evening Reflection',
+    title: 'Box Breathing',
+    subtitle: 'Clam Your mind',
     meta: '3 min',
     checked: false,
   },
 ];
 
 export default function HomeScreen() {
+  const router = useRouter();
+
   return (
     <ImageBackground
       source={backgroundImage}
@@ -183,7 +190,7 @@ export default function HomeScreen() {
                 </View>
                 <View style={styles.planCopy}>
                   <Text style={styles.planTitle}>{plan.title}</Text>
-                  <Text style={styles.planSubtitle}>Boost mood and regulate your body check</Text>
+                  <Text style={styles.planSubtitle}>{plan.subtitle}</Text>
                 </View>
                 <Text style={styles.planMeta}>{plan.meta}</Text>
                 <View style={[styles.checkCircle, plan.checked && styles.checkCircleActive]}>
@@ -203,13 +210,18 @@ export default function HomeScreen() {
                 Your nightly check-in helps heaven learn support You
               </Text>
             </View>
-            <LinearGradient
-              colors={['#F38190', '#7B61FF']}
-              start={{ x: 1, y: 0.5 }}
-              end={{ x: 0, y: 0.5 }}
-              style={styles.stressButton}>
-              <Text style={styles.stressButtonText}>Log stress</Text>
-            </LinearGradient>
+            <Pressable
+              accessibilityRole="button"
+              onPress={() => router.push('/stress-step')}
+              style={({ pressed }) => pressed && styles.pressed}>
+              <LinearGradient
+                colors={['#F38190', '#7B61FF']}
+                start={{ x: 1, y: 0.5 }}
+                end={{ x: 0, y: 0.5 }}
+                style={styles.stressButton}>
+                <Text style={styles.stressButtonText}>Log stress</Text>
+              </LinearGradient>
+            </Pressable>
           </View>
 
           <View style={styles.resetCard}>
@@ -578,6 +590,10 @@ const styles = StyleSheet.create({
     letterSpacing: 0,
     lineHeight: 26,
     textAlign: 'center',
+  },
+  pressed: {
+    opacity: 0.86,
+    transform: [{ scale: 0.99 }],
   },
   resetCard: {
     alignItems: 'center',
