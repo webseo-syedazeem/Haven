@@ -47,10 +47,10 @@ export default function RootLayout() {
           <Stack.Screen name="create-account" options={{ headerShown: false }} />
           <Stack.Screen name="welcome" options={{ headerShown: false }} />
           <Stack.Screen name="login" options={{ headerShown: false }} />
-          <Stack.Screen name="auth/callback" options={{ headerShown: false }} />
           <Stack.Screen name="reset-password" options={{ headerShown: false }} />
           <Stack.Screen name="change-password" options={{ headerShown: false }} />
           <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+          <Stack.Screen name="calm-plan" options={{ headerShown: false }} />
           <Stack.Screen name="feeling-lately" options={{ headerShown: false }} />
           <Stack.Screen name="feels-realistic" options={{ headerShown: false }} />
           <Stack.Screen name="sleep-check" options={{ headerShown: false }} />

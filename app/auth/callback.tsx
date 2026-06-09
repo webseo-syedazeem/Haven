@@ -1,4 +1,5 @@
 import { useRouter } from 'expo-router';
+import * as Linking from 'expo-linking';
 import * as WebBrowser from 'expo-web-browser';
 import { useEffect } from 'react';
 import { ActivityIndicator, View } from 'react-native';
@@ -13,19 +14,23 @@ export default function AuthCallback() {
   useEffect(() => {
     const handleCallback = async () => {
       try {
-        if (typeof window !== 'undefined') {
-          const hash = window.location.hash;
-          const params = new URLSearchParams(hash.substring(1));
+        // Mobile: URL se tokens lo
+        const url = await Linking.getInitialURL();
+
+        if (url) {
+          const parsedUrl = new URL(url);
+          const params = new URLSearchParams(
+            parsedUrl.hash ? parsedUrl.hash.substring(1) : parsedUrl.search
+          );
+
           const access_token = params.get('access_token');
           const refresh_token = params.get('refresh_token');
 
           if (access_token && refresh_token) {
-            await supabase.auth.setSession({
-              access_token,
-              refresh_token,
-            });
+            await supabase.auth.setSession({ access_token, refresh_token });
           }
         }
+
         router.replace('/(tabs)');
       } catch (error) {
         console.error('Callback error:', error);

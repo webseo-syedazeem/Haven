@@ -130,7 +130,7 @@ export default function TimeScreen() {
           <View style={styles.actions}>
             <View style={styles.actionsInner}>
               <Pressable
-                onPress={() => router.push('/screen3')}
+                onPress={() => router.push('/calm-plan')}
                 style={({ pressed }) => [styles.continueButton, pressed && styles.pressed]}>
                 <LinearGradient
                   colors={['#5AA1E2', '#0D6FD0']}

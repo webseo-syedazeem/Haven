@@ -145,13 +145,29 @@ export default function PlanScreen() {
 
           <View style={styles.actions}>
             <View style={styles.actionsInner}>
-              <Pressable onPress={() => router.push('/screen4')}>
+              <Pressable
+                onPress={() => router.push('/screen4')}
+                style={({ pressed }) => [styles.continueButton, pressed && styles.pressed]}>
                 <LinearGradient
-                  colors={['#6339FB', '#3770FC', '#6AAFE9']}
-                  locations={[0.0247, 0.5499, 1]}
-                  start={{ x: 0.02, y: 0.5 }}
-                  end={{ x: 1.06, y: 0.5 }}
-                  style={styles.continueButton}>
+                  colors={['#5AA1E2', '#0D6FD0']}
+                  end={{ x: 0, y: 1 }}
+                  locations={[0.0379, 0.75]}
+                  start={{ x: 0, y: 0 }}
+                  style={styles.continueGradient}>
+                  <View pointerEvents="none" style={styles.innerShadow}>
+                    <LinearGradient
+                      colors={['rgba(255, 255, 255, 0.5)', 'rgba(255, 255, 255, 0)']}
+                      end={{ x: 0, y: 1 }}
+                      start={{ x: 0, y: 0 }}
+                      style={styles.innerShadowTop}
+                    />
+                    <LinearGradient
+                      colors={['rgba(255, 255, 255, 0.5)', 'rgba(255, 255, 255, 0)']}
+                      end={{ x: 1, y: 0 }}
+                      start={{ x: 0, y: 0 }}
+                      style={styles.innerShadowLeft}
+                    />
+                  </View>
                   <Text style={styles.continueText}>Continue</Text>
                 </LinearGradient>
               </Pressable>
@@ -184,27 +200,31 @@ const styles = StyleSheet.create({
   },
   content: {
     alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 20,
     paddingBottom: 28,
+    paddingTop: 60,
+    flexGrow: 1,
+    width: '100%',
   },
   header: {
-    width: 315,
-    marginTop: 58,
+    width: '100%',
     alignItems: 'center',
     gap: 8,
     opacity: 1,
   },
   title: {
-    width: 315,
+    width: '100%',
     color: '#173F5F',
     fontFamily: AppFonts.displaySemiBold,
-    fontSize: 30,
-    lineHeight: 38,
+    fontSize: 32,
+    lineHeight: 42,
     letterSpacing: 0,
     textAlign: 'center',
     opacity: 1,
   },
   subtitle: {
-    width: 315,
+    width: '100%',
     color: '#173F5F',
     fontFamily: AppFonts.sansMedium,
     fontSize: 16,
@@ -214,13 +234,14 @@ const styles = StyleSheet.create({
     opacity: 1,
   },
   planList: {
-    width: 345,
+    width: '100%',
+    maxWidth: 348,
     gap: 8,
     marginTop: 54,
     opacity: 1,
   },
   planCard: {
-    width: 345,
+    width: '100%',
     height: 74,
     borderRadius: 12,
     backgroundColor: '#FFFFFF',
@@ -291,7 +312,8 @@ const styles = StyleSheet.create({
     transform: [{ translateY: -4 }],
   },
   noteCard: {
-    width: 339,
+    width: '100%',
+    maxWidth: 348,
     height: 88,
     alignItems: 'center',
     justifyContent: 'center',
@@ -340,50 +362,76 @@ const styles = StyleSheet.create({
     letterSpacing: 0,
   },
   actions: {
-    width: 345,
+    width: '100%',
+    maxWidth: 348,
     height: 102,
     marginTop: 44,
     opacity: 1,
   },
   actionsInner: {
-    width: 345,
+    width: '100%',
     height: 102,
     alignItems: 'center',
     gap: 16,
     opacity: 1,
   },
   continueButton: {
-    width: 345,
-    height: 60,
     alignItems: 'center',
-    justifyContent: 'center',
+    alignSelf: 'center',
+    backgroundColor: '#0d6fd0',
+    width: '100%',
+    height: 54,
+    maxWidth: 348,
     overflow: 'hidden',
-    borderRadius: 50,
-    paddingTop: 16,
-    paddingRight: 24,
-    paddingBottom: 16,
-    paddingLeft: 24,
-    gap: 10,
+    borderRadius: 27,
+    elevation: 0,
     opacity: 1,
-    boxShadow: 'inset 4px 4px 16px 0px #FFFFFF80',
+  },
+  continueGradient: {
+    alignItems: 'center',
+    height: '100%',
+    justifyContent: 'center',
+    width: '100%',
   },
   continueText: {
     color: '#FFFFFF',
-    fontFamily: AppFonts.sansBold,
+    fontFamily: AppFonts.sansMedium,
     fontSize: 18,
+    fontWeight: '500',
     lineHeight: 26,
     letterSpacing: 0,
     textAlign: 'center',
   },
+  innerShadow: {
+    ...StyleSheet.absoluteFillObject,
+  },
+  innerShadowLeft: {
+    bottom: 0,
+    left: 0,
+    position: 'absolute',
+    top: 4,
+    width: 16,
+  },
+  innerShadowTop: {
+    height: 16,
+    left: 4,
+    position: 'absolute',
+    right: 0,
+    top: 0,
+  },
+  pressed: {
+    opacity: 0.86,
+    transform: [{ scale: 0.99 }],
+  },
   backButton: {
-    width: 345,
+    width: '100%',
     height: 26,
     justifyContent: 'center',
     alignItems: 'center',
     opacity: 1,
   },
   backText: {
-    width: 345,
+    width: '100%',
     height: 26,
     color: '#FFFFFF',
     fontFamily: AppFonts.sansBold,
