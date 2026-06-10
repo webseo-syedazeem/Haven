@@ -1,4 +1,5 @@
 import { Image } from 'expo-image';
+import { useRouter } from 'expo-router';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -9,6 +10,8 @@ const backgroundImage = require('@/assets/images/tool-page-bg-image.png');
 type ToolOption = {
   icon: number;
   iconBackground: string;
+  iconSize?: number;
+  route?: '/checklist';
   subtitle: string;
   title: string;
 };
@@ -23,18 +26,23 @@ const toolOptions: ToolOption[] = [
   {
     icon: require('@/assets/images/tool-focus-hub-icon.svg'),
     iconBackground: '#3770FC14',
+    iconSize: 31,
     subtitle: 'Improve focus',
     title: 'Focus Hub',
   },
   {
     icon: require('@/assets/images/tool-checklist-icon.svg'),
     iconBackground: '#28B92A14',
+    iconSize: 31,
+    route: '/checklist',
     subtitle: 'Daily habits',
     title: 'Checklist',
   },
 ];
 
 export default function ToolsScreen() {
+  const router = useRouter();
+
   return (
     <View style={styles.screen}>
       <Image source={backgroundImage} style={styles.backgroundImage} contentFit="cover" />
@@ -54,9 +62,23 @@ export default function ToolsScreen() {
               <Pressable
                 accessibilityRole="button"
                 key={option.title}
+                onPress={() => {
+                  if (option.route) {
+                    router.push(option.route);
+                  }
+                }}
                 style={({ pressed }) => [styles.optionCard, pressed && styles.pressed]}>
                 <View style={[styles.iconWrap, { backgroundColor: option.iconBackground }]}>
-                  <Image source={option.icon} style={styles.optionIcon} contentFit="contain" />
+                  <Image
+                    source={option.icon}
+                    style={[
+                      styles.optionIcon,
+                      option.iconSize
+                        ? { height: option.iconSize, width: option.iconSize }
+                        : null,
+                    ]}
+                    contentFit="contain"
+                  />
                 </View>
 
                 <View style={styles.optionCopy}>

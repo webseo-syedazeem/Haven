@@ -95,6 +95,13 @@ export default function TabLayout() {
           href: null,
         }}
       />
+      <Tabs.Screen
+        name="checklist"
+        options={{
+          title: 'Checklist',
+          href: null,
+        }}
+      />
     </Tabs>
   );
 }

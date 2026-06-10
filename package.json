@@ -3,6 +3,11 @@
   "main": "expo-router/entry",
   "version": "1.0.0",
   "scripts": {
+    "prestart": "node scripts/check-node-version.js",
+    "prestart:online": "node scripts/check-node-version.js",
+    "preandroid": "node scripts/check-node-version.js",
+    "preios": "node scripts/check-node-version.js",
+    "preweb": "node scripts/check-node-version.js",
     "start": "expo start --offline --clear --port 8081",
     "start:online": "expo start --clear --port 8081",
     "reset-project": "node ./scripts/reset-project.js",
@@ -52,6 +57,6 @@
   },
   "private": true,
   "engines": {
-    "node": ">=20 <25"
+    "node": ">=20 <23"
   }
 }
