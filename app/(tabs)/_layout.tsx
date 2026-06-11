@@ -1,7 +1,9 @@
 import { Ionicons } from '@expo/vector-icons';
+import { BlurView } from 'expo-blur';
 import { Tabs } from 'expo-router';
 import React from 'react';
 import { StyleSheet } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { HapticTab } from '@/components/haptic-tab';
 import { AppFonts } from '@/constants/theme';
@@ -19,6 +21,8 @@ function TabIcon({ color, name }: { color: string; name: keyof typeof Ionicons.g
 }
 
 export default function TabLayout() {
+  const insets = useSafeAreaInsets();
+
   return (
     <Tabs
       screenOptions={{
@@ -39,19 +43,26 @@ export default function TabLayout() {
           position: 'absolute',
           left: 8,
           right: 8,
-          bottom: 8,
+          bottom: insets.bottom + 8,
           height: 68,
           borderRadius: 24,
           borderTopWidth: 0,
-          backgroundColor: '#FFFFFF',
+          backgroundColor: 'rgba(255, 255, 255, 0.4)',
           shadowColor: '#3770FC',
           shadowOffset: { width: 0, height: 4 },
           shadowOpacity: 0.16,
           shadowRadius: 16,
-          elevation: 10,
+          elevation: 0,
           paddingTop: 8,
           paddingBottom: 8,
         },
+        tabBarBackground: () => (
+          <BlurView
+            intensity={60}
+            tint="light"
+            style={StyleSheet.absoluteFill}
+          />
+        ),
       }}>
       <Tabs.Screen
         name="index"
@@ -85,6 +96,7 @@ export default function TabLayout() {
         name="profile"
         options={{
           title: 'Profile',
+          headerShown: false,
           tabBarIcon: ({ color }) => <TabIcon color={color} name={menuIcons.profile} />,
         }}
       />

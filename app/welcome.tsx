@@ -5,6 +5,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { AuthButton } from '@/components/AuthButton';
 import { ScreenWrapper } from '@/components/ScreenWrapper';
 import { AppFonts } from '@/constants/theme';
+import { signInWithGoogle } from '@/lib/google-auth';
 
 const welcomeBackground = require('@/assets/images/welcome-background.png');
 const googleIcon = require('@/assets/icons/google.png');
@@ -13,7 +14,18 @@ const emailIcon = require('@/assets/icons/email.png');
 
 export default function WelcomeScreen() {
   const router = useRouter();
-  const handleGooglePress = () => {};
+
+  const handleGooglePress = async () => {
+    try {
+      const session = await signInWithGoogle();
+      if (session) {
+        router.replace('/(tabs)');
+      }
+    } catch (error) {
+      console.error('Google sign in error:', error);
+    }
+  };
+
   const handleApplePress = () => {};
   const handleEmailPress = () => {
     router.push('/login');

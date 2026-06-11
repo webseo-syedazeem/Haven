@@ -1,0 +1,69 @@
+import 'react-native-url-polyfill/auto';
+import { createClient } from '@supabase/supabase-js';
+import * as SecureStore from 'expo-secure-store';
+
+const supabaseUrl = 'https://wqludhqymhcyrjhazjcq.supabase.co';
+const supabaseAnonKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY!;
+
+const createChunkedSecureStore = () => {
+  return {
+    async getItem(key: string): Promise<string | null> {
+      try {
+        const chunkCount = await SecureStore.getItemAsync(`${key}_count`);
+        if (!chunkCount) return await SecureStore.getItemAsync(key);
+        const count = parseInt(chunkCount, 10);
+        let value = '';
+        for (let i = 0; i < count; i++) {
+          const chunk = await SecureStore.getItemAsync(`${key}_${i}`);
+          if (chunk) value += chunk;
+        }
+        return value || null;
+      } catch {
+        return null;
+      }
+    },
+
+    async setItem(key: string, value: string): Promise<void> {
+      try {
+        const chunkSize = 1800;
+        if (value.length <= chunkSize) {
+          await SecureStore.setItemAsync(key, value);
+          return;
+        }
+        const chunks = [];
+        for (let i = 0; i < value.length; i += chunkSize) {
+          chunks.push(value.slice(i, i + chunkSize));
+        }
+        await SecureStore.setItemAsync(`${key}_count`, String(chunks.length));
+        await Promise.all(
+          chunks.map((chunk, i) => SecureStore.setItemAsync(`${key}_${i}`, chunk))
+        );
+      } catch {}
+    },
+
+    async removeItem(key: string): Promise<void> {
+      try {
+        const chunkCount = await SecureStore.getItemAsync(`${key}_count`);
+        if (chunkCount) {
+          const count = parseInt(chunkCount, 10);
+          await SecureStore.deleteItemAsync(`${key}_count`);
+          await Promise.all(
+            Array.from({ length: count }, (_, i) =>
+              SecureStore.deleteItemAsync(`${key}_${i}`)
+            )
+          );
+        }
+        await SecureStore.deleteItemAsync(key);
+      } catch {}
+    },
+  };
+};
+
+export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+  auth: {
+    storage: createChunkedSecureStore(),
+    autoRefreshToken: true,
+    persistSession: true,
+    detectSessionInUrl: false,
+  },
+});

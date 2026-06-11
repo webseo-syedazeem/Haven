@@ -16,6 +16,7 @@ import {
 
 import { ScreenWrapper, useScreenBottomPadding } from '@/components/ScreenWrapper';
 import { AppFonts } from '@/constants/theme';
+import { signInWithGoogle } from '@/lib/google-auth';
 import { signUp } from '@/lib/haven-api';
 
 const createAccountBackground = require('@/assets/images/create-account-page-background-image.png');
@@ -50,6 +51,27 @@ export default function CreateAccountScreen() {
   const [password, setPassword] = useState('');
   const [passwordVisible, setPasswordVisible] = useState(false);
   const [username, setUsername] = useState('');
+
+  const handleGooglePress = async () => {
+    if (isSubmitting) {
+      return;
+    }
+
+    setErrorMessage('');
+    setIsSubmitting(true);
+
+    try {
+      const session = await signInWithGoogle();
+      if (session) {
+        router.replace('/(tabs)');
+      }
+    } catch (error) {
+      console.error('Google sign in error:', error);
+      setErrorMessage(error instanceof Error ? error.message : 'Google sign in failed.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   const handleCreateAccount = async () => {
     if (isSubmitting) {
@@ -104,8 +126,13 @@ export default function CreateAccountScreen() {
 
             <Pressable
               accessibilityRole="button"
-              onPress={() => {}}
-              style={({ pressed }) => [styles.googleButton, pressed && styles.pressed]}>
+              disabled={isSubmitting}
+              onPress={handleGooglePress}
+              style={({ pressed }) => [
+                styles.googleButton,
+                isSubmitting && styles.disabled,
+                pressed && styles.pressed,
+              ]}>
               <Image source={googleIcon} resizeMode="contain" style={styles.googleIcon} />
               <Text adjustsFontSizeToFit numberOfLines={1} style={styles.googleText}>
                 Continue with google
@@ -205,16 +232,16 @@ export default function CreateAccountScreen() {
               </LinearGradient>
             </Pressable>
 
-            <Text style={styles.loginPrompt}>
-              Already have an account?{' '}
-              <Pressable
-                accessibilityRole="button"
-                hitSlop={6}
-                onPress={() => router.push('/welcome')}
-                style={styles.loginLinkButton}>
-                <Text style={styles.loginLink}>Login</Text>
-              </Pressable>
-            </Text>
+           <View style={styles.loginRow}>
+  <Text style={styles.loginPrompt}>Already have an account?</Text>
+  <Pressable
+    accessibilityRole="button"
+    hitSlop={6}
+    onPress={() => router.push('/welcome')}
+    style={styles.loginLinkButton}>
+    <Text style={styles.loginLink}>Login</Text>
+  </Pressable>
+</View>
           </View>
         </View>
       </KeyboardAvoidingView>
@@ -246,6 +273,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: 18,
     width: '100%',
   },
+loginRow: {
+  flexDirection: 'row',
+  alignItems: 'center',
+  justifyContent: 'center',
+  marginTop: 6,  // button se 6 margin
+  gap: 4,
+},
   contentWrapper: {
     flex: 1,
     justifyContent: 'space-between',
@@ -287,6 +321,9 @@ const styles = StyleSheet.create({
     letterSpacing: 0,
     lineHeight: 26,
     textAlign: 'center',
+  },
+  disabled: {
+    opacity: 0.72,
   },
   eyeButton: {
     alignItems: 'center',
@@ -419,20 +456,21 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     letterSpacing: 0,
     lineHeight: 26,
+    textAlign: 'center',
   },
   loginLinkButton: {
     margin: 0,
     padding: 0,
   },
-  loginPrompt: {
-    color: '#173F5F',
-    fontFamily: AppFonts.sansMedium,
-    fontSize: 16,
-    fontWeight: '500',
-    letterSpacing: 0,
-    lineHeight: 26,
-    textAlign: 'center',
-  },
+ loginPrompt: {
+  color: '#173F5F',
+  fontFamily: AppFonts.sansMedium,
+  fontSize: 16,
+  fontWeight: '500',
+  letterSpacing: 0,
+  lineHeight: 26,  // 10 se 26 karo
+  textAlign: 'center',
+},
   passwordInput: {
     paddingRight: 54,
   },

@@ -1,10 +1,13 @@
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
+import { useEffect, useState } from 'react';
+import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { ScreenWrapper } from '@/components/ScreenWrapper';
 import { AppFonts } from '@/constants/theme';
+import { supabase } from '@/lib/supabase';
+import { setAccessToken } from '@/lib/haven-api';
 
 const firstPageBackground = require('@/assets/images/first-page-background-image.png');
 
@@ -29,6 +32,26 @@ function InnerShadow() {
 
 export default function FirstPageScreen() {
   const router = useRouter();
+  const [checking, setChecking] = useState(true);
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data }) => {
+      if (data.session?.access_token) {
+        setAccessToken(data.session.access_token);
+        router.replace('/(tabs)');
+      } else {
+        setChecking(false);
+      }
+    });
+  }, []);
+
+  if (checking) {
+    return (
+      <View style={styles.loadingScreen}>
+        <ActivityIndicator color="#7863DC" size="large" />
+      </View>
+    );
+  }
 
   return (
     <>
@@ -77,6 +100,12 @@ export default function FirstPageScreen() {
 }
 
 const styles = StyleSheet.create({
+  loadingScreen: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#F4EAF8',
+  },
   bottomArea: {
     paddingHorizontal: 12,
   },
@@ -151,7 +180,7 @@ const styles = StyleSheet.create({
   },
   loginLinkButton: {
     alignSelf: 'center',
-    marginTop: 13,
+    marginTop: 6,
     paddingHorizontal: 10,
     paddingVertical: 4,
   },
