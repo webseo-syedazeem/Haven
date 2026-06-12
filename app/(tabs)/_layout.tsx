@@ -1,95 +1,110 @@
 import { Ionicons } from '@expo/vector-icons';
-import { BlurView } from 'expo-blur';
+import { BottomTabBarProps } from '@react-navigation/bottom-tabs';
 import { Tabs } from 'expo-router';
 import React from 'react';
-import { StyleSheet } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { HapticTab } from '@/components/haptic-tab';
 import { AppFonts } from '@/constants/theme';
 
 const menuIcons: Record<string, keyof typeof Ionicons.glyphMap> = {
-  home: 'home-outline',
+  index: 'home-outline',
   mood: 'happy-outline',
   tools: 'leaf-outline',
   progress: 'stats-chart-outline',
   profile: 'person-outline',
 };
 
-function TabIcon({ color, name }: { color: string; name: keyof typeof Ionicons.glyphMap }) {
-  return <Ionicons color={color} name={name} size={22} style={styles.tabIcon} />;
-}
+const HIDDEN_ROUTES = new Set(['screen4']);
 
-export default function TabLayout() {
+function FloatingTabBar({ state, descriptors, navigation }: BottomTabBarProps) {
   const insets = useSafeAreaInsets();
 
   return (
+    <>
+      <View
+        pointerEvents="none"
+        style={[styles.tabBarDock, { height: Math.max(insets.bottom, 8) + 76 }]}
+      />
+
+      <View style={[styles.floatingTabBar, { bottom: Math.max(insets.bottom, 8) }]}>
+        {state.routes.map((route, index) => {
+          const options = descriptors[route.key]?.options;
+
+          if (HIDDEN_ROUTES.has(route.name) || (options as { href?: string | null } | undefined)?.href === null) {
+            return null;
+          }
+
+          const isFocused = state.index === index;
+          const label =
+            typeof options?.title === 'string'
+              ? options.title
+              : route.name === 'index'
+                ? 'Home'
+                : route.name.charAt(0).toUpperCase() + route.name.slice(1);
+          const icon = menuIcons[route.name] ?? 'ellipse-outline';
+
+          return (
+            <Pressable
+              key={route.key}
+              onPress={() => {
+                const event = navigation.emit({
+                  type: 'tabPress',
+                  target: route.key,
+                  canPreventDefault: true,
+                });
+
+                if (!isFocused && !event.defaultPrevented) {
+                  navigation.navigate(route.name, route.params);
+                }
+              }}
+              style={styles.tabBarItem}>
+              <Ionicons
+                name={icon}
+                size={22}
+                color={isFocused ? '#3770FC' : '#8C8C8C'}
+                style={styles.tabBarIcon}
+              />
+              <Text style={[styles.tabBarLabel, isFocused && styles.tabBarLabelActive]}>
+                {label}
+              </Text>
+            </Pressable>
+          );
+        })}
+      </View>
+    </>
+  );
+}
+
+export default function TabLayout() {
+  return (
     <Tabs
+      tabBar={(props) => <FloatingTabBar {...props} />}
       screenOptions={{
-        tabBarActiveTintColor: '#3770FC',
-        tabBarInactiveTintColor: '#8C8C8C',
         headerShown: false,
-        tabBarButton: HapticTab,
-        tabBarLabelStyle: {
-          fontFamily: AppFonts.sansMedium,
-          fontSize: 12,
-          fontWeight: '500',
-          letterSpacing: 0.4,
-          lineHeight: 16,
-          marginTop: 2,
-          textAlign: 'center',
-        },
-        tabBarStyle: {
-          position: 'absolute',
-          left: 8,
-          right: 8,
-          bottom: insets.bottom + 8,
-          height: 68,
-          borderRadius: 24,
-          borderTopWidth: 0,
-          backgroundColor: 'rgba(255, 255, 255, 0.4)',
-          shadowColor: '#3770FC',
-          shadowOffset: { width: 0, height: 4 },
-          shadowOpacity: 0.16,
-          shadowRadius: 16,
-          elevation: 0,
-          paddingTop: 8,
-          paddingBottom: 8,
-        },
-        tabBarBackground: () => (
-          <BlurView
-            intensity={60}
-            tint="light"
-            style={StyleSheet.absoluteFill}
-          />
-        ),
       }}>
       <Tabs.Screen
         name="index"
         options={{
           title: 'Home',
-          tabBarIcon: ({ color }) => <TabIcon color={color} name={menuIcons.home} />,
         }}
       />
       <Tabs.Screen
         name="mood"
         options={{
           title: 'Mood',
-          tabBarIcon: ({ color }) => <TabIcon color={color} name={menuIcons.mood} />,
         }}
       />
       <Tabs.Screen
         name="tools"
         options={{
           title: 'Tools',
-          tabBarIcon: ({ color }) => <TabIcon color={color} name={menuIcons.tools} />,
         }}
       />
       <Tabs.Screen
         name="progress"
         options={{
           title: 'Progress',
-          tabBarIcon: ({ color }) => <TabIcon color={color} name={menuIcons.progress} />,
         }}
       />
       <Tabs.Screen
@@ -97,13 +112,11 @@ export default function TabLayout() {
         options={{
           title: 'Profile',
           headerShown: false,
-          tabBarIcon: ({ color }) => <TabIcon color={color} name={menuIcons.profile} />,
         }}
       />
       <Tabs.Screen
         name="screen4"
         options={{
-          title: 'Privacy',
           href: null,
         }}
       />
@@ -112,8 +125,54 @@ export default function TabLayout() {
 }
 
 const styles = StyleSheet.create({
-  tabIcon: {
+  tabBarDock: {
+    backgroundColor: '#FFFFFF',
+    bottom: 0,
+    left: 0,
+    position: 'absolute',
+    right: 0,
+  },
+  floatingTabBar: {
+    alignItems: 'center',
+    backgroundColor: '#FFFFFF',
+    borderColor: 'rgba(227,227,227,0.55)',
+    borderRadius: 24,
+    borderWidth: 1,
+    elevation: 14,
+    flexDirection: 'row',
+    height: 68,
+    justifyContent: 'space-around',
+    left: 8,
+    overflow: 'hidden',
+    paddingBottom: 8,
+    paddingTop: 8,
+    position: 'absolute',
+    right: 8,
+    shadowColor: '#3770FC',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.22,
+    shadowRadius: 24,
+  },
+  tabBarItem: {
+    alignItems: 'center',
+    flex: 1,
+    justifyContent: 'center',
+  },
+  tabBarIcon: {
     height: 24,
     width: 24,
+  },
+  tabBarLabel: {
+    color: '#8C8C8C',
+    fontFamily: AppFonts.sansMedium,
+    fontSize: 12,
+    fontWeight: '500',
+    letterSpacing: 0.4,
+    lineHeight: 16,
+    marginTop: 2,
+    textAlign: 'center',
+  },
+  tabBarLabelActive: {
+    color: '#3770FC',
   },
 });

@@ -16,30 +16,10 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 
 import { AppFonts } from '@/constants/theme';
-import { SaveSuccessModal } from '@/components/profile/SaveSuccessModal';
 import { favouritesApi } from '@/lib/api';
 import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 
 const backgroundImage = require('@/assets/images/264ee61d943a0f70fc621c11756d688038af0dc6.png');
-
-function InnerShadow() {
-  return (
-    <View pointerEvents="none" style={styles.innerShadow}>
-      <LinearGradient
-        colors={['rgba(255, 255, 255, 0.5)', 'rgba(255, 255, 255, 0)']}
-        end={{ x: 0, y: 1 }}
-        start={{ x: 0, y: 0 }}
-        style={styles.innerShadowTop}
-      />
-      <LinearGradient
-        colors={['rgba(255, 255, 255, 0.5)', 'rgba(255, 255, 255, 0)']}
-        end={{ x: 1, y: 0 }}
-        start={{ x: 0, y: 0 }}
-        style={styles.innerShadowLeft}
-      />
-    </View>
-  );
-}
 
 const ALL_TOOLS = [
   { tool_id: 'box-breathing',      tool_name: 'Box Breathing',      tool_type: 'breathing',  icon: require('@/assets/icons/dashbord-breathing-icon.svg'), iconColor: '#3770FC', iconBg: '#3770FC14' },
@@ -68,6 +48,25 @@ const SECTIONS = [
   { key: 'checklist',  label: 'Checklists',  color: '#2EB668' },
 ];
 
+function InnerShadow() {
+  return (
+    <View pointerEvents="none" style={styles.innerShadow}>
+      <LinearGradient
+        colors={['rgba(255, 255, 255, 0.5)', 'rgba(255, 255, 255, 0)']}
+        end={{ x: 0, y: 1 }}
+        start={{ x: 0, y: 0 }}
+        style={styles.innerShadowTop}
+      />
+      <LinearGradient
+        colors={['rgba(255, 255, 255, 0.5)', 'rgba(255, 255, 255, 0)']}
+        end={{ x: 1, y: 0 }}
+        start={{ x: 0, y: 0 }}
+        style={styles.innerShadowLeft}
+      />
+    </View>
+  );
+}
+
 export default function FavouriteToolsScreen() {
   const queryClient = useQueryClient();
   const router = useRouter();
@@ -90,7 +89,6 @@ export default function FavouriteToolsScreen() {
   const [rawFavourites, setRawFavourites] = useState<any[]>([]);
   const [isLoadingFavourites, setIsLoadingFavourites] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [showSavedModal, setShowSavedModal] = useState(false);
 
   // existing favourites from server: { tool_id → record id }
   const serverFavMap: Record<string, string> = {};
@@ -143,20 +141,14 @@ export default function FavouriteToolsScreen() {
   );
 
 function toggleTool(toolId: string) {
-  console.log("Clicked:", toolId);
-
   setSelected((prev) => {
     const next = new Set(prev ?? []);
 
     if (next.has(toolId)) {
       next.delete(toolId);
-      console.log("Removed");
     } else {
       next.add(toolId);
-      console.log("Added");
     }
-
-    console.log([...next]);
     return next;
   });
 }
@@ -184,7 +176,9 @@ function toggleTool(toolId: string) {
         ...toRemove.map(([, id]) => removeMutation.mutateAsync(id)),
       ]);
 
-      setShowSavedModal(true);
+      Alert.alert('Saved!', 'Your favourite tools have been updated.', [
+        { text: 'OK', onPress: () => router.back() },
+      ]);
     } catch {
       Alert.alert('Error', 'Something went wrong. Please try again.');
     } finally {
@@ -226,7 +220,6 @@ function toggleTool(toolId: string) {
                   <View style={styles.card}>
                     {tools.map((tool, index) => {
                       const isFav = selected !== null && selected.has(tool.tool_id);
-                      console.log(tool.tool_id, isFav);
                       return (
                         <View
                           key={tool.tool_id}
@@ -266,7 +259,6 @@ function toggleTool(toolId: string) {
 
           {/* Save button */}
           <Pressable
-            accessibilityRole="button"
             onPress={handleSave}
             disabled={saving || selected === null}
             style={({ pressed }) => [
@@ -289,12 +281,6 @@ function toggleTool(toolId: string) {
           </Pressable>
 
         </ScrollView>
-        <SaveSuccessModal
-          visible={showSavedModal}
-          title="Favourites saved"
-          message="Your favourite tools have been updated successfully."
-          onClose={() => setShowSavedModal(false)}
-        />
       </SafeAreaView>
     </ImageBackground>
   );

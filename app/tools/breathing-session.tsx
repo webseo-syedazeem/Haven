@@ -22,6 +22,7 @@ import { apiClient } from '@/lib/api/client';
 
 const backgroundImage = require('@/assets/images/285a294ece0614f030198845adc4dff0100bbeff.png');
 const globeImage = require('@/assets/images/44fd4a7516deff4e42e926f2962b61ff703723fc.png');
+const CompleteBgImage = require('@/assets/images/f5ba11e8f8ac0e212b9f2ccbc46b4cb9ca0f3233.png');
 
 type Phase = 'inhale' | 'hold1' | 'exhale' | 'hold2';
 const PHASE_LABELS: Record<Phase, string> = {
@@ -149,7 +150,7 @@ export default function BreathingSessionScreen() {
   if (showComplete) {
     return (
       <View style={styles.completeScreen}>
-        <ImageBackground source={backgroundImage} resizeMode="cover" style={styles.completeHeroBg} />
+        <ImageBackground source={CompleteBgImage} resizeMode="cover" style={styles.completeHeroBg} />
         <LinearGradient
           colors={['rgba(245,245,248,0)', '#F5F5F8']}
           locations={[0, 0.9]}
@@ -211,7 +212,7 @@ export default function BreathingSessionScreen() {
   }
 
   return (
-    <ImageBackground source={backgroundImage} resizeMode="cover" style={styles.screen}>
+    <ImageBackground source={backgroundImage} resizeMode="cover" style={[styles.screen, { opacity: 1 }]}>
       {/* Top half: background image */}
       <View style={styles.topHalf}>
         <SafeAreaView edges={['top']} style={styles.topSafe}>
@@ -240,32 +241,17 @@ export default function BreathingSessionScreen() {
 
       {/* Bottom half: white/blur card */}
       <View style={styles.bottomCard}>
-        <BlurView
-          experimentalBlurMethod="dimezisBlurView"
-          intensity={120}
-          tint="light"
-          style={StyleSheet.absoluteFillObject}
-        />
+      
         <LinearGradient
-          colors={[
-            'rgba(255,255,255,0)',
-            'rgba(255,255,255,0.9)',
-            'rgba(255,255,255,0.98)',
-          ]}
-          locations={[0, 0.45, 1]}
-          style={styles.fogFade}
-        />
-        <LinearGradient
-          colors={[
-            'rgba(255,255,255,0)',
-            'rgba(255,255,255,0.86)',
-            'rgba(255,255,255,0.98)',
-          ]}
-          locations={[0, 0.35, 1]}
-          style={styles.fogVeil}
-        />
-        <View style={styles.fogOverlay} />
-
+  colors={[
+    'rgba(255,255,255,0)',
+    'rgba(255,255,255,0.4)',
+    'rgba(255,255,255,0.85)',
+    '#FFFFFF',
+  ]}
+  locations={[0, 0.3, 0.7, 1]}
+  style={styles.transitionFog}
+/>
         <ScrollView
           bounces={false}
           contentContainerStyle={[styles.bottomContent, { paddingBottom: insets.bottom + 40 }]}
@@ -338,7 +324,12 @@ export default function BreathingSessionScreen() {
         </ScrollView>
       </View>
 
-      <View style={[styles.floatingTabBar, { bottom: insets.bottom + 8 }]}>
+      <View
+        pointerEvents="none"
+        style={[styles.tabBarDock, { height: Math.max(insets.bottom, 8) + 76 }]}
+      />
+
+      <View style={[styles.floatingTabBar, { bottom: Math.max(insets.bottom, 8) }]}>
         {TAB_ITEMS.map((item) => (
           <Pressable
             key={item.label}
@@ -410,6 +401,7 @@ const styles = StyleSheet.create({
   // Top half
   topHalf: {
     height: '44%',
+    backgroundColor: 'transparent',
   },
   topSafe: {
     flex: 1,
@@ -455,17 +447,18 @@ const styles = StyleSheet.create({
   globeWrapper: {
     alignItems: 'center',
     flex: 1,
-    marginTop: 10,
+
     justifyContent: 'center',
     
     width: '100%',
   },
   globeStage: {
-    alignItems: 'center',
-    height: 430,
-    justifyContent: 'center',
-    width: 430,
-  },
+  alignItems: 'center',
+  height: 430,
+  justifyContent: 'center',
+  width: 430,
+  marginTop: 40,
+},
   globeImage: {
     height: 430,
     width: 430,
@@ -495,15 +488,14 @@ const styles = StyleSheet.create({
 
   // Bottom card
   bottomCard: {
-    backgroundColor: 'rgba(255,255,255,0.04)',
+    backgroundColor: '#FFFFFF',
     borderTopLeftRadius: 0,
     borderTopRightRadius: 0,
     flex: 1,
     marginTop: 64,
     overflow: 'visible',
     paddingHorizontal: 20,
-   
-
+  
   },
   fogFade: {
     height: 160,
@@ -519,10 +511,10 @@ const styles = StyleSheet.create({
     right: 0,
     top: -86,
   },
-  fogOverlay: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(255,255,255,0.86)',
-  },
+ fogOverlay: {
+  ...StyleSheet.absoluteFillObject,
+  backgroundColor: 'transparent',
+},
   bottomScroll: {
     flex: 1,
   },
@@ -642,6 +634,14 @@ const styles = StyleSheet.create({
   scrollSpacer: {
     height: 20,
   },
+  transitionFog: {
+  position: 'absolute',
+  left: 0,
+  right: 0,
+  top: -90,
+  height: 90,
+  zIndex: 50,
+},
   infoIcon: { color: '#7B61FF', fontSize: 16, marginTop: 2 },
   infoText: {
     color: '#4B3B8C',
@@ -694,6 +694,13 @@ const styles = StyleSheet.create({
   },
   tabBarLabelActive: {
     color: '#3770FC',
+  },
+  tabBarDock: {
+    backgroundColor: '#FFFFFF',
+    bottom: 0,
+    left: 0,
+    position: 'absolute',
+    right: 0,
   },
 
   // Modals

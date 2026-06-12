@@ -10,10 +10,15 @@ import { AppFonts } from '@/constants/theme';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { useColorScheme } from '@/hooks/use-color-scheme';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
 export const unstable_settings = {
   anchor: '(tabs)',
 };
+
+const queryClient = new QueryClient({
+  defaultOptions: { queries: { retry: 1, staleTime: 1000 * 60 * 5 } },
+});
 
 export default function RootLayout() {
   const colorScheme = useColorScheme();
@@ -32,7 +37,7 @@ export default function RootLayout() {
   });
 
   useEffect(() => {
-    SystemUI.setBackgroundColorAsync('transparent');
+    SystemUI.setBackgroundColorAsync('#FFFFFF');
   }, []);
 
   if (!fontsLoaded) {
@@ -42,6 +47,7 @@ export default function RootLayout() {
   return (
     <SafeAreaProvider>
       <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
+        <QueryClientProvider client={queryClient}>
         <Stack screenOptions={{ contentStyle: { backgroundColor: 'transparent' } }}>
           <Stack.Screen name="index" options={{ headerShown: false }} />
           <Stack.Screen name="create-account" options={{ headerShown: false }} />
@@ -51,6 +57,8 @@ export default function RootLayout() {
           <Stack.Screen name="change-password" options={{ headerShown: false }} />
           <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
           <Stack.Screen name="calm-plan" options={{ headerShown: false }} />
+          <Stack.Screen name="tools" options={{ headerShown: false }} />
+          <Stack.Screen name="profile" options={{ headerShown: false }} />
           <Stack.Screen name="feeling-lately" options={{ headerShown: false }} />
           <Stack.Screen name="feels-realistic" options={{ headerShown: false }} />
           <Stack.Screen name="sleep-check" options={{ headerShown: false }} />
@@ -62,6 +70,7 @@ export default function RootLayout() {
           <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />
         </Stack>
         <StatusBar backgroundColor="transparent" style="light" translucent />
+        </QueryClientProvider>
       </ThemeProvider>
     </SafeAreaProvider>
   );

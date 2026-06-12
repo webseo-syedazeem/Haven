@@ -1,4 +1,5 @@
 import { Image } from 'expo-image';
+import { useRouter } from 'expo-router';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -9,6 +10,7 @@ const backgroundImage = require('@/assets/images/tool-page-bg-image.png');
 type ToolOption = {
   icon: number;
   iconBackground: string;
+  route: string;
   subtitle: string;
   title: string;
 };
@@ -19,22 +21,27 @@ const toolOptions: ToolOption[] = [
     iconBackground: '#7B61FF14',
     subtitle: 'Clam Your mind',
     title: 'Breathing',
+    route: '/tools/breathing',
   },
   {
     icon: require('@/assets/images/tool-focus-hub-icon.svg'),
     iconBackground: '#3770FC14',
     subtitle: 'Improve focus',
     title: 'Focus Hub',
+    route: '/tools/soundscape',
   },
   {
     icon: require('@/assets/images/tool-checklist-icon.svg'),
     iconBackground: '#28B92A14',
     subtitle: 'Daily habits',
     title: 'Checklist',
+    route: '/tools/checklist',
   },
 ];
 
 export default function ToolsScreen() {
+  const router = useRouter();
+
   return (
     <View style={styles.screen}>
       <Image source={backgroundImage} style={styles.backgroundImage} contentFit="cover" />
@@ -54,6 +61,7 @@ export default function ToolsScreen() {
               <Pressable
                 accessibilityRole="button"
                 key={option.title}
+                onPress={() => router.push(option.route as any)}
                 style={({ pressed }) => [styles.optionCard, pressed && styles.pressed]}>
                 <View style={[styles.iconWrap, { backgroundColor: option.iconBackground }]}>
                   <Image source={option.icon} style={styles.optionIcon} contentFit="contain" />
@@ -164,7 +172,7 @@ const styles = StyleSheet.create({
     color: '#173F5F',
     fontFamily: AppFonts.displayBold,
     fontSize: 32,
-    fontWeight: '700',
+  
     letterSpacing: 0,
     lineHeight: 34,
     textAlign: 'center',
