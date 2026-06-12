@@ -10,7 +10,8 @@ const backgroundImage = require('@/assets/images/tool-page-bg-image.png');
 type ToolOption = {
   icon: number;
   iconBackground: string;
-  route: string;
+  iconSize?: number;
+  route: '/tools/breathing' | '/tools/soundscape' | '/tools/checklist';
   subtitle: string;
   title: string;
 };
@@ -19,13 +20,14 @@ const toolOptions: ToolOption[] = [
   {
     icon: require('@/assets/images/tool-breathing-icon.svg'),
     iconBackground: '#7B61FF14',
-    subtitle: 'Clam Your mind',
+    subtitle: 'Calm Your mind',
     title: 'Breathing',
     route: '/tools/breathing',
   },
   {
     icon: require('@/assets/images/tool-focus-hub-icon.svg'),
     iconBackground: '#3770FC14',
+    iconSize: 31,
     subtitle: 'Improve focus',
     title: 'Focus Hub',
     route: '/tools/soundscape',
@@ -33,6 +35,7 @@ const toolOptions: ToolOption[] = [
   {
     icon: require('@/assets/images/tool-checklist-icon.svg'),
     iconBackground: '#28B92A14',
+    iconSize: 31,
     subtitle: 'Daily habits',
     title: 'Checklist',
     route: '/tools/checklist',
@@ -53,7 +56,7 @@ export default function ToolsScreen() {
           showsVerticalScrollIndicator={false}>
           <View style={styles.header}>
             <Text style={styles.title}>Tools</Text>
-            <Text style={styles.subtitle}>Find Your clam</Text>
+            <Text style={styles.subtitle}>Find Your calm</Text>
           </View>
 
           <View style={styles.options}>
@@ -61,10 +64,23 @@ export default function ToolsScreen() {
               <Pressable
                 accessibilityRole="button"
                 key={option.title}
-                onPress={() => router.push(option.route as any)}
+                onPress={() => {
+                  if (option.route) {
+                    router.push(option.route);
+                  }
+                }}
                 style={({ pressed }) => [styles.optionCard, pressed && styles.pressed]}>
                 <View style={[styles.iconWrap, { backgroundColor: option.iconBackground }]}>
-                  <Image source={option.icon} style={styles.optionIcon} contentFit="contain" />
+                  <Image
+                    source={option.icon}
+                    style={[
+                      styles.optionIcon,
+                      option.iconSize
+                        ? { height: option.iconSize, width: option.iconSize }
+                        : null,
+                    ]}
+                    contentFit="contain"
+                  />
                 </View>
 
                 <View style={styles.optionCopy}>
