@@ -31,7 +31,7 @@ const helpedOptions = [
   {
     id: 'soundscape',
     label: 'Soundscape',
-    icon: 'breathwork',
+    icon: 'sound',
   },
   { id: 'meditation', label: 'Meditation', icon: 'meditation' },
   { id: 'journaling', label: 'Journaling', icon: 'journaling' },

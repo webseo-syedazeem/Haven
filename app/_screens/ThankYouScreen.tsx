@@ -41,8 +41,6 @@ export function ThankYouScreen() {
             bounces={false}
             contentContainerStyle={[styles.scrollContent, { paddingBottom: bottomPadding }]}
             showsVerticalScrollIndicator={false}>
-            <View style={styles.topSpacer} />
-
             <View style={styles.header}>
               <Image source={CHECK_ICON} style={styles.checkIcon} contentFit="contain" />
               <Text allowFontScaling={false} style={styles.heading}>
@@ -150,10 +148,6 @@ const styles = StyleSheet.create({
     flexGrow: 1,
     paddingTop: 60,
     width: '100%',
-  },
-  topSpacer: {
-    flex: 1,
-    minHeight: 48,
   },
   header: {
     alignItems: 'center',

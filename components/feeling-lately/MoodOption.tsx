@@ -34,6 +34,7 @@ const styles = StyleSheet.create({
   label: {
     ...wellnessTypography.moodLabel,
     color: wellnessColors.text,
+    fontSize: 12,
     marginTop: 6,
     width: '100%',
     textAlign: 'center',

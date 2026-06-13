@@ -145,6 +145,10 @@ export function setAuthTokens(tokens: { accessToken?: string | null; refreshToke
   refreshToken = tokens.refreshToken ?? refreshToken;
 }
 
+export function setAccessToken(token: string | null) {
+  accessToken = token;
+}
+
 export function clearAuthTokens() {
   accessToken = null;
   refreshToken = null;

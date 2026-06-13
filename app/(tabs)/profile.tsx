@@ -2,6 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter, type Href } from 'expo-router';
 import {
   ImageBackground,
+  ScrollView,
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -60,11 +61,16 @@ export default function ProfileScreen() {
   return (
     <ImageBackground source={backgroundImage} resizeMode="cover" style={styles.screen}>
       <SafeAreaView edges={['top']} style={styles.safeArea}>
-        <View style={[styles.content, { paddingBottom: insets.bottom }]}>
+        <ScrollView
+          bounces
+          contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 120 }]}
+          overScrollMode="always"
+          showsVerticalScrollIndicator={false}
+          style={styles.scrollView}>
           <Text style={styles.greeting}>{'Good morning,\nJon'}</Text>
           <SectionCard label="Your Plan" rows={planRows} />
           <SectionCard label="Setting" rows={settingRows} />
-        </View>
+        </ScrollView>
       </SafeAreaView>
     </ImageBackground>
   );
@@ -74,9 +80,9 @@ const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: '#C8BFEE' },
   safeArea: { flex: 1 },
   content: {
-    flex: 1,
+    flexGrow: 1,
     paddingHorizontal: 16,
-    paddingTop: 28,
+    paddingTop: 60,
   },
   greeting: {
     color: '#173F5F',
@@ -141,5 +147,8 @@ const styles = StyleSheet.create({
     fontSize: 12,
     lineHeight: 18,
     marginTop: 1,
+  },
+  scrollView: {
+    flex: 1,
   },
 });
