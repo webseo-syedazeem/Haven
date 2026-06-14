@@ -11,6 +11,8 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { SetupProvider } from '@/contexts/SetupContext';
+import { ProgressProvider } from '@/contexts/ProgressContext';
 
 export const unstable_settings = {
   anchor: '(tabs)',
@@ -48,6 +50,8 @@ export default function RootLayout() {
     <SafeAreaProvider>
       <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
         <QueryClientProvider client={queryClient}>
+        <SetupProvider>
+        <ProgressProvider>
         <Stack screenOptions={{ contentStyle: { backgroundColor: 'transparent' } }}>
           <Stack.Screen name="index" options={{ headerShown: false }} />
           <Stack.Screen name="create-account" options={{ headerShown: false }} />
@@ -67,9 +71,12 @@ export default function RootLayout() {
           <Stack.Screen name="stress-step" options={{ headerShown: false }} />
           <Stack.Screen name="daily-reflection" options={{ headerShown: false }} />
           <Stack.Screen name="thank-you" options={{ headerShown: false }} />
+          <Stack.Screen name="insight-details" options={{ headerShown: false }} />
           <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />
         </Stack>
         <StatusBar backgroundColor="transparent" style="light" translucent />
+        </ProgressProvider>
+        </SetupProvider>
         </QueryClientProvider>
       </ThemeProvider>
     </SafeAreaProvider>

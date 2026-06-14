@@ -6,6 +6,8 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { ScreenWrapper } from '@/components/ScreenWrapper';
 import { GradientProgressBar } from '@/components/feeling-lately/GradientProgressBar';
 import { MoodOption } from '@/components/feeling-lately/MoodOption';
+import { useSetup } from '@/contexts/SetupContext';
+import { toSetupMood } from '@/lib/setup-api';
 import {
   wellnessColors,
   wellnessSpacing,
@@ -26,6 +28,7 @@ const getMoodFromProgress = (value: number) => {
 };
 
 export function MoodCheckInScreen() {
+  const { updateAnswers } = useSetup();
   const [progress, setProgress] = useState(0.28);
   const [selectedMood, setSelectedMood] = useState<string | null>(null);
   const [validationMessage, setValidationMessage] = useState('');
@@ -46,12 +49,13 @@ export function MoodCheckInScreen() {
     setValidationMessage('');
   };
 
-  const handleContinue = () => {
+  const handleContinue = async () => {
     if (!selectedMood) {
       setValidationMessage('Please select how you feel before continuing.');
       return;
     }
 
+    updateAnswers({ mood: toSetupMood(selectedMood) });
     router.push('/sleep-check');
   };
 

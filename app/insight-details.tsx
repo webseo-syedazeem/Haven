@@ -1,8 +1,8 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { useEffect, useMemo, useState } from 'react';
+import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, {
   Circle,
@@ -14,273 +14,23 @@ import Svg, {
 } from 'react-native-svg';
 
 import { AppFonts } from '@/constants/theme';
+import { useProgress } from '@/contexts/ProgressContext';
+import {
+  type ProgressChartDetail,
+  type ProgressChartType,
+  type ProgressMetric,
+  type ProgressPeriod,
+} from '@/services/progressService';
 
 const backgroundImage = require('@/assets/images/insight-detail-page-bg-img.png');
 
-type Metric = {
-  change: string;
-  changeTone: 'positive' | 'negative';
-  icon: keyof typeof Ionicons.glyphMap;
-  label: string;
-  value: string;
-};
-
-type TabItem = 'Day' | 'Week' | 'month' | 'Year';
-type InsightType = 'stress-breathwork' | 'movement-stress' | 'sleep-mood' | 'temperature-stress';
-type PeriodData = {
-  chartData: number[];
-  dateRange: string;
-  insightMessage: string;
-  labels: string[];
-  metricCards: Metric[];
-};
-type InsightDetail = {
-  lightThemeColor: string;
-  periods: Record<TabItem, PeriodData>;
-  subtitle: string;
-  themeColor: string;
-  title: string;
-};
-
-const sharedInsightFilters = {
-  tabs: ['Day', 'Week', 'month', 'Year'] as TabItem[],
-  activeTab: 'Week' as TabItem,
-};
-
-const periodRangeOptions: Record<TabItem, string[]> = {
-  Day: ['Today', 'Yesterday', '2 days ago'],
-  Week: ['5-11 May', '12-18 May', '19-25 May'],
-  month: ['May', 'April', 'March'],
-  Year: ['2026', '2025', '2024'],
-};
-
-const insightDetailsData: Record<InsightType, InsightDetail> = {
-  'stress-breathwork': {
-    title: 'Stress Vs Breathwork',
-    subtitle: 'How breathwork affects your stress',
-    themeColor: '#FF2B75',
-    lightThemeColor: '#FFEAF3',
-    periods: {
-      Day: {
-        dateRange: 'Today',
-        labels: ['6a', '9a', '12p', '3p', '6p', '9p'],
-        chartData: [4.4, 4.0, 3.7, 3.1, 2.8, 2.6],
-        insightMessage: 'Stress eased after your afternoon breathwork sessions.',
-        metricCards: [
-          { change: '-6% today', changeTone: 'positive', icon: 'heart-outline', label: 'Avg. stress', value: '2.6' },
-          { change: '+12% today', changeTone: 'positive', icon: 'leaf-outline', label: 'Breath mins', value: '18' },
-          { change: '+5% today', changeTone: 'positive', icon: 'trending-down-outline', label: 'Calm score', value: '4.0' },
-          { change: '-1 today', changeTone: 'positive', icon: 'flash-outline', label: 'High stress', value: '1' },
-        ],
-      },
-      Week: {
-        dateRange: '5-11 May',
-        labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
-        chartData: [4.6, 4.2, 3.7, 3.4, 3.0, 2.7, 2.4],
-        insightMessage: 'Your stress appears lower on days with more breathwork.',
-        metricCards: [
-          { change: '-10% last week', changeTone: 'positive', icon: 'heart-outline', label: 'Avg. stress', value: '2.8' },
-          { change: '+18% last week', changeTone: 'positive', icon: 'leaf-outline', label: 'Breath mins', value: '42' },
-          { change: '+7% last week', changeTone: 'positive', icon: 'trending-down-outline', label: 'Calm score', value: '4.1' },
-          { change: '-3% last week', changeTone: 'negative', icon: 'flash-outline', label: 'High stress', value: '3' },
-        ],
-      },
-      month: {
-        dateRange: 'May',
-        labels: ['W1', 'W2', 'W3', 'W4'],
-        chartData: [4.2, 3.8, 3.2, 2.7],
-        insightMessage: 'Monthly stress trends down as breathwork consistency improves.',
-        metricCards: [
-          { change: '-14% last month', changeTone: 'positive', icon: 'heart-outline', label: 'Avg. stress', value: '3.1' },
-          { change: '+24% last month', changeTone: 'positive', icon: 'leaf-outline', label: 'Breath mins', value: '168' },
-          { change: '+9% last month', changeTone: 'positive', icon: 'trending-down-outline', label: 'Calm score', value: '4.0' },
-          { change: '-5 last month', changeTone: 'positive', icon: 'flash-outline', label: 'High stress', value: '9' },
-        ],
-      },
-      Year: {
-        dateRange: '2026',
-        labels: ['Jan', 'Mar', 'May', 'Jul', 'Sep', 'Nov'],
-        chartData: [4.5, 4.1, 3.6, 3.2, 2.9, 2.6],
-        insightMessage: 'Long-term breathwork practice is linked with lower stress.',
-        metricCards: [
-          { change: '-18% this year', changeTone: 'positive', icon: 'heart-outline', label: 'Avg. stress', value: '3.3' },
-          { change: '+31% this year', changeTone: 'positive', icon: 'leaf-outline', label: 'Breath mins', value: '1.8k' },
-          { change: '+12% this year', changeTone: 'positive', icon: 'trending-down-outline', label: 'Calm score', value: '4.2' },
-          { change: '-19 this year', changeTone: 'positive', icon: 'flash-outline', label: 'High stress', value: '41' },
-        ],
-      },
-    },
-  },
-  'movement-stress': {
-    title: 'Movement Vs Stress',
-    subtitle: 'How movement impacts stress',
-    themeColor: '#22C55E',
-    lightThemeColor: '#EAFBEF',
-    periods: {
-      Day: {
-        dateRange: 'Today',
-        labels: ['6a', '9a', '12p', '3p', '6p', '9p'],
-        chartData: [2.5, 2.9, 3.4, 3.8, 4.2, 4.4],
-        insightMessage: 'Short movement breaks helped your stress settle today.',
-        metricCards: [
-          { change: '+8% today', changeTone: 'positive', icon: 'walk-outline', label: 'Movement', value: '3.1k' },
-          { change: '-4% today', changeTone: 'positive', icon: 'heart-outline', label: 'Stress Level', value: '2.7' },
-          { change: '+5% today', changeTone: 'positive', icon: 'leaf-outline', label: 'Recovery', value: '4.1' },
-          { change: '+16% today', changeTone: 'positive', icon: 'time-outline', label: 'Active mins', value: '32' },
-        ],
-      },
-      Week: {
-        dateRange: '5-11 May',
-        labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
-        chartData: [2.7, 3.0, 3.3, 3.8, 4.1, 4.5, 4.7],
-        insightMessage: 'More movement is linked with lower stress.',
-        metricCards: [
-          { change: '+14% last week', changeTone: 'positive', icon: 'walk-outline', label: 'Movement', value: '6.2k' },
-          { change: '-9% last week', changeTone: 'positive', icon: 'heart-outline', label: 'Stress Level', value: '2.6' },
-          { change: '+11% last week', changeTone: 'positive', icon: 'leaf-outline', label: 'Recovery', value: '4.4' },
-          { change: '+22% last week', changeTone: 'positive', icon: 'time-outline', label: 'Active mins', value: '96' },
-        ],
-      },
-      month: {
-        dateRange: 'May',
-        labels: ['W1', 'W2', 'W3', 'W4'],
-        chartData: [3.1, 3.5, 4.0, 4.5],
-        insightMessage: 'Movement has steadily increased through the month.',
-        metricCards: [
-          { change: '+19% last month', changeTone: 'positive', icon: 'walk-outline', label: 'Movement', value: '24k' },
-          { change: '-11% last month', changeTone: 'positive', icon: 'heart-outline', label: 'Stress Level', value: '2.9' },
-          { change: '+13% last month', changeTone: 'positive', icon: 'leaf-outline', label: 'Recovery', value: '4.3' },
-          { change: '+28% last month', changeTone: 'positive', icon: 'time-outline', label: 'Active mins', value: '410' },
-        ],
-      },
-      Year: {
-        dateRange: '2026',
-        labels: ['Jan', 'Mar', 'May', 'Jul', 'Sep', 'Nov'],
-        chartData: [2.8, 3.1, 3.5, 3.9, 4.3, 4.6],
-        insightMessage: 'Your yearly movement trend is improving alongside calmer stress patterns.',
-        metricCards: [
-          { change: '+25% this year', changeTone: 'positive', icon: 'walk-outline', label: 'Movement', value: '286k' },
-          { change: '-15% this year', changeTone: 'positive', icon: 'heart-outline', label: 'Stress Level', value: '3.0' },
-          { change: '+16% this year', changeTone: 'positive', icon: 'leaf-outline', label: 'Recovery', value: '4.2' },
-          { change: '+35% this year', changeTone: 'positive', icon: 'time-outline', label: 'Active mins', value: '4.8k' },
-        ],
-      },
-    },
-  },
-  'sleep-mood': {
-    title: 'Sleep VS mood',
-    subtitle: 'How sleep affects your mood',
-    themeColor: '#8B7CFF',
-    lightThemeColor: '#F0EEFF',
-    periods: {
-      Day: {
-        dateRange: 'Today',
-        labels: ['6a', '9a', '12p', '3p', '6p', '9p'],
-        chartData: [3.6, 3.8, 4.0, 4.1, 4.3, 4.4],
-        insightMessage: 'Your mood improved after a steadier sleep night.',
-        metricCards: [
-          { change: '+6% today', changeTone: 'positive', icon: 'happy-outline', label: 'Avg. mood', value: '4.1' },
-          { change: '+4% today', changeTone: 'positive', icon: 'moon-outline', label: 'Avg. Sleep', value: '4.4' },
-          { change: '-1 today', changeTone: 'positive', icon: 'cloudy-night-outline', label: 'Restless', value: '1' },
-          { change: '+12% today', changeTone: 'positive', icon: 'sparkles-outline', label: 'Wind down', value: '24' },
-        ],
-      },
-      Week: {
-        dateRange: '5-11 May',
-        labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
-        chartData: [3.8, 4.0, 4.1, 4.3, 4.2, 4.6, 4.5],
-        insightMessage: 'Better sleep is linked with improved mood.',
-        metricCards: [
-          { change: '+12% last week', changeTone: 'positive', icon: 'happy-outline', label: 'Avg. mood', value: '4.2' },
-          { change: '+8% last week', changeTone: 'positive', icon: 'moon-outline', label: 'Avg. Sleep', value: '4.6' },
-          { change: '-4% last week', changeTone: 'negative', icon: 'cloudy-night-outline', label: 'Restless', value: '2' },
-          { change: '+20% last week', changeTone: 'positive', icon: 'sparkles-outline', label: 'Wind down', value: '128' },
-        ],
-      },
-      month: {
-        dateRange: 'May',
-        labels: ['W1', 'W2', 'W3', 'W4'],
-        chartData: [3.7, 4.0, 4.2, 4.5],
-        insightMessage: 'Mood has improved across the month as sleep became steadier.',
-        metricCards: [
-          { change: '+15% last month', changeTone: 'positive', icon: 'happy-outline', label: 'Avg. mood', value: '4.1' },
-          { change: '+10% last month', changeTone: 'positive', icon: 'moon-outline', label: 'Avg. Sleep', value: '4.5' },
-          { change: '-6% last month', changeTone: 'positive', icon: 'cloudy-night-outline', label: 'Restless', value: '7' },
-          { change: '+25% last month', changeTone: 'positive', icon: 'sparkles-outline', label: 'Wind down', value: '480' },
-        ],
-      },
-      Year: {
-        dateRange: '2026',
-        labels: ['Jan', 'Mar', 'May', 'Jul', 'Sep', 'Nov'],
-        chartData: [3.5, 3.7, 4.0, 4.2, 4.4, 4.6],
-        insightMessage: 'Your long-term mood trend rises with better sleep routines.',
-        metricCards: [
-          { change: '+20% this year', changeTone: 'positive', icon: 'happy-outline', label: 'Avg. mood', value: '4.0' },
-          { change: '+13% this year', changeTone: 'positive', icon: 'moon-outline', label: 'Avg. Sleep', value: '4.4' },
-          { change: '-18% this year', changeTone: 'positive', icon: 'cloudy-night-outline', label: 'Restless', value: '64' },
-          { change: '+29% this year', changeTone: 'positive', icon: 'sparkles-outline', label: 'Wind down', value: '5.1k' },
-        ],
-      },
-    },
-  },
-  'temperature-stress': {
-    title: 'Temperature Vs Stress',
-    subtitle: 'How body warmth relates to calmness',
-    themeColor: '#FF7A59',
-    lightThemeColor: '#FFF0EA',
-    periods: {
-      Day: {
-        dateRange: 'Today',
-        labels: ['6a', '9a', '12p', '3p', '6p', '9p'],
-        chartData: [4.2, 4.1, 3.9, 3.8, 3.6, 3.5],
-        insightMessage: 'Your calm score improved as warmth became steadier today.',
-        metricCards: [
-          { change: '+2% today', changeTone: 'positive', icon: 'thermometer-outline', label: 'Warmth', value: '4.1' },
-          { change: '-2% today', changeTone: 'positive', icon: 'heart-outline', label: 'Stress Level', value: '2.8' },
-          { change: '+4% today', changeTone: 'positive', icon: 'checkmark-circle-outline', label: 'Balance', value: '4.2' },
-          { change: '+1 today', changeTone: 'positive', icon: 'sunny-outline', label: 'Calm hrs', value: '6' },
-        ],
-      },
-      Week: {
-        dateRange: '5-11 May',
-        labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
-        chartData: [4.4, 4.2, 4.0, 3.8, 3.6, 3.5, 3.4],
-        insightMessage: 'Warmer, calmer patterns may be linked with lower stress.',
-        metricCards: [
-          { change: '+5% last week', changeTone: 'positive', icon: 'thermometer-outline', label: 'Warmth', value: '4.0' },
-          { change: '-3% last week', changeTone: 'positive', icon: 'heart-outline', label: 'Stress Level', value: '2.9' },
-          { change: '+6% last week', changeTone: 'positive', icon: 'checkmark-circle-outline', label: 'Balance', value: '4.3' },
-          { change: '+9% last week', changeTone: 'positive', icon: 'sunny-outline', label: 'Calm days', value: '5' },
-        ],
-      },
-      month: {
-        dateRange: 'May',
-        labels: ['W1', 'W2', 'W3', 'W4'],
-        chartData: [4.1, 3.9, 3.7, 3.5],
-        insightMessage: 'Monthly warmth balance is tracking with lower stress.',
-        metricCards: [
-          { change: '+7% last month', changeTone: 'positive', icon: 'thermometer-outline', label: 'Warmth', value: '4.1' },
-          { change: '-6% last month', changeTone: 'positive', icon: 'heart-outline', label: 'Stress Level', value: '3.0' },
-          { change: '+8% last month', changeTone: 'positive', icon: 'checkmark-circle-outline', label: 'Balance', value: '4.2' },
-          { change: '+12% last month', changeTone: 'positive', icon: 'sunny-outline', label: 'Calm days', value: '19' },
-        ],
-      },
-      Year: {
-        dateRange: '2026',
-        labels: ['Jan', 'Mar', 'May', 'Jul', 'Sep', 'Nov'],
-        chartData: [4.3, 4.1, 3.9, 3.7, 3.5, 3.4],
-        insightMessage: 'Yearly calm patterns improve when warmth remains balanced.',
-        metricCards: [
-          { change: '+9% this year', changeTone: 'positive', icon: 'thermometer-outline', label: 'Warmth', value: '4.0' },
-          { change: '-10% this year', changeTone: 'positive', icon: 'heart-outline', label: 'Stress Level', value: '3.1' },
-          { change: '+11% this year', changeTone: 'positive', icon: 'checkmark-circle-outline', label: 'Balance', value: '4.1' },
-          { change: '+16% this year', changeTone: 'positive', icon: 'sunny-outline', label: 'Calm days', value: '211' },
-        ],
-      },
-    },
-  },
-};
-
+const chartTypes: ProgressChartType[] = [
+  'stress-breathwork',
+  'movement-stress',
+  'sleep-mood',
+  'temperature-stress',
+];
+const tabs: ProgressPeriod[] = ['Day', 'Week', 'Month', 'Year'];
 const navItems = [
   { icon: 'home-outline', label: 'Home' },
   { icon: 'happy-outline', label: 'Mood' },
@@ -289,57 +39,67 @@ const navItems = [
   { icon: 'person-outline', label: 'Profile' },
 ] satisfies { icon: keyof typeof Ionicons.glyphMap; label: string }[];
 
-function shiftMetricValue(value: string, selectedIndex: number) {
-  if (selectedIndex === 0) {
-    return value;
-  }
-
-  const numericValue = Number.parseFloat(value);
-  if (Number.isNaN(numericValue)) {
-    return value;
-  }
-
-  if (value.includes('k')) {
-    return `${Math.max(0, numericValue - selectedIndex * 0.2).toFixed(1)}k`;
-  }
-
-  if (value.includes('.')) {
-    return Math.max(0, numericValue - selectedIndex * 0.1).toFixed(1);
-  }
-
-  return `${Math.max(0, Math.round(numericValue - selectedIndex * 3))}`;
+function isProgressChartType(value: string | undefined): value is ProgressChartType {
+  return Boolean(value && chartTypes.includes(value as ProgressChartType));
 }
 
-function getSelectedPeriodData(basePeriodData: PeriodData, activeTab: TabItem, selectedIndex: number) {
-  if (selectedIndex === 0) {
-    return basePeriodData;
+function hexToRgba(hex: string, opacity: number) {
+  const normalized = hex.replace('#', '');
+
+  if (normalized.length !== 6) {
+    return `rgba(55, 112, 252, ${opacity})`;
   }
 
-  const adjustment = selectedIndex === 1 ? -0.18 : 0.14;
-  return {
-    ...basePeriodData,
-    dateRange: periodRangeOptions[activeTab][selectedIndex],
-    chartData: basePeriodData.chartData.map((value, index) =>
-      Math.max(1, Math.min(5, value + adjustment + index * adjustment * 0.15)),
-    ),
-    insightMessage: `${basePeriodData.insightMessage} (${periodRangeOptions[activeTab][selectedIndex]})`,
-    metricCards: basePeriodData.metricCards.map((metric) => ({
-      ...metric,
-      value: shiftMetricValue(metric.value, selectedIndex),
-    })),
-  };
+  const red = Number.parseInt(normalized.slice(0, 2), 16);
+  const green = Number.parseInt(normalized.slice(2, 4), 16);
+  const blue = Number.parseInt(normalized.slice(4, 6), 16);
+  return `rgba(${red}, ${green}, ${blue}, ${opacity})`;
+}
+
+function getMetricIcon(metric: ProgressMetric): keyof typeof Ionicons.glyphMap {
+  const icon = metric.icon as keyof typeof Ionicons.glyphMap | undefined;
+
+  if (icon) {
+    return icon;
+  }
+
+  const label = metric.label.toLowerCase();
+
+  if (label.includes('sleep')) {
+    return 'moon-outline';
+  }
+
+  if (label.includes('breath')) {
+    return 'leaf-outline';
+  }
+
+  if (label.includes('stress') || label.includes('heart')) {
+    return 'heart-outline';
+  }
+
+  return 'analytics-outline';
+}
+
+function createSmoothPath(points: { x: number; y: number }[]) {
+  return points.reduce((path, point, index) => {
+    if (index === 0) {
+      return `M ${point.x} ${point.y}`;
+    }
+
+    const previous = points[index - 1];
+    const controlX = previous.x + (point.x - previous.x) / 2;
+    return `${path} C ${controlX} ${previous.y}, ${controlX} ${point.y}, ${point.x} ${point.y}`;
+  }, '');
 }
 
 function SegmentedTabs({
   activeTab,
   onChange,
   themeColor,
-  tabs,
 }: {
-  activeTab: TabItem;
-  onChange: (tab: TabItem) => void;
+  activeTab: ProgressPeriod;
+  onChange: (tab: ProgressPeriod) => void;
   themeColor: string;
-  tabs: TabItem[];
 }) {
   return (
     <View style={styles.segmentedTabs}>
@@ -368,13 +128,13 @@ function MetricCard({
   themeColor,
 }: {
   lightThemeColor: string;
-  metric: Metric;
+  metric: ProgressMetric;
   themeColor: string;
 }) {
   return (
     <View style={styles.metricCard}>
       <View style={[styles.metricIcon, { backgroundColor: lightThemeColor }]}>
-        <Ionicons color={themeColor} name={metric.icon} size={13} />
+        <Ionicons color={themeColor} name={getMetricIcon(metric)} size={13} />
       </View>
       <Text numberOfLines={1} style={styles.metricLabel}>
         {metric.label}
@@ -390,18 +150,6 @@ function MetricCard({
       </Text>
     </View>
   );
-}
-
-function createSmoothPath(points: { x: number; y: number }[]) {
-  return points.reduce((path, point, index) => {
-    if (index === 0) {
-      return `M ${point.x} ${point.y}`;
-    }
-
-    const previous = points[index - 1];
-    const controlX = previous.x + (point.x - previous.x) / 2;
-    return `${path} C ${controlX} ${previous.y}, ${controlX} ${point.y}, ${point.x} ${point.y}`;
-  }, '');
 }
 
 function MoodTrendChart({
@@ -423,14 +171,18 @@ function MoodTrendChart({
   const bottom = 32;
   const plotWidth = chartWidth - left - right;
   const plotHeight = chartHeight - top - bottom;
-  const maxValue = 5;
-  const minValue = 1;
-  const points = chartData.map((value, index) => ({
-    x: left + (plotWidth / (chartData.length - 1)) * index,
-    y: top + ((maxValue - value) / (maxValue - minValue)) * plotHeight,
+  const safeData = chartData.length ? chartData : [0, 0];
+  const safeLabels = labels.length ? labels : safeData.map((_, index) => String(index + 1));
+  const maxValue = Math.max(5, ...safeData);
+  const minValue = Math.min(0, ...safeData);
+  const range = Math.max(1, maxValue - minValue);
+  const points = safeData.map((value, index) => ({
+    x: left + (plotWidth / Math.max(1, safeData.length - 1)) * index,
+    y: top + ((maxValue - value) / range) * plotHeight,
   }));
   const linePath = createSmoothPath(points);
   const areaPath = `${linePath} L ${points[points.length - 1].x} ${top + plotHeight} L ${points[0].x} ${top + plotHeight} Z`;
+  const ticks = [maxValue, (maxValue + minValue) / 2, minValue];
 
   return (
     <Svg style={styles.moodChartSvg} viewBox={`0 0 ${chartWidth} ${chartHeight}`}>
@@ -440,17 +192,17 @@ function MoodTrendChart({
           <Stop offset="1" stopColor={lightThemeColor} stopOpacity={0.25} />
         </SvgLinearGradient>
       </Defs>
-      {[5, 4, 3, 2, 1].map((tick) => {
-        const y = top + ((maxValue - tick) / (maxValue - minValue)) * plotHeight;
+      {ticks.map((tick) => {
+        const y = top + ((maxValue - tick) / range) * plotHeight;
         return (
           <SvgText fill="#8B90A0" fontSize="9" key={tick} textAnchor="end" x={left - 10} y={y + 3}>
-            {tick}
+            {Number.isInteger(tick) ? tick : tick.toFixed(1)}
           </SvgText>
         );
       })}
       <Path d={areaPath} fill="url(#moodArea)" />
       <Path d={linePath} fill="none" stroke={themeColor} strokeLinecap="round" strokeWidth={3} />
-      {points.map((point, index) => (
+      {points.map((point) => (
         <Circle
           cx={point.x}
           cy={point.y}
@@ -461,13 +213,13 @@ function MoodTrendChart({
           strokeWidth={2}
         />
       ))}
-      {labels.map((label, index) => (
+      {safeLabels.map((label, index) => (
         <SvgText
           fill="#6F7484"
           fontSize="9"
-          key={label}
+          key={`${label}-${index}`}
           textAnchor="middle"
-          x={left + (plotWidth / (labels.length - 1)) * index}
+          x={left + (plotWidth / Math.max(1, safeLabels.length - 1)) * index}
           y={chartHeight - 8}>
           {label}
         </SvgText>
@@ -494,20 +246,62 @@ function BottomNav({ bottomInset }: { bottomInset: number }) {
   );
 }
 
+function getInitialPeriod(detail: ProgressChartDetail | undefined): ProgressPeriod {
+  return detail?.periods.Day ? 'Day' : tabs.find((tab) => detail?.periods[tab]) ?? 'Week';
+}
+
+function EmptyState({ message }: { message: string }) {
+  return (
+    <View style={styles.stateCard}>
+      <Text style={styles.stateText}>{message}</Text>
+    </View>
+  );
+}
+
 export default function InsightDetailsScreen() {
   const router = useRouter();
   const params = useLocalSearchParams<{ type?: string }>();
   const insets = useSafeAreaInsets();
-  const [activeTab, setActiveTab] = useState<TabItem>(sharedInsightFilters.activeTab);
+  const {
+    error,
+    isLoading,
+    loadProgressIfNeeded,
+    progress,
+    selectedChartType,
+    setSelectedChartType,
+  } = useProgress();
+  const selectedType = isProgressChartType(params.type) ? params.type : selectedChartType;
+  const detail = selectedType ? progress?.chartDetails[selectedType] : undefined;
+  const [activeTab, setActiveTab] = useState<ProgressPeriod>('Week');
   const [isRangeDropdownOpen, setIsRangeDropdownOpen] = useState(false);
   const [selectedRangeIndex, setSelectedRangeIndex] = useState(0);
-  const selectedType = (
-    params.type && params.type in insightDetailsData ? params.type : 'stress-breathwork'
-  ) as InsightType;
-  const detail = insightDetailsData[selectedType];
-  const rangeOptions = periodRangeOptions[activeTab];
-  const periodData = getSelectedPeriodData(detail.periods[activeTab], activeTab, selectedRangeIndex);
-  const handleTabChange = (tab: TabItem) => {
+
+  useEffect(() => {
+    void loadProgressIfNeeded();
+  }, [loadProgressIfNeeded]);
+
+  useEffect(() => {
+    if (selectedType) {
+      setSelectedChartType(selectedType);
+    }
+  }, [selectedType, setSelectedChartType]);
+
+  useEffect(() => {
+    const initialPeriod = getInitialPeriod(detail);
+    setActiveTab(initialPeriod);
+    setSelectedRangeIndex(0);
+  }, [detail]);
+
+  const periodData = detail?.periods[activeTab];
+  const themeColor = detail?.themeColor ?? '#FF2B75';
+  const lightThemeColor = useMemo(() => hexToRgba(themeColor, 0.12), [themeColor]);
+  const rangeOptions = periodData?.dateRanges.length
+    ? periodData.dateRanges
+    : periodData?.selectedDateRange
+      ? [periodData.selectedDateRange]
+      : [];
+  const selectedRange = rangeOptions[selectedRangeIndex] ?? periodData?.selectedDateRange ?? '';
+  const handleTabChange = (tab: ProgressPeriod) => {
     setActiveTab(tab);
     setSelectedRangeIndex(0);
     setIsRangeDropdownOpen(false);
@@ -529,100 +323,109 @@ export default function InsightDetailsScreen() {
             activeOpacity={0.75}
             onPress={() => router.back()}
             style={styles.backButton}>
-            <Ionicons color="#173F5F" name="chevron-back" size={16} />
+            <Ionicons color="#000000" name="chevron-back" size={18} />
           </TouchableOpacity>
 
           <View style={styles.titleBlock}>
             <Text style={styles.title}>Insight Details</Text>
-            <Text style={styles.subtitle}>A closer look at your progress</Text>
+            <Text style={styles.subtitle}>{detail?.subtitle ?? 'A closer look at your progress'}</Text>
           </View>
 
           <View style={styles.mainCard}>
-            <View style={styles.filterRow}>
-              <SegmentedTabs
-                activeTab={activeTab}
-                onChange={handleTabChange}
-                tabs={sharedInsightFilters.tabs}
-                themeColor={detail.themeColor}
-              />
-              <View style={styles.dateSelectWrap}>
-                <Pressable
-                  onPress={() => setIsRangeDropdownOpen((current) => !current)}
-                  style={({ pressed }) => [styles.dateSelect, pressed && styles.dateSelectPressed]}>
-                  <Text style={styles.dateText}>{periodData.dateRange}</Text>
-                  <Ionicons
-                    color="#173F5F"
-                    name={isRangeDropdownOpen ? 'chevron-up' : 'chevron-down'}
-                    size={12}
-                  />
-                </Pressable>
-                {isRangeDropdownOpen ? (
-                  <View style={styles.dateDropdown}>
-                    {rangeOptions.map((option, index) => {
-                      const isSelected = index === selectedRangeIndex;
-                      return (
-                        <Pressable
-                          key={option}
-                          onPress={() => {
-                            setSelectedRangeIndex(index);
-                            setIsRangeDropdownOpen(false);
-                          }}
-                          style={[
-                            styles.dateDropdownItem,
-                            isSelected && { backgroundColor: detail.lightThemeColor },
-                          ]}>
-                          <Text
-                            style={[
-                              styles.dateDropdownText,
-                              isSelected && { color: detail.themeColor },
-                            ]}>
-                            {option}
-                          </Text>
-                        </Pressable>
-                      );
-                    })}
+            {isLoading ? (
+              <View style={styles.stateCard}>
+                <ActivityIndicator color={themeColor} />
+                <Text style={styles.stateText}>Loading insight...</Text>
+              </View>
+            ) : error ? (
+              <EmptyState message={error} />
+            ) : !detail || !periodData ? (
+              <EmptyState message="No insight data is available for this chart yet." />
+            ) : (
+              <>
+                <View style={styles.filterRow}>
+                  <SegmentedTabs activeTab={activeTab} onChange={handleTabChange} themeColor={themeColor} />
+                  <View style={styles.dateSelectWrap}>
+                    <Pressable
+                      disabled={!rangeOptions.length}
+                      onPress={() => setIsRangeDropdownOpen((current) => !current)}
+                      style={({ pressed }) => [styles.dateSelect, pressed && styles.dateSelectPressed]}>
+                      <Text style={styles.dateText}>{selectedRange}</Text>
+                      <Ionicons
+                        color="#173F5F"
+                        name={isRangeDropdownOpen ? 'chevron-up' : 'chevron-down'}
+                        size={12}
+                      />
+                    </Pressable>
+                    {isRangeDropdownOpen ? (
+                      <View style={styles.dateDropdown}>
+                        {rangeOptions.map((option, index) => {
+                          const isSelected = index === selectedRangeIndex;
+                          return (
+                            <Pressable
+                              key={option}
+                              onPress={() => {
+                                setSelectedRangeIndex(index);
+                                setIsRangeDropdownOpen(false);
+                              }}
+                              style={[
+                                styles.dateDropdownItem,
+                                isSelected && { backgroundColor: lightThemeColor },
+                              ]}>
+                              <Text
+                                style={[
+                                  styles.dateDropdownText,
+                                  isSelected && { color: themeColor },
+                                ]}>
+                                {option}
+                              </Text>
+                            </Pressable>
+                          );
+                        })}
+                      </View>
+                    ) : null}
                   </View>
-                ) : null}
-              </View>
-            </View>
-
-            <View style={styles.metricsRow}>
-              {periodData.metricCards.map((metric) => (
-                <MetricCard
-                  key={metric.label}
-                  lightThemeColor={detail.lightThemeColor}
-                  metric={metric}
-                  themeColor={detail.themeColor}
-                />
-              ))}
-            </View>
-
-            <View style={[styles.trendCard, { shadowColor: detail.themeColor }]}>
-              <View style={styles.trendHeader}>
-                <View>
-                  <Text style={styles.trendTitle}>{detail.title}</Text>
-                  <Text style={styles.trendSubtitle}>{detail.subtitle}</Text>
                 </View>
-                <View style={styles.scoreDropdown}>
-                  <Text style={styles.scoreDropdownText}>Week</Text>
-                  <Ionicons color="#7B8190" name="chevron-down" size={11} />
+
+                <View style={styles.metricsRow}>
+                  {periodData.metricCards.map((metric) => (
+                    <MetricCard
+                      key={metric.label}
+                      lightThemeColor={lightThemeColor}
+                      metric={metric}
+                      themeColor={themeColor}
+                    />
+                  ))}
                 </View>
-              </View>
 
-              <MoodTrendChart
-                chartData={periodData.chartData}
-                labels={periodData.labels}
-                lightThemeColor={detail.lightThemeColor}
-                themeColor={detail.themeColor}
-              />
+                <View style={[styles.trendCard, { shadowColor: themeColor }]}>
+                  <View style={styles.trendHeader}>
+                    <View>
+                      <Text style={styles.trendTitle}>{detail.title}</Text>
+                      <Text style={styles.trendSubtitle}>{detail.subtitle}</Text>
+                    </View>
+                    <View style={styles.scoreDropdown}>
+                      <Text style={styles.scoreDropdownText}>{activeTab}</Text>
+                      <Ionicons color="#7B8190" name="chevron-down" size={11} />
+                    </View>
+                  </View>
 
-              <View style={[styles.insightBanner, { backgroundColor: detail.lightThemeColor }]}>
-                <Ionicons color={detail.themeColor} name="sparkles" size={15} />
-                <Text style={[styles.insightText, { color: detail.themeColor }]}>
-                  {periodData.insightMessage}
-                </Text>
-              </View>
-            </View>
+                  <MoodTrendChart
+                    chartData={periodData.chartData}
+                    labels={periodData.labels}
+                    lightThemeColor={lightThemeColor}
+                    themeColor={themeColor}
+                  />
+
+                  <View style={[styles.insightBanner, { backgroundColor: lightThemeColor }]}>
+                    <Ionicons color={themeColor} name="sparkles" size={15} />
+                    <Text style={[styles.insightText, { color: themeColor }]}>
+                      {periodData.insightMessage}
+                    </Text>
+                  </View>
+                </View>
+              </>
+            )}
           </View>
         </ScrollView>
       </SafeAreaView>
@@ -634,15 +437,15 @@ export default function InsightDetailsScreen() {
 const styles = StyleSheet.create({
   backButton: {
     alignItems: 'center',
-    backgroundColor: '#FFFFFF',
-    borderRadius: 15,
-    height: 30,
+    backgroundColor: 'rgba(255, 255, 255, 0.5)',
+    borderRadius: 16,
+    height: 32,
     justifyContent: 'center',
     shadowColor: '#7B61FF',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.08,
     shadowRadius: 12,
-    width: 30,
+    width: 32,
   },
   backgroundImage: {
     bottom: 0,
@@ -731,7 +534,6 @@ const styles = StyleSheet.create({
   },
   insightBanner: {
     alignItems: 'center',
-    backgroundColor: '#F3F0FF',
     borderRadius: 12,
     flexDirection: 'row',
     gap: 8,
@@ -740,7 +542,6 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
   },
   insightText: {
-    color: '#6E5EE8',
     flex: 1,
     fontFamily: AppFonts.sansMedium,
     fontSize: 12,
@@ -778,7 +579,6 @@ const styles = StyleSheet.create({
   },
   metricIcon: {
     alignItems: 'center',
-    backgroundColor: '#F1EEFF',
     borderRadius: 12,
     height: 22,
     justifyContent: 'center',
@@ -890,6 +690,19 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.06,
     shadowRadius: 12,
   },
+  stateCard: {
+    alignItems: 'center',
+    minHeight: 260,
+    justifyContent: 'center',
+    padding: 18,
+  },
+  stateText: {
+    color: '#173F5F',
+    fontFamily: AppFonts.sansMedium,
+    fontSize: 13,
+    lineHeight: 18,
+    textAlign: 'center',
+  },
   subtitle: {
     color: '#173F5F',
     fontFamily: AppFonts.sansMedium,
@@ -911,7 +724,6 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     marginTop: 12,
     padding: 12,
-    shadowColor: '#7B61FF',
     shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.08,
     shadowRadius: 18,

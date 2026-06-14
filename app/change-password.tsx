@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useState } from 'react';
 import {
   ActivityIndicator,
@@ -16,7 +16,7 @@ import {
 
 import { ScreenWrapper } from '@/components/ScreenWrapper';
 import { AppFonts } from '@/constants/theme';
-import { changePassword } from '@/lib/haven-api';
+import { changePassword, resetPassword } from '@/lib/haven-api';
 
 const changePasswordBackground = require('@/assets/images/change-pass-image.png');
 const noFocusOutline = Platform.OS === 'web' ? ({ outlineStyle: 'none' } as any) : null;
@@ -42,6 +42,11 @@ function InnerShadow() {
 
 export default function ChangePasswordScreen() {
   const router = useRouter();
+  const params = useLocalSearchParams<{ access_token?: string; token?: string }>();
+  const resetToken = Array.isArray(params.access_token)
+    ? params.access_token[0]
+    : params.access_token ?? (Array.isArray(params.token) ? params.token[0] : params.token);
+  const isResetFlow = Boolean(resetToken);
   const [confirmPassword, setConfirmPassword] = useState('');
   const [confirmVisible, setConfirmVisible] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
@@ -56,8 +61,12 @@ export default function ChangePasswordScreen() {
       return;
     }
 
-    if (!oldPassword || !newPassword || !confirmPassword) {
-      setErrorMessage('Please enter your current password and confirm the new password.');
+    if ((!isResetFlow && !oldPassword) || !newPassword || !confirmPassword) {
+      setErrorMessage(
+        isResetFlow
+          ? 'Please enter and confirm your new password.'
+          : 'Please enter your current password and confirm the new password.'
+      );
       return;
     }
 
@@ -75,11 +84,18 @@ export default function ChangePasswordScreen() {
     setIsSubmitting(true);
 
     try {
-      await changePassword({ oldPassword, newPassword });
+      if (isResetFlow) {
+        await resetPassword({ newPassword, token: resetToken });
+      } else {
+        await changePassword({ oldPassword, newPassword });
+      }
       Alert.alert('Password updated', 'Your password has been updated successfully.');
       setOldPassword('');
       setNewPassword('');
       setConfirmPassword('');
+      if (isResetFlow) {
+        router.replace('/welcome');
+      }
     } catch (error) {
       setErrorMessage(error instanceof Error ? error.message : 'Unable to update password right now.');
     } finally {
@@ -101,32 +117,34 @@ export default function ChangePasswordScreen() {
             <Ionicons color="#000000" name="chevron-back" size={18} />
           </Pressable>
 
-          <Text style={styles.heading}>Change Password</Text>
+          <Text style={styles.heading}>{isResetFlow ? 'Reset Password' : 'Change Password'}</Text>
 
           <View style={styles.form}>
-            <View style={styles.inputWrap}>
-              <InnerShadow />
-              <TextInput
-                autoCapitalize="none"
-                onChangeText={setOldPassword}
-                placeholder="Current password"
-                placeholderTextColor="#8C8C8C"
-                secureTextEntry={!oldVisible}
-                style={[styles.input, noFocusOutline]}
-                value={oldPassword}
-              />
-              <Pressable
-                accessibilityLabel={oldVisible ? 'Hide password' : 'Show password'}
-                hitSlop={10}
-                onPress={() => setOldVisible((visible) => !visible)}
-                style={styles.eyeButton}>
-                <Ionicons
-                  color="#1F2937"
-                  name={oldVisible ? 'eye-off-outline' : 'eye-outline'}
-                  size={17}
+            {!isResetFlow && (
+              <View style={styles.inputWrap}>
+                <InnerShadow />
+                <TextInput
+                  autoCapitalize="none"
+                  onChangeText={setOldPassword}
+                  placeholder="Current password"
+                  placeholderTextColor="#8C8C8C"
+                  secureTextEntry={!oldVisible}
+                  style={[styles.input, noFocusOutline]}
+                  value={oldPassword}
                 />
-              </Pressable>
-            </View>
+                <Pressable
+                  accessibilityLabel={oldVisible ? 'Hide password' : 'Show password'}
+                  hitSlop={10}
+                  onPress={() => setOldVisible((visible) => !visible)}
+                  style={styles.eyeButton}>
+                  <Ionicons
+                    color="#1F2937"
+                    name={oldVisible ? 'eye-off-outline' : 'eye-outline'}
+                    size={17}
+                  />
+                </Pressable>
+              </View>
+            )}
 
             <View style={styles.inputWrap}>
               <InnerShadow />

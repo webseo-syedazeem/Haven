@@ -1,5 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter, type Href } from 'expo-router';
+import { useEffect, useState } from 'react';
 import {
   ImageBackground,
   ScrollView,
@@ -11,6 +12,7 @@ import {
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { AppFonts } from '@/constants/theme';
+import { getCurrentUser } from '@/lib/haven-api';
 
 const backgroundImage = require('@/assets/images/4a78c0b5bcbe750563b0d0e3ecbe9951c1d0f0cc.png');
 
@@ -27,6 +29,90 @@ const settingRows = [
 ] as const;
 
 type ProfileRow = (typeof planRows)[number] | (typeof settingRows)[number];
+type ProfileUser = Record<string, unknown>;
+
+function getStringValue(source: unknown, keys: string[]) {
+  if (!source || typeof source !== 'object') {
+    return '';
+  }
+
+  const record = source as Record<string, unknown>;
+
+  for (const key of keys) {
+    const value = record[key];
+
+    if (typeof value === 'string' && value.trim()) {
+      return value.trim();
+    }
+  }
+
+  return '';
+}
+
+function getNestedRecord(source: unknown, key: string) {
+  if (!source || typeof source !== 'object') {
+    return null;
+  }
+
+  const value = (source as Record<string, unknown>)[key];
+
+  return value && typeof value === 'object' ? (value as Record<string, unknown>) : null;
+}
+
+function unwrapCurrentUser(response: unknown) {
+  const root = response && typeof response === 'object' ? (response as Record<string, unknown>) : {};
+  const data = getNestedRecord(root, 'data');
+
+  return (
+    getNestedRecord(data, 'user') ??
+    getNestedRecord(root, 'user') ??
+    getNestedRecord(data, 'profile') ??
+    getNestedRecord(root, 'profile') ??
+    root
+  );
+}
+
+function getDisplayName(user: ProfileUser | null) {
+  const profile = getNestedRecord(user, 'profile');
+  const metadata = getNestedRecord(user, 'user_metadata');
+  const firstName = getStringValue(user, ['first_name', 'firstName']);
+  const lastName = getStringValue(user, ['last_name', 'lastName']);
+  const profileFirstName = getStringValue(profile, ['first_name', 'firstName']);
+  const profileLastName = getStringValue(profile, ['last_name', 'lastName']);
+  const joinedName = [firstName || profileFirstName, lastName || profileLastName]
+    .filter(Boolean)
+    .join(' ')
+    .trim();
+
+  if (joinedName) {
+    return joinedName;
+  }
+
+  const directName = getStringValue(user, ['name', 'full_name', 'fullName', 'display_name', 'username']);
+  const metadataName = getStringValue(metadata, ['name', 'full_name', 'fullName', 'display_name']);
+  const profileName = getStringValue(profile, ['name', 'full_name', 'fullName', 'display_name', 'username']);
+  const email = getStringValue(user, ['email']);
+
+  return directName || metadataName || profileName || (email ? email.split('@')[0] : 'Joy');
+}
+
+function getTimeGreeting() {
+  const hour = new Date().getHours();
+
+  if (hour < 12) {
+    return 'Good morning';
+  }
+
+  if (hour < 17) {
+    return 'Good afternoon';
+  }
+
+  if (hour < 21) {
+    return 'Good evening';
+  }
+
+  return 'Good night';
+}
 
 function SectionCard({ label, rows }: { label: string; rows: readonly ProfileRow[] }) {
   const router = useRouter();
@@ -57,6 +143,33 @@ function SectionCard({ label, rows }: { label: string; rows: readonly ProfileRow
 
 export default function ProfileScreen() {
   const insets = useSafeAreaInsets();
+  const [displayName, setDisplayName] = useState('Joy');
+  const [greeting, setGreeting] = useState(getTimeGreeting());
+
+  useEffect(() => {
+    let isMounted = true;
+
+    setGreeting(getTimeGreeting());
+
+    getCurrentUser()
+      .then((response) => {
+        if (!isMounted) {
+          return;
+        }
+
+        const user = unwrapCurrentUser(response);
+        setDisplayName(getDisplayName(user));
+      })
+      .catch(() => {
+        if (isMounted) {
+          setDisplayName('Joy');
+        }
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   return (
     <ImageBackground source={backgroundImage} resizeMode="cover" style={styles.screen}>
@@ -67,7 +180,7 @@ export default function ProfileScreen() {
           overScrollMode="always"
           showsVerticalScrollIndicator={false}
           style={styles.scrollView}>
-          <Text style={styles.greeting}>{'Good morning,\nJon'}</Text>
+          <Text style={styles.greeting}>{`${greeting},\n${displayName}`}</Text>
           <SectionCard label="Your Plan" rows={planRows} />
           <SectionCard label="Setting" rows={settingRows} />
         </ScrollView>

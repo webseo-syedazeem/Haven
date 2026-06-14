@@ -6,6 +6,7 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { ScreenWrapper, useScreenBottomPadding } from '@/components/ScreenWrapper';
 import { SleepOptionCard } from '@/components/sleep-check/SleepOptionCard';
 import { AppFonts } from '@/constants/theme';
+import { useSetup } from '@/contexts/SetupContext';
 
 const dayFeelOptions = [
   { id: 'busy-mornings', label: 'Busy mornings', icon: require('@/assets/images/busy_mornings.svg') },
@@ -20,7 +21,17 @@ const dayFeelOptions = [
   },
 ];
 
+const dayFeelById: Record<string, string> = {
+  'busy-mornings': 'Busy mornings',
+  'long-workdays': 'Long workdays',
+  'energy-dips': 'Energy dips',
+  'caring-for-others': 'Caring for others',
+  'irregular-rouine': 'Irregular routine',
+  'evenings-feel-hardest': 'Evenings feel hardest',
+};
+
 export function DayFeelScreen() {
+  const { updateAnswers } = useSetup();
   const [selectedOption, setSelectedOption] = useState<string | null>(null);
   const [validationMessage, setValidationMessage] = useState('');
   const bottomPadding = useScreenBottomPadding();
@@ -30,12 +41,13 @@ export function DayFeelScreen() {
     setValidationMessage('');
   };
 
-  const handleContinuePress = () => {
+  const handleContinuePress = async () => {
     if (!selectedOption) {
       setValidationMessage('Please select how your day usually feels before continuing.');
       return;
     }
 
+    updateAnswers({ day_feel: dayFeelById[selectedOption] });
     router.push('/most-helpful');
   };
 

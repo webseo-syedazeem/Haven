@@ -6,6 +6,7 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { ScreenWrapper, useScreenBottomPadding } from '@/components/ScreenWrapper';
 import { SleepOptionCard } from '@/components/sleep-check/SleepOptionCard';
 import { AppFonts } from '@/constants/theme';
+import { useSetup } from '@/contexts/SetupContext';
 
 const sleepOptions = [
   { id: 'restful', label: 'Restful', icon: require('@/assets/images/Restful.svg') },
@@ -15,7 +16,16 @@ const sleepOptions = [
   { id: 'very-tired', label: 'Very tired', icon: require('@/assets/images/tired.svg') },
 ];
 
+const sleepQualityById: Record<string, string> = {
+  restful: 'Restful',
+  'light-sleep': 'Light sleep',
+  'watching-often': 'Watching often',
+  'hard-to-fall-asleep': 'Hard to fall asleep',
+  'very-tired': 'Very tired',
+};
+
 export function SleepCheckScreen() {
+  const { updateAnswers } = useSetup();
   const [selectedOption, setSelectedOption] = useState<string | null>(null);
   const [validationMessage, setValidationMessage] = useState('');
   const bottomPadding = useScreenBottomPadding();
@@ -25,12 +35,13 @@ export function SleepCheckScreen() {
     setValidationMessage('');
   };
 
-  const handleContinuePress = () => {
+  const handleContinuePress = async () => {
     if (!selectedOption) {
       setValidationMessage('Please select your sleep status before continuing.');
       return;
     }
 
+    updateAnswers({ sleep_quality: sleepQualityById[selectedOption] });
     router.push('/day-feel');
   };
 

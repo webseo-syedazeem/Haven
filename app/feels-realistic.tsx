@@ -2,10 +2,16 @@ import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { AppFonts } from '@/constants/theme';
+import {
+  getPlanFromSetupResponse,
+  isCompleteSetupPayload,
+  useSetup,
+} from '@/contexts/SetupContext';
+import { createSetup } from '@/services/setupService';
 
 const backgroundImage = require('@/assets/images/screen 2.png');
 const heartIcon = require('@/assets/images/mdi_heart.svg');
@@ -28,8 +34,43 @@ const supportOptions = [
 
 export default function TimeScreen() {
   const router = useRouter();
+  const { answers, setPlan, updateAnswers } = useSetup();
   const [selectedTime, setSelectedTime] = useState('3 min');
   const [selectedSupport, setSelectedSupport] = useState<string[]>([]);
+  const [errorMessage, setErrorMessage] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const handleContinue = async () => {
+    if (isSubmitting) {
+      return;
+    }
+
+    const partialAnswers = {
+      time_preference: selectedTime,
+      support_types: selectedSupport.length ? selectedSupport : ['Breathwork'],
+      stress_triggers: answers.stress_triggers ?? [],
+    };
+    const payload = { ...answers, ...partialAnswers };
+
+    if (!isCompleteSetupPayload(payload)) {
+      setErrorMessage('Please complete all setup steps before continuing.');
+      return;
+    }
+
+    updateAnswers(partialAnswers);
+    setErrorMessage('');
+    setIsSubmitting(true);
+
+    try {
+      const response = await createSetup(payload);
+      setPlan(getPlanFromSetupResponse(response));
+      router.push('/calm-plan');
+    } catch (error) {
+      setErrorMessage(error instanceof Error ? error.message : 'Unable to save setup right now.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   return (
     <View style={styles.screen}>
@@ -130,8 +171,13 @@ export default function TimeScreen() {
           <View style={styles.actions}>
             <View style={styles.actionsInner}>
               <Pressable
-                onPress={() => router.push('/calm-plan')}
-                style={({ pressed }) => [styles.continueButton, pressed && styles.pressed]}>
+                disabled={isSubmitting}
+                onPress={handleContinue}
+                style={({ pressed }) => [
+                  styles.continueButton,
+                  isSubmitting && styles.disabled,
+                  pressed && styles.pressed,
+                ]}>
                 <LinearGradient
                   colors={['#5AA1E2', '#0D6FD0']}
                   end={{ x: 0, y: 1 }}
@@ -152,10 +198,15 @@ export default function TimeScreen() {
                       style={styles.innerShadowLeft}
                     />
                   </View>
-                  <Text style={styles.continueText}>Continue</Text>
+                  {isSubmitting ? (
+                    <ActivityIndicator color="#FFFFFF" />
+                  ) : (
+                    <Text style={styles.continueText}>Continue</Text>
+                  )}
                 </LinearGradient>
               </Pressable>
-              <Pressable style={styles.backButton}>
+              {!!errorMessage && <Text style={styles.errorText}>{errorMessage}</Text>}
+              <Pressable onPress={() => router.back()} style={styles.backButton}>
                 <Text style={styles.backText}>Back</Text>
               </Pressable>
             </View>
@@ -403,6 +454,17 @@ const styles = StyleSheet.create({
     maxWidth: 348,
     overflow: 'hidden',
     width: '100%',
+  },
+  disabled: {
+    opacity: 0.72,
+  },
+  errorText: {
+    color: '#FFFFFF',
+    fontFamily: AppFonts.sansMedium,
+    fontSize: 12,
+    fontWeight: '500',
+    lineHeight: 18,
+    textAlign: 'center',
   },
   continueGradient: {
     alignItems: 'center',

@@ -47,9 +47,14 @@ export default function WelcomeScreen() {
       bottomContent={
         <Text style={styles.footer}>
           By continuing, you agree to our{' '}
-          <Text style={styles.footerLink}>Terms of Service</Text>
+          <Text onPress={() => router.push('/profile/terms')} style={styles.footerLink}>
+            Terms of Service
+          </Text>
           {' and '}
-          <Text style={styles.footerLink}>Privacy Policy</Text>.
+          <Text onPress={() => router.push('/profile/privacy-policy')} style={styles.footerLink}>
+            Privacy Policy
+          </Text>
+          .
         </Text>
       }
       middleContent={

@@ -63,7 +63,7 @@ export default function CreateAccountScreen() {
     try {
       const session = await signInWithGoogle();
       if (session) {
-        router.replace('/(tabs)');
+        router.replace('/feeling-lately');
       }
     } catch (error) {
       console.error('Google sign in error:', error);
@@ -96,7 +96,7 @@ export default function CreateAccountScreen() {
 
     try {
       await signUp({ email: trimmedEmail, password, username: trimmedUsername });
-      router.replace('/(tabs)');
+      router.replace('/feeling-lately');
     } catch (error) {
       setErrorMessage(error instanceof Error ? error.message : 'Unable to create account right now.');
     } finally {
@@ -203,9 +203,14 @@ export default function CreateAccountScreen() {
 
             <Text style={styles.termsText}>
               By continuing, you agree to our{' '}
-              <Text style={styles.textLink}>Terms of Service</Text>
+              <Text onPress={() => router.push('/profile/terms')} style={styles.textLink}>
+                Terms of Service
+              </Text>
               {' and '}
-              <Text style={styles.textLink}>Privacy Policy</Text>.
+              <Text onPress={() => router.push('/profile/privacy-policy')} style={styles.textLink}>
+                Privacy Policy
+              </Text>
+              .
             </Text>
 
             {!!errorMessage && <Text style={styles.errorText}>{errorMessage}</Text>}

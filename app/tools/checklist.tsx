@@ -1,11 +1,14 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useRouter } from 'expo-router';
+import { useEffect, useMemo, useState } from 'react';
+import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Svg, { Circle, Defs, LinearGradient as SvgLinearGradient, Stop } from 'react-native-svg';
 
 import { AppFonts } from '@/constants/theme';
+import { ChecklistAuthError, getTodayChecklist } from '@/services/checklistService';
 
 const backgroundImage = require('@/assets/images/tool-page-bg-image.png');
 
@@ -13,12 +16,8 @@ const progressSize = 80;
 const progressStroke = 5;
 const progressRadius = (progressSize - progressStroke) / 2;
 const progressCircumference = 2 * Math.PI * progressRadius;
-const completedHabits = 3;
-const totalHabits = 6;
-const progressPercent = completedHabits / totalHabits;
-const progressOffset = progressCircumference * (1 - progressPercent);
-
 type ChecklistItem = {
+  apiName: string;
   icon?: number;
   iconBackground: string;
   iconColor: string;
@@ -30,6 +29,7 @@ type ChecklistItem = {
 
 const checklistItems: ChecklistItem[] = [
   {
+    apiName: 'Morning Sunlight',
     icon: require('@/assets/images/sun.svg'),
     iconBackground: '#FFC1031A',
     iconColor: '#FFC43D',
@@ -38,6 +38,7 @@ const checklistItems: ChecklistItem[] = [
     title: 'Morning Sunlight',
   },
   {
+    apiName: 'Breathwork',
     icon: require('@/assets/images/lines.svg'),
     iconBackground: '#3770FC14',
     iconColor: '#3770FC',
@@ -46,6 +47,7 @@ const checklistItems: ChecklistItem[] = [
     title: 'Breath work',
   },
   {
+    apiName: 'Movement',
     icon: require('@/assets/images/hugeicons_running-shoes.svg'),
     iconBackground: '#28B92A14',
     iconColor: '#2EB668',
@@ -54,6 +56,7 @@ const checklistItems: ChecklistItem[] = [
     title: 'Movements',
   },
   {
+    apiName: 'Hydration',
     icon: require('@/assets/images/hydration-checklist-icon.svg'),
     iconBackground: '#3770FC14',
     iconColor: '#3770FC',
@@ -62,6 +65,7 @@ const checklistItems: ChecklistItem[] = [
     title: 'Hydration',
   },
   {
+    apiName: 'Deep Work',
     icon: require('@/assets/images/deep-work-checklist-icon.svg'),
     iconBackground: '#7B61FF14',
     iconColor: '#7B61FF',
@@ -70,6 +74,7 @@ const checklistItems: ChecklistItem[] = [
     title: 'Deep work',
   },
   {
+    apiName: 'Wind-down',
     icon: require('@/assets/images/wind-down-checklist-icon.svg'),
     iconBackground: '#7B61FF14',
     iconColor: '#7B61FF',
@@ -80,6 +85,62 @@ const checklistItems: ChecklistItem[] = [
 ];
 
 export default function ChecklistScreen() {
+  const router = useRouter();
+  const [completedTasks, setCompletedTasks] = useState<string[]>([]);
+  const [errorMessage, setErrorMessage] = useState('');
+  const [isLoading, setIsLoading] = useState(true);
+  const totalHabits = checklistItems.length;
+  const completedHabits = completedTasks.length;
+  const progressPercent = totalHabits ? completedHabits / totalHabits : 0;
+  const progressOffset = progressCircumference * (1 - progressPercent);
+  const progressText = `${Math.round(progressPercent * 100)}%`;
+  const completedTaskSet = useMemo(() => new Set(completedTasks), [completedTasks]);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    async function loadTodayChecklist() {
+      setIsLoading(true);
+      setErrorMessage('');
+
+      try {
+        const todayChecklist = await getTodayChecklist();
+
+        if (!isMounted) {
+          return;
+        }
+
+        setCompletedTasks(
+          Array.isArray(todayChecklist?.completed_tasks)
+            ? todayChecklist.completed_tasks.filter((task) =>
+                checklistItems.some((item) => item.apiName === task)
+              )
+            : []
+        );
+      } catch (error) {
+        if (isMounted) {
+          if (error instanceof ChecklistAuthError) {
+            setErrorMessage(error.message);
+            router.replace('/login');
+          } else {
+            setErrorMessage(error instanceof Error ? error.message : 'Unable to load checklist.');
+          }
+          setCompletedTasks([]);
+        }
+      } finally {
+        if (isMounted) {
+          setIsLoading(false);
+        }
+      }
+    }
+
+    void loadTodayChecklist();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [router]);
+
   return (
     <View style={styles.screen}>
       <Image source={backgroundImage} style={styles.backgroundImage} contentFit="cover" />
@@ -89,10 +150,25 @@ export default function ChecklistScreen() {
           bounces={false}
           contentContainerStyle={styles.content}
           showsVerticalScrollIndicator={false}>
+          <Pressable
+            accessibilityLabel="Go back"
+            hitSlop={12}
+            onPress={() => router.back()}
+            style={({ pressed }) => [styles.backButton, pressed && styles.pressed]}>
+            <Ionicons color="#000000" name="chevron-back" size={18} />
+          </Pressable>
+
           <View style={styles.header}>
             <Text style={styles.title}>Checklist</Text>
             <Text style={styles.subtitle}>Small actions that help lower stress</Text>
           </View>
+
+          {isLoading ? (
+            <View style={styles.stateCard}>
+              <ActivityIndicator color="#7B61FF" />
+              <Text style={styles.stateText}>Loading checklist...</Text>
+            </View>
+          ) : null}
 
           <LinearGradient
             colors={['rgba(255, 255, 255, 0.4)', 'rgba(255, 255, 255, 0)']}
@@ -130,7 +206,7 @@ export default function ChecklistScreen() {
                     strokeWidth={progressStroke}
                   />
                 </Svg>
-                <Text style={styles.circleText}>50%</Text>
+                <Text style={styles.circleText}>{progressText}</Text>
               </View>
 
               <View style={styles.weekCopy}>
@@ -142,13 +218,15 @@ export default function ChecklistScreen() {
             </View>
 
             <View style={styles.progressMetaRow}>
-              <Text style={styles.completedText}>3 of 6 completed</Text>
+              <Text style={styles.completedText}>
+                {completedHabits} of {totalHabits} completed
+              </Text>
               <View style={styles.barTrack}>
                 <LinearGradient
                   colors={['#6339FB', '#FC74A0']}
                   end={{ x: 1, y: 0 }}
                   start={{ x: 0, y: 0 }}
-                  style={styles.barFill}
+                  style={[styles.barFill, { width: `${progressPercent * 100}%` }]}
                 />
               </View>
             </View>
@@ -162,8 +240,16 @@ export default function ChecklistScreen() {
                   styles.habitRow,
                   index < checklistItems.length - 1 && styles.habitDivider,
                 ]}>
-                <View style={styles.checkCircle}>
-                  <Ionicons color="#FFFFFF" name="checkmark" size={14} />
+                <View
+                  style={[
+                    styles.checkCircle,
+                    !completedTaskSet.has(item.apiName) && styles.checkCircleInactive,
+                  ]}>
+                  <Ionicons
+                    color={completedTaskSet.has(item.apiName) ? '#FFFFFF' : 'transparent'}
+                    name="checkmark"
+                    size={14}
+                  />
                 </View>
                 <View style={[styles.habitIconWrap, { backgroundColor: item.iconBackground }]}>
                   {item.icon ? (
@@ -184,6 +270,8 @@ export default function ChecklistScreen() {
               </View>
             ))}
           </View>
+
+          {!!errorMessage && <Text style={styles.errorText}>{errorMessage}</Text>}
         </ScrollView>
       </SafeAreaView>
     </View>
@@ -210,6 +298,18 @@ const styles = StyleSheet.create({
     height: 13,
     overflow: 'hidden',
   },
+  backButton: {
+    alignItems: 'center',
+    backgroundColor: 'rgba(255, 255, 255, 0.5)',
+    borderRadius: 16,
+    height: 32,
+    justifyContent: 'center',
+    left: 18,
+    position: 'absolute',
+    top: 15,
+    width: 32,
+    zIndex: 3,
+  },
   checkCircle: {
     alignItems: 'center',
     backgroundColor: '#7B61FF',
@@ -217,6 +317,9 @@ const styles = StyleSheet.create({
     height: 26,
     justifyContent: 'center',
     width: 26,
+  },
+  checkCircleInactive: {
+    backgroundColor: '#7B61FF14',
   },
   circleText: {
     color: '#000000',
@@ -245,9 +348,17 @@ const styles = StyleSheet.create({
     lineHeight: 22,
   },
   content: {
-    paddingBottom: 112,
+    paddingBottom: 60,
     paddingHorizontal: 17,
-    paddingTop: 70,
+    paddingTop: 60,
+  },
+  errorText: {
+    color: '#173F5F',
+    fontFamily: AppFonts.sansMedium,
+    fontSize: 12,
+    lineHeight: 18,
+    marginTop: 10,
+    textAlign: 'center',
   },
   habitCopy: {
     flex: 1,
@@ -333,6 +444,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: 16,
   },
+  pressed: {
+    opacity: 0.86,
+    transform: [{ scale: 0.99 }],
+  },
   safeArea: {
     flex: 1,
   },
@@ -347,6 +462,24 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '500',
     lineHeight: 26,
+  },
+  stateCard: {
+    alignItems: 'center',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    gap: 8,
+    marginBottom: 12,
+    padding: 16,
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.07,
+    shadowRadius: 14,
+  },
+  stateText: {
+    color: '#173F5F',
+    fontFamily: AppFonts.sansMedium,
+    fontSize: 12,
+    lineHeight: 18,
   },
   title: {
     color: '#173F5F',

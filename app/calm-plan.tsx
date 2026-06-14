@@ -5,6 +5,7 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { AppFonts } from '@/constants/theme';
+import { useSetup, type SetupActivity } from '@/contexts/SetupContext';
 
 const backgroundImage = require('@/assets/images/third-bg.png');
 const heartIcon = require('@/assets/images/heart.svg');
@@ -12,62 +13,33 @@ const monnIcon = require('@/assets/images/monn.svg');
 const sunIcon = require('@/assets/images/sun.svg');
 const linesIcon = require('@/assets/images/lines.svg');
 
-const planItems = [
-  {
-    title: 'Morning sunlight',
-    detailLines: ['10 min'],
-    icon: sunIcon,
-    cardHeight: 74,
-    titleWidth: 117,
-    subtitleWidth: 117,
-    textGroupHeight: 46,
-    contentHeight: 56,
-    contentPadding: 10,
-    innerHeight: 46,
-    iconWidth: 19.997783660888672,
-    iconHeight: 19.998891830444336,
-    iconTop: 2,
-    iconLeft: 2,
-    rotate: '180deg',
-  },
-  {
-    title: 'Box breathing',
-    detailLines: ['4 min'],
-    icon: linesIcon,
-    cardHeight: 74,
-    titleWidth: 117,
-    subtitleWidth: 117,
-    textGroupHeight: 46,
-    contentHeight: 66,
-    contentPadding: 10,
-    innerHeight: 46,
-    iconWidth: 20.000288009643555,
-    iconHeight: 15.777030944824219,
-    iconTop: 4.11,
-    iconLeft: 2,
-    rotate: '0deg',
-  },
-  {
-    title: 'Wind Down',
-    detailLines: ['30 min', 'Screen time'],
-    icon: monnIcon,
-    cardHeight: 86,
-    titleWidth: 117,
-    subtitleWidth: 117,
-    textGroupHeight: 68,
-    contentHeight: 66,
-    contentPadding: 10,
-    innerHeight: 46,
-    iconWidth: 20,
-    iconHeight: 20,
-    iconTop: 2,
-    iconLeft: 2,
-    rotate: '0deg',
-  },
-] as const;
+function getActivityIcon(activity: SetupActivity) {
+  const key = (activity.icon || activity.type || '').toLowerCase();
+
+  if (key.includes('breath')) {
+    return linesIcon;
+  }
+
+  if (key.includes('moon') || key.includes('sleep') || key.includes('wind')) {
+    return monnIcon;
+  }
+
+  if (key.includes('sun')) {
+    return sunIcon;
+  }
+
+  return sunIcon;
+}
 
 export default function PlanScreen() {
   const router = useRouter();
+  const { plan, resetSetup } = useSetup();
+  const activities = plan?.activities ?? [];
+
+  const handleDone = () => {
+    resetSetup();
+    router.replace('/(tabs)');
+  };
 
   return (
     <View style={styles.screen}>
@@ -79,57 +51,41 @@ export default function PlanScreen() {
           showsVerticalScrollIndicator={false}
           bounces={false}>
           <View style={styles.header}>
-            <Text style={styles.title}>Your first calm plan{'\n'}is ready.</Text>
-            <Text style={styles.subtitle}>Small actions to help lower stress</Text>
+            <Text style={styles.title}>{plan?.plan_title ?? 'Your first calm plan\nis ready.'}</Text>
+            <Text style={styles.subtitle}>
+              {plan?.plan_subtitle ?? 'Small actions to help lower stress'}
+            </Text>
           </View>
 
           <View style={styles.planList}>
-            {planItems.map((item) => (
-              <View key={item.title} style={[styles.planCard, { height: item.cardHeight }]}>
-                <View
-                  style={[
-                    styles.planContent,
-                    { height: item.contentHeight, padding: item.contentPadding },
-                  ]}>
-                  <View style={[styles.planInner, { height: item.innerHeight }]}>
+            {activities.length ? (
+              activities.map((item) => (
+                <View key={`${item.title}-${item.duration}`} style={styles.planCard}>
+                  <View style={styles.planContent}>
+                    <View style={styles.planInner}>
                     <View style={styles.planIconFrame}>
                       <Image
-                        source={item.icon}
-                        style={[
-                          styles.planSvgIcon,
-                          {
-                            top: item.iconTop,
-                            left: item.iconLeft,
-                            width: item.iconWidth,
-                            height: item.iconHeight,
-                            transform: [{ rotate: item.rotate }],
-                          },
-                        ]}
+                        source={getActivityIcon(item)}
+                        style={styles.planSvgIcon}
                         contentFit="contain"
                       />
                     </View>
-                    <View style={[styles.planTextGroup, { height: item.textGroupHeight }]}>
-                      <Text style={[styles.planTitle, { width: item.titleWidth }]}>
-                        {item.title}
-                      </Text>
-                      {item.detailLines.map((line, index) => (
-                        <Text
-                          key={line}
-                          style={[
-                            styles.planSubtitle,
-                            { width: item.subtitleWidth },
-                            index === item.detailLines.length - 1 &&
-                              item.detailLines.length > 1 &&
-                              styles.planSubtitleLast,
-                          ]}>
-                          {line}
-                        </Text>
-                      ))}
+                    <View style={styles.planTextGroup}>
+                      <Text style={styles.planTitle}>{item.title}</Text>
+                      {!!item.duration && <Text style={styles.planSubtitle}>{item.duration}</Text>}
+                      {!!item.description && (
+                        <Text style={styles.planSubtitle}>{item.description}</Text>
+                      )}
                     </View>
                   </View>
                 </View>
               </View>
-            ))}
+              ))
+            ) : (
+              <Text style={styles.emptyPlanText}>
+                Your plan is not available yet. Please go back and complete your setup.
+              </Text>
+            )}
           </View>
 
           <View style={styles.noteCard}>
@@ -138,7 +94,7 @@ export default function PlanScreen() {
                 <Image source={heartIcon} style={styles.noteIcon} contentFit="contain" />
               </View>
               <Text style={styles.noteText}>
-                Heaven adapts support into your real life,{'\n'}not a perfect routine.
+                {plan?.message ?? 'Heaven adapts support into your real life,\nnot a perfect routine.'}
               </Text>
             </View>
           </View>
@@ -146,7 +102,7 @@ export default function PlanScreen() {
           <View style={styles.actions}>
             <View style={styles.actionsInner}>
               <Pressable
-                onPress={() => router.push('/screen4')}
+                onPress={handleDone}
                 style={({ pressed }) => [styles.continueButton, pressed && styles.pressed]}>
                 <LinearGradient
                   colors={['#5AA1E2', '#0D6FD0']}
@@ -168,10 +124,10 @@ export default function PlanScreen() {
                       style={styles.innerShadowLeft}
                     />
                   </View>
-                  <Text style={styles.continueText}>Continue</Text>
+                  <Text style={styles.continueText}>Done</Text>
                 </LinearGradient>
               </Pressable>
-              <Pressable style={styles.backButton}>
+              <Pressable onPress={() => router.back()} style={styles.backButton}>
                 <Text style={styles.backText}>Back</Text>
               </Pressable>
             </View>
@@ -242,7 +198,7 @@ const styles = StyleSheet.create({
   },
   planCard: {
     width: '100%',
-    height: 74,
+    minHeight: 74,
     borderRadius: 12,
     backgroundColor: '#FFFFFF',
     paddingTop: 8,
@@ -254,14 +210,14 @@ const styles = StyleSheet.create({
     boxShadow: 'inset 4px 4px 16px 0px #FFFFFF80',
   },
   planContent: {
-    width: 313,
-    height: 56,
+    width: '100%',
+    minHeight: 56,
     gap: 10,
     padding: 10,
     opacity: 1,
   },
   planInner: {
-    width: 293,
+    width: '100%',
     flexDirection: 'row',
     alignItems: 'flex-start',
     gap: 8,
@@ -270,6 +226,7 @@ const styles = StyleSheet.create({
   planIconFrame: {
     width: 24,
     height: 24,
+    marginTop: 5,
     position: 'relative',
     opacity: 1,
   },
@@ -282,16 +239,15 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   planSvgIcon: {
-    position: 'absolute',
+    height: 20,
     opacity: 1,
+    width: 20,
   },
   planTextGroup: {
-    width: 117,
-    height: 46,
+    flex: 1,
     opacity: 1,
   },
   planTitle: {
-    height: 24,
     color: '#000000',
     fontFamily: AppFonts.sansSemiBold,
     fontSize: 14,
@@ -300,7 +256,6 @@ const styles = StyleSheet.create({
     opacity: 1,
   },
   planSubtitle: {
-    height: 22,
     color: '#8C8C8C',
     fontFamily: AppFonts.sansSemiBold,
     fontSize: 12,
@@ -308,8 +263,13 @@ const styles = StyleSheet.create({
     letterSpacing: 0,
     opacity: 1,
   },
-  planSubtitleLast: {
-    transform: [{ translateY: -4 }],
+  emptyPlanText: {
+    color: '#FFFFFF',
+    fontFamily: AppFonts.sansMedium,
+    fontSize: 14,
+    fontWeight: '500',
+    lineHeight: 22,
+    textAlign: 'center',
   },
   noteCard: {
     width: '100%',

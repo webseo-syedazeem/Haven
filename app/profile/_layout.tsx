@@ -12,6 +12,8 @@ export default function ProfileLayout() {
       <Stack.Screen name="stress-profile" options={{ headerShown: false }} />
       <Stack.Screen name="notification" options={{ headerShown: false }} />
       <Stack.Screen name="privacy" options={{ headerShown: false }} />
+      <Stack.Screen name="privacy-policy" options={{ headerShown: false }} />
+      <Stack.Screen name="terms" options={{ headerShown: false }} />
       <Stack.Screen name="account-setting" options={{ headerShown: false }} />
     </Stack>
   );

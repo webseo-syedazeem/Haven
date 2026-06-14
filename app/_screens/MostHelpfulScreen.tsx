@@ -12,6 +12,7 @@ import {
 import { ScreenWrapper, useScreenBottomPadding } from '@/components/ScreenWrapper';
 import { SleepOptionCard } from '@/components/sleep-check/SleepOptionCard';
 import { AppFonts } from '@/constants/theme';
+import { useSetup } from '@/contexts/SetupContext';
 
 const mostHelpfulOptions = [
   {
@@ -34,7 +35,17 @@ const mostHelpfulOptions = [
   },
 ];
 
+const goalById: Record<string, string> = {
+  'feel-calmer-first': 'Feel calmer first',
+  'sleep-better': 'Sleep better',
+  'focus-more': 'Focus More',
+  'build-healthy-habits': 'Build healthy habits',
+  'stop-spiraling': 'Stop spiraling',
+  'recover-after-work': 'Recover after work',
+};
+
 export function MostHelpfulScreen() {
+  const { updateAnswers } = useSetup();
   const [selectedOption, setSelectedOption] = useState<string | null>(null);
   const [validationMessage, setValidationMessage] = useState('');
   const bottomPadding = useScreenBottomPadding();
@@ -44,13 +55,14 @@ export function MostHelpfulScreen() {
     setValidationMessage('');
   };
 
-  const handleContinuePress = () => {
+  const handleContinuePress = async () => {
     if (!selectedOption) {
       setValidationMessage('Please select what feels most helpful before continuing.');
       return;
     }
 
-    router.push('/stress-step' as Href);
+    updateAnswers({ goal: goalById[selectedOption] });
+    router.push('/feels-realistic' as Href);
   };
 
   return (

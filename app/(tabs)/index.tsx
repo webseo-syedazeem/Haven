@@ -1,7 +1,8 @@
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useRouter } from 'expo-router';
+import { useFocusEffect, useRouter } from 'expo-router';
 import { Image } from 'expo-image';
+import { useCallback, useEffect, useState } from 'react';
 import {
   ImageBackground,
   Pressable,
@@ -19,6 +20,9 @@ import Svg, {
 } from 'react-native-svg';
 
 import { AppFonts } from '@/constants/theme';
+import { getCurrentUser } from '@/lib/haven-api';
+import { apiClient } from '@/lib/api/client';
+import { getTodayChecklist } from '@/services/checklistService';
 
 const dailyEaseProgress = 74;
 const progressSize = 112;
@@ -42,6 +46,126 @@ const nextStepIcon = require('@/assets/icons/dashbord-flower-icon.svg');
 const stressHeartIcon = require('@/assets/icons/dashbord-heart-icon.svg');
 const resetClockIcon = require('@/assets/icons/dashbord-clock-icon.svg');
 
+type DashboardUser = Record<string, unknown>;
+
+function getStringValue(source: unknown, keys: string[]) {
+  if (!source || typeof source !== 'object') {
+    return '';
+  }
+
+  const record = source as Record<string, unknown>;
+
+  for (const key of keys) {
+    const value = record[key];
+
+    if (typeof value === 'string' && value.trim()) {
+      return value.trim();
+    }
+  }
+
+  return '';
+}
+
+function getNestedRecord(source: unknown, key: string) {
+  if (!source || typeof source !== 'object') {
+    return null;
+  }
+
+  const value = (source as Record<string, unknown>)[key];
+
+  return value && typeof value === 'object' ? (value as Record<string, unknown>) : null;
+}
+
+function unwrapCurrentUser(response: unknown) {
+  const root = response && typeof response === 'object' ? (response as Record<string, unknown>) : {};
+  const data = getNestedRecord(root, 'data');
+
+  return (
+    getNestedRecord(data, 'user') ??
+    getNestedRecord(root, 'user') ??
+    getNestedRecord(data, 'profile') ??
+    getNestedRecord(root, 'profile') ??
+    root
+  );
+}
+
+function getDisplayName(user: DashboardUser | null) {
+  const profile = getNestedRecord(user, 'profile');
+  const metadata = getNestedRecord(user, 'user_metadata');
+  const firstName = getStringValue(user, ['first_name', 'firstName']);
+  const lastName = getStringValue(user, ['last_name', 'lastName']);
+  const profileFirstName = getStringValue(profile, ['first_name', 'firstName']);
+  const profileLastName = getStringValue(profile, ['last_name', 'lastName']);
+  const joinedName = [firstName || profileFirstName, lastName || profileLastName]
+    .filter(Boolean)
+    .join(' ')
+    .trim();
+
+  if (joinedName) {
+    return joinedName;
+  }
+
+  const directName = getStringValue(user, ['name', 'full_name', 'fullName', 'display_name', 'username']);
+  const metadataName = getStringValue(metadata, ['name', 'full_name', 'fullName', 'display_name']);
+  const profileName = getStringValue(profile, ['name', 'full_name', 'fullName', 'display_name', 'username']);
+  const email = getStringValue(user, ['email']);
+
+  return directName || metadataName || profileName || (email ? email.split('@')[0] : 'Joy');
+}
+
+function getAvatarUri(user: DashboardUser | null) {
+  const profile = getNestedRecord(user, 'profile');
+  const metadata = getNestedRecord(user, 'user_metadata');
+
+  return (
+    getStringValue(user, [
+      'avatar_url',
+      'avatarUrl',
+      'profile_image',
+      'profileImage',
+      'profile_image_url',
+      'profileImageUrl',
+      'image_url',
+      'imageUrl',
+      'photo_url',
+      'photoUrl',
+      'picture',
+    ]) ||
+    getStringValue(profile, [
+      'avatar_url',
+      'avatarUrl',
+      'profile_image',
+      'profileImage',
+      'profile_image_url',
+      'profileImageUrl',
+      'image_url',
+      'imageUrl',
+      'photo_url',
+      'photoUrl',
+      'picture',
+    ]) ||
+    getStringValue(metadata, ['avatar_url', 'picture', 'photo_url'])
+  );
+}
+
+function getTimeGreeting() {
+  const hour = new Date().getHours();
+
+  if (hour < 12) {
+    return 'Good morning';
+  }
+
+  if (hour < 17) {
+    return 'Good afternoon';
+  }
+
+  if (hour < 21) {
+    return 'Good evening';
+  }
+
+  return 'Good night';
+}
+
 const todayPlans = [
   {
     icon: require('@/assets/icons/dashbord-morning-icon.svg'),
@@ -50,7 +174,7 @@ const todayPlans = [
     title: 'Morning Sunlight',
     subtitle: 'Boost mood and regulate your body check',
     meta: '10 min',
-    checked: true,
+    apiName: 'Morning Sunlight',
   },
   {
     icon: require('@/assets/icons/dashbord-breathing-icon.svg'),
@@ -59,7 +183,7 @@ const todayPlans = [
     title: 'Movement',
     subtitle: 'A short walk to refresh',
     meta: '5 min',
-    checked: false,
+    apiName: 'Movement',
   },
   {
     icon: require('@/assets/icons/dashbord-speed-icon.svg'),
@@ -68,12 +192,111 @@ const todayPlans = [
     title: 'Box Breathing',
     subtitle: 'Clam Your mind',
     meta: '3 min',
-    checked: false,
+    apiName: 'Breathwork',
   },
 ];
 
 export default function HomeScreen() {
   const router = useRouter();
+  const [avatarUri, setAvatarUri] = useState('');
+  const [completedChecklistTasks, setCompletedChecklistTasks] = useState<string[]>([]);
+  const [displayName, setDisplayName] = useState('Joy');
+  const [greeting, setGreeting] = useState(getTimeGreeting());
+
+  useFocusEffect(
+    useCallback(() => {
+      let isActive = true;
+
+      getTodayChecklist()
+        .then((checklist) => {
+          if (!isActive) {
+            return;
+          }
+
+          const completedTasks = Array.isArray(checklist?.completed_tasks)
+            ? checklist.completed_tasks.filter((task): task is string => typeof task === 'string')
+            : [];
+
+          setCompletedChecklistTasks(completedTasks);
+        })
+        .catch(() => {
+          if (isActive) {
+            setCompletedChecklistTasks([]);
+          }
+        });
+
+      return () => {
+        isActive = false;
+      };
+    }, [])
+  );
+
+  useEffect(() => {
+    let isMounted = true;
+
+    setGreeting(getTimeGreeting());
+
+    getCurrentUser()
+      .then((response) => {
+        if (!isMounted) {
+          return;
+        }
+
+        const user = unwrapCurrentUser(response);
+        setDisplayName(getDisplayName(user));
+        setAvatarUri(getAvatarUri(user));
+      })
+      .catch(() => {
+        if (isMounted) {
+          setDisplayName('Joy');
+          setAvatarUri('');
+        }
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  async function handleStartReset() {
+    try {
+      const res = await apiClient<any>('/api/breathing', {
+        method: 'POST',
+        body: JSON.stringify({ type: 'Physiological Sigh' }),
+      });
+      const session = res?.data?.session;
+
+      router.push({
+        pathname: '/tools/breathing-session',
+        params: {
+          sessionId: session?.id ?? '',
+          name: 'Physiological Sigh',
+          inhale: String(session?.inhale ?? 4),
+          hold1: String(session?.hold1 ?? 2),
+          exhale: String(session?.exhale ?? 8),
+          hold2: String(session?.hold2 ?? 0),
+          total: String(session?.total_duration_seconds ?? 126),
+        },
+      });
+    } catch {
+      router.push({
+        pathname: '/tools/breathing-session',
+        params: {
+          sessionId: '',
+          name: 'Physiological Sigh',
+          inhale: '4',
+          hold1: '2',
+          exhale: '8',
+          hold2: '0',
+          total: '126',
+        },
+      });
+    }
+  }
+
+  function isChecklistTaskCompleted(taskName: string) {
+    return completedChecklistTasks.includes(taskName);
+  }
 
   return (
     <ImageBackground
@@ -88,12 +311,16 @@ export default function HomeScreen() {
           showsVerticalScrollIndicator={false}>
           <View style={styles.header}>
             <View>
-              <Text style={styles.greeting}>Good morning, Joi</Text>
+              <Text style={styles.greeting}>{greeting}, {displayName}</Text>
               <Text style={styles.subtitle}>Small stress today, stronger you{'\n'}tomorrow</Text>
             </View>
 
             <View style={styles.avatarRing}>
-              <Image source={avatarImage} style={styles.avatar} contentFit="cover" />
+              <Image
+                source={avatarUri ? { uri: avatarUri } : avatarImage}
+                style={styles.avatar}
+                contentFit="cover"
+              />
             </View>
           </View>
 
@@ -162,18 +389,28 @@ export default function HomeScreen() {
               <Text style={styles.nextTitle}>Your next best step</Text>
               <Text style={styles.nextSubtitle}>Box breathing{'\n'}5 min. Reduce stress</Text>
             </View>
-            <LinearGradient
-              colors={['#7E5EFB', '#6AAFE9']}
-              start={{ x: 1, y: 0.5 }}
-              end={{ x: 0, y: 0.5 }}
-              style={styles.startButton}>
-              <Text style={styles.startText}>Start Now</Text>
-            </LinearGradient>
+            <Pressable
+              accessibilityRole="button"
+              onPress={() => router.push('/tools/breathing')}
+              style={({ pressed }) => pressed && styles.pressed}>
+              <LinearGradient
+                colors={['#7E5EFB', '#6AAFE9']}
+                start={{ x: 1, y: 0.5 }}
+                end={{ x: 0, y: 0.5 }}
+                style={styles.startButton}>
+                <Text style={styles.startText}>Start Now</Text>
+              </LinearGradient>
+            </Pressable>
           </View>
 
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>Today’s Plan</Text>
-            <Text style={styles.viewAll}>View All</Text>
+            <Pressable
+              accessibilityRole="button"
+              onPress={() => router.push('/tools/checklist')}
+              style={({ pressed }) => pressed && styles.pressed}>
+              <Text style={styles.viewAll}>View All</Text>
+            </Pressable>
           </View>
 
           <View style={styles.planCard}>
@@ -193,8 +430,10 @@ export default function HomeScreen() {
                   <Text style={styles.planSubtitle}>{plan.subtitle}</Text>
                 </View>
                 <Text style={styles.planMeta}>{plan.meta}</Text>
-                <View style={[styles.checkCircle, plan.checked && styles.checkCircleActive]}>
-                  {plan.checked ? <Ionicons name="checkmark" size={10} color="#FFFFFF" /> : null}
+                <View style={[styles.checkCircle, isChecklistTaskCompleted(plan.apiName) && styles.checkCircleActive]}>
+                  {isChecklistTaskCompleted(plan.apiName) ? (
+                    <Ionicons name="checkmark" size={10} color="#FFFFFF" />
+                  ) : null}
                 </View>
               </View>
             ))}
@@ -232,9 +471,14 @@ export default function HomeScreen() {
               <Text style={styles.resetTitle}>2 minute Reset</Text>
               <Text style={styles.resetSubtitle}>A quick reset for busy moments</Text>
             </View>
-            <View style={styles.resetButton}>
-              <Text style={styles.resetButtonText}>Start</Text>
-            </View>
+            <Pressable
+              accessibilityRole="button"
+              onPress={handleStartReset}
+              style={({ pressed }) => pressed && styles.pressed}>
+              <View style={styles.resetButton}>
+                <Text style={styles.resetButtonText}>Start</Text>
+              </View>
+            </Pressable>
           </View>
         </ScrollView>
       </SafeAreaView>
