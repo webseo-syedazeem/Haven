@@ -1,6 +1,8 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { useCallback } from 'react';
+import { BackHandler, Pressable, StyleSheet, Text, View } from 'react-native';
+import { useFocusEffect } from '@react-navigation/native';
 
 import { AuthButton } from '@/components/AuthButton';
 import { ScreenWrapper } from '@/components/ScreenWrapper';
@@ -14,6 +16,21 @@ const emailIcon = require('@/assets/icons/email.png');
 
 export default function WelcomeScreen() {
   const router = useRouter();
+
+  const goBackToLanding = useCallback(() => {
+    router.replace('/');
+  }, [router]);
+
+  useFocusEffect(
+    useCallback(() => {
+      const subscription = BackHandler.addEventListener('hardwareBackPress', () => {
+        goBackToLanding();
+        return true;
+      });
+
+      return () => subscription.remove();
+    }, [goBackToLanding])
+  );
 
   const handleGooglePress = async () => {
     try {
@@ -38,7 +55,7 @@ export default function WelcomeScreen() {
         <Pressable
           accessibilityLabel="Go back"
           hitSlop={12}
-          onPress={() => router.back()}
+          onPress={goBackToLanding}
           style={({ pressed }) => [styles.backButton, pressed && styles.pressed]}>
           <Ionicons color="#000000" name="chevron-back" size={18} />
         </Pressable>
@@ -47,11 +64,11 @@ export default function WelcomeScreen() {
       bottomContent={
         <Text style={styles.footer}>
           By continuing, you agree to our{' '}
-          <Text onPress={() => router.push('/profile/terms')} style={styles.footerLink}>
+          <Text onPress={() => router.push('/profile/terms' as any)} style={styles.footerLink}>
             Terms of Service
           </Text>
           {' and '}
-          <Text onPress={() => router.push('/profile/privacy-policy')} style={styles.footerLink}>
+          <Text onPress={() => router.push('/profile/privacy-policy' as any)} style={styles.footerLink}>
             Privacy Policy
           </Text>
           .

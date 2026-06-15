@@ -1,12 +1,28 @@
 import { supabase } from '@/lib/supabase';
 import * as SecureStore from 'expo-secure-store';
-import { Platform } from 'react-native';
+import { getAccessToken } from '@/lib/haven-api';
 
 const API_BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL ?? 'http://18.171.253.186';
 export const AUTH_TOKEN_KEY = 'haven.auth.access_token';
+const LEGACY_AUTH_TOKEN_KEY = 'access_token';
+
+function getShortTokenLog(token: string | null | undefined) {
+  return token ? `${token.slice(0, 10)}...` : '';
+}
+
+async function getStoredToken() {
+  return (
+    getAccessToken() ||
+    (await SecureStore.getItemAsync(AUTH_TOKEN_KEY)) ||
+    (await SecureStore.getItemAsync(LEGACY_AUTH_TOKEN_KEY))
+  );
+}
 
 export async function clearStoredAccessToken() {
-  await SecureStore.deleteItemAsync(AUTH_TOKEN_KEY);
+  await Promise.all([
+    SecureStore.deleteItemAsync(AUTH_TOKEN_KEY),
+    SecureStore.deleteItemAsync(LEGACY_AUTH_TOKEN_KEY),
+  ]);
 }
 
 export async function apiClient<T>(
