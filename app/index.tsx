@@ -1,48 +1,73 @@
-import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
+import * as SecureStore from 'expo-secure-store';
 
+import { ExploreButton } from '@/components/ExploreButton';
 import { ScreenWrapper } from '@/components/ScreenWrapper';
 import { AppFonts } from '@/constants/theme';
-import { supabase } from '@/lib/supabase';
-import { setAccessToken } from '@/lib/haven-api';
+import { setAccessToken, setAuthTokens, checkSession, refreshSession, clearAuthTokens } from '@/lib/haven-api';
 
 const firstPageBackground = require('@/assets/images/first-page-background-image.png');
-
-function InnerShadow() {
-  return (
-    <View pointerEvents="none" style={styles.innerShadow}>
-      <LinearGradient
-        colors={['rgba(255, 255, 255, 0.5)', 'rgba(255, 255, 255, 0)']}
-        end={{ x: 0, y: 1 }}
-        start={{ x: 0, y: 0 }}
-        style={styles.innerShadowTop}
-      />
-      <LinearGradient
-        colors={['rgba(255, 255, 255, 0.5)', 'rgba(255, 255, 255, 0)']}
-        end={{ x: 1, y: 0 }}
-        start={{ x: 0, y: 0 }}
-        style={styles.innerShadowLeft}
-      />
-    </View>
-  );
-}
 
 export default function FirstPageScreen() {
   const router = useRouter();
   const [checking, setChecking] = useState(true);
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data }) => {
-      if (data.session?.access_token) {
-        setAccessToken(data.session.access_token);
-        router.replace('/(tabs)');
-      } else {
-        setChecking(false);
-      }
-    });
+    (async () => {
+      try {
+        const accessToken = await SecureStore.getItemAsync('haven.auth.access_token');
+        const refreshToken = await SecureStore.getItemAsync('haven.auth.refresh_token');
+
+        if (!accessToken) {
+          setChecking(false);
+          return;
+        }
+
+        setAccessToken(accessToken);
+        if (refreshToken) {
+          setAuthTokens({ refreshToken });
+        }
+
+        try {
+          // Validate token via check-session endpoint
+          await checkSession();
+          router.replace('/(tabs)');
+          return;
+        } catch {
+          // Access token invalid/expired, try refresh
+          if (refreshToken) {
+            try {
+              const res: any = await refreshSession(refreshToken);
+              const session = res?.data?.session ?? res;
+              const newAccessToken = session?.access_token ?? session?.accessToken ?? session?.token;
+              const newRefreshToken = session?.refresh_token ?? session?.refreshToken;
+
+              if (newAccessToken) {
+                await SecureStore.setItemAsync('haven.auth.access_token', newAccessToken);
+                if (newRefreshToken) {
+                  await SecureStore.setItemAsync('haven.auth.refresh_token', newRefreshToken);
+                }
+                setAccessToken(newAccessToken);
+                router.replace('/(tabs)');
+                return;
+              }
+            } catch {
+              // Refresh failed too
+            }
+          }
+        }
+
+        // All checks failed — clear stale tokens
+        clearAuthTokens();
+        await SecureStore.deleteItemAsync('haven.auth.access_token');
+        await SecureStore.deleteItemAsync('haven.auth.refresh_token');
+      } catch {}
+
+      setChecking(false);
+    })();
   }, []);
 
   if (checking) {
@@ -61,20 +86,11 @@ export default function FirstPageScreen() {
         bottomReserve={170}
         bottomContent={
           <>
-            <Pressable
-              accessibilityRole="button"
+            <ExploreButton
+              label="Get Started"
               onPress={() => router.push('/create-account')}
-              style={({ pressed }) => [styles.getStartedButton, pressed && styles.pressed]}>
-              <LinearGradient
-                colors={['#6D67CE', '#528AE1', '#6AAFE9']}
-                end={{ x: 1, y: 0.58 }}
-                locations={[0.0254, 0.5327, 0.9044]}
-                start={{ x: 0, y: 0.42 }}
-                style={styles.getStartedGradient}>
-                <InnerShadow />
-                <Text style={styles.getStartedText}>Get Started</Text>
-              </LinearGradient>
-            </Pressable>
+              style={styles.getStartedButton}
+            />
 
             <Pressable
               accessibilityRole="button"
@@ -125,29 +141,9 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   getStartedButton: {
-    alignItems: 'center',
     alignSelf: 'center',
-    backgroundColor: '#528ae1',
-    borderRadius: 27,
-    height: 54,
     maxWidth: 348,
-    overflow: 'hidden',
     width: '100%',
-  },
-  getStartedGradient: {
-    alignItems: 'center',
-    height: '100%',
-    justifyContent: 'center',
-    width: '100%',
-  },
-  getStartedText: {
-    color: '#ffffff',
-    fontFamily: AppFonts.sansMedium,
-    fontSize: 18,
-    fontWeight: '500',
-    letterSpacing: 0,
-    lineHeight: 26,
-    textAlign: 'center',
   },
   heading: {
     color: '#173F5F',
@@ -157,23 +153,6 @@ const styles = StyleSheet.create({
     letterSpacing: 0,
     lineHeight: 42,
     textAlign: 'center',
-  },
-  innerShadow: {
-    ...StyleSheet.absoluteFillObject,
-  },
-  innerShadowLeft: {
-    bottom: 0,
-    left: 0,
-    position: 'absolute',
-    top: 4,
-    width: 16,
-  },
-  innerShadowTop: {
-    height: 16,
-    left: 4,
-    position: 'absolute',
-    right: 0,
-    top: 0,
   },
   loginLink: {
     color: '#ffffff',
@@ -195,9 +174,5 @@ const styles = StyleSheet.create({
     textShadowColor: 'rgba(0, 0, 0, 0.3)',
     textShadowOffset: { width: 0, height: 1 },
     textShadowRadius: 2,
-  },
-  pressed: {
-    opacity: 0.86,
-    transform: [{ scale: 0.99 }],
   },
 });

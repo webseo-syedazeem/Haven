@@ -17,15 +17,15 @@
       }
     },
     "android": {
+      "package": "com.haven.preview",
       "adaptiveIcon": {
-        "backgroundColor": "#E6F4FE",
-        "foregroundImage": "./assets/images/android-icon-foreground.png",
-        "backgroundImage": "./assets/images/android-icon-background.png",
-        "monochromeImage": "./assets/images/android-icon-monochrome.png"
+        "foregroundImage": "./assets/images/icon.png",
+        "backgroundColor": "#16102A"
       },
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
-      "usesCleartextTraffic": true
+      "usesCleartextTraffic": true,
+      "jsEngine": "hermes"
     },
     "web": {
       "output": "static",
@@ -36,18 +36,43 @@
       [
         "expo-splash-screen",
         {
-          "image": "./assets/images/splash-icon.png",
-          "imageWidth": 200,
-          "resizeMode": "contain",
-          "backgroundColor": "#ffffff",
+          "backgroundColor": "#FFFFFF",
+          "image": "./assets/images/icon.png",
+          "imageWidth": 250,
           "dark": {
-            "backgroundColor": "#000000"
+            "backgroundColor": "#16102A",
+            "image": "./assets/images/icon.png",
+            "imageWidth": 250
           }
         }
-      ]
+      ],
+      [
+        "react-native-edge-to-edge",
+        {
+          "android": {
+            "parentTheme": "Default",
+            "enforceNavigationBarContrast": false
+          }
+        }
+      ],
+      [
+        "expo-navigation-bar",
+        {
+          "backgroundColor": "#00000000",
+          "barStyle": "dark",
+          "position": "absolute",
+          "visibility": "visible"
+        }
+      ],
+      "expo-asset"
     ],
     "experiments": {
       "typedRoutes": true
+    },
+    "extra": {
+      "eas": {
+        "projectId": "08fd4b46-0da6-4bfa-bb6a-ccf6cfaa634a"
+      }
     }
   }
 }

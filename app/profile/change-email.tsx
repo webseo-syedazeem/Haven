@@ -1,7 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
-import { useEffect, useState } from 'react';
 import {
   KeyboardAvoidingView,
   Platform,
@@ -14,38 +12,16 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { AppFonts } from '@/constants/theme';
-import { supabase } from '@/lib/supabase';
+import { ExploreButton } from '@/components/ExploreButton';
+import { useUser } from '@/hooks/useUser';
+import { getProfileEmail } from '@/lib/api/user';
 
 const noFocusOutline = Platform.OS === 'web' ? ({ outlineStyle: 'none' } as any) : null;
 
-function InnerShadow() {
-  return (
-    <View pointerEvents="none" style={styles.innerShadow}>
-      <LinearGradient
-        colors={['rgba(255, 255, 255, 0.5)', 'rgba(255, 255, 255, 0)']}
-        end={{ x: 0, y: 1 }}
-        start={{ x: 0, y: 0 }}
-        style={styles.innerShadowTop}
-      />
-      <LinearGradient
-        colors={['rgba(255, 255, 255, 0.5)', 'rgba(255, 255, 255, 0)']}
-        end={{ x: 1, y: 0 }}
-        start={{ x: 0, y: 0 }}
-        style={styles.innerShadowLeft}
-      />
-    </View>
-  );
-}
-
 export default function ChangeEmailScreen() {
   const router = useRouter();
-  const [email, setEmail] = useState('');
-
-  useEffect(() => {
-    supabase.auth.getSession().then(({ data }) => {
-      setEmail(data.session?.user?.email ?? '');
-    });
-  }, []);
+  const { data: me } = useUser();
+  const email = getProfileEmail(me);
 
   return (
     <SafeAreaView edges={['top']} style={styles.safeArea}>
@@ -68,7 +44,6 @@ export default function ChangeEmailScreen() {
 
           {/* Form */}
           <View style={styles.form}>
-            {/* Current email - read only */}
             <View style={styles.inputCard}>
               <Text style={styles.inputLabel}>Current email</Text>
               <TextInput
@@ -77,17 +52,6 @@ export default function ChangeEmailScreen() {
                 placeholderTextColor="#C0C0C0"
                 style={[styles.input, styles.inputReadOnly, noFocusOutline]}
                 value={email}
-              />
-            </View>
-
-            {/* New email - read only info */}
-            <View style={styles.inputCard}>
-              <Text style={styles.inputLabel}>New email</Text>
-              <TextInput
-                editable={false}
-                placeholder="Contact support to change email"
-                placeholderTextColor="#C0C0C0"
-                style={[styles.input, styles.inputReadOnly, noFocusOutline]}
               />
             </View>
 
@@ -102,24 +66,11 @@ export default function ChangeEmailScreen() {
               </View>
             </View>
 
-            {/* Continue button */}
-            <Pressable
+            <ExploreButton
+              label="Continue"
               onPress={() => router.back()}
-              style={({ pressed }) => [styles.continueBtn, pressed && styles.pressed]}>
-              <LinearGradient
-                colors={['#6D67CE', '#528AE1', '#6AAFE9']}
-                end={{ x: 1, y: 0.58 }}
-                locations={[0.0254, 0.5327, 0.9044]}
-                start={{ x: 0, y: 0.42 }}
-                style={styles.continueGradient}>
-                <InnerShadow />
-                <Text style={styles.continueText}>Continue</Text>
-              </LinearGradient>
-            </Pressable>
-
-            <Text style={styles.infoText}>
-              We will send a verification link to your new email
-            </Text>
+              style={styles.actionBtn}
+            />
           </View>
 
         </View>
@@ -216,55 +167,11 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: '600',
   },
-  continueBtn: {
-    alignItems: 'center',
+  actionBtn: {
     alignSelf: 'center',
-    backgroundColor: '#528ae1',
-    borderRadius: 27,
-    height: 54,
     marginTop: 24,
     maxWidth: 348,
-    overflow: 'hidden',
     width: '100%',
-  },
-  continueGradient: {
-    alignItems: 'center',
-    height: '100%',
-    justifyContent: 'center',
-    width: '100%',
-  },
-  continueText: {
-    color: '#FFFFFF',
-    fontFamily: AppFonts.sansMedium,
-    fontSize: 18,
-    fontWeight: '500',
-    letterSpacing: 0,
-    lineHeight: 26,
-    textAlign: 'center',
-  },
-  infoText: {
-    color: '#8C8C8C',
-    fontFamily: AppFonts.sansRegular,
-    fontSize: 13,
-    lineHeight: 20,
-    textAlign: 'center',
   },
   pressed: { opacity: 0.86, transform: [{ scale: 0.99 }] },
-  innerShadow: {
-    ...StyleSheet.absoluteFillObject,
-  },
-  innerShadowLeft: {
-    bottom: 0,
-    left: 0,
-    position: 'absolute',
-    top: 4,
-    width: 16,
-  },
-  innerShadowTop: {
-    height: 16,
-    left: 4,
-    position: 'absolute',
-    right: 0,
-    top: 0,
-  },
 });

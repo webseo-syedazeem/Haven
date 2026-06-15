@@ -18,6 +18,7 @@ import { useQuery } from '@tanstack/react-query';
 import { Ionicons } from '@expo/vector-icons';
 import { Audio } from 'expo-av';
 
+import { ExploreTabChip } from '@/components/ExploreTabChip';
 import { AppFonts } from '@/constants/theme';
 import { apiClient } from '@/lib/api/client';
 
@@ -63,6 +64,13 @@ function getSoundscapeThumb(soundscape: any, index: number) {
   const key = String(soundscape?.id ?? soundscape?.title ?? index);
   const hash = key.split('').reduce((sum, char) => sum + char.charCodeAt(0), index);
   return soundscapeThumbImages[hash % soundscapeThumbImages.length];
+}
+
+function formatDuration(seconds?: number) {
+  const safe = Number.isFinite(seconds) ? Math.max(0, Math.round(seconds!)) : 180;
+  const m = Math.floor(safe / 60).toString().padStart(2, '0');
+  const s = Math.floor(safe % 60).toString().padStart(2, '0');
+  return `${m}:${s}`;
 }
 
 type SoundscapeListCardProps = {
@@ -176,6 +184,7 @@ export default function SoundscapeScreen() {
         title: soundscape.title,
         subcategory: soundscape.subcategory,
         file_url: soundscape.file_url,
+        duration_seconds: String(soundscape.duration_seconds ?? 180),
       },
     });
   }, [router]);
@@ -197,8 +206,12 @@ export default function SoundscapeScreen() {
           bounces={false}
           contentContainerStyle={[styles.scroll, { paddingBottom: insets.bottom + 68 }]}
           showsVerticalScrollIndicator={false}>
-          <Pressable onPress={() => router.back()} style={styles.backButton}>
-            <Text style={styles.backChevron}>‹</Text>
+          <Pressable
+            accessibilityLabel="Go back"
+            hitSlop={12}
+            onPress={() => router.back()}
+            style={({ pressed }) => [styles.backButton, pressed && styles.pressed]}>
+            <Ionicons name="chevron-back" size={18} color="#000000" />
           </Pressable>
 
           <Text style={styles.title}>Soundscapes</Text>
@@ -214,23 +227,14 @@ export default function SoundscapeScreen() {
                 const isActive = activeCategory === cat;
 
                 return (
-                  <Pressable
+                  <ExploreTabChip
                     key={cat}
+                    active={isActive}
+                    label={cat}
                     onPress={() => setActiveCategory(cat)}
-                    style={[styles.tab, { width: tabWidth }]}>
-                    {isActive && (
-                      <LinearGradient
-                        colors={['#A987E2', '#5D7EEA']}
-                        locations={[0, 1]}
-                        start={{ x: 0.5, y: -0.55 }}
-                        end={{ x: 0.5, y: 1 }}
-                        style={StyleSheet.absoluteFillObject}
-                      />
-                    )}
-                    <Text style={[styles.tabText, isActive && styles.tabTextActive]} numberOfLines={1}>
-                      {cat}
-                    </Text>
-                  </Pressable>
+                    style={{ width: tabWidth, height: 48, flex: 0 }}
+                    variant="tab"
+                  />
                 );
               })}
             </ScrollView>
@@ -248,30 +252,21 @@ export default function SoundscapeScreen() {
                   const isActive = activeSubcategory === sub;
 
                   return (
-                    <Pressable
+                    <ExploreTabChip
                       key={sub}
-                      onPress={() => setActiveSubcategory(sub)}
-                      style={[styles.subTab, sub === 'All' && styles.subTabCompact]}>
-                      <View style={styles.subTabFill}>
-                        {isActive && (
-                          <LinearGradient
-                            colors={['#A987E2', '#5D7EEA']}
-                            locations={[0, 1]}
-                            start={{ x: 0.5, y: -0.55 }}
-                            end={{ x: 0.5, y: 1 }}
-                            style={StyleSheet.absoluteFillObject}
-                          />
-                        )}
+                      active={isActive}
+                      icon={
                         <Ionicons
                           name={getSubcategoryIcon(sub) as any}
                           size={20}
                           color={isActive ? '#FFFFFF' : '#54555A'}
                         />
-                        <Text style={[styles.subTabText, isActive && styles.subTabTextActive]} numberOfLines={2}>
-                          {sub}
-                        </Text>
-                      </View>
-                    </Pressable>
+                      }
+                      label={sub}
+                      onPress={() => setActiveSubcategory(sub)}
+                      style={sub === 'All' ? styles.subTabCompact : undefined}
+                      variant="subtab"
+                    />
                   );
                 })}
               </ScrollView>
@@ -292,7 +287,7 @@ export default function SoundscapeScreen() {
               </View>
 
               {featured && (
-                <Pressable onPress={() => router.push({ pathname: '/tools/soundscape-player', params: { id: featured.id, title: featured.title, subcategory: featured.subcategory, file_url: featured.file_url } })} style={styles.featuredCard}>
+                <Pressable onPress={() => router.push({ pathname: '/tools/soundscape-player', params: { id: featured.id, title: featured.title, subcategory: featured.subcategory, file_url: featured.file_url, duration_seconds: String(featured.duration_seconds ?? 180) } })} style={styles.featuredCard}>
                   <Image source={featuredImage} style={styles.featuredBg} contentFit="cover" />
                   <LinearGradient
                     colors={['transparent', 'rgba(0,0,0,0.65)']}
@@ -309,7 +304,7 @@ export default function SoundscapeScreen() {
                           <Ionicons name={playingId === featured.id ? 'pause' : 'play'} size={18} color="#FFF" />
                         )}
                       </View>
-                      <Text style={styles.featuredDuration}>20.00</Text>
+                      <Text style={styles.featuredDuration}>{formatDuration(featured.duration_seconds)}</Text>
                     </View>
                   </View>
                 </Pressable>
@@ -340,11 +335,6 @@ export default function SoundscapeScreen() {
         </ScrollView>
       </SafeAreaView>
 
-      <View
-        pointerEvents="none"
-        style={[styles.tabBarDock, { height: Math.max(insets.bottom, 8) + 76 }]}
-      />
-
       <View style={[styles.floatingTabBar, { bottom: Math.max(insets.bottom, 8) }]}>
         {TAB_ITEMS.map((item) => (
           <Pressable
@@ -373,15 +363,14 @@ const styles = StyleSheet.create({
   scroll: { paddingHorizontal: 20, paddingTop: 16 },
   backButton: {
     alignItems: 'center',
-    backgroundColor: 'rgba(255,255,255,0.70)',
-    borderRadius: 20,
-    height: 40,
+    backgroundColor: 'rgba(255, 255, 255, 0.5)',
+    borderRadius: 16,
+    height: 32,
     justifyContent: 'center',
     marginBottom: 16,
-    width: 40,
-    elevation: 3,
+    width: 32,
   },
-  backChevron: { color: '#173F5F', fontSize: 26, fontWeight: '300', lineHeight: 30, marginTop: -2 },
+  pressed: { opacity: 0.86, transform: [{ scale: 0.99 }] },
   title: {
     color: '#173F5F',
     fontFamily: AppFonts.displayBold,
@@ -416,25 +405,6 @@ const styles = StyleSheet.create({
     paddingLeft: 4,
     paddingRight: 4,
   },
-  tab: {
-    alignItems: 'center',
-    borderRadius: 24,
-    height: 48,
-    justifyContent: 'center',
-    overflow: 'hidden',
-    paddingHorizontal: 8,
-  },
-  tabText: {
-    color: '#54555A',
-    fontFamily: AppFonts.sansMedium,
-    fontSize: 15,
-    lineHeight: 20,
-    textAlign: 'center',
-  },
-  tabTextActive: {
-    color: '#FFFFFF',
-    fontFamily: AppFonts.sansSemiBold,
-  },
   subTabsShell: {
     marginBottom: 16,
     marginHorizontal: -4,
@@ -445,44 +415,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 4,
     paddingRight: 28,
   },
-  subTab: {
-    alignItems: 'center',
-    backgroundColor: 'rgba(255,255,255,0.92)',
-    borderRadius: 14,
-    elevation: 3,
-    minHeight: 62,
-    minWidth: 104,
-    overflow: 'hidden',
-    padding: 5,
-    shadowColor: '#5275E8',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 10,
-  },
   subTabCompact: {
     minWidth: 76,
-  },
-  subTabFill: {
-    alignItems: 'center',
-    borderRadius: 10,
-    flexDirection: 'row',
-    gap: 9,
-    justifyContent: 'center',
-    minHeight: 52,
-    overflow: 'hidden',
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-  },
-  subTabText: {
-    color: '#54555A',
-    flexShrink: 1,
-    fontFamily: AppFonts.sansMedium,
-    fontSize: 14,
-    lineHeight: 18,
-  },
-  subTabTextActive: {
-    color: '#FFFFFF',
-    fontFamily: AppFonts.sansSemiBold,
   },
   loadingState: {
     alignItems: 'center',
@@ -596,13 +530,6 @@ const styles = StyleSheet.create({
     width: 32,
   },
   playSmallActive: { backgroundColor: '#7B61FF' },
-  tabBarDock: {
-    backgroundColor: '#FFFFFF',
-    bottom: 0,
-    left: 0,
-    position: 'absolute',
-    right: 0,
-  },
   floatingTabBar: {
     alignItems: 'center',
     backgroundColor: '#FFFFFF',

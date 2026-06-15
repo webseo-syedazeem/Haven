@@ -17,30 +17,12 @@ import {
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 
+import { ExploreButton } from '@/components/ExploreButton';
 import { AppFonts } from '@/constants/theme';
 import { SaveSuccessModal } from '@/components/profile/SaveSuccessModal';
 import { useGoals, useSaveGoals, useUpdateGoals } from '@/hooks/useGoals';
 
 const backgroundImage = require('@/assets/images/264ee61d943a0f70fc621c11756d688038af0dc6.png');
-
-function InnerShadow() {
-  return (
-    <View pointerEvents="none" style={styles.innerShadow}>
-      <LinearGradient
-        colors={['rgba(255, 255, 255, 0.5)', 'rgba(255, 255, 255, 0)']}
-        end={{ x: 0, y: 1 }}
-        start={{ x: 0, y: 0 }}
-        style={styles.innerShadowTop}
-      />
-      <LinearGradient
-        colors={['rgba(255, 255, 255, 0.5)', 'rgba(255, 255, 255, 0)']}
-        end={{ x: 1, y: 0 }}
-        start={{ x: 0, y: 0 }}
-        style={styles.innerShadowLeft}
-      />
-    </View>
-  );
-}
 
 // ── Goal definitions (matches backend enum exactly) ──────────────────────────
 const GOALS = [
@@ -147,11 +129,23 @@ export default function GoalsScreen() {
         resizeMode="cover"
         style={styles.backgroundImage}
       />
+
+      {/* White fog on background — starts above halfway, behind all content */}
+      <View pointerEvents="none" style={styles.fogOverlay}>
+        <LinearGradient
+          colors={['rgba(255,255,255,0)', 'rgba(255,255,255,0.82)', 'rgba(255,255,255,0.97)']}
+          locations={[0, 0.5, 1]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 0, y: 1 }}
+          style={StyleSheet.absoluteFillObject}
+        />
+      </View>
+
       <SafeAreaView edges={['top']} style={styles.safeArea}>
         <ScrollView
           style={styles.scrollView}
           bounces={false}
-          contentContainerStyle={[styles.scroll, { paddingBottom: insets.bottom + 100 }]}
+          contentContainerStyle={[styles.scroll, { paddingBottom: insets.bottom + 24 }]}
           showsVerticalScrollIndicator={false}>
 
           {/* Back button */}
@@ -219,28 +213,14 @@ export default function GoalsScreen() {
           </View>
 
           {/* Save button */}
-          <Pressable
+          <ExploreButton
             accessibilityRole="button"
-            onPress={handleSave}
+            label="Save Goals"
+            loading={saving}
             disabled={saving}
-            style={({ pressed }) => [
-              styles.getStartedButton,
-              pressed && !saving && styles.pressed,
-            ]}>
-            <LinearGradient
-              colors={['#6D67CE', '#528AE1', '#6AAFE9']}
-              end={{ x: 1, y: 0.58 }}
-              locations={[0.0254, 0.5327, 0.9044]}
-              start={{ x: 0, y: 0.42 }}
-              style={styles.getStartedGradient}>
-              <InnerShadow />
-              {saving ? (
-                <ActivityIndicator color="#FFFFFF" />
-              ) : (
-                <Text style={styles.getStartedText}>Save Goals</Text>
-              )}
-            </LinearGradient>
-          </Pressable>
+            onPress={handleSave}
+            style={styles.getStartedButton}
+          />
 
         </ScrollView>
         <SaveSuccessModal
@@ -381,50 +361,21 @@ const styles = StyleSheet.create({
 
   // Save button
   getStartedButton: {
-    alignItems: 'center',
     alignSelf: 'center',
-    backgroundColor: '#528ae1',
-    borderRadius: 27,
-    height: 54,
-    marginTop: 24,
+    marginTop: 16,
+    marginBottom: 8,
     maxWidth: 348,
-    overflow: 'hidden',
     width: '100%',
-  },
-  getStartedGradient: {
-    alignItems: 'center',
-    height: '100%',
-    justifyContent: 'center',
-    width: '100%',
-  },
-  getStartedText: {
-    color: '#ffffff',
-    fontFamily: AppFonts.sansMedium,
-    fontSize: 18,
-    fontWeight: '500',
-    letterSpacing: 0,
-    lineHeight: 26,
-    textAlign: 'center',
-  },
-  innerShadow: {
-    ...StyleSheet.absoluteFillObject,
-  },
-  innerShadowLeft: {
-    bottom: 0,
-    left: 0,
-    position: 'absolute',
-    top: 4,
-    width: 16,
-  },
-  innerShadowTop: {
-    height: 16,
-    left: 4,
-    position: 'absolute',
-    right: 0,
-    top: 0,
   },
   pressed: {
     opacity: 0.86,
     transform: [{ scale: 0.99 }],
+  },
+  fogOverlay: {
+    bottom: 0,
+    height: '65%',
+    left: 0,
+    position: 'absolute',
+    right: 0,
   },
 });

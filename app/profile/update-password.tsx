@@ -1,9 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import {
-  ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -14,40 +12,22 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { ExploreButton } from '@/components/ExploreButton';
 import { AppFonts } from '@/constants/theme';
 import { SaveSuccessModal } from '@/components/profile/SaveSuccessModal';
-import { apiClient } from '@/lib/api/client';
+import { useChangePassword } from '@/hooks/useUser';
 
 const noFocusOutline = Platform.OS === 'web' ? ({ outlineStyle: 'none' } as any) : null;
 
-function InnerShadow() {
-  return (
-    <View pointerEvents="none" style={styles.innerShadow}>
-      <LinearGradient
-        colors={['rgba(255, 255, 255, 0.5)', 'rgba(255, 255, 255, 0)']}
-        end={{ x: 0, y: 1 }}
-        start={{ x: 0, y: 0 }}
-        style={styles.innerShadowTop}
-      />
-      <LinearGradient
-        colors={['rgba(255, 255, 255, 0.5)', 'rgba(255, 255, 255, 0)']}
-        end={{ x: 1, y: 0 }}
-        start={{ x: 0, y: 0 }}
-        style={styles.innerShadowLeft}
-      />
-    </View>
-  );
-}
-
 export default function UpdatePasswordScreen() {
   const router = useRouter();
+  const changePassword = useChangePassword();
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showCurrent, setShowCurrent] = useState(false);
   const [showNew, setShowNew] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
-  const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [showSavedModal, setShowSavedModal] = useState(false);
 
@@ -65,20 +45,14 @@ export default function UpdatePasswordScreen() {
       return;
     }
     setError('');
-    setSaving(true);
     try {
-      await apiClient('/api/change-password', {
-        method: 'POST',
-        body: JSON.stringify({
-          oldPassword: currentPassword,
-          newPassword,
-        }),
+      await changePassword.mutateAsync({
+        oldPassword: currentPassword,
+        newPassword,
       });
       setShowSavedModal(true);
     } catch (err: any) {
       setError(err?.message ?? 'Something went wrong.');
-    } finally {
-      setSaving(false);
     }
   }
 
@@ -176,28 +150,13 @@ export default function UpdatePasswordScreen() {
             {!!error && <Text style={styles.errorText}>{error}</Text>}
 
             {/* Update button */}
-            <Pressable
-              disabled={saving}
+            <ExploreButton
+              label="Update password"
+              loading={changePassword.isPending}
+              disabled={changePassword.isPending}
               onPress={handleUpdate}
-              style={({ pressed }) => [
-                styles.updateBtn,
-                pressed && !saving && styles.pressed,
-                saving && styles.disabled,
-              ]}>
-              <LinearGradient
-                colors={['#6D67CE', '#528AE1', '#6AAFE9']}
-                end={{ x: 1, y: 0.58 }}
-                locations={[0.0254, 0.5327, 0.9044]}
-                start={{ x: 0, y: 0.42 }}
-                style={styles.updateGradient}>
-                <InnerShadow />
-                {saving ? (
-                  <ActivityIndicator color="#fff" />
-                ) : (
-                  <Text style={styles.updateText}>Update password</Text>
-                )}
-              </LinearGradient>
-            </Pressable>
+              style={styles.updateBtn}
+            />
 
           </View>
         </View>
@@ -279,48 +238,10 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   updateBtn: {
-    alignItems: 'center',
     alignSelf: 'center',
-    backgroundColor: '#528ae1',
-    borderRadius: 27,
-    height: 54,
     marginTop: 24,
     maxWidth: 348,
-    overflow: 'hidden',
     width: '100%',
-  },
-  updateGradient: {
-    alignItems: 'center',
-    height: '100%',
-    justifyContent: 'center',
-    width: '100%',
-  },
-  updateText: {
-    color: '#FFFFFF',
-    fontFamily: AppFonts.sansMedium,
-    fontSize: 18,
-    fontWeight: '500',
-    letterSpacing: 0,
-    lineHeight: 26,
-    textAlign: 'center',
   },
   pressed: { opacity: 0.86, transform: [{ scale: 0.99 }] },
-  disabled: { opacity: 0.78 },
-  innerShadow: {
-    ...StyleSheet.absoluteFillObject,
-  },
-  innerShadowLeft: {
-    bottom: 0,
-    left: 0,
-    position: 'absolute',
-    top: 4,
-    width: 16,
-  },
-  innerShadowTop: {
-    height: 16,
-    left: 4,
-    position: 'absolute',
-    right: 0,
-    top: 0,
-  },
 });

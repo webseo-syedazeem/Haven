@@ -16,31 +16,13 @@ import {
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 
+import { ExploreButton } from '@/components/ExploreButton';
 import { AppFonts } from '@/constants/theme';
 import { SaveSuccessModal } from '@/components/profile/SaveSuccessModal';
 import { setupApi } from '@/lib/api';
 import { useSetup } from '@/hooks/useSetup';
 
 const backgroundImage = require('@/assets/images/29dd3fece0aba2a99777eeac0658bccbe2ed402a.png');
-
-function InnerShadow() {
-  return (
-    <View pointerEvents="none" style={styles.innerShadow}>
-      <LinearGradient
-        colors={['rgba(255, 255, 255, 0.5)', 'rgba(255, 255, 255, 0)']}
-        end={{ x: 0, y: 1 }}
-        start={{ x: 0, y: 0 }}
-        style={styles.innerShadowTop}
-      />
-      <LinearGradient
-        colors={['rgba(255, 255, 255, 0.5)', 'rgba(255, 255, 255, 0)']}
-        end={{ x: 1, y: 0 }}
-        start={{ x: 0, y: 0 }}
-        style={styles.innerShadowLeft}
-      />
-    </View>
-  );
-}
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 type Trigger = {
@@ -200,7 +182,7 @@ export default function StressProfileScreen() {
       <SafeAreaView edges={['top']} style={styles.safeArea}>
         <ScrollView
           bounces={false}
-          contentContainerStyle={[styles.scroll, { paddingBottom: insets.bottom + 100 }]}
+          contentContainerStyle={[styles.scroll, { paddingBottom: insets.bottom + 24 }]}
           showsVerticalScrollIndicator={false}>
 
           {/* Back */}
@@ -317,28 +299,14 @@ export default function StressProfileScreen() {
           )}
 
           {/* Save button */}
-          <Pressable
+          <ExploreButton
             accessibilityRole="button"
-            onPress={handleSave}
+            label="Save Profile"
+            loading={saving}
             disabled={saving}
-            style={({ pressed }) => [
-              styles.saveWrap,
-              pressed && !saving && styles.pressed,
-            ]}>
-            <LinearGradient
-              colors={['#6D67CE', '#528AE1', '#6AAFE9']}
-              end={{ x: 1, y: 0.58 }}
-              locations={[0.0254, 0.5327, 0.9044]}
-              start={{ x: 0, y: 0.42 }}
-              style={styles.saveButton}>
-              <InnerShadow />
-              {saving ? (
-                <ActivityIndicator color="#FFFFFF" />
-              ) : (
-                <Text style={styles.saveText}>Save Profile</Text>
-              )}
-            </LinearGradient>
-          </Pressable>
+            onPress={handleSave}
+            style={styles.saveWrap}
+          />
 
         </ScrollView>
         <SaveSuccessModal
@@ -524,47 +492,11 @@ const styles = StyleSheet.create({
 
   // Save button
   saveWrap: {
-    alignItems: 'center',
     alignSelf: 'center',
-    backgroundColor: '#528ae1',
-    borderRadius: 27,
-    height: 54,
-    marginTop: 24,
+    marginBottom: 8,
+    marginTop: 16,
     maxWidth: 348,
-    overflow: 'hidden',
     width: '100%',
-  },
-  saveButton: {
-    alignItems: 'center',
-    height: '100%',
-    justifyContent: 'center',
-    width: '100%',
-  },
-  saveText: {
-    color: '#ffffff',
-    fontFamily: AppFonts.sansMedium,
-    fontSize: 18,
-    fontWeight: '500',
-    letterSpacing: 0,
-    lineHeight: 26,
-    textAlign: 'center',
-  },
-  innerShadow: {
-    ...StyleSheet.absoluteFillObject,
-  },
-  innerShadowLeft: {
-    bottom: 0,
-    left: 0,
-    position: 'absolute',
-    top: 4,
-    width: 16,
-  },
-  innerShadowTop: {
-    height: 16,
-    left: 4,
-    position: 'absolute',
-    right: 0,
-    top: 0,
   },
   pressed: {
     opacity: 0.86,

@@ -346,6 +346,10 @@ export function getCurrentUser() {
   return apiRequest<ApiResponse<{ user?: AuthUser }> | AuthUser>('/api/me');
 }
 
+export function checkSession() {
+  return apiRequest<ApiResponse<{ valid?: boolean; user?: AuthUser; profile?: unknown }>>('/api/check-session');
+}
+
 export function updateName(payload: { first_name: string; last_name: string }) {
   return apiRequest<ApiResponse<{ user?: AuthUser; profile?: unknown }>>('/api/update-name', {
     body: JSON.stringify(payload),

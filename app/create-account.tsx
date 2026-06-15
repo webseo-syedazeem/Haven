@@ -3,7 +3,6 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import {
-  ActivityIndicator,
   Image,
   KeyboardAvoidingView,
   Platform,
@@ -14,6 +13,7 @@ import {
   View,
 } from 'react-native';
 
+import { ExploreButton } from '@/components/ExploreButton';
 import { ScreenWrapper, useScreenBottomPadding } from '@/components/ScreenWrapper';
 import { AppFonts } from '@/constants/theme';
 import { signInWithGoogle } from '@/lib/google-auth';
@@ -62,7 +62,12 @@ export default function CreateAccountScreen() {
 
     try {
       const session = await signInWithGoogle();
-      if (session) {
+      if (session?.session?.access_token) {
+        const SecureStore = await import('expo-secure-store');
+        await SecureStore.setItemAsync('haven.auth.access_token', session.session.access_token);
+        if (session.session.refresh_token) {
+          await SecureStore.setItemAsync('haven.auth.refresh_token', session.session.refresh_token);
+        }
         router.replace('/feeling-lately');
       }
     } catch (error) {
@@ -96,6 +101,18 @@ export default function CreateAccountScreen() {
 
     try {
       await signUp({ email: trimmedEmail, password, username: trimmedUsername });
+      router.replace('/feeling-lately');
+      const res: any = await signUp({ email: trimmedEmail, password, username: trimmedUsername });
+      const session = res?.data?.session ?? res;
+      const accessToken = session?.access_token ?? session?.accessToken ?? session?.token;
+      const refreshTok = session?.refresh_token ?? session?.refreshToken;
+      if (accessToken) {
+        const SecureStore = await import('expo-secure-store');
+        await SecureStore.setItemAsync('haven.auth.access_token', accessToken);
+        if (refreshTok) {
+          await SecureStore.setItemAsync('haven.auth.refresh_token', refreshTok);
+        }
+      }
       router.replace('/feeling-lately');
     } catch (error) {
       setErrorMessage(error instanceof Error ? error.message : 'Unable to create account right now.');
@@ -148,7 +165,7 @@ export default function CreateAccountScreen() {
             <View style={styles.form}>
               <View style={styles.inputWrap}>
                 <InnerShadow />
-                <Ionicons color="#173F5F" name="person-outline" size={18} style={styles.inputIcon} />
+                <Ionicons color="#173F5F" name="person-outline" size={20} style={styles.inputIcon} />
                 <TextInput
                   autoCapitalize="words"
                   autoComplete="name"
@@ -162,7 +179,7 @@ export default function CreateAccountScreen() {
 
               <View style={styles.inputWrap}>
                 <InnerShadow />
-                <Ionicons color="#173F5F" name="mail-outline" size={18} style={styles.inputIcon} />
+                <Ionicons color="#173F5F" name="mail-outline" size={20} style={styles.inputIcon} />
                 <TextInput
                   autoCapitalize="none"
                   autoComplete="email"
@@ -177,7 +194,7 @@ export default function CreateAccountScreen() {
 
               <View style={styles.inputWrap}>
                 <InnerShadow />
-                <Ionicons color="#173F5F" name="lock-closed" size={16} style={styles.inputIcon} />
+                <Ionicons color="#173F5F" name="lock-closed" size={20} style={styles.inputIcon} />
                 <TextInput
                   autoCapitalize="none"
                   onChangeText={setPassword}
@@ -203,11 +220,11 @@ export default function CreateAccountScreen() {
 
             <Text style={styles.termsText}>
               By continuing, you agree to our{' '}
-              <Text onPress={() => router.push('/profile/terms')} style={styles.textLink}>
+              <Text onPress={() => router.push('/profile/terms' as any)} style={styles.textLink}>
                 Terms of Service
               </Text>
               {' and '}
-              <Text onPress={() => router.push('/profile/privacy-policy')} style={styles.textLink}>
+              <Text onPress={() => router.push('/profile/privacy-policy' as any)} style={styles.textLink}>
                 Privacy Policy
               </Text>
               .
@@ -217,25 +234,18 @@ export default function CreateAccountScreen() {
           </View>
 
           <View style={[styles.bottomArea, { paddingBottom: bottomPadding }]}>
-            <Pressable
-              accessibilityRole="button"
+            <ExploreButton
               disabled={isSubmitting}
+              gradientColors={['#B087E5', '#7863DC']}
+              gradientEnd={{ x: 0, y: 1 }}
+              gradientLocations={[0.0379, 0.75]}
+              gradientStart={{ x: 0, y: 0 }}
+              label="Create Account"
+              loading={isSubmitting}
+              shadowColor="rgb(120, 99, 220)"
+              style={styles.createButton}
               onPress={handleCreateAccount}
-              style={({ pressed }) => [styles.createButton, pressed && styles.pressed]}>
-              <LinearGradient
-                colors={['#B087E5', '#7863DC']}
-                end={{ x: 0, y: 1 }}
-                locations={[0.0379, 0.75]}
-                start={{ x: 0, y: 0 }}
-                style={styles.createGradient}>
-                <InnerShadow />
-                {isSubmitting ? (
-                  <ActivityIndicator color="#ffffff" />
-                ) : (
-                  <Text style={styles.createText}>Create Account</Text>
-                )}
-              </LinearGradient>
-            </Pressable>
+            />
 
            <View style={styles.loginRow}>
   <Text style={styles.loginPrompt}>Already have an account?</Text>
@@ -294,29 +304,9 @@ loginRow: {
     marginBottom: 17,
   },
   createButton: {
-    alignItems: 'center',
     alignSelf: 'center',
-    backgroundColor: '#7863dc',
-    borderRadius: 27,
-    height: 54,
     maxWidth: 348,
-    overflow: 'hidden',
     width: '100%',
-  },
-  createGradient: {
-    alignItems: 'center',
-    height: '100%',
-    justifyContent: 'center',
-    width: '100%',
-  },
-  createText: {
-    color: '#ffffff',
-    fontFamily: AppFonts.sansMedium,
-    fontSize: 18,
-    fontWeight: '500',
-    letterSpacing: 0,
-    lineHeight: 26,
-    textAlign: 'center',
   },
   description: {
     color: '#173F5F',
@@ -424,11 +414,11 @@ loginRow: {
     height: '100%',
     letterSpacing: 0,
     lineHeight: 26,
-    paddingLeft: 43,
+    paddingLeft: 42,
     paddingRight: 18,
   },
   inputIcon: {
-    left: 20,
+    left: 14,
     position: 'absolute',
     zIndex: 1,
   },
