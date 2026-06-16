@@ -1,45 +1,28 @@
 import { supabase } from '@/lib/supabase';
 import * as SecureStore from 'expo-secure-store';
-import { Platform } from 'react-native';
+import { getAccessToken } from '@/lib/haven-api';
 
-const REMOTE_API_BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL ?? 'http://18.171.253.186';
-const API_BASE_URL = Platform.OS === 'web' ? '/api-proxy' : REMOTE_API_BASE_URL;
-const TOKEN_KEY = 'access_token';
-const LEGACY_TOKEN_KEY = 'haven.auth.access_token';
+const API_BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL ?? 'http://18.171.253.186';
+export const AUTH_TOKEN_KEY = 'haven.auth.access_token';
+const LEGACY_AUTH_TOKEN_KEY = 'access_token';
 
-function getWebToken() {
-  if (typeof globalThis === 'undefined') {
-    return null;
-  }
-
-  const storage = (globalThis as unknown as { localStorage?: Storage }).localStorage;
-  return storage?.getItem(TOKEN_KEY) ?? null;
+function getShortTokenLog(token: string | null | undefined) {
+  return token ? `${token.slice(0, 10)}...` : '';
 }
 
 async function getStoredToken() {
-  if (Platform.OS === 'web') {
-    return getWebToken();
-  }
-
-  return SecureStore.getItemAsync(TOKEN_KEY);
+  return (
+    getAccessToken() ||
+    (await SecureStore.getItemAsync(AUTH_TOKEN_KEY)) ||
+    (await SecureStore.getItemAsync(LEGACY_AUTH_TOKEN_KEY))
+  );
 }
 
-async function saveStoredToken(token: string) {
-  if (Platform.OS === 'web') {
-    const storage = typeof globalThis !== 'undefined'
-      ? (globalThis as unknown as { localStorage?: Storage }).localStorage
-      : undefined;
-    storage?.setItem(TOKEN_KEY, token);
-    storage?.removeItem(LEGACY_TOKEN_KEY);
-    return;
-  }
-
-  await SecureStore.setItemAsync(TOKEN_KEY, token);
-  await SecureStore.deleteItemAsync(LEGACY_TOKEN_KEY);
-}
-
-function getShortTokenLog(token: string | null | undefined) {
-  return token ? `${token.slice(0, 10)}...` : 'missing';
+export async function clearStoredAccessToken() {
+  await Promise.all([
+    SecureStore.deleteItemAsync(AUTH_TOKEN_KEY),
+    SecureStore.deleteItemAsync(LEGACY_AUTH_TOKEN_KEY),
+  ]);
 }
 
 export async function apiClient<T>(
@@ -48,11 +31,17 @@ export async function apiClient<T>(
 ): Promise<T> {
   let token = await getStoredToken();
 
+  // 2. SecureStore se try karo
+  if (!token) {
+    token = await SecureStore.getItemAsync(AUTH_TOKEN_KEY);
+  }
+
+  // 3. Supabase session se try karo
   if (!token) {
     const { data } = await supabase.auth.getSession();
     token = data.session?.access_token ?? null;
     if (token) {
-      await saveStoredToken(token);
+      await SecureStore.setItemAsync(AUTH_TOKEN_KEY, token);
     }
   }
 
@@ -69,6 +58,38 @@ export async function apiClient<T>(
   if (__DEV__) {
     console.log(`API: ${options.method || 'GET'} ${API_BASE_URL}${path} → ${res.status}`);
   }
+  const data = await res.json();
+  if (!data.success) throw new Error(data.error ?? 'Request failed');
+  return data;
+}
+
+export async function apiClientFormData<T>(
+  path: string,
+  formData: FormData,
+  method = 'POST'
+): Promise<T> {
+  let token = getAccessToken();
+
+  if (!token) {
+    token = await SecureStore.getItemAsync(AUTH_TOKEN_KEY);
+  }
+
+  if (!token) {
+    const { data } = await supabase.auth.getSession();
+    token = data.session?.access_token ?? null;
+    if (token) {
+      await SecureStore.setItemAsync(AUTH_TOKEN_KEY, token);
+    }
+  }
+
+  const res = await fetch(`${API_BASE_URL}${path}`, {
+    method,
+    headers: {
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+    body: formData,
+  });
+
   const data = await res.json();
   if (!data.success) throw new Error(data.error ?? 'Request failed');
   return data;

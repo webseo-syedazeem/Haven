@@ -1,9 +1,9 @@
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 import {
-  ActivityIndicator,
+  BackHandler,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -12,7 +12,9 @@ import {
   TextInput,
   View,
 } from 'react-native';
+import { useFocusEffect } from '@react-navigation/native';
 
+import { ExploreButton } from '@/components/ExploreButton';
 import { ScreenWrapper, useScreenBottomPadding } from '@/components/ScreenWrapper';
 import { AppFonts } from '@/constants/theme';
 import { signIn } from '@/lib/haven-api';
@@ -28,6 +30,21 @@ export default function LoginScreen() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [password, setPassword] = useState('');
   const [passwordVisible, setPasswordVisible] = useState(false);
+
+  const goToWelcome = useCallback(() => {
+    router.replace('/welcome');
+  }, [router]);
+
+  useFocusEffect(
+    useCallback(() => {
+      const subscription = BackHandler.addEventListener('hardwareBackPress', () => {
+        goToWelcome();
+        return true;
+      });
+
+      return () => subscription.remove();
+    }, [goToWelcome])
+  );
 
   const handleLogin = async () => {
     if (isSubmitting) {
@@ -45,7 +62,17 @@ export default function LoginScreen() {
     setIsSubmitting(true);
 
     try {
-      await signIn({ email: trimmedEmail, password });
+      const res: any = await signIn({ email: trimmedEmail, password });
+      const session = res?.data?.session ?? res;
+      const accessToken = session?.access_token ?? session?.accessToken ?? session?.token;
+      const refreshTok = session?.refresh_token ?? session?.refreshToken;
+      if (accessToken) {
+        const SecureStore = await import('expo-secure-store');
+        await SecureStore.setItemAsync('haven.auth.access_token', accessToken);
+        if (refreshTok) {
+          await SecureStore.setItemAsync('haven.auth.refresh_token', refreshTok);
+        }
+      }
       router.replace('/(tabs)');
     } catch (error) {
       setErrorMessage(error instanceof Error ? error.message : 'Unable to login right now.');
@@ -63,7 +90,7 @@ export default function LoginScreen() {
           <Pressable
             accessibilityLabel="Go back"
             hitSlop={12}
-            onPress={() => router.back()}
+            onPress={goToWelcome}
             style={({ pressed }) => [styles.backButton, pressed && styles.pressed]}>
             <Ionicons color="#000000" name="chevron-back" size={18} />
           </Pressable>
@@ -87,7 +114,7 @@ export default function LoginScreen() {
                     style={styles.innerShadowLeft}
                   />
                 </View>
-                <Ionicons color="#273044" name="mail-outline" size={18} style={styles.inputIcon} />
+                <Ionicons color="#273044" name="mail-outline" size={20} style={styles.inputIcon} />
                 <TextInput
                   autoCapitalize="none"
                   autoComplete="email"
@@ -115,7 +142,7 @@ export default function LoginScreen() {
                     style={styles.innerShadowLeft}
                   />
                 </View>
-                <Ionicons color="#111827" name="lock-closed" size={16} style={styles.inputIcon} />
+                <Ionicons color="#111827" name="lock-closed" size={20} style={styles.inputIcon} />
                 <TextInput
                   autoCapitalize="none"
                   onChangeText={setPassword}
@@ -150,42 +177,18 @@ export default function LoginScreen() {
           </View>
 
           <View style={[styles.bottomArea, { paddingBottom: bottomPadding }]}>
-            <Pressable
-              accessibilityRole="button"
+            <ExploreButton
+              label="Login"
+              loading={isSubmitting}
               disabled={isSubmitting}
               onPress={handleLogin}
-              style={({ pressed }) => [
-                styles.loginButton,
-                isSubmitting && styles.disabled,
-                pressed && styles.pressed,
-              ]}>
-              <LinearGradient
-                colors={['#5AA1E2', '#0D6FD0']}
-                end={{ x: 0, y: 1 }}
-                locations={[0.0379, 0.75]}
-                start={{ x: 0, y: 0 }}
-                style={styles.loginGradient}>
-                <View pointerEvents="none" style={styles.innerShadow}>
-                  <LinearGradient
-                    colors={['rgba(255, 255, 255, 0.5)', 'rgba(255, 255, 255, 0)']}
-                    end={{ x: 0, y: 1 }}
-                    start={{ x: 0, y: 0 }}
-                    style={styles.innerShadowTop}
-                  />
-                  <LinearGradient
-                    colors={['rgba(255, 255, 255, 0.5)', 'rgba(255, 255, 255, 0)']}
-                    end={{ x: 1, y: 0 }}
-                    start={{ x: 0, y: 0 }}
-                    style={styles.innerShadowLeft}
-                  />
-                </View>
-                {isSubmitting ? (
-                  <ActivityIndicator color="#ffffff" />
-                ) : (
-                  <Text style={styles.loginText}>Login</Text>
-                )}
-              </LinearGradient>
-            </Pressable>
+              style={styles.loginButton}
+              gradientColors={['#5AA1E2', '#0D6FD0']}
+              gradientLocations={[0.0379, 0.75]}
+              gradientStart={{ x: 0, y: 0 }}
+              gradientEnd={{ x: 0, y: 1 }}
+              shadowColor="rgb(13, 111, 208)"
+            />
 
             <Pressable
               accessibilityRole="button"
@@ -243,9 +246,6 @@ const styles = StyleSheet.create({
     right: 17,
     top: 0,
     width: 28,
-  },
-  disabled: {
-    opacity: 0.72,
   },
   errorText: {
     alignSelf: 'center',
@@ -307,7 +307,7 @@ const styles = StyleSheet.create({
     paddingRight: 16,
   },
   inputIcon: {
-    left: 20,
+    left: 14,
     position: 'absolute',
     zIndex: 1,
   },
@@ -351,30 +351,9 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   loginButton: {
-    alignItems: 'center',
     alignSelf: 'center',
-    backgroundColor: '#0d6fd0',
-    borderRadius: 27,
-    elevation: 0,
-    height: 54,
     maxWidth: 348,
-    overflow: 'hidden',
     width: '100%',
-  },
-  loginGradient: {
-    alignItems: 'center',
-    height: '100%',
-    justifyContent: 'center',
-    width: '100%',
-  },
-  loginText: {
-    color: '#ffffff',
-    fontFamily: AppFonts.sansMedium,
-    fontSize: 18,
-    fontWeight: '500',
-    letterSpacing: 0,
-    lineHeight: 26,
-    textAlign: 'center',
   },
   passwordInput: {
     paddingRight: 54,

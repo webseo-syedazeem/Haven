@@ -202,6 +202,7 @@ export default function HomeScreen() {
   const [completedChecklistTasks, setCompletedChecklistTasks] = useState<string[]>([]);
   const [displayName, setDisplayName] = useState('Joy');
   const [greeting, setGreeting] = useState(getTimeGreeting());
+  const avatarSource = avatarUri ? { uri: avatarUri } : avatarImage;
 
   useFocusEffect(
     useCallback(() => {
@@ -316,11 +317,7 @@ export default function HomeScreen() {
             </View>
 
             <View style={styles.avatarRing}>
-              <Image
-                source={avatarUri ? { uri: avatarUri } : avatarImage}
-                style={styles.avatar}
-                contentFit="cover"
-              />
+              <Image source={avatarSource} style={styles.avatar} contentFit="cover" />
             </View>
           </View>
 

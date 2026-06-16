@@ -20,6 +20,9 @@ import {
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useQuery } from '@tanstack/react-query';
 
+import { ExploreButton } from '@/components/ExploreButton';
+import { ExploreTabChip } from '@/components/ExploreTabChip';
+import { useScreenBottomPadding } from '@/components/ScreenWrapper';
 import { AppFonts } from '@/constants/theme';
 import { apiClient } from '@/lib/api/client';
 
@@ -67,23 +70,11 @@ function getThumb(soundscape: any, index: number) {
   return soundscapeThumbImages[hash % soundscapeThumbImages.length];
 }
 
-function InnerShadow() {
-  return (
-    <View pointerEvents="none" style={styles.innerShadow}>
-      <LinearGradient
-        colors={['rgba(255, 255, 255, 0.5)', 'rgba(255, 255, 255, 0)']}
-        end={{ x: 0, y: 1 }}
-        start={{ x: 0, y: 0 }}
-        style={styles.innerShadowTop}
-      />
-      <LinearGradient
-        colors={['rgba(255, 255, 255, 0.5)', 'rgba(255, 255, 255, 0)']}
-        end={{ x: 1, y: 0 }}
-        start={{ x: 0, y: 0 }}
-        style={styles.innerShadowLeft}
-      />
-    </View>
-  );
+function formatDuration(seconds?: number) {
+  const safe = Number.isFinite(seconds) ? Math.max(0, Math.round(seconds!)) : 180;
+  const m = Math.floor(safe / 60).toString().padStart(2, '0');
+  const s = Math.floor(safe % 60).toString().padStart(2, '0');
+  return `${m}:${s}`;
 }
 
 type SoundscapeGridCardProps = {
@@ -119,7 +110,7 @@ const SoundscapeGridCard = memo(function SoundscapeGridCard({
       <View style={styles.gridCardContent}>
         <Text style={styles.gridCardSub} numberOfLines={1}>{soundscape.subcategory}</Text>
         <Text style={styles.gridCardTitle} numberOfLines={2}>{soundscape.title}</Text>
-        <Text style={styles.gridCardDuration}>20.00</Text>
+        <Text style={styles.gridCardDuration}>{formatDuration(soundscape.duration_seconds)}</Text>
       </View>
       <View style={styles.gridPlayBtn}>
         {isLoading ? (
@@ -135,6 +126,7 @@ const SoundscapeGridCard = memo(function SoundscapeGridCard({
 export default function AllThemeScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const bottomPadding = useScreenBottomPadding();
   const { width } = useWindowDimensions();
   const cardWidth = (width - 40 - 12) / 2;
   const soundRef = useRef<Audio.Sound | null>(null);
@@ -263,6 +255,7 @@ export default function AllThemeScreen() {
         title: soundscape.title,
         subcategory: soundscape.subcategory,
         file_url: soundscape.file_url,
+        duration_seconds: String(soundscape.duration_seconds ?? 180),
       },
     });
   }, [router]);
@@ -282,11 +275,11 @@ export default function AllThemeScreen() {
     if (visibleCount >= filtered.length) return null;
 
     return (
-      <Pressable
+      <ExploreButton
+        label="View more"
         onPress={() => setVisibleCount((prev) => prev + 100)}
-        style={styles.viewMoreButton}>
-        <Text style={styles.viewMoreText}>View more</Text>
-      </Pressable>
+        style={styles.viewMoreButton}
+      />
     );
   }, [filtered.length, visibleCount]);
 
@@ -294,8 +287,12 @@ export default function AllThemeScreen() {
     <ImageBackground source={backgroundImage} resizeMode="cover" style={styles.screen}>
       <SafeAreaView edges={['top']} style={styles.safeArea}>
         <View style={styles.header}>
-          <Pressable onPress={() => router.back()} style={styles.backButton}>
-            <Text style={styles.backChevron}>‹</Text>
+          <Pressable
+            accessibilityLabel="Go back"
+            hitSlop={12}
+            onPress={() => router.back()}
+            style={({ pressed }) => [styles.backButton, pressed && styles.pressed]}>
+            <Ionicons name="chevron-back" size={18} color="#000000" />
           </Pressable>
 
           <Text style={styles.title}>All Theme</Text>
@@ -334,30 +331,21 @@ export default function AllThemeScreen() {
                   {subcategories.map((sub) => {
                     const isActive = activeSubcategory === sub;
                     return (
-                      <Pressable
+                      <ExploreTabChip
                         key={sub}
-                        onPress={() => setActiveSubcategory(sub)}
-                        style={[styles.subTab, sub === 'All' && styles.subTabCompact]}>
-                        <View style={styles.subTabFill}>
-                          {isActive && (
-                            <LinearGradient
-                              colors={['#A987E2', '#5D7EEA']}
-                              locations={[0, 1]}
-                              start={{ x: 0.5, y: -0.55 }}
-                              end={{ x: 0.5, y: 1 }}
-                              style={StyleSheet.absoluteFillObject}
-                            />
-                          )}
+                        active={isActive}
+                        icon={
                           <Ionicons
                             name={getSubcategoryIcon(sub) as any}
                             size={20}
                             color={isActive ? '#FFFFFF' : '#54555A'}
                           />
-                          <Text style={[styles.subTabText, isActive && styles.subTabTextActive]} numberOfLines={2}>
-                            {sub}
-                          </Text>
-                        </View>
-                      </Pressable>
+                        }
+                        label={sub}
+                        onPress={() => setActiveSubcategory(sub)}
+                        style={sub === 'All' ? styles.subTabCompact : undefined}
+                        variant="subtab"
+                      />
                     );
                   })}
                 </ScrollView>
@@ -390,34 +378,43 @@ export default function AllThemeScreen() {
           )}
       </SafeAreaView>
 
-      <Modal transparent visible={showFilter} animationType="fade" onRequestClose={() => setShowFilter(false)}>
+      <Modal
+        animationType="fade"
+        onRequestClose={() => setShowFilter(false)}
+        statusBarTranslucent
+        transparent
+        visible={showFilter}>
         <View style={styles.modalBackdrop}>
+          <View pointerEvents="none" style={[styles.statusBarDim, { height: insets.top }]} />
           <Pressable style={StyleSheet.absoluteFillObject} onPress={() => setShowFilter(false)} />
-          <View style={styles.filterSheet}>
+          <View style={[styles.filterSheet, { paddingBottom: bottomPadding }]}>
             <Pressable
               onPress={() => setShowFilter(false)}
               onLongPress={() => setShowFilter(false)}
               style={styles.sheetHandleHitbox}>
               <View style={styles.sheetHandle} />
             </Pressable>
-            <Text style={styles.sheetTitle}>Filter soundscapes</Text>
+            <View style={styles.sheetHeader}>
+              <Text style={styles.sheetTitle}>Filter soundscapes</Text>
+              <Pressable onPress={() => setShowFilter(false)} style={styles.sheetCloseBtn}>
+                <Ionicons name="close" size={20} color="#173F5F" />
+              </Pressable>
+            </View>
             <Text style={styles.sheetSection}>Category</Text>
             <View style={styles.optionGrid}>
               {CATEGORIES.map((cat) => {
                 const isActive = draftCategory === cat;
                 return (
-                  <Pressable
+                  <ExploreTabChip
                     key={cat}
+                    active={isActive}
+                    label={cat}
                     onPress={() => {
                       setDraftCategory(cat);
                       setDraftSubcategory('All');
                     }}
-                    style={[styles.optionChip, isActive && styles.optionChipActive]}>
-                    <Text style={[styles.optionText, isActive && styles.optionTextActive]}>{cat}</Text>
-                    <View style={[styles.checkCircle, !isActive && styles.checkCircleInactive]}>
-                      <Text style={[styles.checkMark, !isActive && styles.checkMarkInactive]}>✓</Text>
-                    </View>
-                  </Pressable>
+                    variant="chip"
+                  />
                 );
               })}
             </View>
@@ -428,43 +425,27 @@ export default function AllThemeScreen() {
                 {modalSubcategories.map((sub) => {
                   const isActive = draftSubcategory === sub;
                   return (
-                    <Pressable
+                    <ExploreTabChip
                       key={sub}
+                      active={isActive}
+                      label={sub}
                       onPress={() => setDraftSubcategory(sub)}
-                      style={[styles.optionChip, isActive && styles.optionChipActive]}>
-                      <Text style={[styles.optionText, isActive && styles.optionTextActive]} numberOfLines={1}>
-                        {sub}
-                      </Text>
-                      <View style={[styles.checkCircle, !isActive && styles.checkCircleInactive]}>
-                        <Text style={[styles.checkMark, !isActive && styles.checkMarkInactive]}>✓</Text>
-                      </View>
-                    </Pressable>
+                      variant="chip"
+                    />
                   );
                 })}
               </View>
             </ScrollView>
 
-            <Pressable
+            <ExploreButton
+              label="Save Filter"
               onPress={applyFilter}
-              style={({ pressed }) => [styles.applyButton, pressed && styles.pressed]}>
-              <LinearGradient
-                colors={['#6D67CE', '#528AE1', '#6AAFE9']}
-                end={{ x: 1, y: 0.58 }}
-                locations={[0.0254, 0.5327, 0.9044]}
-                start={{ x: 0, y: 0.42 }}
-                style={styles.applyGradient}>
-                <InnerShadow />
-                <Text style={styles.applyText}>Save Filter</Text>
-              </LinearGradient>
-            </Pressable>
+              style={styles.applyButton}
+            />
           </View>
         </View>
       </Modal>
 
-      <View
-        pointerEvents="none"
-        style={[styles.tabBarDock, { height: Math.max(insets.bottom, 8) + 76 }]}
-      />
       <View style={[styles.floatingTabBar, { bottom: Math.max(insets.bottom, 8) }]}>
         {TAB_ITEMS.map((item) => (
           <Pressable
@@ -493,15 +474,14 @@ const styles = StyleSheet.create({
   header: { paddingHorizontal: 20, paddingTop: 16 },
   backButton: {
     alignItems: 'center',
-    backgroundColor: 'rgba(255,255,255,0.70)',
-    borderRadius: 20,
-    height: 40,
+    backgroundColor: 'rgba(255, 255, 255, 0.5)',
+    borderRadius: 16,
+    height: 32,
     justifyContent: 'center',
     marginBottom: 16,
-    width: 40,
-    elevation: 3,
+    width: 32,
   },
-  backChevron: { color: '#173F5F', fontSize: 26, fontWeight: '300', lineHeight: 30, marginTop: -2 },
+  pressed: { opacity: 0.86, transform: [{ scale: 0.99 }] },
   title: {
     color: '#173F5F',
     fontFamily: AppFonts.displayBold,
@@ -569,44 +549,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 4,
     paddingRight: 28,
   },
-  subTab: {
-    alignItems: 'center',
-    backgroundColor: 'rgba(255,255,255,0.92)',
-    borderRadius: 14,
-    elevation: 3,
-    minHeight: 62,
-    minWidth: 104,
-    overflow: 'hidden',
-    padding: 5,
-    shadowColor: '#5275E8',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 10,
-  },
   subTabCompact: {
     minWidth: 76,
-  },
-  subTabFill: {
-    alignItems: 'center',
-    borderRadius: 10,
-    flexDirection: 'row',
-    gap: 9,
-    justifyContent: 'center',
-    minHeight: 52,
-    overflow: 'hidden',
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-  },
-  subTabText: {
-    color: '#54555A',
-    flexShrink: 1,
-    fontFamily: AppFonts.sansMedium,
-    fontSize: 14,
-    lineHeight: 18,
-  },
-  subTabTextActive: {
-    color: '#FFFFFF',
-    fontFamily: AppFonts.sansSemiBold,
   },
   countRow: {
     alignItems: 'center',
@@ -697,24 +641,21 @@ const styles = StyleSheet.create({
     width: 38,
   },
   viewMoreButton: {
-    alignItems: 'center',
     alignSelf: 'center',
-    backgroundColor: '#F0EEFF',
-    borderRadius: 24,
     marginTop: 8,
-    paddingHorizontal: 28,
-    paddingVertical: 12,
-  },
-  viewMoreText: {
-    color: '#3770FC',
-    fontFamily: AppFonts.sansSemiBold,
-    fontSize: 14,
   },
   modalBackdrop: {
-    alignItems: 'center',
-    backgroundColor: 'transparent',
+    backgroundColor: 'rgba(23, 63, 95, 0.48)',
     flex: 1,
     justifyContent: 'flex-end',
+  },
+  statusBarDim: {
+    backgroundColor: 'rgba(23, 63, 95, 0.48)',
+    left: 0,
+    position: 'absolute',
+    right: 0,
+    top: 0,
+    zIndex: 2,
   },
   filterSheet: {
     backgroundColor: '#FFFFFF',
@@ -731,17 +672,29 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   sheetHandle: {
-    backgroundColor: '#D6D6D6',
-    borderRadius: 2,
-    height: 4,
-    width: 44,
+    backgroundColor: '#E3E3E3',
+    borderRadius: 3,
+    height: 5,
+    width: 48,
+  },
+  sheetHeader: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 10,
   },
   sheetTitle: {
     color: '#173F5F',
     fontFamily: AppFonts.displayBold,
-    fontSize: 24,
-    marginBottom: 18,
-    textAlign: 'center',
+    fontSize: 20,
+  },
+  sheetCloseBtn: {
+    alignItems: 'center',
+    backgroundColor: '#F4F5FA',
+    borderRadius: 16,
+    height: 32,
+    justifyContent: 'center',
+    width: 32,
   },
   sheetSection: {
     color: '#173F5F',
@@ -751,105 +704,19 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   optionGrid: {
+    alignItems: 'stretch',
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: 8,
-  },
-  optionChip: {
-    alignItems: 'center',
-    backgroundColor: '#F7F7F7',
-    borderColor: '#E5E5EA',
-    borderRadius: 12,
-    borderWidth: 1,
-    flexDirection: 'row',
-    gap: 8,
-    paddingHorizontal: 10,
-    paddingVertical: 10,
-    width: '48.5%',
-  },
-  optionChipActive: {
-    backgroundColor: '#F0EEFF',
-    borderColor: '#7B61FF',
-  },
-  optionText: {
-    color: '#8C8C8C',
-    flex: 1,
-    fontFamily: AppFonts.sansRegular,
-    fontSize: 12,
-  },
-  optionTextActive: {
-    color: '#173F5F',
-    fontFamily: AppFonts.sansSemiBold,
-  },
-  checkCircle: {
-    alignItems: 'center',
-    backgroundColor: '#7B61FF',
-    borderRadius: 10,
-    height: 20,
-    justifyContent: 'center',
-    width: 20,
-  },
-  checkCircleInactive: {
-    backgroundColor: '#E5E5EA',
-  },
-  checkMark: { color: '#FFF', fontSize: 11, fontWeight: '700' },
-  checkMarkInactive: {
-    color: '#8C8C8C',
   },
   modalSubScroll: {
     maxHeight: 230,
   },
   applyButton: {
-    borderRadius: 27,
-    height: 54,
+    alignSelf: 'center',
     marginTop: 18,
     maxWidth: 348,
-    overflow: 'hidden',
     width: '100%',
-    alignSelf: 'center',
-    backgroundColor: '#528ae1',
-  },
-  applyGradient: {
-    alignItems: 'center',
-    flex: 1,
-    justifyContent: 'center',
-  },
-  applyText: {
-    color: '#FFFFFF',
-    fontFamily: AppFonts.sansMedium,
-    fontSize: 18,
-    fontWeight: '500',
-    letterSpacing: 0,
-    lineHeight: 26,
-    textAlign: 'center',
-  },
-  innerShadow: {
-    ...StyleSheet.absoluteFillObject,
-  },
-  innerShadowLeft: {
-    bottom: 0,
-    left: 0,
-    position: 'absolute',
-    top: 4,
-    width: 16,
-  },
-  innerShadowTop: {
-    height: 16,
-    left: 4,
-    position: 'absolute',
-    right: 0,
-    top: 0,
-  },
-  pressed: {
-    opacity: 0.86,
-    transform: [{ scale: 0.99 }],
-  },
-  tabBarDock: {
-    backgroundColor: '#FFFFFF',
-    bottom: 0,
-    left: 0,
-    position: 'absolute',
-    right: 0,
   },
   floatingTabBar: {
     alignItems: 'center',

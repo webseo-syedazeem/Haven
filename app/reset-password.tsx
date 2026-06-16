@@ -3,7 +3,6 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import {
-  ActivityIndicator,
   Alert,
   KeyboardAvoidingView,
   Platform,
@@ -14,6 +13,7 @@ import {
   View,
 } from 'react-native';
 
+import { ExploreButton } from '@/components/ExploreButton';
 import { ScreenWrapper, useScreenBottomPadding } from '@/components/ScreenWrapper';
 import { AppFonts } from '@/constants/theme';
 import { forgotPassword } from '@/lib/haven-api';
@@ -96,7 +96,7 @@ export default function ResetPasswordScreen() {
 
             <View style={styles.inputWrap}>
               <InnerShadow />
-              <Ionicons color="#173F5F" name="mail-outline" size={18} style={styles.inputIcon} />
+              <Ionicons color="#173F5F" name="mail-outline" size={20} style={styles.inputIcon} />
               <TextInput
                 autoCapitalize="none"
                 autoComplete="email"
@@ -113,29 +113,18 @@ export default function ResetPasswordScreen() {
           </View>
 
           <View style={[styles.bottomArea, { paddingBottom: bottomPadding }]}>
-            <Pressable
-              accessibilityRole="button"
+            <ExploreButton
+              label="Send reset Link"
+              loading={isSubmitting}
               disabled={isSubmitting}
               onPress={handleSendResetLink}
-              style={({ pressed }) => [
-                styles.resetButton,
-                isSubmitting && styles.disabled,
-                pressed && styles.pressed,
-              ]}>
-              <LinearGradient
-                colors={['#B087E5', '#7863DC']}
-                end={{ x: 0, y: 1 }}
-                locations={[0.0379, 0.75]}
-                start={{ x: 0, y: 0 }}
-                style={styles.resetGradient}>
-                <InnerShadow />
-                {isSubmitting ? (
-                  <ActivityIndicator color="#ffffff" />
-                ) : (
-                  <Text style={styles.resetText}>Send reset Link</Text>
-                )}
-              </LinearGradient>
-            </Pressable>
+              style={styles.resetButton}
+              gradientColors={['#B087E5', '#7863DC']}
+              gradientLocations={[0.0379, 0.75]}
+              gradientStart={{ x: 0, y: 0 }}
+              gradientEnd={{ x: 0, y: 1 }}
+              shadowColor="rgb(120, 99, 220)"
+            />
           </View>
         </View>
       </KeyboardAvoidingView>
@@ -185,9 +174,6 @@ const styles = StyleSheet.create({
     lineHeight: 26,
     maxWidth: 300,
     textAlign: 'center',
-  },
-  disabled: {
-    opacity: 0.72,
   },
   errorText: {
     color: '#173F5F',
@@ -239,7 +225,7 @@ const styles = StyleSheet.create({
     paddingRight: 18,
   },
   inputIcon: {
-    left: 20,
+    left: 14,
     position: 'absolute',
     zIndex: 1,
   },
@@ -262,28 +248,8 @@ const styles = StyleSheet.create({
     transform: [{ scale: 0.99 }],
   },
   resetButton: {
-    alignItems: 'center',
     alignSelf: 'center',
-    backgroundColor: '#7863dc',
-    borderRadius: 27,
-    height: 54,
     maxWidth: 348,
-    overflow: 'hidden',
     width: '100%',
-  },
-  resetGradient: {
-    alignItems: 'center',
-    height: '100%',
-    justifyContent: 'center',
-    width: '100%',
-  },
-  resetText: {
-    color: '#ffffff',
-    fontFamily: AppFonts.sansMedium,
-    fontSize: 18,
-    fontWeight: '500',
-    letterSpacing: 0,
-    lineHeight: 26,
-    textAlign: 'center',
   },
 });

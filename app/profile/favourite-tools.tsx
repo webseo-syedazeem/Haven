@@ -15,6 +15,8 @@ import {
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 
+import { ExploreButton } from '@/components/ExploreButton';
+import { SaveSuccessModal } from '@/components/profile/SaveSuccessModal';
 import { AppFonts } from '@/constants/theme';
 import { favouritesApi } from '@/lib/api';
 import { Ionicons, MaterialIcons } from '@expo/vector-icons';
@@ -48,25 +50,6 @@ const SECTIONS = [
   { key: 'checklist',  label: 'Checklists',  color: '#2EB668' },
 ];
 
-function InnerShadow() {
-  return (
-    <View pointerEvents="none" style={styles.innerShadow}>
-      <LinearGradient
-        colors={['rgba(255, 255, 255, 0.5)', 'rgba(255, 255, 255, 0)']}
-        end={{ x: 0, y: 1 }}
-        start={{ x: 0, y: 0 }}
-        style={styles.innerShadowTop}
-      />
-      <LinearGradient
-        colors={['rgba(255, 255, 255, 0.5)', 'rgba(255, 255, 255, 0)']}
-        end={{ x: 1, y: 0 }}
-        start={{ x: 0, y: 0 }}
-        style={styles.innerShadowLeft}
-      />
-    </View>
-  );
-}
-
 export default function FavouriteToolsScreen() {
   const queryClient = useQueryClient();
   const router = useRouter();
@@ -89,6 +72,7 @@ export default function FavouriteToolsScreen() {
   const [rawFavourites, setRawFavourites] = useState<any[]>([]);
   const [isLoadingFavourites, setIsLoadingFavourites] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [showSavedModal, setShowSavedModal] = useState(false);
 
   // existing favourites from server: { tool_id → record id }
   const serverFavMap: Record<string, string> = {};
@@ -176,9 +160,7 @@ function toggleTool(toolId: string) {
         ...toRemove.map(([, id]) => removeMutation.mutateAsync(id)),
       ]);
 
-      Alert.alert('Saved!', 'Your favourite tools have been updated.', [
-        { text: 'OK', onPress: () => router.back() },
-      ]);
+      setShowSavedModal(true);
     } catch {
       Alert.alert('Error', 'Something went wrong. Please try again.');
     } finally {
@@ -187,11 +169,24 @@ function toggleTool(toolId: string) {
   }
 
   return (
-    <ImageBackground source={backgroundImage} resizeMode="cover" style={styles.screen}>
+    <View style={styles.screen}>
+      <ImageBackground source={backgroundImage} resizeMode="cover" style={styles.backgroundImage} />
+
+      {/* White fog on background — same as goals screen */}
+      <View pointerEvents="none" style={styles.fogOverlay}>
+        <LinearGradient
+          colors={['rgba(255,255,255,0)', 'rgba(255,255,255,0.82)', 'rgba(255,255,255,0.97)']}
+          locations={[0, 0.5, 1]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 0, y: 1 }}
+          style={StyleSheet.absoluteFillObject}
+        />
+      </View>
+
       <SafeAreaView edges={['top']} style={styles.safeArea}>
         <ScrollView
           bounces={false}
-          contentContainerStyle={[styles.scroll, { paddingBottom: insets.bottom + 100 }]}
+          contentContainerStyle={[styles.scroll, { paddingBottom: insets.bottom + 24 }]}
           showsVerticalScrollIndicator={false}>
 
           {/* Back */}
@@ -258,36 +253,41 @@ function toggleTool(toolId: string) {
           )}
 
           {/* Save button */}
-          <Pressable
+          <ExploreButton
+            label="Save Favourites"
+            loading={saving}
+            disabled={saving}
             onPress={handleSave}
-            disabled={saving || selected === null}
-            style={({ pressed }) => [
-              styles.saveWrap,
-              pressed && !saving && selected !== null && styles.pressed,
-            ]}>
-            <LinearGradient
-              colors={['#6D67CE', '#528AE1', '#6AAFE9']}
-              end={{ x: 1, y: 0.58 }}
-              locations={[0.0254, 0.5327, 0.9044]}
-              start={{ x: 0, y: 0.42 }}
-              style={styles.saveButton}>
-              <InnerShadow />
-              {saving ? (
-                <ActivityIndicator color="#FFFFFF" />
-              ) : (
-                <Text style={styles.saveText}>Save Favourites</Text>
-              )}
-            </LinearGradient>
-          </Pressable>
+            style={styles.saveWrap}
+          />
 
         </ScrollView>
       </SafeAreaView>
-    </ImageBackground>
+
+      <SaveSuccessModal
+        visible={showSavedModal}
+        title="Favourites saved"
+        message="Your favourite tools have been updated successfully."
+        onClose={() => setShowSavedModal(false)}
+      />
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: '#C8BFEE' },
+  screen: { flex: 1, backgroundColor: '#C8BFEE', overflow: 'hidden' },
+  backgroundImage: {
+    ...StyleSheet.absoluteFillObject,
+    height: '100%',
+    width: '100%',
+  },
+  fogOverlay: {
+    bottom: 0,
+    height: '65%',
+    left: 0,
+    position: 'absolute',
+    right: 0,
+  },
   safeArea: { flex: 1 },
   scroll: { paddingHorizontal: 20, paddingTop: 76 },
   backButton: {
@@ -380,47 +380,11 @@ const styles = StyleSheet.create({
   },
   heartIcon: { fontSize: 24 },
   saveWrap: {
-    alignItems: 'center',
     alignSelf: 'center',
-    backgroundColor: '#528ae1',
-    borderRadius: 27,
-    height: 54,
-    marginTop: 24,
+    marginBottom: 8,
+    marginTop: 16,
     maxWidth: 348,
-    overflow: 'hidden',
     width: '100%',
-  },
-  saveButton: {
-    alignItems: 'center',
-    height: '100%',
-    justifyContent: 'center',
-    width: '100%',
-  },
-  saveText: {
-    color: '#ffffff',
-    fontFamily: AppFonts.sansMedium,
-    fontSize: 18,
-    fontWeight: '500',
-    letterSpacing: 0,
-    lineHeight: 26,
-    textAlign: 'center',
-  },
-  innerShadow: {
-    ...StyleSheet.absoluteFillObject,
-  },
-  innerShadowLeft: {
-    bottom: 0,
-    left: 0,
-    position: 'absolute',
-    top: 4,
-    width: 16,
-  },
-  innerShadowTop: {
-    height: 16,
-    left: 4,
-    position: 'absolute',
-    right: 0,
-    top: 0,
   },
   pressed: {
     opacity: 0.86,

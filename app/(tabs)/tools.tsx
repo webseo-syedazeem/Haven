@@ -11,7 +11,7 @@ type ToolOption = {
   icon: number;
   iconBackground: string;
   iconSize?: number;
-  route: '/tools/breathing' | '/tools/soundscape' | '/tools/checklist';
+  route: '/tools/breathing' | '/tools/soundscape' | '/tools/checklist' | '/tools/my-mixes';
   subtitle: string;
   title: string;
 };
@@ -41,6 +41,15 @@ const toolOptions: ToolOption[] = [
     route: '/tools/checklist',
   },
 ];
+
+const myMixesOption: ToolOption = {
+  icon: require('@/assets/images/tool-focus-hub-icon.svg'),
+  iconBackground: '#6339FB14',
+  iconSize: 31,
+  subtitle: 'Your saved mixes',
+  title: 'My Mixes',
+  route: '/tools/my-mixes',
+};
 
 export default function ToolsScreen() {
   const router = useRouter();
@@ -89,6 +98,29 @@ export default function ToolsScreen() {
                 </View>
               </Pressable>
             ))}
+          </View>
+
+          <View style={styles.myMixesSection}>
+            <Text style={styles.sectionLabel}>Your Mixes</Text>
+            <Pressable
+              accessibilityRole="button"
+              onPress={() => router.push(myMixesOption.route)}
+              style={({ pressed }) => [styles.optionCard, pressed && styles.pressed]}>
+              <View style={[styles.iconWrap, { backgroundColor: myMixesOption.iconBackground }]}>
+                <Image
+                  source={myMixesOption.icon}
+                  style={[
+                    styles.optionIcon,
+                    { height: myMixesOption.iconSize, width: myMixesOption.iconSize },
+                  ]}
+                  contentFit="contain"
+                />
+              </View>
+              <View style={styles.optionCopy}>
+                <Text style={styles.optionTitle}>{myMixesOption.title}</Text>
+                <Text style={styles.optionSubtitle}>{myMixesOption.subtitle}</Text>
+              </View>
+            </Pressable>
           </View>
         </ScrollView>
       </SafeAreaView>
@@ -148,6 +180,11 @@ const styles = StyleSheet.create({
     maxWidth: 348,
     width: '100%',
   },
+  myMixesSection: {
+    marginTop: 24,
+    maxWidth: 348,
+    width: '100%',
+  },
   optionSubtitle: {
     color: '#000000',
     fontFamily: AppFonts.sansRegular,
@@ -175,6 +212,17 @@ const styles = StyleSheet.create({
     backgroundColor: '#EEF0FF',
     flex: 1,
     overflow: 'hidden',
+  },
+  sectionLabel: {
+    color: '#173F5F',
+    fontFamily: AppFonts.sansBold,
+    fontSize: 16,
+    fontWeight: '700',
+    letterSpacing: 0,
+    lineHeight: 24,
+    marginBottom: 10,
+    textAlign: 'left',
+    width: '100%',
   },
   subtitle: {
     color: '#54555A',

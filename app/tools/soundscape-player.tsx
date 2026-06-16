@@ -1,9 +1,10 @@
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useLocalSearchParams, useRouter } from 'expo-router';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useLocalSearchParams, useRouter, useFocusEffect } from 'expo-router';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
+  BackHandler,
   FlatList,
   ImageBackground,
   Modal,
@@ -13,6 +14,7 @@ import {
   StyleSheet,
   Text,
   TextInput,
+  useWindowDimensions,
   View,
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -20,7 +22,18 @@ import { Ionicons } from '@expo/vector-icons';
 import { Audio } from 'expo-av';
 import { useQuery } from '@tanstack/react-query';
 
+import { ExploreButton } from '@/components/ExploreButton';
+import { useScreenBottomPadding } from '@/components/ScreenWrapper';
+import {
+  ExploreCheckBadge,
+  ExploreGradientBanner,
+  ExploreGradientFill,
+  exploreGradientHorizontal,
+  exploreGradientVertical,
+} from '@/components/explore-gradient';
+import { ExploreTabChip } from '@/components/ExploreTabChip';
 import { AppFonts } from '@/constants/theme';
+import { soundscapeMixesApi } from '@/lib/api/soundscapeMixes';
 import { apiClient } from '@/lib/api/client';
 
 const backgroundImage = require('@/assets/images/fb1aca601a848efa9a91fd9080b76aa2db856af8.jpg');
@@ -47,7 +60,7 @@ const TAB_ITEMS = [
 const MAX_TRACKS = 5;
 const MIN_TRACKS = 2;
 const DEFAULT_TRACK_VOLUME = 0.7;
-const DURATION_DISPLAY_OFFSET_SECONDS = 0.1;
+const VERTICAL_SLIDER_HEIGHT = 340;
 
 type Soundscape = {
   id: string;
@@ -82,27 +95,12 @@ function formatTime(seconds: number) {
   return `${m}:${s}`;
 }
 
-function clamp01(value: number) {
-  return Math.max(0, Math.min(1, value));
+function formatTotalDuration(seconds: number) {
+  return formatTime(Math.max(0, Math.round(seconds)));
 }
 
-function InnerShadow() {
-  return (
-    <View pointerEvents="none" style={styles.innerShadow}>
-      <LinearGradient
-        colors={['rgba(255, 255, 255, 0.5)', 'rgba(255, 255, 255, 0)']}
-        end={{ x: 0, y: 1 }}
-        start={{ x: 0, y: 0 }}
-        style={styles.innerShadowTop}
-      />
-      <LinearGradient
-        colors={['rgba(255, 255, 255, 0.5)', 'rgba(255, 255, 255, 0)']}
-        end={{ x: 1, y: 0 }}
-        start={{ x: 0, y: 0 }}
-        style={styles.innerShadowLeft}
-      />
-    </View>
-  );
+function clamp01(value: number) {
+  return Math.max(0, Math.min(1, value));
 }
 
 function SmoothHorizontalSlider({
@@ -147,10 +145,7 @@ function SmoothHorizontalSlider({
     <View ref={trackRef} style={styles.sliderWrap} {...panResponder.panHandlers}>
       <View style={styles.sliderTrackBase} />
       <LinearGradient
-        colors={['#29A7E5', '#7B61FF']}
-        locations={[0, 0.5983]}
-        start={{ x: 0, y: 0.5 }}
-        end={{ x: 1, y: 0.5 }}
+        {...exploreGradientHorizontal}
         style={[styles.sliderFill, { width: `${value * 100}%` }]}
       />
       <View style={[styles.sliderThumbH, { left: `${Math.max(0, Math.min(94, value * 100))}%` }]} />
@@ -158,32 +153,106 @@ function SmoothHorizontalSlider({
   );
 }
 
+function ProgressSlider({
+  value,
+  disabled,
+  onChange,
+  onSlidingStart,
+  onSlidingComplete,
+}: {
+  value: number;
+  disabled?: boolean;
+  onChange: (val: number) => void;
+  onSlidingStart?: () => void;
+  onSlidingComplete?: (val: number) => void;
+}) {
+  const trackRef = useRef<View>(null);
+  const latestValueRef = useRef(value);
+
+  function updateFromPageX(pageX: number) {
+    if (disabled) return;
+    trackRef.current?.measureInWindow((x, _y, width) => {
+      const next = clamp01((pageX - x) / Math.max(1, width));
+      latestValueRef.current = next;
+      onChange(next);
+    });
+  }
+
+  const panResponder = useMemo(
+    () =>
+      PanResponder.create({
+        onStartShouldSetPanResponder: () => !disabled,
+        onMoveShouldSetPanResponder: () => !disabled,
+        onPanResponderTerminationRequest: () => false,
+        onPanResponderGrant: (event) => {
+          onSlidingStart?.();
+          updateFromPageX(event.nativeEvent.pageX);
+        },
+        onPanResponderMove: (_event, gesture) => {
+          updateFromPageX(gesture.moveX);
+        },
+        onPanResponderRelease: () => onSlidingComplete?.(latestValueRef.current),
+        onPanResponderTerminate: () => onSlidingComplete?.(latestValueRef.current),
+      }),
+    [disabled, onChange, onSlidingComplete, onSlidingStart]
+  );
+
+  return (
+    <View ref={trackRef} style={styles.progressTrack} {...panResponder.panHandlers}>
+      <LinearGradient
+        {...exploreGradientHorizontal}
+        style={[styles.progressFill, { width: `${value * 100}%` }]}
+      />
+      <View style={[styles.progressThumb, { left: `${Math.max(0, Math.min(97, value * 100))}%` }]} />
+    </View>
+  );
+}
+
 export default function SoundscapePlayerScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const { height: windowHeight } = useWindowDimensions();
 
   const params = useLocalSearchParams<{
+    mixId?: string;
     id?: string;
     title?: string;
     subcategory?: string;
     category?: string;
     file_url?: string;
+    duration_seconds?: string;
   }>();
+
+  const editingMixId = String(params.mixId ?? '').trim();
+  const initialDuration =
+    params.id && params.duration_seconds ? Number(params.duration_seconds) : 180;
 
   // ── Audio + live refs (avoid stale closures inside async loops) ─────────
   const soundRefs = useRef<Record<string, Audio.Sound>>({});
   const positionRef = useRef(0);
-  const durationRef = useRef(1800);
+  const durationRef = useRef(initialDuration);
   const masterVolumeRef = useRef(0.8);
   const trackVolumesRef = useRef<Record<string, number>>({});
   const loadRequestRef = useRef(0);
+  const isSeekingRef = useRef(false);
+  const isLeavingRef = useRef(false);
+  const mixNameInputRef = useRef<TextInput>(null);
+  const scrollRef = useRef<ScrollView>(null);
+
+  const mixHydratedRef = useRef(false);
+
+  const { data: savedMixData } = useQuery({
+    queryKey: ['soundscape-mix', editingMixId],
+    queryFn: () => soundscapeMixesApi.getOne(editingMixId),
+    enabled: Boolean(editingMixId),
+  });
 
   // ── State ─────────────────────────────────────────────────────────────
   // baseTrack = the soundscape the user tapped to open this screen. It
   // always plays in the hero player. It is NOT auto-counted as part of the
   // "mix" by itself — but once the user adds layers via "Add Mixes", it
   // becomes part of the combined mix (allTracks) that gets saved.
-  const [baseTrack] = useState<Soundscape | null>(() => {
+  const [baseTrack, setBaseTrack] = useState<Soundscape | null>(() => {
     if (params.id && params.file_url) {
       return {
         id: params.id,
@@ -216,11 +285,43 @@ export default function SoundscapePlayerScreen() {
   const [isPlaying, setIsPlaying] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [position, setPosition] = useState(0);
-  const [duration, setDuration] = useState(1800);
+  const [duration, setDuration] = useState(() => {
+    if (params.id && params.duration_seconds) {
+      return Number(params.duration_seconds);
+    }
+    return 180;
+  });
   const [isSaving, setIsSaving] = useState(false);
   const [savedMessage, setSavedMessage] = useState('');
   const [showSelectModal, setShowSelectModal] = useState(false);
   const [isAdjustingVolume, setIsAdjustingVolume] = useState(false);
+  const [isSeeking, setIsSeeking] = useState(false);
+  const [seekProgress, setSeekProgress] = useState(0);
+  const [mixNameHighlight, setMixNameHighlight] = useState(false);
+
+  useEffect(() => {
+    const mix = savedMixData?.data?.mix;
+    if (!mix || mixHydratedRef.current) return;
+
+    const tracks = (mix.soundscapes ?? []).filter((track) => track.file_url);
+    if (tracks.length === 0) return;
+
+    mixHydratedRef.current = true;
+    setBaseTrack(tracks[0]);
+    setLayers(tracks.slice(1));
+    setMixName(mix.name);
+
+    const mixDuration = mix.soundscapes?.[0]?.duration_seconds ?? 180;
+    setDuration(mixDuration);
+    durationRef.current = mixDuration;
+
+    const volumes: Record<string, number> = {};
+    tracks.forEach((track) => {
+      volumes[track.id] = mix.volumes?.[track.id] ?? DEFAULT_TRACK_VOLUME;
+    });
+    setTrackVolumes(volumes);
+    trackVolumesRef.current = volumes;
+  }, [savedMixData]);
 
   useEffect(() => {
     masterVolumeRef.current = masterVolume;
@@ -232,6 +333,7 @@ export default function SoundscapePlayerScreen() {
 
   // ── (Re)load audio whenever the combined track set changes ──────────────
   useEffect(() => {
+    if (isLeavingRef.current) return;
     loadAudio(allTracks);
     return () => {
       Object.values(soundRefs.current).forEach((s) => s.unloadAsync().catch(() => {}));
@@ -239,6 +341,47 @@ export default function SoundscapePlayerScreen() {
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [allTracks.map((s) => s.id).join(',')]);
+
+  useEffect(() => {
+    const sub = BackHandler.addEventListener('hardwareBackPress', () => {
+      void handleBack();
+      return true;
+    });
+    return () => sub.remove();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useFocusEffect(
+    useCallback(() => {
+      return () => {
+        void stopAllAudio();
+        setPosition(0);
+        positionRef.current = 0;
+        void Audio.setAudioModeAsync({ playsInSilentModeIOS: true, staysActiveInBackground: false }).catch(() => {});
+      };
+    }, [])
+  );
+
+  async function stopAllAudio() {
+    loadRequestRef.current += 1;
+    const sounds = Object.values(soundRefs.current);
+    soundRefs.current = {};
+    await Promise.all(
+      sounds.map(async (sound) => {
+        await sound.stopAsync().catch(() => {});
+        await sound.unloadAsync().catch(() => {});
+      })
+    );
+    setIsPlaying(false);
+    setIsLoading(false);
+  }
+
+  async function handleBack() {
+    if (isLeavingRef.current) return;
+    isLeavingRef.current = true;
+    await stopAllAudio();
+    router.back();
+  }
 
   async function loadAudio(tracks: Soundscape[]) {
     const requestId = loadRequestRef.current + 1;
@@ -257,9 +400,13 @@ export default function SoundscapePlayerScreen() {
       return;
     }
 
+    if (isLeavingRef.current) {
+      return;
+    }
+
     try {
       setIsLoading(true);
-      await Audio.setAudioModeAsync({ playsInSilentModeIOS: true, staysActiveInBackground: true });
+      await Audio.setAudioModeAsync({ playsInSilentModeIOS: true, staysActiveInBackground: false });
       const startPositionMillis = Math.max(0, positionRef.current * 1000);
 
       await Promise.all(
@@ -272,13 +419,13 @@ export default function SoundscapePlayerScreen() {
             { shouldPlay: false, isLooping: true, volume, progressUpdateIntervalMillis: 500 },
             index === 0
               ? (status) => {
-                  if (status.isLoaded) {
-                    const correctedDuration = ((status.durationMillis ?? 1800000) / 1000) + DURATION_DISPLAY_OFFSET_SECONDS;
-                    setPosition(status.positionMillis / 1000);
-                    setDuration(correctedDuration);
-                    positionRef.current = status.positionMillis / 1000;
-                    durationRef.current = correctedDuration;
-                  }
+                    if (status.isLoaded && !isSeekingRef.current && !isLeavingRef.current) {
+                      const rawDuration = (status.durationMillis ?? 0) / 1000;
+                      setPosition(status.positionMillis / 1000);
+                      setDuration(rawDuration);
+                      positionRef.current = status.positionMillis / 1000;
+                      durationRef.current = rawDuration;
+                    }
                 }
               : undefined
           );
@@ -287,7 +434,7 @@ export default function SoundscapePlayerScreen() {
         })
       );
 
-      if (loadRequestRef.current !== requestId) {
+      if (loadRequestRef.current !== requestId || isLeavingRef.current) {
         return;
       }
 
@@ -321,6 +468,16 @@ export default function SoundscapePlayerScreen() {
     }
   }
 
+  async function seekTo(ratio: number) {
+    const sounds = Object.values(soundRefs.current);
+    if (sounds.length === 0) return;
+    const clamped = clamp01(ratio);
+    const newPos = clamped * durationRef.current;
+    await Promise.all(sounds.map((s) => s.setPositionAsync(newPos * 1000).catch(() => {})));
+    positionRef.current = newPos;
+    setPosition(newPos);
+  }
+
   async function seekBy(delta: number) {
     const sounds = Object.values(soundRefs.current);
     if (sounds.length === 0) return;
@@ -328,6 +485,30 @@ export default function SoundscapePlayerScreen() {
     await Promise.all(sounds.map((s) => s.setPositionAsync(newPos * 1000).catch(() => {})));
     positionRef.current = newPos;
     setPosition(newPos);
+  }
+
+  function handleSeekStart() {
+    isSeekingRef.current = true;
+    setIsSeeking(true);
+    setSeekProgress(durationRef.current > 0 ? positionRef.current / durationRef.current : 0);
+  }
+
+  function handleSeekChange(ratio: number) {
+    setSeekProgress(ratio);
+    const previewPos = ratio * durationRef.current;
+    positionRef.current = previewPos;
+    setPosition(previewPos);
+    void Promise.all(
+      Object.values(soundRefs.current).map((sound) =>
+        sound.setPositionAsync(previewPos * 1000).catch(() => {})
+      )
+    );
+  }
+
+  async function handleSeekComplete(ratio: number) {
+    await seekTo(ratio);
+    isSeekingRef.current = false;
+    setIsSeeking(false);
   }
 
   function handleMasterVolumeChange(val: number) {
@@ -355,6 +536,14 @@ export default function SoundscapePlayerScreen() {
     setShowSelectModal(false);
   }
 
+  function focusMixNameInput() {
+    setMixNameHighlight(true);
+    scrollRef.current?.scrollTo({ y: 300, animated: true });
+    setTimeout(() => {
+      mixNameInputRef.current?.focus();
+    }, 200);
+  }
+
   async function handleSaveMix() {
     if (mixSelectionCount < MIN_TRACKS) {
       setSavedMessage(`Add ${MIN_TRACKS - mixSelectionCount} more sound${MIN_TRACKS - mixSelectionCount > 1 ? 's' : ''}`);
@@ -363,8 +552,7 @@ export default function SoundscapePlayerScreen() {
     }
 
     if (!mixName.trim()) {
-      setSavedMessage('Name your mix');
-      setTimeout(() => setSavedMessage(''), 2000);
+      focusMixNameInput();
       return;
     }
 
@@ -375,15 +563,24 @@ export default function SoundscapePlayerScreen() {
         volumes[s.id] = trackVolumes[s.id] ?? DEFAULT_TRACK_VOLUME;
       });
 
-      await apiClient('/api/soundscapes/mix', {
-        method: 'POST',
-        body: JSON.stringify({
-          name: mixName.trim() || 'My Mix',
-          soundscape_ids: allTracks.map((s) => s.id),
-          volumes,
-        }),
-      });
-      setSavedMessage('Mix saved!');
+      await (editingMixId
+        ? apiClient(`/api/soundscapes/mix/${editingMixId}`, {
+            method: 'PUT',
+            body: JSON.stringify({
+              name: mixName.trim() || 'My Mix',
+              soundscape_ids: allTracks.map((s) => s.id),
+              volumes,
+            }),
+          })
+        : apiClient('/api/soundscapes/mix', {
+            method: 'POST',
+            body: JSON.stringify({
+              name: mixName.trim() || 'My Mix',
+              soundscape_ids: allTracks.map((s) => s.id),
+              volumes,
+            }),
+          }));
+      setSavedMessage(editingMixId ? 'Mix updated!' : 'Mix saved!');
     } catch (e) {
       setSavedMessage('Mix saved!');
     } finally {
@@ -393,118 +590,129 @@ export default function SoundscapePlayerScreen() {
   }
 
   const progress = duration > 0 ? position / duration : 0;
+  const displayProgress = isSeeking ? seekProgress : progress;
   const heroThumb = allTracks[0] ? getThumb(allTracks[0].id) : soundscapeThumbImages[0];
   const mixSelectionCount = baseTrack ? layers.length : allTracks.length;
   const displayedMixTracks = baseTrack ? layers : allTracks;
   const canSaveMix = mixSelectionCount >= MIN_TRACKS;
+  const isEmptyMix = mixSelectionCount === 0;
+  const scrollMinHeight = windowHeight - insets.top;
+  const tabBarPadding = Math.max(insets.bottom, 8) + 96;
 
   return (
     <ImageBackground source={backgroundImage} resizeMode="cover" style={styles.screen}>
       <SafeAreaView edges={['top']} style={styles.safeArea}>
-        <View style={styles.topHalf}>
-        {/* Header */}
-        <View style={styles.header}>
-          <Pressable onPress={() => router.back()} style={styles.backButton}>
-            <Text style={styles.backChevron}>‹</Text>
-          </Pressable>
-          <Text style={styles.titleText} numberOfLines={1}>
-            {allTracks[0]?.title ?? 'Soundscape Mixer'}
-          </Text>
-          <Text style={styles.subtitleText}>Build Your own mix</Text>
-        </View>
+        <ScrollView
+          ref={scrollRef}
+          bounces
+          keyboardShouldPersistTaps="handled"
+          scrollEnabled={!isAdjustingVolume}
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={[
+            styles.pageScroll,
+            {
+              minHeight: scrollMinHeight,
+              paddingBottom: tabBarPadding,
+            },
+          ]}>
+          {/* Header */}
+          <View style={styles.header}>
+            <Pressable
+              accessibilityLabel="Go back"
+              hitSlop={12}
+              onPress={() => { void handleBack(); }}
+              style={({ pressed }) => [styles.backButton, pressed && styles.pressed]}>
+              <Ionicons name="chevron-back" size={18} color="#000000" />
+            </Pressable>
+            <Text style={styles.titleText} numberOfLines={1}>
+              {allTracks[0]?.title ?? 'Soundscape Mixer'}
+            </Text>
+            <Text style={styles.subtitleText}>Build Your own mix</Text>
+          </View>
 
-        {/* Player card */}
-        <View style={styles.playerCard}>
-          <Image source={heroThumb} style={styles.playerImage} contentFit="cover" />
-          <LinearGradient colors={['rgba(0,0,0,0.1)', 'rgba(0,0,0,0.45)']} style={styles.playerOverlay} />
+          {/* Player card */}
+          <View style={styles.playerCard}>
+            <Image source={heroThumb} style={styles.playerImage} contentFit="cover" />
+            <LinearGradient colors={['rgba(0,0,0,0.1)', 'rgba(0,0,0,0.45)']} style={styles.playerOverlay} />
 
-          <View style={styles.controlsOverlay}>
-            <View style={styles.transportRow}>
-              <Pressable onPress={() => seekBy(-10)} style={styles.seekBtn} disabled={allTracks.length === 0}>
-                <View style={styles.seekBtnInner}>
-                  <Ionicons name="refresh" size={20} color="#54555A" style={{ transform: [{ scaleX: -1 }] }} />
-                  <Text style={styles.seekLabel}>10</Text>
-                </View>
-              </Pressable>
+            <View style={styles.controlsOverlay}>
+              <View style={styles.transportRow}>
+                <Pressable onPress={() => seekBy(-10)} style={styles.seekBtn} disabled={allTracks.length === 0}>
+                  <View style={styles.seekBtnInner}>
+                    <Ionicons name="refresh" size={20} color="#54555A" style={{ transform: [{ scaleX: -1 }] }} />
+                    <Text style={styles.seekLabel}>10</Text>
+                  </View>
+                </Pressable>
 
-              <Pressable onPress={togglePlay} style={styles.playBtn} disabled={allTracks.length === 0}>
-                <LinearGradient
-                  colors={['#29A7E5', '#7B61FF']}
-                  locations={[0, 0.5983]}
-                  start={{ x: 0, y: 0.5 }}
-                  end={{ x: 1, y: 0.5 }}
-                  style={styles.playBtnGradient}>
-                  {isLoading ? (
-                    <ActivityIndicator color="#FFF" size="small" />
-                  ) : (
-                    <Ionicons name={isPlaying ? 'pause' : 'play'} size={32} color="#FFF" />
-                  )}
-                </LinearGradient>
-              </Pressable>
+                <Pressable onPress={togglePlay} style={styles.playBtn} disabled={allTracks.length === 0}>
+                  <View style={styles.playBtnGradient}>
+                    <ExploreGradientFill borderRadius={34} />
+                    <View style={styles.playBtnContent}>
+                      {isLoading ? (
+                        <ActivityIndicator color="#FFF" size="small" />
+                      ) : (
+                        <Ionicons name={isPlaying ? 'pause' : 'play'} size={32} color="#FFF" />
+                      )}
+                    </View>
+                  </View>
+                </Pressable>
 
-              <Pressable onPress={() => seekBy(10)} style={styles.seekBtn} disabled={allTracks.length === 0}>
-                <View style={styles.seekBtnInner}>
-                  <Ionicons name="refresh" size={20} color="#54555A" />
-                  <Text style={styles.seekLabel}>10</Text>
-                </View>
-              </Pressable>
-            </View>
-
-            <View style={styles.progressCard}>
-              <View style={styles.progressTrack}>
-                <LinearGradient
-                  colors={['#29A7E5', '#7B61FF']}
-                  locations={[0, 0.5983]}
-                  start={{ x: 0, y: 0.5 }}
-                  end={{ x: 1, y: 0.5 }}
-                  style={[styles.progressFill, { width: `${progress * 100}%` }]}
-                />
-                <View style={[styles.progressThumb, { left: `${Math.max(0, Math.min(97, progress * 100))}%` }]} />
+                <Pressable onPress={() => seekBy(10)} style={styles.seekBtn} disabled={allTracks.length === 0}>
+                  <View style={styles.seekBtnInner}>
+                    <Ionicons name="refresh" size={20} color="#54555A" />
+                    <Text style={styles.seekLabel}>10</Text>
+                  </View>
+                </Pressable>
               </View>
-              <View style={styles.timeRow}>
-                <Text style={styles.timeText}>{formatTime(position)}</Text>
-                <Text style={styles.timeText}>{formatTime(duration)}</Text>
+
+              <View style={styles.progressCard}>
+                <ProgressSlider
+                  disabled={allTracks.length === 0}
+                  value={displayProgress}
+                  onChange={handleSeekChange}
+                  onSlidingStart={handleSeekStart}
+                  onSlidingComplete={handleSeekComplete}
+                />
+                <View style={styles.timeRow}>
+                  <Text style={styles.timeText}>{formatTime(position)}</Text>
+                  <Text style={styles.timeText}>{formatTotalDuration(duration)}</Text>
+                </View>
               </View>
             </View>
           </View>
-        </View>
-        </View>
 
-        {/* Bottom white card */}
-        <View style={[styles.bottomCard, { marginBottom: Math.max(insets.bottom, 8) + 90 }]}>
-          <ScrollView
-            bounces={false}
-            scrollEnabled={!isAdjustingVolume}
-            style={styles.bottomScroller}
-            showsVerticalScrollIndicator={false}
-            contentContainerStyle={[styles.bottomScroll, { paddingBottom: 20 }]}>
-            {mixSelectionCount === 0 ? (
-              <Pressable onPress={() => setShowSelectModal(true)} style={styles.addMixWrap}>
-                <LinearGradient
-                  colors={['#6D67CE', '#528AE1', '#6AAFE9']}
-                  start={{ x: 0, y: 0.5 }}
-                  end={{ x: 1, y: 0.5 }}
-                  style={styles.addMixGradient}>
-                  <Ionicons name="add-circle-outline" size={22} color="#FFF" />
-                  <Text style={styles.addMixText}>Add Mixes</Text>
-                </LinearGradient>
+          {/* Mix controls */}
+          <View style={[styles.bottomCard, isEmptyMix && styles.bottomCardEmpty]}>
+            {isEmptyMix ? (
+              <View style={styles.addMixWrap}>
+                <ExploreButton
+                  label="Add Mixes"
+                  onPress={() => setShowSelectModal(true)}
+                  style={styles.addMixBtn}
+                />
                 <Text style={styles.addMixHint}>Pick 2-5 soundscapes to build your mix</Text>
-              </Pressable>
+              </View>
             ) : (
               <>
-                {/* Mix name */}
-                <View style={styles.nameRow}>
+                <View style={[styles.nameRow, mixNameHighlight && styles.nameRowHighlight]}>
                   <Ionicons name="create-outline" size={18} color="#3770FC" />
                   <TextInput
+                    ref={mixNameInputRef}
                     value={mixName}
-                    onChangeText={setMixName}
+                    onChangeText={(text) => {
+                      setMixName(text);
+                      if (text.trim()) setMixNameHighlight(false);
+                    }}
+                    onSubmitEditing={() => {
+                      if (mixName.trim()) void handleSaveMix();
+                    }}
                     placeholder="Name your mix"
                     placeholderTextColor="#A0A4B8"
+                    returnKeyType="done"
                     style={styles.nameInput}
                   />
                 </View>
 
-                {/* Master Mix */}
                 <View style={styles.masterRow}>
                   <View style={styles.masterLeft}>
                     <Ionicons name="sparkles" size={18} color="#3770FC" />
@@ -519,7 +727,6 @@ export default function SoundscapePlayerScreen() {
                   onSlidingComplete={() => setIsAdjustingVolume(false)}
                 />
 
-                {/* Add / edit mixes */}
                 <Pressable onPress={() => setShowSelectModal(true)} style={styles.editRow}>
                   <Ionicons name={layers.length === 0 ? 'add-circle-outline' : 'options-outline'} size={16} color="#5275E8" />
                   <Text style={styles.editText}>
@@ -556,34 +763,22 @@ export default function SoundscapePlayerScreen() {
 
                 {mixSelectionCount > 0 && (
                   <View style={styles.saveRow}>
-                    <Pressable
+                    <ExploreButton
+                      label={savedMessage || 'Save Mix'}
+                      loading={isSaving}
+                      disabled={isSaving}
                       onPress={handleSaveMix}
                       style={styles.saveBtn}
-                      disabled={isSaving}>
-                      <LinearGradient
-                        colors={['#29A7E5', '#7B61FF']}
-                        locations={[0, 0.5983]}
-                        start={{ x: 0, y: 0.5 }}
-                        end={{ x: 1, y: 0.5 }}
-                        style={styles.saveBtnGradient}>
-                        <InnerShadow />
-                        {isSaving ? (
-                          <ActivityIndicator color="#FFF" size="small" />
-                        ) : (
-                          <Text style={styles.saveBtnText}>{savedMessage || 'Save Mix'}</Text>
-                        )}
-                      </LinearGradient>
-                    </Pressable>
+                    />
                   </View>
                 )}
               </>
             )}
-          </ScrollView>
-        </View>
+          </View>
+        </ScrollView>
       </SafeAreaView>
 
       {/* Tab bar */}
-      <View pointerEvents="none" style={[styles.tabBarDock, { height: Math.max(insets.bottom, 8) + 76 }]} />
       <View style={[styles.floatingTabBar, { bottom: Math.max(insets.bottom, 8) }]}>
         {TAB_ITEMS.map((item) => (
           <Pressable key={item.label} onPress={() => router.push(item.route as any)} style={styles.tabBarItem}>
@@ -616,7 +811,7 @@ function VerticalSlider({
   onSlidingStart?: () => void;
   onSlidingComplete?: () => void;
 }) {
-  const height = 250;
+  const height = VERTICAL_SLIDER_HEIGHT;
   const filled = Math.max(0, Math.min(1, value)) * height;
   const trackRef = useRef<View>(null);
 
@@ -652,10 +847,7 @@ function VerticalSlider({
         style={styles.vSliderTrack}
         {...panResponder.panHandlers}>
         <LinearGradient
-          colors={['#29A7E5', '#7B61FF']}
-          locations={[0, 0.5983]}
-          start={{ x: 0.5, y: 1 }}
-          end={{ x: 0.5, y: 0 }}
+          {...exploreGradientVertical}
           style={[styles.vSliderFill, { height: filled }]}
         />
         <View style={[styles.vSliderThumb, { bottom: filled - 14 }]} />
@@ -679,6 +871,7 @@ function SelectSoundscapesModal({
   onConfirm: (tracks: Soundscape[]) => void;
 }) {
   const insets = useSafeAreaInsets();
+  const bottomPadding = useScreenBottomPadding();
   const [search, setSearch] = useState('');
   const [activeCategory, setActiveCategory] = useState('All');
   const [tempSelected, setTempSelected] = useState<Soundscape[]>(initialSelected);
@@ -735,9 +928,16 @@ function SelectSoundscapesModal({
   const canConfirm = tempSelected.length >= minAdditional && tempSelected.length <= maxAdditional;
 
   return (
-    <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
+    <Modal
+      animationType="slide"
+      onRequestClose={onClose}
+      statusBarTranslucent
+      transparent
+      visible={visible}>
       <View style={styles.modalOverlay}>
-        <View style={[styles.modalSheet, { paddingBottom: 5 }]}>
+        <View pointerEvents="none" style={[styles.statusBarDim, { height: insets.top }]} />
+        <Pressable accessibilityLabel="Close" onPress={onClose} style={StyleSheet.absoluteFillObject} />
+        <View style={[styles.modalSheet, { paddingBottom: bottomPadding }]}>
           <View style={styles.modalHandle} />
 
           <View style={styles.modalHeader}>
@@ -748,12 +948,12 @@ function SelectSoundscapesModal({
           </View>
 
           {baseTrack && (
-            <View style={styles.baseTrackNote}>
-              <Ionicons name="lock-closed" size={13} color="#5275E8" />
-              <Text style={styles.baseTrackNoteText} numberOfLines={1}>
+            <ExploreGradientBanner>
+              <Ionicons name="lock-closed" size={13} color="#FFFFFF" />
+              <Text style={styles.baseTrackNoteTextGradient} numberOfLines={1}>
                 {baseTrack.title} plays as your base sound
               </Text>
-            </View>
+            </ExploreGradientBanner>
           )}
 
           {/* Search */}
@@ -774,55 +974,59 @@ function SelectSoundscapesModal({
             showsHorizontalScrollIndicator={false}
             style={styles.modalTabsRow}
             contentContainerStyle={styles.modalTabsContent}>
-            {categories.map((cat) => {
-              const isActive = activeCategory === cat;
-              return (
-                <Pressable
-                  key={cat}
-                  onPress={() => setActiveCategory(cat)}
-                  style={[styles.modalTab, isActive && styles.modalTabActive]}>
-                  <Text style={[styles.modalTabText, isActive && styles.modalTabTextActive]}>{cat}</Text>
-                </Pressable>
-              );
-            })}
+            {categories.map((cat) => (
+              <ExploreTabChip
+                key={cat}
+                active={activeCategory === cat}
+                label={cat}
+                onPress={() => setActiveCategory(cat)}
+                style={styles.modalTabChip}
+                variant="pill"
+              />
+            ))}
           </ScrollView>
 
           {/* List */}
-          {isLoading ? (
-            <View style={styles.modalLoading}>
-              <ActivityIndicator color="#7B61FF" size="large" />
-            </View>
-          ) : (
-            <FlatList
-              data={filtered}
-              keyExtractor={(item) => item.id}
-              style={styles.modalList}
-              contentContainerStyle={styles.modalListContent}
-              renderItem={({ item, index }) => {
-                const isSelected = tempSelected.some((t) => t.id === item.id);
-                const disabled = !isSelected && tempSelected.length >= maxAdditional;
-                return (
-                  <Pressable
-                    onPress={() => toggleTrack(item)}
-                    disabled={disabled}
-                    style={[styles.modalItem, isSelected && styles.modalItemSelected, disabled && styles.modalItemDisabled]}>
-                    <Image source={getThumb(item.id, index)} style={styles.modalItemThumb} contentFit="cover" />
-                    <View style={styles.modalItemText}>
-                      <Text style={styles.modalItemTitle} numberOfLines={1}>
-                        {item.title}
-                      </Text>
-                      <Text style={styles.modalItemSubtitle} numberOfLines={1}>
-                        {item.category} • {item.subcategory}
-                      </Text>
-                    </View>
-                    <View style={[styles.checkCircle, isSelected && styles.checkCircleActive]}>
-                      {isSelected && <Ionicons name="checkmark" size={14} color="#FFF" />}
-                    </View>
-                  </Pressable>
-                );
-              }}
-            />
-          )}
+          <View style={styles.modalListWrap}>
+            {isLoading ? (
+              <View style={styles.modalLoading}>
+                <ActivityIndicator color="#7B61FF" size="large" />
+              </View>
+            ) : (
+              <FlatList
+                data={filtered}
+                keyExtractor={(item) => item.id}
+                style={styles.modalList}
+                contentContainerStyle={styles.modalListContent}
+                showsVerticalScrollIndicator={false}
+                renderItem={({ item, index }) => {
+                  const isSelected = tempSelected.some((t) => t.id === item.id);
+                  const disabled = !isSelected && tempSelected.length >= maxAdditional;
+                  return (
+                    <Pressable
+                      onPress={() => toggleTrack(item)}
+                      disabled={disabled}
+                      style={[styles.modalItem, isSelected && styles.modalItemSelected, disabled && styles.modalItemDisabled]}>
+                      <Image source={getThumb(item.id, index)} style={styles.modalItemThumb} contentFit="cover" />
+                      <View style={styles.modalItemText}>
+                        <Text style={styles.modalItemTitle} numberOfLines={1}>
+                          {item.title}
+                        </Text>
+                        <Text style={styles.modalItemSubtitle} numberOfLines={1}>
+                          {item.category} • {item.subcategory}
+                        </Text>
+                      </View>
+                      {isSelected ? (
+                        <ExploreCheckBadge size={24} />
+                      ) : (
+                        <View style={styles.checkCircle} />
+                      )}
+                    </Pressable>
+                  );
+                }}
+              />
+            )}
+          </View>
 
           {/* Footer */}
           <View style={styles.modalFooter}>
@@ -830,18 +1034,12 @@ function SelectSoundscapesModal({
               {tempSelected.length}/{MAX_TRACKS} in mix
               {tempSelected.length < minAdditional ? ` · pick at least ${minAdditional} more` : ''}
             </Text>
-            <Pressable
-              onPress={() => onConfirm(tempSelected)}
+            <ExploreButton
+              label="Add to Mix"
               disabled={!canConfirm}
-              style={styles.modalConfirmBtn}>
-              <LinearGradient
-                colors={canConfirm ? ['#6D67CE', '#528AE1', '#6AAFE9'] : ['#D5D8E6', '#D5D8E6']}
-                start={{ x: 0, y: 0.5 }}
-                end={{ x: 1, y: 0.5 }}
-                style={styles.modalConfirmGradient}>
-                <Text style={styles.modalConfirmText}>Add to Mix</Text>
-              </LinearGradient>
-            </Pressable>
+              onPress={() => onConfirm(tempSelected)}
+              style={styles.modalAddButton}
+            />
           </View>
         </View>
       </View>
@@ -852,9 +1050,8 @@ function SelectSoundscapesModal({
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: '#C8BFEE' },
   safeArea: { flex: 1 },
-  topHalf: {
-    height: '44%',
-    zIndex: 2,
+  pageScroll: {
+    flexGrow: 1,
   },
 
   header: {
@@ -863,15 +1060,14 @@ const styles = StyleSheet.create({
   },
   backButton: {
     alignItems: 'center',
-    backgroundColor: 'rgba(255,255,255,0.70)',
-    borderRadius: 20,
-    height: 40,
+    backgroundColor: 'rgba(255, 255, 255, 0.5)',
+    borderRadius: 16,
+    height: 32,
     justifyContent: 'center',
     marginBottom: 16,
-    width: 40,
-    elevation: 3,
+    width: 32,
   },
-  backChevron: { color: '#173F5F', fontSize: 26, fontWeight: '300', lineHeight: 30, marginTop: -2 },
+  pressed: { opacity: 0.86, transform: [{ scale: 0.99 }] },
   titleText: {
     color: '#173F5F',
     fontFamily: AppFonts.displayBold,
@@ -893,6 +1089,7 @@ const styles = StyleSheet.create({
   playerCard: {
     borderRadius: 20,
     height: 170,
+    marginBottom: 44,
     marginHorizontal: 20,
     overflow: 'visible',
     elevation: 6,
@@ -933,18 +1130,25 @@ const styles = StyleSheet.create({
     height: 80,
     overflow: 'hidden',
     width: 80,
-    shadowColor: '#7B61FF',
+    shadowColor: 'rgb(110, 95, 230)',
     shadowOffset: { width: 0, height: 14 },
-    shadowOpacity: 0.42,
+    shadowOpacity: 0.45,
     shadowRadius: 24,
   },
   playBtnGradient: {
-    alignItems: 'center',
     borderColor: '#FFFFFF',
     borderRadius: 40,
     borderWidth: 6,
     flex: 1,
+    overflow: 'hidden',
+    position: 'relative',
+  },
+  playBtnContent: {
+    alignItems: 'center',
+    flex: 1,
     justifyContent: 'center',
+    position: 'relative',
+    zIndex: 1,
   },
 
   // Progress card
@@ -966,30 +1170,32 @@ const styles = StyleSheet.create({
   progressTrack: {
     backgroundColor: '#DFE5EE',
     borderRadius: 8,
-    height: 10,
+    height: 26,
+    justifyContent: 'center',
     marginBottom: 10,
     position: 'relative',
   },
   progressFill: {
-    backgroundColor: '#5275E8',
     borderRadius: 8,
     height: 10,
+    left: 0,
     position: 'absolute',
+    top: 8,
   },
   progressThumb: {
     backgroundColor: '#FFFFFF',
-    borderColor: 'rgba(223,229,238,0.92)',
+    borderColor: 'rgba(140,138,240,0.35)',
     borderRadius: 13,
     borderWidth: 1,
     elevation: 5,
     height: 26,
     marginLeft: -13,
-    marginTop: -8,
     position: 'absolute',
-    shadowColor: '#173F5F',
+    shadowColor: 'rgb(110, 95, 230)',
     shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.12,
+    shadowOpacity: 0.2,
     shadowRadius: 16,
+    top: 0,
     width: 26,
   },
   timeRow: { flexDirection: 'row', justifyContent: 'space-between' },
@@ -999,35 +1205,30 @@ const styles = StyleSheet.create({
   bottomCard: {
     backgroundColor: '#FFFFFF',
     borderRadius: 26,
-    flex: 1,
     marginHorizontal: 20,
-    marginTop: 0,
-    overflow: 'hidden',
-    paddingTop: 14,
+    marginTop: -8,
+    paddingBottom: 24,
+    paddingHorizontal: 20,
+    paddingTop: 22,
   },
-  bottomScroller: {
+  bottomCardEmpty: {
     flex: 1,
+    justifyContent: 'center',
+    minHeight: 350,
   },
-  bottomScroll: { flexGrow: 1, paddingHorizontal: 20, paddingTop: 8 },
 
   // Add mixes empty state
   addMixWrap: {
     alignItems: 'center',
-    flexGrow: 1,
+    flex: 1,
     justifyContent: 'center',
-    minHeight: 260,
+    paddingVertical: 32,
   },
-  addMixGradient: {
-    alignItems: 'center',
-    borderRadius: 30,
-    flexDirection: 'row',
-    gap: 8,
-    height: 54,
-    justifyContent: 'center',
-    paddingHorizontal: 28,
-    elevation: 4,
+  addMixBtn: {
+    alignSelf: 'center',
+    maxWidth: 348,
+    width: '100%',
   },
-  addMixText: { color: '#FFFFFF', fontFamily: AppFonts.sansSemiBold, fontSize: 18 },
   addMixHint: {
     color: '#8C8C8C',
     fontFamily: AppFonts.sansRegular,
@@ -1040,12 +1241,18 @@ const styles = StyleSheet.create({
   nameRow: {
     alignItems: 'center',
     backgroundColor: '#F4F5FA',
+    borderColor: 'transparent',
     borderRadius: 12,
+    borderWidth: 1,
     flexDirection: 'row',
     gap: 8,
     marginBottom: 16,
     paddingHorizontal: 14,
     paddingVertical: 4,
+  },
+  nameRowHighlight: {
+    backgroundColor: '#EEF0FF',
+    borderColor: '#8c8af0',
   },
   nameInput: {
     color: '#173F5F',
@@ -1089,16 +1296,16 @@ const styles = StyleSheet.create({
   },
   sliderThumbH: {
     backgroundColor: '#FFFFFF',
-    borderColor: 'rgba(82,117,232,0.14)',
+    borderColor: 'rgba(140,138,240,0.35)',
     borderRadius: 12,
     borderWidth: 1,
     elevation: 4,
     height: 24,
     marginLeft: -12,
     position: 'absolute',
-    shadowColor: '#5275E8',
+    shadowColor: 'rgb(110, 95, 230)',
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.16,
+    shadowOpacity: 0.2,
     shadowRadius: 8,
     top: 5,
     width: 24,
@@ -1151,7 +1358,7 @@ const styles = StyleSheet.create({
   vSliderTrack: {
     backgroundColor: '#E4E8F1',
     borderRadius: 8,
-    height: 250,
+    height: VERTICAL_SLIDER_HEIGHT,
     justifyContent: 'flex-end',
     overflow: 'hidden',
     width: 29,
@@ -1165,16 +1372,16 @@ const styles = StyleSheet.create({
   },
   vSliderThumb: {
     backgroundColor: '#FFFFFF',
-    borderColor: 'rgba(82,117,232,0.14)',
+    borderColor: 'rgba(140,138,240,0.35)',
     borderRadius: 14,
     borderWidth: 1,
     elevation: 5,
     height: 28,
     left: 0.5,
     position: 'absolute',
-    shadowColor: '#5275E8',
+    shadowColor: 'rgb(110, 95, 230)',
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.16,
+    shadowOpacity: 0.2,
     shadowRadius: 8,
     width: 28,
   },
@@ -1186,51 +1393,9 @@ const styles = StyleSheet.create({
     paddingTop: 0,
   },
   saveBtn: {
-    alignItems: 'center',
     alignSelf: 'center',
-    backgroundColor: '#29A7E5',
-    borderRadius: 27,
-    height: 54,
     maxWidth: 348,
-    overflow: 'hidden',
     width: '100%',
-    elevation: 10,
-    shadowColor: '#7B61FF',
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.24,
-    shadowRadius: 20,
-  },
-  saveBtnGradient: {
-    alignItems: 'center',
-    height: '100%',
-    justifyContent: 'center',
-    width: '100%',
-  },
-  saveBtnText: {
-    color: '#FFFFFF',
-    fontFamily: AppFonts.sansMedium,
-    fontSize: 18,
-    fontWeight: '500',
-    letterSpacing: 0,
-    lineHeight: 26,
-    textAlign: 'center',
-  },
-  innerShadow: {
-    ...StyleSheet.absoluteFillObject,
-  },
-  innerShadowLeft: {
-    bottom: 0,
-    left: 0,
-    position: 'absolute',
-    top: 4,
-    width: 16,
-  },
-  innerShadowTop: {
-    height: 16,
-    left: 4,
-    position: 'absolute',
-    right: 0,
-    top: 0,
   },
   saveHint: {
     color: '#8C8C8C',
@@ -1242,10 +1407,9 @@ const styles = StyleSheet.create({
   },
 
   // Tab bar
-  tabBarDock: { backgroundColor: '#FFFFFF', bottom: 0, left: 0, position: 'absolute', right: 0 },
   floatingTabBar: {
     alignItems: 'center',
-    backgroundColor: '#FFFFFF',
+    backgroundColor: 'rgba(255,255,255,0.88)',
     borderColor: 'rgba(227,227,227,0.55)',
     borderRadius: 24,
     borderWidth: 1,
@@ -1278,17 +1442,28 @@ const styles = StyleSheet.create({
 
   // ── Select soundscapes modal ───────────────────────────────────────────
   modalOverlay: {
-    backgroundColor: 'transparent',
+    backgroundColor: 'rgba(23, 63, 95, 0.48)',
     flex: 1,
     justifyContent: 'flex-end',
+  },
+  statusBarDim: {
+    backgroundColor: 'rgba(23, 63, 95, 0.48)',
+    left: 0,
+    position: 'absolute',
+    right: 0,
+    top: 0,
+    zIndex: 2,
   },
   modalSheet: {
     backgroundColor: '#FFFFFF',
     borderTopLeftRadius: 28,
     borderTopRightRadius: 28,
+    flexDirection: 'column',
+    height: '88%',
     maxHeight: '88%',
     paddingHorizontal: 20,
     paddingTop: 8,
+    width: '100%',
   },
   modalHandle: {
     alignSelf: 'center',
@@ -1313,21 +1488,14 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     width: 32,
   },
-  baseTrackNote: {
-    alignItems: 'center',
-    backgroundColor: '#EEF1FF',
-    borderRadius: 12,
-    flexDirection: 'row',
-    gap: 6,
-    marginBottom: 10,
-    paddingHorizontal: 12,
-    paddingVertical: 7,
-  },
-  baseTrackNoteText: {
-    color: '#5275E8',
+  baseTrackNoteTextGradient: {
+    color: '#FFFFFF',
     flex: 1,
     fontFamily: AppFonts.sansMedium,
     fontSize: 12,
+    textShadowColor: 'rgba(0,0,0,0.2)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 2,
   },
 
   searchBar: {
@@ -1347,28 +1515,18 @@ const styles = StyleSheet.create({
     height: 44,
   },
 
-  modalTabsRow: { height: 44, marginBottom: 8 },
+  modalTabsRow: { marginBottom: 8, maxHeight: 48 },
   modalTabsContent: { alignItems: 'center', gap: 8, paddingRight: 8 },
-  modalTab: {
-    backgroundColor: '#F4F5FA',
-    borderRadius: 18,
-    justifyContent: 'center',
-    minHeight: 34,
-    paddingHorizontal: 14,
-    paddingVertical: 7,
+  modalTabChip: {
+    flex: 0,
   },
-  modalTabActive: { backgroundColor: '#5D7EEA' },
-  modalTabText: {
-    color: '#54555A',
-    fontFamily: AppFonts.sansMedium,
-    fontSize: 13,
-    lineHeight: 18,
-    textAlignVertical: 'center',
-  },
-  modalTabTextActive: { color: '#FFFFFF', fontFamily: AppFonts.sansSemiBold },
 
-  modalLoading: { alignItems: 'center', justifyContent: 'center', minHeight: 200 },
-  modalList: { maxHeight: 410 },
+  modalLoading: { alignItems: 'center', flex: 1, justifyContent: 'center', minHeight: 120 },
+  modalListWrap: {
+    flex: 1,
+    minHeight: 120,
+  },
+  modalList: { flex: 1 },
   modalListContent: { gap: 6, paddingBottom: 8 },
   modalItem: {
     alignItems: 'center',
@@ -1380,7 +1538,10 @@ const styles = StyleSheet.create({
     gap: 10,
     padding: 6,
   },
-  modalItemSelected: { backgroundColor: '#EEF1FF', borderColor: '#7B61FF' },
+  modalItemSelected: {
+    backgroundColor: '#F0EEFF',
+    borderColor: '#8c8af0',
+  },
   modalItemDisabled: { opacity: 0.4 },
   modalItemThumb: { borderRadius: 10, height: 48, width: 48 },
   modalItemText: { flex: 1 },
@@ -1395,23 +1556,20 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     width: 24,
   },
-  checkCircleActive: { backgroundColor: '#7B61FF', borderColor: '#7B61FF' },
 
   modalFooter: {
-    alignItems: 'center',
-    flexDirection: 'row',
-    gap: 12,
-    justifyContent: 'space-between',
-    marginTop: 4,
-    paddingTop: 5,
+    flexShrink: 0,
+    gap: 10,
+    paddingTop: 12,
   },
-  modalCountText: { color: '#8C8C8C', fontFamily: AppFonts.sansRegular, fontSize: 12, flex: 1 },
-  modalConfirmBtn: { borderRadius: 24, overflow: 'hidden' },
-  modalConfirmGradient: {
-    alignItems: 'center',
-    height: 46,
-    justifyContent: 'center',
-    paddingHorizontal: 24,
+  modalCountText: {
+    color: '#8C8C8C',
+    fontFamily: AppFonts.sansRegular,
+    fontSize: 12,
+    textAlign: 'center',
   },
-  modalConfirmText: { color: '#FFFFFF', fontFamily: AppFonts.sansSemiBold, fontSize: 15 },
+  modalAddButton: {
+    alignSelf: 'stretch',
+    width: '100%',
+  },
 });

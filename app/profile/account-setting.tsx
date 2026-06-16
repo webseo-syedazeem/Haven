@@ -1,7 +1,8 @@
 import { Ionicons } from '@expo/vector-icons';
+import { useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
+import { useState } from 'react';
 import {
-  Alert,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -10,9 +11,9 @@ import {
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { ConfirmActionModal } from '@/components/profile/ConfirmActionModal';
 import { AppFonts } from '@/constants/theme';
-import { apiClient } from '@/lib/api/client';
-import { supabase } from '@/lib/supabase';
+import { clearUserSession } from '@/lib/auth/clearSession';
 
 const SETTINGS_ROWS = [
   {
@@ -26,6 +27,11 @@ const SETTINGS_ROWS = [
     icon: 'mail-outline' as const,
   },
   {
+    key: 'profile-picture',
+    label: 'Profile picture',
+    icon: 'image-outline' as const,
+  },
+  {
     key: 'password',
     label: 'Password',
     icon: 'lock-closed-outline' as const,
@@ -35,29 +41,28 @@ const SETTINGS_ROWS = [
 export default function AccountSettingScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const queryClient = useQueryClient();
+  const [showLogoutModal, setShowLogoutModal] = useState(false);
+  const [loggingOut, setLoggingOut] = useState(false);
 
-  async function handleLogout() {
-    Alert.alert('Logout', 'Are you sure you want to logout?', [
-      { text: 'Cancel', style: 'cancel' },
-      {
-        text: 'Logout',
-        style: 'destructive',
-        onPress: async () => {
-          try {
-            await apiClient('/api/logout', { method: 'POST' });
-          } catch {}
-          await supabase.auth.signOut();
-          router.replace('/welcome');
-        },
-      },
-    ]);
+  async function confirmLogout() {
+    setLoggingOut(true);
+    try {
+      await clearUserSession(queryClient);
+      setShowLogoutModal(false);
+      router.dismissAll();
+      router.replace('/login');
+    } finally {
+      setLoggingOut(false);
+    }
   }
 
-function handleRowPress(key: string) {
-  if (key === 'name') router.push('/profile/edit-name');
-  else if (key === 'email') router.push('/profile/change-email');
-  else if (key === 'password') router.push('/profile/update-password');
-}
+  function handleRowPress(key: string) {
+    if (key === 'profile-picture') router.push('/profile/profile-picture');
+    else if (key === 'name') router.push('/profile/edit-name');
+    else if (key === 'email') router.push('/profile/change-email');
+    else if (key === 'password') router.push('/profile/update-password');
+  }
 
   return (
     <SafeAreaView edges={['top']} style={styles.safeArea}>
@@ -65,8 +70,6 @@ function handleRowPress(key: string) {
         bounces={false}
         contentContainerStyle={[styles.scroll, { paddingBottom: insets.bottom + 40 }]}
         showsVerticalScrollIndicator={false}>
-
-        {/* Back */}
         <Pressable
           accessibilityLabel="Go back"
           hitSlop={12}
@@ -75,11 +78,9 @@ function handleRowPress(key: string) {
           <Ionicons name="chevron-back" size={18} color="#000000" />
         </Pressable>
 
-        {/* Header */}
         <Text style={styles.title}>Account Setting</Text>
-        <Text style={styles.subtitle}>Set Your daily reminder</Text>
+        <Text style={styles.subtitle}>Manage your account details</Text>
 
-        {/* Settings rows */}
         <View style={styles.card}>
           {SETTINGS_ROWS.map((row, index) => (
             <Pressable
@@ -99,11 +100,10 @@ function handleRowPress(key: string) {
           ))}
         </View>
 
-        {/* Account Action */}
         <Text style={styles.sectionLabel}>Account Action</Text>
         <View style={styles.card}>
           <Pressable
-            onPress={handleLogout}
+            onPress={() => setShowLogoutModal(true)}
             style={({ pressed }) => [styles.row, pressed && styles.rowPressed]}>
             <View style={[styles.iconCircle, styles.logoutIconCircle]}>
               <Ionicons name="log-out-outline" size={20} color="#FF0059" />
@@ -111,8 +111,18 @@ function handleRowPress(key: string) {
             <Text style={styles.logoutLabel}>Logout</Text>
           </Pressable>
         </View>
-
       </ScrollView>
+
+      <ConfirmActionModal
+        confirmLabel="Logout"
+        icon="log-out-outline"
+        loading={loggingOut}
+        message="Are you sure you want to logout from your account?"
+        title="Logout"
+        visible={showLogoutModal}
+        onCancel={() => setShowLogoutModal(false)}
+        onConfirm={confirmLogout}
+      />
     </SafeAreaView>
   );
 }
@@ -126,7 +136,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingTop: 76,
   },
-
   backButton: {
     alignItems: 'center',
     backgroundColor: 'rgba(255, 255, 255, 0.5)',
@@ -140,7 +149,6 @@ const styles = StyleSheet.create({
     zIndex: 3,
   },
   pressed: { opacity: 0.86, transform: [{ scale: 0.99 }] },
-
   title: {
     color: '#173F5F',
     fontFamily: AppFonts.displayBold,
@@ -156,7 +164,6 @@ const styles = StyleSheet.create({
     lineHeight: 22,
     marginBottom: 24,
   },
-
   card: {
     backgroundColor: '#FFFFFF',
     borderRadius: 16,
@@ -168,7 +175,6 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     elevation: 2,
   },
-
   row: {
     alignItems: 'center',
     flexDirection: 'row',
@@ -182,7 +188,6 @@ const styles = StyleSheet.create({
   rowPressed: {
     backgroundColor: 'rgba(99,57,251,0.04)',
   },
-
   iconCircle: {
     alignItems: 'center',
     backgroundColor: '#7B61FF14',
@@ -195,7 +200,6 @@ const styles = StyleSheet.create({
   logoutIconCircle: {
     backgroundColor: '#FF005914',
   },
-
   rowLabel: {
     color: '#173F5F',
     flex: 1,
@@ -212,7 +216,6 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     lineHeight: 22,
   },
-
   sectionLabel: {
     color: '#6339FB',
     fontFamily: AppFonts.sansSemiBold,

@@ -17,8 +17,18 @@ import {
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 
+import { ExploreButton } from '@/components/ExploreButton';
+import { ExploreGradientFill } from '@/components/explore-gradient';
+import { ExploreTabChip } from '@/components/ExploreTabChip';
 import { AppFonts } from '@/constants/theme';
-import { apiClient } from '@/lib/api/client';
+import { startBreathingSession, updateBreathingSession } from '@/lib/breathing/api';
+import {
+  formatBreathingCountdown,
+  formatBreathingDuration,
+  getBreathingCycleDuration,
+  getBreathingPatternText,
+  getBreathingTypeConfig,
+} from '@/lib/breathing/config';
 
 const backgroundImage = require('@/assets/images/285a294ece0614f030198845adc4dff0100bbeff.png');
 const globeImage = require('@/assets/images/44fd4a7516deff4e42e926f2962b61ff703723fc.png');
@@ -61,6 +71,7 @@ export default function BreathingSessionScreen() {
   const insets = useSafeAreaInsets();
   const params = useLocalSearchParams<{
     sessionId: string;
+    apiType: string;
     name: string;
     inhale: string;
     hold1: string;
@@ -69,19 +80,34 @@ export default function BreathingSessionScreen() {
     total: string;
   }>();
 
-  const inhaleT = Number(params.inhale ?? 4);
-  const hold1T = Number(params.hold1 ?? 4);
-  const exhaleT = Number(params.exhale ?? 4);
-  const hold2T = Number(params.hold2 ?? 0);
-  const totalSeconds = Number(params.total ?? 300);
-  const cycleDuration = inhaleT + hold1T + exhaleT + hold2T;
+  const sessionIdRef = useRef(params.sessionId ?? '');
+  const creatingSessionRef = useRef(false);
+  const pendingProgressRef = useRef<number | null>(null);
 
-  const patternText = [
-    `Inhale ${inhaleT}`,
-    hold1T > 0 ? `Hold${hold1T}` : null,
-    `Exhale ${exhaleT}`,
-    hold2T > 0 ? `Hold ${hold2T}` : null,
-  ].filter(Boolean).join('. ') + '.';
+  const fallbackConfig =
+    getBreathingTypeConfig(params.name ?? '') ??
+    getBreathingTypeConfig('Box Breathing')!;
+
+  const inhaleT = Number(params.inhale) || fallbackConfig.inhale;
+  const hold1T = Number(params.hold1) || fallbackConfig.hold1;
+  const exhaleT = Number(params.exhale) || fallbackConfig.exhale;
+  const hold2T = Number(params.hold2) || fallbackConfig.hold2;
+  const totalSeconds = Number(params.total) || fallbackConfig.total_duration_seconds;
+  const cycleDuration = getBreathingCycleDuration({
+    inhale: inhaleT,
+    hold1: hold1T,
+    exhale: exhaleT,
+    hold2: hold2T,
+    total_duration_seconds: totalSeconds,
+  });
+
+  const patternText = getBreathingPatternText({
+    inhale: inhaleT,
+    hold1: hold1T,
+    exhale: exhaleT,
+    hold2: hold2T,
+    total_duration_seconds: totalSeconds,
+  });
 
   const [elapsed, setElapsed] = useState(0);
   const [phase, setPhase] = useState<Phase>('inhale');
@@ -91,16 +117,53 @@ export default function BreathingSessionScreen() {
   const [showExitModal, setShowExitModal] = useState(false);
   const [showComplete, setShowComplete] = useState(false);
   const [selectedMood, setSelectedMood] = useState<string | null>(null);
+  const [sessionKey, setSessionKey] = useState(0);
 
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const phaseTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  useEffect(() => {
+    if (sessionIdRef.current || creatingSessionRef.current) return;
+
+    const apiType = params.apiType || params.name;
+    if (!apiType) return;
+
+    creatingSessionRef.current = true;
+    void startBreathingSession(apiType).then((id) => {
+      creatingSessionRef.current = false;
+      if (!id) return;
+      sessionIdRef.current = id;
+      if (pendingProgressRef.current !== null) {
+        updateBreathingSession(id, pendingProgressRef.current);
+        pendingProgressRef.current = null;
+      }
+    });
+  }, [params.apiType, params.name]);
+
+  function saveSessionProgress(seconds: number) {
+    pendingProgressRef.current = seconds;
+    const sessionId = sessionIdRef.current || params.sessionId;
+    if (sessionId) {
+      updateBreathingSession(sessionId, seconds);
+      pendingProgressRef.current = null;
+    }
+  }
+
+  function handleBack() {
+    saveSessionProgress(elapsed);
+    router.back();
+  }
 
   useEffect(() => {
     if (paused) return;
     intervalRef.current = setInterval(() => {
       setElapsed(prev => {
         const next = prev + 1;
-        if (next >= totalSeconds) { clearInterval(intervalRef.current!); setShowComplete(true); }
+        if (next >= totalSeconds) {
+          clearInterval(intervalRef.current!);
+          setShowComplete(true);
+          saveSessionProgress(totalSeconds);
+        }
         return next;
       });
     }, 1000);
@@ -119,29 +182,30 @@ export default function BreathingSessionScreen() {
       setPhaseCount(cnt);
     }, 1000);
     return () => clearInterval(phaseTimerRef.current!);
-  }, [paused, inhaleT, hold1T, exhaleT, hold2T]);
+  }, [paused, inhaleT, hold1T, exhaleT, hold2T, sessionKey]);
 
   function formatTime(secs: number) {
-    const r = Math.max(0, totalSeconds - secs);
-    return `${Math.floor(r / 60).toString().padStart(2,'0')}:${(r % 60).toString().padStart(2,'0')}`;
+    return formatBreathingCountdown(totalSeconds - secs);
   }
 
- function handleExit() {
-  setShowExitModal(false);
-  router.back();
-  if (params.sessionId) {
-    apiClient(`/api/breathing/${params.sessionId}`, {
-      method: 'PUT',
-      body: JSON.stringify({ completed_duration_seconds: elapsed }),
-    }).catch(() => {});
-  }
-}
-
-  async function handleDone() {
-    if (params.sessionId) {
-      try { await apiClient(`/api/breathing/${params.sessionId}`, { method: 'PUT', body: JSON.stringify({ completed_duration_seconds: totalSeconds }) }); } catch {}
-    }
+  function handleExit() {
+    setShowExitModal(false);
+    saveSessionProgress(elapsed);
     router.back();
+  }
+
+  function handleDone() {
+    router.back();
+    saveSessionProgress(totalSeconds);
+  }
+
+  function handleRestart() {
+    setElapsed(0);
+    setPaused(false);
+    setPhase('inhale');
+    setPhaseCount(inhaleT);
+    setSessionKey((key) => key + 1);
+    saveSessionProgress(0);
   }
 
   const phases: Phase[] = ['inhale', ...(hold1T > 0 ? ['hold1' as Phase] : []), 'exhale', ...(hold2T > 0 ? ['hold2' as Phase] : [])];
@@ -157,32 +221,35 @@ export default function BreathingSessionScreen() {
           style={styles.completeHeroFade}
         />
         <SafeAreaView edges={['top', 'bottom']} style={styles.completeSafe}>
-          <Pressable onPress={() => router.back()} style={styles.completeBackBtn}>
-            <Ionicons name="chevron-back" size={18} color="#173F5F" />
+          <Pressable
+            accessibilityLabel="Go back"
+            hitSlop={12}
+            onPress={handleDone}
+            style={({ pressed }) => [styles.backButton, pressed && styles.pressed]}>
+            <Ionicons name="chevron-back" size={18} color="#000000" />
           </Pressable>
+
+          <View style={styles.completeContent}>
           <Text style={styles.completeTitle}>Great Job!</Text>
           <Text style={styles.completeSubtitle}>Your are completed Your breathing{'\n'}session</Text>
-          <LinearGradient
-            colors={['#A987E2', '#5D7EEA']}
-            start={{ x: 0.5, y: 0 }}
-            end={{ x: 0.5, y: 1 }}
-            style={styles.completeTick}>
+          <View style={styles.completeTick}>
+            <ExploreGradientFill borderRadius={68} />
             <Text style={styles.completeTickIcon}>✓</Text>
-          </LinearGradient>
+          </View>
           <View style={styles.statsCard}>
             <View style={styles.statItem}>
               <Text style={styles.statLabel}>Session time</Text>
-              <Text style={styles.statValue}>{formatTime(0)}</Text>
+              <Text style={styles.statValue}>{formatBreathingDuration(totalSeconds)}</Text>
             </View>
             <View style={styles.statDivider} />
             <View style={styles.statItem}>
               <Text style={styles.statLabel}>Cycle completed</Text>
-              <Text style={styles.statValue}>{Math.floor(elapsed / cycleDuration)}</Text>
+              <Text style={styles.statValue}>{Math.floor(totalSeconds / cycleDuration)}</Text>
             </View>
             <View style={styles.statDivider} />
             <View style={styles.statItem}>
               <Text style={styles.statLabel}>Breathig Rate</Text>
-              <Text style={styles.statValue}>{cycleDuration}:00</Text>
+              <Text style={styles.statValue}>{cycleDuration}s</Text>
             </View>
           </View>
           <View style={styles.moodCard}>
@@ -201,11 +268,12 @@ export default function BreathingSessionScreen() {
               ))}
             </View>
           </View>
-          <Pressable onPress={handleDone} style={styles.doneBtn}>
-            <LinearGradient colors={['#5D7EEA', '#A987E2']} start={{ x: 0, y: 0.5 }} end={{ x: 1, y: 0.5 }} style={styles.doneGradient}>
-              <Text style={styles.doneText}>Done</Text>
-            </LinearGradient>
-          </Pressable>
+          <ExploreButton
+            label="Done"
+            onPress={handleDone}
+            style={styles.doneBtn}
+          />
+          </View>
         </SafeAreaView>
       </View>
     );
@@ -217,8 +285,12 @@ export default function BreathingSessionScreen() {
       <View style={styles.topHalf}>
         <SafeAreaView edges={['top']} style={styles.topSafe}>
           {/* Back button */}
-          <Pressable onPress={() => router.back()} style={styles.backButton}>
-            <Text style={styles.backChevron}>‹</Text>
+          <Pressable
+            accessibilityLabel="Go back"
+            hitSlop={12}
+            onPress={handleBack}
+            style={({ pressed }) => [styles.backButton, pressed && styles.pressed]}>
+            <Ionicons name="chevron-back" size={18} color="#000000" />
           </Pressable>
 
           {/* Header */}
@@ -268,46 +340,57 @@ export default function BreathingSessionScreen() {
           <Text style={styles.timer}>{formatTime(elapsed)}</Text>
 
           {/* Phase tabs — rounded pill */}
-          <View style={styles.phaseTabs}>
-            {phases.map(p => (
-              <Pressable key={p} style={[styles.phaseTab, phase === p && styles.phaseTabActive]}>
-                {phase === p && (
-                  <LinearGradient
-                    colors={['#A987E2', '#5D7EEA']}
-                    start={{ x: 0.5, y: 0 }}
-                    end={{ x: 0.5, y: 1 }}
-                    style={StyleSheet.absoluteFillObject}
-                  />
-                )}
-                <Text style={[styles.phaseTabText, phase === p && styles.phaseTabTextActive]}>
-                  {PHASE_LABELS[p]}
-                </Text>
-              </Pressable>
+          <LinearGradient
+            colors={['#F5F8FD', '#FFFFFF', '#E3E9F2']}
+            end={{ x: 0.5, y: 1 }}
+            locations={[0, 0.45, 1]}
+            start={{ x: 0.5, y: 0 }}
+            style={styles.phaseTabs}>
+            {phases.map((p) => (
+              <ExploreTabChip
+                key={p}
+                active={phase === p}
+                label={PHASE_LABELS[p]}
+                variant="tab"
+              />
             ))}
-          </View>
+          </LinearGradient>
 
           {/* Controls */}
           <View style={styles.controls}>
-            <Pressable onPress={() => { setElapsed(0); setPaused(false); }} style={styles.controlBtn}>
-              <View style={styles.controlIconWrap}>
-                <Ionicons name="refresh" size={22} color="#173F5F" />
+            <Pressable onPress={handleRestart} style={styles.controlBtn}>
+              <View style={styles.controlIconShadow}>
+                <LinearGradient
+                  colors={['#F5F8FD', '#FFFFFF', '#E3E9F2']}
+                  end={{ x: 0.5, y: 1 }}
+                  locations={[0, 0.45, 1]}
+                  start={{ x: 0.5, y: 0 }}
+                  style={styles.controlIconWrap}>
+                  <Ionicons name="refresh" size={22} color="#173F5F" />
+                </LinearGradient>
               </View>
               <Text style={styles.controlLabel}>Restart</Text>
             </Pressable>
 
             <Pressable onPress={() => { setPaused(true); setShowPauseModal(true); }} style={styles.pauseBtn}>
-              <LinearGradient
-                colors={['#A987E2', '#5D7EEA']}
-                start={{ x: 0.5, y: 0 }}
-                end={{ x: 0.5, y: 1 }}
-                style={styles.pauseGradient}>
-                <Ionicons name="pause" size={28} color="#FFF" />
-              </LinearGradient>
+              <View style={styles.pauseGradient}>
+                <ExploreGradientFill borderRadius={36} />
+                <View style={styles.pauseBtnContent}>
+                  <Ionicons name="pause" size={28} color="#FFF" />
+                </View>
+              </View>
             </Pressable>
 
             <Pressable onPress={() => setShowExitModal(true)} style={styles.controlBtn}>
-              <View style={styles.controlIconWrap}>
-                <Ionicons name="close" size={22} color="#173F5F" />
+              <View style={styles.controlIconShadow}>
+                <LinearGradient
+                  colors={['#F5F8FD', '#FFFFFF', '#E3E9F2']}
+                  end={{ x: 0.5, y: 1 }}
+                  locations={[0, 0.45, 1]}
+                  start={{ x: 0.5, y: 0 }}
+                  style={styles.controlIconWrap}>
+                  <Ionicons name="close" size={22} color="#173F5F" />
+                </LinearGradient>
               </View>
               <Text style={styles.controlLabel}>Exit</Text>
             </Pressable>
@@ -323,11 +406,6 @@ export default function BreathingSessionScreen() {
           <View style={styles.scrollSpacer} />
         </ScrollView>
       </View>
-
-      <View
-        pointerEvents="none"
-        style={[styles.tabBarDock, { height: Math.max(insets.bottom, 8) + 76 }]}
-      />
 
       <View style={[styles.floatingTabBar, { bottom: Math.max(insets.bottom, 8) }]}>
         {TAB_ITEMS.map((item) => (
@@ -351,16 +429,22 @@ export default function BreathingSessionScreen() {
       {/* Pause modal */}
       <Modal transparent visible={showPauseModal} animationType="fade">
         <ImageBackground source={backgroundImage} resizeMode="cover" style={styles.modalBg}>
-          <Pressable onPress={() => { setPaused(false); setShowPauseModal(false); }} style={[styles.modalScreenBackBtn, { top: insets.top + 16 }]}>
-            <Text style={styles.backChevron}>‹</Text>
+          <Pressable
+            hitSlop={12}
+            onPress={() => { setPaused(false); setShowPauseModal(false); }}
+            style={({ pressed }) => [styles.modalScreenBackBtn, { top: insets.top + 16 }, pressed && styles.pressed]}>
+            <Ionicons name="chevron-back" size={18} color="#000000" />
           </Pressable>
           <View style={styles.pauseModalContent}>
             <Text style={styles.pauseModalTitle}>Session Paused</Text>
             <Text style={styles.pauseModalSubtitle}>Take Your time. You can resume{'\n'}whenever. You're ready.</Text>
             <Pressable onPress={() => { setPaused(false); setShowPauseModal(false); }} style={styles.resumeBtn}>
-              <LinearGradient colors={['#A78BFA', '#7B61FF']} style={styles.resumeGradient}>
-                <Ionicons name="play" size={32} color="#FFF" />
-              </LinearGradient>
+              <View style={styles.resumeGradient}>
+                <ExploreGradientFill borderRadius={40} />
+                <View style={styles.resumeBtnContent}>
+                  <Ionicons name="play" size={32} color="#FFF" />
+                </View>
+              </View>
             </Pressable>
             <View style={styles.divider} />
             <Pressable onPress={() => { setShowPauseModal(false); setShowExitModal(true); }}>
@@ -373,17 +457,20 @@ export default function BreathingSessionScreen() {
       {/* Exit modal */}
       <Modal transparent visible={showExitModal} animationType="fade">
         <ImageBackground source={backgroundImage} resizeMode="cover" style={styles.modalBg}>
-          <Pressable onPress={() => { setShowExitModal(false); setShowPauseModal(true); }} style={[styles.modalScreenBackBtn, { top: insets.top + 16 }]}>
-            <Text style={styles.backChevron}>‹</Text>
+          <Pressable
+            hitSlop={12}
+            onPress={() => { setShowExitModal(false); setShowPauseModal(true); }}
+            style={({ pressed }) => [styles.modalScreenBackBtn, { top: insets.top + 16 }, pressed && styles.pressed]}>
+            <Ionicons name="chevron-back" size={18} color="#000000" />
           </Pressable>
           <View style={styles.exitModalContent}>
             <Text style={styles.pauseModalTitle}>End Session?</Text>
             <Text style={styles.pauseModalSubtitle}>Are you sure u want to end{'\n'}this session</Text>
-            <Pressable onPress={handleExit} style={styles.yesEndBtn}>
-              <LinearGradient colors={['#A78BFA', '#7B61FF']} start={{ x: 0, y: 0.5 }} end={{ x: 1, y: 0.5 }} style={styles.yesEndGradient}>
-                <Text style={styles.yesEndText}>Yes, End</Text>
-              </LinearGradient>
-            </Pressable>
+            <ExploreButton
+              label="Yes, End"
+              onPress={handleExit}
+              style={styles.yesEndBtn}
+            />
             <View style={styles.divider} />
         <Pressable onPress={() => { setShowExitModal(false); setShowPauseModal(true); }}>
   <Text style={styles.cancelText}>Cancel</Text>
@@ -411,22 +498,15 @@ const styles = StyleSheet.create({
   },
   backButton: {
     alignItems: 'center',
-    backgroundColor: 'rgba(255,255,255,0.70)',
-    borderRadius: 20,
-    height: 40,
+    alignSelf: 'flex-start',
+    backgroundColor: 'rgba(255, 255, 255, 0.5)',
+    borderRadius: 16,
+    height: 32,
     justifyContent: 'center',
     marginBottom: 16,
-    alignSelf: 'flex-start',
-    width: 40,
-    elevation: 3,
+    width: 32,
   },
-  backChevron: {
-    color: '#173F5F',
-    fontSize: 26,
-    fontWeight: '300',
-    lineHeight: 30,
-    marginTop: -2,
-  },
+  pressed: { opacity: 0.86, transform: [{ scale: 0.99 }] },
   sessionTitle: {
     color: '#173F5F',
     fontFamily: AppFonts.displayBold,
@@ -547,33 +627,16 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
 
-  // Phase tabs
+  // Phase tabs — single border + inner gradient for 3D depth
   phaseTabs: {
-    alignItems: 'center',
-    backgroundColor: 'rgba(240,238,255,0.8)',
-    borderRadius: 30,
+    borderColor: 'rgba(227,227,227,0.55)',
+    borderRadius: 34,
+    borderWidth: 1,
     flexDirection: 'row',
     gap: 4,
     marginBottom: 20,
-    padding: 4,
-  },
-  phaseTab: {
-    alignItems: 'center',
-    borderRadius: 24,
-    flex: 1,
     overflow: 'hidden',
-    paddingVertical: 10,
-  },
-  phaseTabActive: {},
-  phaseTabText: {
-    color: '#8C8C8C',
-    fontFamily: AppFonts.sansMedium,
-    fontSize: 14,
-  },
-  phaseTabTextActive: {
-    color: '#FFFFFF',
-    fontFamily: AppFonts.sansSemiBold,
-    fontSize: 14,
+    padding: 4,
   },
 
   // Controls
@@ -585,18 +648,21 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   controlBtn: { alignItems: 'center', gap: 6 },
+  controlIconShadow: {
+    borderRadius: 22,
+    shadowColor: '#5275E8',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.24,
+    shadowRadius: 14,
+  },
   controlIconWrap: {
     alignItems: 'center',
-    backgroundColor: 'rgba(255,255,255,0.55)',
-    borderColor: '#E3E3E333',
+    borderColor: 'rgba(227,227,227,0.55)',
     borderRadius: 22,
     borderWidth: 1,
     height: 44,
     justifyContent: 'center',
-    shadowColor: '#3770FC',
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.12,
-    shadowRadius: 12,
+    overflow: 'hidden',
     width: 44,
   },
   controlLabel: {
@@ -609,16 +675,26 @@ const styles = StyleSheet.create({
     elevation: 8,
     height: 72,
     overflow: 'hidden',
-    shadowColor: '#7B61FF',
+    shadowColor: 'rgb(110, 95, 230)',
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.4,
+    shadowOpacity: 0.45,
     shadowRadius: 12,
     width: 72,
   },
   pauseGradient: {
+    borderColor: 'rgba(255,255,255,0.3)',
+    borderRadius: 36,
+    borderWidth: 1,
+    flex: 1,
+    overflow: 'hidden',
+    position: 'relative',
+  },
+  pauseBtnContent: {
     alignItems: 'center',
     flex: 1,
     justifyContent: 'center',
+    position: 'relative',
+    zIndex: 1,
   },
 
   // Info box
@@ -642,7 +718,7 @@ const styles = StyleSheet.create({
   height: 90,
   zIndex: 50,
 },
-  infoIcon: { color: '#7B61FF', fontSize: 16, marginTop: 2 },
+  infoIcon: { color: '#8c8af0', fontSize: 16, marginTop: 2 },
   infoText: {
     color: '#4B3B8C',
     flex: 1,
@@ -695,14 +771,6 @@ const styles = StyleSheet.create({
   tabBarLabelActive: {
     color: '#3770FC',
   },
-  tabBarDock: {
-    backgroundColor: '#FFFFFF',
-    bottom: 0,
-    left: 0,
-    position: 'absolute',
-    right: 0,
-  },
-
   // Modals
   modalBg: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   pauseModalContent: {
@@ -723,13 +791,13 @@ const styles = StyleSheet.create({
   },
   modalScreenBackBtn: {
     alignItems: 'center',
-    backgroundColor: 'rgba(255,255,255,0.80)',
-    borderRadius: 20,
-    height: 40,
+    backgroundColor: 'rgba(255, 255, 255, 0.5)',
+    borderRadius: 16,
+    height: 32,
     justifyContent: 'center',
     left: 20,
     position: 'absolute',
-    width: 40,
+    width: 32,
     zIndex: 10,
   },
   pauseModalTitle: {
@@ -747,7 +815,21 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   resumeBtn: { borderRadius: 40, height: 80, overflow: 'hidden', width: 80 },
-  resumeGradient: { alignItems: 'center', flex: 1, justifyContent: 'center' },
+  resumeGradient: {
+    borderColor: 'rgba(255,255,255,0.3)',
+    borderRadius: 40,
+    borderWidth: 1,
+    flex: 1,
+    overflow: 'hidden',
+    position: 'relative',
+  },
+  resumeBtnContent: {
+    alignItems: 'center',
+    flex: 1,
+    justifyContent: 'center',
+    position: 'relative',
+    zIndex: 1,
+  },
   divider: {
     backgroundColor: 'rgba(0,0,0,0.12)',
     height: 1,
@@ -760,9 +842,9 @@ const styles = StyleSheet.create({
     fontSize: 16,
     marginTop: 4,
   },
-  yesEndBtn: { borderRadius: 30, height: 54, overflow: 'hidden', width: '100%' },
-  yesEndGradient: { alignItems: 'center', flex: 1, justifyContent: 'center' },
-  yesEndText: { color: '#FFF', fontFamily: AppFonts.sansBold, fontSize: 18 },
+  yesEndBtn: {
+    width: '100%',
+  },
   cancelText: {
     color: '#6B7280',
     fontFamily: AppFonts.sansMedium,
@@ -788,30 +870,21 @@ const styles = StyleSheet.create({
     top: 0,
   },
   completeSafe: {
+    flex: 1,
+    paddingHorizontal: 20,
+    paddingTop: 16,
+  },
+  completeContent: {
     alignItems: 'center',
     flex: 1,
-    paddingHorizontal: 32,
-    paddingTop: 32,
-  },
-  completeBackBtn: {
-    alignItems: 'center',
-    backgroundColor: 'rgba(255,255,255,0.80)',
-    borderRadius: 20,
-    height: 40,
-    justifyContent: 'center',
-    left: 20,
-    position: 'absolute',
-    top: 16,
-    width: 40,
-    elevation: 2,
-    zIndex: 10,
+    paddingHorizontal: 12,
   },
   completeTitle: {
     color: '#173F5F',
     fontFamily: AppFonts.displayBold,
     fontSize: 30,
     marginBottom: 8,
-    marginTop: 68,
+    marginTop: 8,
     textAlign: 'center',
   },
   completeSubtitle: {
@@ -828,13 +901,22 @@ const styles = StyleSheet.create({
     height: 136,
     justifyContent: 'center',
     marginBottom: 24,
-    shadowColor: '#7B61FF',
+    overflow: 'hidden',
+    position: 'relative',
+    shadowColor: 'rgb(110, 95, 230)',
     shadowOffset: { width: 0, height: 12 },
-    shadowOpacity: 0.2,
+    shadowOpacity: 0.35,
     shadowRadius: 22,
     width: 136,
   },
-  completeTickIcon: { color: '#FFF', fontSize: 72, fontWeight: '300', lineHeight: 78 },
+  completeTickIcon: {
+    color: '#FFF',
+    fontSize: 72,
+    fontWeight: '300',
+    lineHeight: 78,
+    position: 'relative',
+    zIndex: 1,
+  },
   statsCard: {
     alignItems: 'center',
     backgroundColor: '#FFF',
@@ -883,16 +965,7 @@ const styles = StyleSheet.create({
   moodBtnSelected: { backgroundColor: 'rgba(123,97,255,0.1)' },
   moodEmoji: { fontSize: 22, lineHeight: 26 },
   doneBtn: {
-    borderRadius: 28,
-    height: 54,
     marginBottom: 22,
-    overflow: 'hidden',
-    shadowColor: '#3770FC',
-    shadowOffset: { width: 0, height: 12 },
-    shadowOpacity: 0.2,
-    shadowRadius: 18,
     width: '100%',
   },
-  doneGradient: { alignItems: 'center', flex: 1, justifyContent: 'center' },
-  doneText: { color: '#FFF', fontFamily: AppFonts.sansBold, fontSize: 16 },
 });
