@@ -1,14 +1,14 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useRouter } from 'expo-router';
-import { useEffect, useMemo, useState } from 'react';
+import { useFocusEffect, useRouter } from 'expo-router';
+import { useCallback } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Svg, { Circle, Defs, LinearGradient as SvgLinearGradient, Stop } from 'react-native-svg';
 
 import { AppFonts } from '@/constants/theme';
-import { ChecklistAuthError, getTodayChecklist } from '@/services/checklistService';
+import { useChecklist } from '@/contexts/ChecklistContext';
 
 const backgroundImage = require('@/assets/images/tool-page-bg-image.png');
 
@@ -16,130 +16,30 @@ const progressSize = 80;
 const progressStroke = 5;
 const progressRadius = (progressSize - progressStroke) / 2;
 const progressCircumference = 2 * Math.PI * progressRadius;
-type ChecklistItem = {
-  apiName: string;
-  icon?: number;
-  iconBackground: string;
-  iconColor: string;
-  iconName?: keyof typeof Ionicons.glyphMap;
-  meta: string;
-  subtitle: string;
-  title: string;
-};
-
-const checklistItems: ChecklistItem[] = [
-  {
-    apiName: 'Morning Sunlight',
-    icon: require('@/assets/images/sun.svg'),
-    iconBackground: '#FFC1031A',
-    iconColor: '#FFC43D',
-    meta: '10 min',
-    subtitle: 'Morning light helps regulate cortisol rhythm and support better sleep later',
-    title: 'Morning Sunlight',
-  },
-  {
-    apiName: 'Breathwork',
-    icon: require('@/assets/images/lines.svg'),
-    iconBackground: '#3770FC14',
-    iconColor: '#3770FC',
-    meta: '20 min',
-    subtitle: 'Boost mood and regulate your body check',
-    title: 'Breath work',
-  },
-  {
-    apiName: 'Movement',
-    icon: require('@/assets/images/hugeicons_running-shoes.svg'),
-    iconBackground: '#28B92A14',
-    iconColor: '#2EB668',
-    meta: '5 min',
-    subtitle: 'Boost mood and regulate your body check',
-    title: 'Movements',
-  },
-  {
-    apiName: 'Hydration',
-    icon: require('@/assets/images/hydration-checklist-icon.svg'),
-    iconBackground: '#3770FC14',
-    iconColor: '#3770FC',
-    meta: '2 glasses',
-    subtitle: 'Boost mood and regulate your body check',
-    title: 'Hydration',
-  },
-  {
-    apiName: 'Deep Work',
-    icon: require('@/assets/images/deep-work-checklist-icon.svg'),
-    iconBackground: '#7B61FF14',
-    iconColor: '#7B61FF',
-    meta: '3 tasks',
-    subtitle: 'Boost mood and regulate your body check',
-    title: 'Deep work',
-  },
-  {
-    apiName: 'Wind-down',
-    icon: require('@/assets/images/wind-down-checklist-icon.svg'),
-    iconBackground: '#7B61FF14',
-    iconColor: '#7B61FF',
-    meta: '20 min',
-    subtitle: 'Boost mood and regulate your body check',
-    title: 'Wind-down',
-  },
-];
 
 export default function ChecklistScreen() {
   const router = useRouter();
-  const [completedTasks, setCompletedTasks] = useState<string[]>([]);
-  const [errorMessage, setErrorMessage] = useState('');
-  const [isLoading, setIsLoading] = useState(true);
-  const totalHabits = checklistItems.length;
-  const completedHabits = completedTasks.length;
+  const {
+    completedCount,
+    error,
+    loading,
+    refreshTodayChecklist,
+    savingTaskName,
+    todayTasks,
+    toggleTask,
+    totalTasks,
+  } = useChecklist();
+  const totalHabits = totalTasks;
+  const completedHabits = completedCount;
   const progressPercent = totalHabits ? completedHabits / totalHabits : 0;
   const progressOffset = progressCircumference * (1 - progressPercent);
   const progressText = `${Math.round(progressPercent * 100)}%`;
-  const completedTaskSet = useMemo(() => new Set(completedTasks), [completedTasks]);
 
-  useEffect(() => {
-    let isMounted = true;
-
-    async function loadTodayChecklist() {
-      setIsLoading(true);
-      setErrorMessage('');
-
-      try {
-        const todayChecklist = await getTodayChecklist();
-
-        if (!isMounted) {
-          return;
-        }
-
-        setCompletedTasks(
-          Array.isArray(todayChecklist?.completed_tasks)
-            ? todayChecklist.completed_tasks.filter((task) =>
-                checklistItems.some((item) => item.apiName === task)
-              )
-            : []
-        );
-      } catch (error) {
-        if (isMounted) {
-          if (error instanceof ChecklistAuthError) {
-            setErrorMessage(error.message);
-            router.replace('/login');
-          } else {
-            setErrorMessage(error instanceof Error ? error.message : 'Unable to load checklist.');
-          }
-          setCompletedTasks([]);
-        }
-      } finally {
-        if (isMounted) {
-          setIsLoading(false);
-        }
-      }
-    }
-
-    void loadTodayChecklist();
-
-    return () => {
-      isMounted = false;
-    };
-  }, [router]);
+  useFocusEffect(
+    useCallback(() => {
+      void refreshTodayChecklist();
+    }, [refreshTodayChecklist])
+  );
 
   return (
     <View style={styles.screen}>
@@ -163,7 +63,7 @@ export default function ChecklistScreen() {
             <Text style={styles.subtitle}>Small actions that help lower stress</Text>
           </View>
 
-          {isLoading ? (
+          {loading ? (
             <View style={styles.stateCard}>
               <ActivityIndicator color="#7B61FF" />
               <Text style={styles.stateText}>Loading checklist...</Text>
@@ -233,20 +133,26 @@ export default function ChecklistScreen() {
           </LinearGradient>
 
           <View style={styles.listCard}>
-            {checklistItems.map((item, index) => (
-              <View
-                key={item.title}
-                style={[
+            {todayTasks.map((item, index) => {
+              return (
+              <Pressable
+                accessibilityRole="button"
+                accessibilityState={{ checked: item.completed }}
+                disabled={Boolean(savingTaskName)}
+                key={item.id}
+                onPress={() => toggleTask(item.apiName)}
+                style={({ pressed }) => [
                   styles.habitRow,
-                  index < checklistItems.length - 1 && styles.habitDivider,
+                  index < todayTasks.length - 1 && styles.habitDivider,
+                  pressed && styles.pressed,
                 ]}>
                 <View
                   style={[
                     styles.checkCircle,
-                    !completedTaskSet.has(item.apiName) && styles.checkCircleInactive,
+                    !item.completed && styles.checkCircleInactive,
                   ]}>
                   <Ionicons
-                    color={completedTaskSet.has(item.apiName) ? '#FFFFFF' : 'transparent'}
+                    color={item.completed ? '#FFFFFF' : 'transparent'}
                     name="checkmark"
                     size={14}
                   />
@@ -258,20 +164,19 @@ export default function ChecklistScreen() {
                       style={[styles.habitIcon, { tintColor: item.iconColor }]}
                       contentFit="contain"
                     />
-                  ) : (
-                    <Ionicons color={item.iconColor} name={item.iconName ?? 'ellipse-outline'} size={20} />
-                  )}
+                  ) : null}
                 </View>
                 <View style={styles.habitCopy}>
                   <Text style={styles.habitTitle}>{item.title}</Text>
-                  <Text style={styles.habitSubtitle}>{item.subtitle}</Text>
+                  <Text style={styles.habitSubtitle}>{item.description}</Text>
                 </View>
-                <Text style={styles.habitMeta}>{item.meta}</Text>
-              </View>
-            ))}
+                <Text style={styles.habitMeta}>{item.duration}</Text>
+              </Pressable>
+              );
+            })}
           </View>
 
-          {!!errorMessage && <Text style={styles.errorText}>{errorMessage}</Text>}
+          {!!error && <Text style={styles.errorText}>{error}</Text>}
         </ScrollView>
       </SafeAreaView>
     </View>

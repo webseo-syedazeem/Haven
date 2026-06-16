@@ -13,10 +13,10 @@ export class ChecklistAuthError extends Error {
 }
 
 export type ChecklistRecord = {
-  completed_tasks?: string[];
   date?: string;
   id?: number | string;
   percentage?: number;
+  tasks?: unknown[];
   [key: string]: unknown;
 };
 
@@ -96,16 +96,9 @@ export async function getChecklistHistory() {
   return data?.checklists ?? [];
 }
 
-export async function createChecklist(completedTasks: string[]) {
-  return checklistRequest<{ checklist?: ChecklistRecord }>('/api/checklist', {
-    body: JSON.stringify({ completed_tasks: completedTasks }),
-    method: 'POST',
-  });
-}
-
-export async function updateChecklist(id: number | string, completedTasks: string[]) {
-  return checklistRequest<{ checklist?: ChecklistRecord }>(`/api/checklist/${id}`, {
-    body: JSON.stringify({ completed_tasks: completedTasks }),
-    method: 'PUT',
+export async function toggleChecklistTask(taskName: string, completed: boolean) {
+  return checklistRequest<{ checklist?: ChecklistRecord }>('/api/checklist/task', {
+    body: JSON.stringify({ completed, task: taskName }),
+    method: 'PATCH',
   });
 }

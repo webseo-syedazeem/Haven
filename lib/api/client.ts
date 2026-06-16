@@ -1,6 +1,7 @@
 import { supabase } from '@/lib/supabase';
 import * as SecureStore from 'expo-secure-store';
 import { getAccessToken } from '@/lib/haven-api';
+import { Platform } from 'react-native';
 
 const API_BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL ?? 'http://18.171.253.186';
 export const AUTH_TOKEN_KEY = 'haven.auth.access_token';
@@ -10,18 +11,50 @@ function getShortTokenLog(token: string | null | undefined) {
   return token ? `${token.slice(0, 10)}...` : '';
 }
 
+function getWebStorage() {
+  return typeof globalThis !== 'undefined'
+    ? (globalThis as unknown as { localStorage?: Storage }).localStorage
+    : undefined;
+}
+
+async function getStoredItem(key: string) {
+  if (Platform.OS === 'web') {
+    return getWebStorage()?.getItem(key) ?? null;
+  }
+
+  return SecureStore.getItemAsync(key);
+}
+
+async function setStoredItem(key: string, value: string) {
+  if (Platform.OS === 'web') {
+    getWebStorage()?.setItem(key, value);
+    return;
+  }
+
+  await SecureStore.setItemAsync(key, value);
+}
+
+async function deleteStoredItem(key: string) {
+  if (Platform.OS === 'web') {
+    getWebStorage()?.removeItem(key);
+    return;
+  }
+
+  await SecureStore.deleteItemAsync(key);
+}
+
 async function getStoredToken() {
   return (
     getAccessToken() ||
-    (await SecureStore.getItemAsync(AUTH_TOKEN_KEY)) ||
-    (await SecureStore.getItemAsync(LEGACY_AUTH_TOKEN_KEY))
+    (await getStoredItem(LEGACY_AUTH_TOKEN_KEY)) ||
+    (await getStoredItem(AUTH_TOKEN_KEY))
   );
 }
 
 export async function clearStoredAccessToken() {
   await Promise.all([
-    SecureStore.deleteItemAsync(AUTH_TOKEN_KEY),
-    SecureStore.deleteItemAsync(LEGACY_AUTH_TOKEN_KEY),
+    deleteStoredItem(AUTH_TOKEN_KEY),
+    deleteStoredItem(LEGACY_AUTH_TOKEN_KEY),
   ]);
 }
 
@@ -33,7 +66,7 @@ export async function apiClient<T>(
 
   // 2. SecureStore se try karo
   if (!token) {
-    token = await SecureStore.getItemAsync(AUTH_TOKEN_KEY);
+    token = await getStoredItem(LEGACY_AUTH_TOKEN_KEY);
   }
 
   // 3. Supabase session se try karo
@@ -41,7 +74,7 @@ export async function apiClient<T>(
     const { data } = await supabase.auth.getSession();
     token = data.session?.access_token ?? null;
     if (token) {
-      await SecureStore.setItemAsync(AUTH_TOKEN_KEY, token);
+      await setStoredItem(LEGACY_AUTH_TOKEN_KEY, token);
     }
   }
 
@@ -71,14 +104,14 @@ export async function apiClientFormData<T>(
   let token = getAccessToken();
 
   if (!token) {
-    token = await SecureStore.getItemAsync(AUTH_TOKEN_KEY);
+    token = await getStoredItem(LEGACY_AUTH_TOKEN_KEY);
   }
 
   if (!token) {
     const { data } = await supabase.auth.getSession();
     token = data.session?.access_token ?? null;
     if (token) {
-      await SecureStore.setItemAsync(AUTH_TOKEN_KEY, token);
+      await setStoredItem(LEGACY_AUTH_TOKEN_KEY, token);
     }
   }
 

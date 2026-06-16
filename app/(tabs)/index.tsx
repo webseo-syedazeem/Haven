@@ -20,9 +20,10 @@ import Svg, {
 } from 'react-native-svg';
 
 import { AppFonts } from '@/constants/theme';
+import { dashboardChecklistTasks } from '@/constants/checklistTasks';
+import { useChecklist } from '@/contexts/ChecklistContext';
 import { getCurrentUser } from '@/lib/haven-api';
 import { apiClient } from '@/lib/api/client';
-import { getTodayChecklist } from '@/services/checklistService';
 
 const dailyEaseProgress = 74;
 const progressSize = 112;
@@ -166,70 +167,18 @@ function getTimeGreeting() {
   return 'Good night';
 }
 
-const todayPlans = [
-  {
-    icon: require('@/assets/icons/dashbord-morning-icon.svg'),
-    iconBackground: '#FFC1031A',
-    iconColor: '#FFC43D',
-    title: 'Morning Sunlight',
-    subtitle: 'Boost mood and regulate your body check',
-    meta: '10 min',
-    apiName: 'Morning Sunlight',
-  },
-  {
-    icon: require('@/assets/icons/dashbord-breathing-icon.svg'),
-    iconBackground: '#3770FC14',
-    iconColor: '#3770FC',
-    title: 'Movement',
-    subtitle: 'A short walk to refresh',
-    meta: '5 min',
-    apiName: 'Movement',
-  },
-  {
-    icon: require('@/assets/icons/dashbord-speed-icon.svg'),
-    iconBackground: '#28B92A14',
-    iconColor: '#2EB668',
-    title: 'Box Breathing',
-    subtitle: 'Clam Your mind',
-    meta: '3 min',
-    apiName: 'Breathwork',
-  },
-];
-
 export default function HomeScreen() {
   const router = useRouter();
   const [avatarUri, setAvatarUri] = useState('');
-  const [completedChecklistTasks, setCompletedChecklistTasks] = useState<string[]>([]);
   const [displayName, setDisplayName] = useState('Joy');
   const [greeting, setGreeting] = useState(getTimeGreeting());
+  const { refreshTodayChecklist, savingTaskName, todayTasks, toggleTask } = useChecklist();
   const avatarSource = avatarUri ? { uri: avatarUri } : avatarImage;
 
   useFocusEffect(
     useCallback(() => {
-      let isActive = true;
-
-      getTodayChecklist()
-        .then((checklist) => {
-          if (!isActive) {
-            return;
-          }
-
-          const completedTasks = Array.isArray(checklist?.completed_tasks)
-            ? checklist.completed_tasks.filter((task): task is string => typeof task === 'string')
-            : [];
-
-          setCompletedChecklistTasks(completedTasks);
-        })
-        .catch(() => {
-          if (isActive) {
-            setCompletedChecklistTasks([]);
-          }
-        });
-
-      return () => {
-        isActive = false;
-      };
-    }, [])
+      void refreshTodayChecklist();
+    }, [refreshTodayChecklist])
   );
 
   useEffect(() => {
@@ -296,7 +245,7 @@ export default function HomeScreen() {
   }
 
   function isChecklistTaskCompleted(taskName: string) {
-    return completedChecklistTasks.includes(taskName);
+    return Boolean(todayTasks.find((task) => task.apiName === taskName)?.completed);
   }
 
   return (
@@ -411,28 +360,36 @@ export default function HomeScreen() {
           </View>
 
           <View style={styles.planCard}>
-            {todayPlans.map((plan, index) => (
-              <View
-                key={`${plan.title}-${plan.icon}`}
-                style={[styles.planRow, index < todayPlans.length - 1 && styles.planDivider]}>
+            {dashboardChecklistTasks.map((plan, index) => (
+                <Pressable
+                accessibilityRole="button"
+                accessibilityState={{ checked: isChecklistTaskCompleted(plan.apiName) }}
+                disabled={Boolean(savingTaskName)}
+                key={plan.id}
+                onPress={() => toggleTask(plan.apiName)}
+                style={[
+                  styles.planRow,
+                  index < dashboardChecklistTasks.length - 1 && styles.planDivider,
+                  index === dashboardChecklistTasks.length - 1 && styles.planRowLast,
+                ]}>
                 <View style={[styles.planIconWrap, { backgroundColor: plan.iconBackground }]}>
                   <Image
-                    source={plan.icon}
+                    source={plan.dashboardIcon}
                     style={[styles.planIcon, { tintColor: plan.iconColor }]}
                     contentFit="contain"
                   />
                 </View>
                 <View style={styles.planCopy}>
-                  <Text style={styles.planTitle}>{plan.title}</Text>
-                  <Text style={styles.planSubtitle}>{plan.subtitle}</Text>
+                  <Text style={styles.planTitle}>{plan.apiName}</Text>
+                  <Text style={styles.planSubtitle}>{plan.description}</Text>
                 </View>
-                <Text style={styles.planMeta}>{plan.meta}</Text>
+                <Text style={styles.planMeta}>{plan.duration}</Text>
                 <View style={[styles.checkCircle, isChecklistTaskCompleted(plan.apiName) && styles.checkCircleActive]}>
                   {isChecklistTaskCompleted(plan.apiName) ? (
                     <Ionicons name="checkmark" size={10} color="#FFFFFF" />
                   ) : null}
                 </View>
-              </View>
+              </Pressable>
             ))}
           </View>
 
@@ -708,15 +665,20 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     overflow: 'hidden',
     paddingHorizontal: 10,
+    paddingVertical: 10,
   },
   planRow: {
     alignItems: 'center',
     flexDirection: 'row',
-    minHeight: 58,
+    paddingBottom: 10,
   },
   planDivider: {
     borderBottomColor: 'rgba(23,63,95,0.08)',
     borderBottomWidth: 1,
+    marginBottom: 10,
+  },
+  planRowLast: {
+    paddingBottom: 0,
   },
   planIconWrap: {
     alignItems: 'center',

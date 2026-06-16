@@ -62,17 +62,7 @@ export default function LoginScreen() {
     setIsSubmitting(true);
 
     try {
-      const res: any = await signIn({ email: trimmedEmail, password });
-      const session = res?.data?.session ?? res;
-      const accessToken = session?.access_token ?? session?.accessToken ?? session?.token;
-      const refreshTok = session?.refresh_token ?? session?.refreshToken;
-      if (accessToken) {
-        const SecureStore = await import('expo-secure-store');
-        await SecureStore.setItemAsync('haven.auth.access_token', accessToken);
-        if (refreshTok) {
-          await SecureStore.setItemAsync('haven.auth.refresh_token', refreshTok);
-        }
-      }
+      await signIn({ email: trimmedEmail, password });
       router.replace('/(tabs)');
     } catch (error) {
       setErrorMessage(error instanceof Error ? error.message : 'Unable to login right now.');

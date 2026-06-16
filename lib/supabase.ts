@@ -1,14 +1,25 @@
 import 'react-native-url-polyfill/auto';
 import { createClient } from '@supabase/supabase-js';
 import * as SecureStore from 'expo-secure-store';
+import { Platform } from 'react-native';
 
 const supabaseUrl = 'https://wqludhqymhcyrjhazjcq.supabase.co';
 const supabaseAnonKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY!;
+
+function getWebStorage() {
+  return typeof globalThis !== 'undefined'
+    ? (globalThis as unknown as { localStorage?: Storage }).localStorage
+    : undefined;
+}
 
 const createChunkedSecureStore = () => {
   return {
     async getItem(key: string): Promise<string | null> {
       try {
+        if (Platform.OS === 'web') {
+          return getWebStorage()?.getItem(key) ?? null;
+        }
+
         const chunkCount = await SecureStore.getItemAsync(`${key}_count`);
         if (!chunkCount) return await SecureStore.getItemAsync(key);
         const count = parseInt(chunkCount, 10);
@@ -25,6 +36,11 @@ const createChunkedSecureStore = () => {
 
     async setItem(key: string, value: string): Promise<void> {
       try {
+        if (Platform.OS === 'web') {
+          getWebStorage()?.setItem(key, value);
+          return;
+        }
+
         const chunkSize = 1800;
         if (value.length <= chunkSize) {
           await SecureStore.setItemAsync(key, value);
@@ -43,6 +59,11 @@ const createChunkedSecureStore = () => {
 
     async removeItem(key: string): Promise<void> {
       try {
+        if (Platform.OS === 'web') {
+          getWebStorage()?.removeItem(key);
+          return;
+        }
+
         const chunkCount = await SecureStore.getItemAsync(`${key}_count`);
         if (chunkCount) {
           const count = parseInt(chunkCount, 10);

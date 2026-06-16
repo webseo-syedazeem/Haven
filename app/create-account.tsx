@@ -17,7 +17,7 @@ import { ExploreButton } from '@/components/ExploreButton';
 import { ScreenWrapper, useScreenBottomPadding } from '@/components/ScreenWrapper';
 import { AppFonts } from '@/constants/theme';
 import { signInWithGoogle } from '@/lib/google-auth';
-import { signUp } from '@/lib/haven-api';
+import { setAuthTokens, signUp } from '@/lib/haven-api';
 
 const createAccountBackground = require('@/assets/images/create-account-page-background-image.png');
 const googleIcon = require('@/assets/icons/google.png');
@@ -63,11 +63,10 @@ export default function CreateAccountScreen() {
     try {
       const session = await signInWithGoogle();
       if (session?.session?.access_token) {
-        const SecureStore = await import('expo-secure-store');
-        await SecureStore.setItemAsync('haven.auth.access_token', session.session.access_token);
-        if (session.session.refresh_token) {
-          await SecureStore.setItemAsync('haven.auth.refresh_token', session.session.refresh_token);
-        }
+        setAuthTokens({
+          accessToken: session.session.access_token,
+          refreshToken: session.session.refresh_token,
+        });
         router.replace('/feeling-lately');
       }
     } catch (error) {
@@ -101,18 +100,6 @@ export default function CreateAccountScreen() {
 
     try {
       await signUp({ email: trimmedEmail, password, username: trimmedUsername });
-      router.replace('/feeling-lately');
-      const res: any = await signUp({ email: trimmedEmail, password, username: trimmedUsername });
-      const session = res?.data?.session ?? res;
-      const accessToken = session?.access_token ?? session?.accessToken ?? session?.token;
-      const refreshTok = session?.refresh_token ?? session?.refreshToken;
-      if (accessToken) {
-        const SecureStore = await import('expo-secure-store');
-        await SecureStore.setItemAsync('haven.auth.access_token', accessToken);
-        if (refreshTok) {
-          await SecureStore.setItemAsync('haven.auth.refresh_token', refreshTok);
-        }
-      }
       router.replace('/feeling-lately');
     } catch (error) {
       setErrorMessage(error instanceof Error ? error.message : 'Unable to create account right now.');

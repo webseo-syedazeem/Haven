@@ -1,6 +1,6 @@
 import { useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import * as SecureStore from 'expo-secure-store';
 
@@ -11,6 +11,38 @@ import { setAccessToken, setAuthTokens, checkSession, refreshSession, clearAuthT
 
 const firstPageBackground = require('@/assets/images/first-page-background-image.png');
 
+function getWebStorage() {
+  return typeof globalThis !== 'undefined'
+    ? (globalThis as unknown as { localStorage?: Storage }).localStorage
+    : undefined;
+}
+
+async function getStoredItem(key: string) {
+  if (Platform.OS === 'web') {
+    return getWebStorage()?.getItem(key) ?? null;
+  }
+
+  return SecureStore.getItemAsync(key);
+}
+
+async function setStoredItem(key: string, value: string) {
+  if (Platform.OS === 'web') {
+    getWebStorage()?.setItem(key, value);
+    return;
+  }
+
+  await SecureStore.setItemAsync(key, value);
+}
+
+async function deleteStoredItem(key: string) {
+  if (Platform.OS === 'web') {
+    getWebStorage()?.removeItem(key);
+    return;
+  }
+
+  await SecureStore.deleteItemAsync(key);
+}
+
 export default function FirstPageScreen() {
   const router = useRouter();
   const [checking, setChecking] = useState(true);
@@ -18,8 +50,10 @@ export default function FirstPageScreen() {
   useEffect(() => {
     (async () => {
       try {
-        const accessToken = await SecureStore.getItemAsync('haven.auth.access_token');
-        const refreshToken = await SecureStore.getItemAsync('haven.auth.refresh_token');
+        const accessToken =
+          (await getStoredItem('access_token')) ??
+          (await getStoredItem('haven.auth.access_token'));
+        const refreshToken = await getStoredItem('haven.auth.refresh_token');
 
         if (!accessToken) {
           setChecking(false);
@@ -46,9 +80,9 @@ export default function FirstPageScreen() {
               const newRefreshToken = session?.refresh_token ?? session?.refreshToken;
 
               if (newAccessToken) {
-                await SecureStore.setItemAsync('haven.auth.access_token', newAccessToken);
+                await setStoredItem('access_token', newAccessToken);
                 if (newRefreshToken) {
-                  await SecureStore.setItemAsync('haven.auth.refresh_token', newRefreshToken);
+                  await setStoredItem('haven.auth.refresh_token', newRefreshToken);
                 }
                 setAccessToken(newAccessToken);
                 router.replace('/(tabs)');
@@ -62,13 +96,14 @@ export default function FirstPageScreen() {
 
         // All checks failed — clear stale tokens
         clearAuthTokens();
-        await SecureStore.deleteItemAsync('haven.auth.access_token');
-        await SecureStore.deleteItemAsync('haven.auth.refresh_token');
+        await deleteStoredItem('access_token');
+        await deleteStoredItem('haven.auth.access_token');
+        await deleteStoredItem('haven.auth.refresh_token');
       } catch {}
 
       setChecking(false);
     })();
-  }, []);
+  }, [router]);
 
   if (checking) {
     return (
