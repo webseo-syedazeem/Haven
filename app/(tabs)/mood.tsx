@@ -65,12 +65,23 @@ const moodOptions: MoodOption[] = [
 ];
 
 function getMoodOption(label: string) {
+  const normalizedValue = label.trim().toLowerCase();
   const normalizedLabel =
-    label === 'Stress' || label === 'Tense'
+    normalizedValue === 'anxious' ||
+    normalizedValue === 'overwhelmed' ||
+    normalizedValue === 'stress' ||
+    normalizedValue === 'stressed' ||
+    normalizedValue === 'tense'
       ? 'Stressed'
-      : label === 'Calm'
+      : normalizedValue === 'calm' || normalizedValue === 'peace'
         ? 'Peace'
-        : label;
+        : normalizedValue === 'neutral'
+          ? 'Neutral'
+          : normalizedValue === 'energised' || normalizedValue === 'energized' || normalizedValue === 'happy'
+            ? 'Happy'
+            : normalizedValue === 'low' || normalizedValue === 'sad'
+              ? 'Sad'
+              : label;
 
   return moodOptions.find((option) => option.label === normalizedLabel) ?? moodOptions[1];
 }
@@ -87,12 +98,7 @@ function normalizeMoodEntry(entry: MoodRecord): MoodEntry | null {
   return {
     createdAt: getMoodDate(entry),
     id: String(entry.id ?? `${entry.mood}-${getMoodDate(entry)}`),
-    label:
-      entry.mood === 'Stress' || entry.mood === 'Tense'
-        ? 'Stressed'
-        : entry.mood === 'Calm'
-          ? 'Peace'
-          : entry.mood,
+    label: getMoodOption(entry.mood).label,
   };
 }
 
@@ -196,15 +202,30 @@ export default function MoodScreen() {
     setErrorMessage('');
 
     try {
-      await createMoodWithFallbacks(selectedMood);
+      const savedMood = await createMoodWithFallbacks(selectedMood);
       const [latest, moods] = await Promise.all([getLatestMood(), getMoods()]);
+      const savedMoodId = savedMood?.id === undefined ? null : String(savedMood.id);
       const normalizedLatest = latest ? normalizeMoodEntry(latest) : null;
+      const displayLatest = normalizedLatest
+        ? {
+            ...normalizedLatest,
+            label:
+              savedMoodId === null || normalizedLatest.id === savedMoodId
+                ? selectedMood
+                : normalizedLatest.label,
+          }
+        : null;
       const normalizedHistory = moods
         .map(normalizeMoodEntry)
         .filter((entry): entry is MoodEntry => Boolean(entry))
-        .sort((first, second) => new Date(second.createdAt).getTime() - new Date(first.createdAt).getTime());
+        .sort((first, second) => new Date(second.createdAt).getTime() - new Date(first.createdAt).getTime())
+        .map((entry, index) =>
+          (savedMoodId !== null && entry.id === savedMoodId) || (savedMoodId === null && index === 0)
+            ? { ...entry, label: selectedMood }
+            : entry
+        );
 
-      setLatestMood(normalizedLatest ?? normalizedHistory[0] ?? null);
+      setLatestMood(displayLatest ?? normalizedHistory[0] ?? null);
       setHistory(normalizedHistory);
       setIsUpdatingMood(false);
     } catch (error) {

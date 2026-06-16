@@ -130,13 +130,16 @@ export async function createMood(mood: string) {
   );
 }
 
+const moodFallbacks: Record<string, string[]> = {
+  Happy: ['Energised'],
+  Neutral: ['Calm'],
+  Peace: ['Calm'],
+  Sad: ['Low'],
+  Stressed: ['Tense'],
+};
+
 export async function createMoodWithFallbacks(mood: string) {
-  const fallbackMoods =
-    mood === 'Stressed'
-      ? ['Stressed', 'Stress', 'Tense']
-      : mood === 'Peace'
-        ? ['Peace', 'Calm']
-        : [mood];
+  const fallbackMoods = moodFallbacks[mood] ?? [mood];
   let lastError: unknown;
 
   for (const nextMood of fallbackMoods) {
