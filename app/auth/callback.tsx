@@ -5,6 +5,7 @@ import { useEffect } from 'react';
 import { ActivityIndicator, View } from 'react-native';
 
 import { supabase } from '@/lib/supabase';
+import { apiClient } from '@/lib/api/client';
 
 WebBrowser.maybeCompleteAuthSession();
 
@@ -28,6 +29,11 @@ export default function AuthCallback() {
 
           if (access_token && refresh_token) {
             await supabase.auth.setSession({ access_token, refresh_token });
+            try {
+              await apiClient('/api/auth/sync-profile', { method: 'POST' });
+            } catch (e) {
+              console.warn('Profile sync failed:', e);
+            }
           }
         }
 
@@ -42,7 +48,7 @@ export default function AuthCallback() {
   }, [router]);
 
   return (
-    <View style={{ alignItems: 'center', flex: 1, justifyContent: 'center' }}>
+    <View style={{ alignItems: 'center', backgroundColor: '#16102A', flex: 1, justifyContent: 'center' }}>
       <ActivityIndicator color="#7863DC" size="large" />
     </View>
   );

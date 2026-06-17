@@ -220,15 +220,10 @@ const styles = StyleSheet.create({
     marginBottom: 32,
   },
   avatarRing: {
-    borderColor: 'rgba(99,57,251,0.18)',
+    borderColor: '#FFFFFF',
     borderRadius: 72,
     borderWidth: 3,
     marginBottom: 12,
-    shadowColor: '#6339FB',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.15,
-    shadowRadius: 16,
-    elevation: 6,
   },
   nameLabel: {
     color: '#173F5F',

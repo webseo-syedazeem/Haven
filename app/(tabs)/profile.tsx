@@ -127,11 +127,7 @@ const styles = StyleSheet.create({
     lineHeight: 36,
     marginTop: 2,
   },
-  avatarRing: {
-    borderColor: 'rgba(99,57,251,0.2)',
-    borderRadius: 28,
-    borderWidth: 2,
-  },
+  avatarRing: {},
   section: { marginBottom: 20 },
   sectionLabel: {
    

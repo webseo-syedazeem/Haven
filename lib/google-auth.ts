@@ -2,6 +2,7 @@ import * as Linking from 'expo-linking';
 import * as WebBrowser from 'expo-web-browser';
 
 import { supabase } from './supabase';
+import { apiClient } from './api/client';
 
 WebBrowser.maybeCompleteAuthSession();
 
@@ -55,6 +56,12 @@ export const signInWithGoogle = async () => {
 
       if (sessionError) {
         throw new Error(sessionError.message);
+      }
+
+      try {
+        await apiClient('/api/auth/sync-profile', { method: 'POST' });
+      } catch (e) {
+        console.warn('Profile sync failed:', e);
       }
 
       return sessionData;

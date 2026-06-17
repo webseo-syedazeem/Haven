@@ -20,6 +20,8 @@ export type MeUserMetadata = {
   username?: string;
   name?: string;
   email?: string;
+  avatar_url?: string;
+  picture?: string;
 };
 
 export type MeUser = {

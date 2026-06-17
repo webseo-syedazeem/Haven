@@ -52,8 +52,5 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     overflow: 'hidden',
   },
-  placeholder: {
-    borderColor: 'rgba(23,63,95,0.1)',
-    borderWidth: 1,
-  },
+  placeholder: {},
 });

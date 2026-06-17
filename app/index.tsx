@@ -3,11 +3,14 @@ import { useEffect, useState } from 'react';
 import { ActivityIndicator, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import * as SecureStore from 'expo-secure-store';
+import { useQueryClient } from '@tanstack/react-query';
 
 import { ExploreButton } from '@/components/ExploreButton';
 import { ScreenWrapper } from '@/components/ScreenWrapper';
 import { AppFonts } from '@/constants/theme';
-import { setAccessToken, setAuthTokens, checkSession, refreshSession, clearAuthTokens } from '@/lib/haven-api';
+import { setAccessToken, setAuthTokens, refreshSession, clearAuthTokens } from '@/lib/haven-api';
+import { userApi } from '@/lib/api/user';
+import { ME_QUERY_KEY } from '@/hooks/useUser';
 
 const firstPageBackground = require('@/assets/images/first-page-background-image.png');
 
@@ -45,6 +48,7 @@ async function deleteStoredItem(key: string) {
 
 export default function FirstPageScreen() {
   const router = useRouter();
+  const queryClient = useQueryClient();
   const [checking, setChecking] = useState(true);
 
   useEffect(() => {
@@ -66,8 +70,8 @@ export default function FirstPageScreen() {
         }
 
         try {
-          // Validate token via check-session endpoint
-          await checkSession();
+          const meData = await userApi.get();
+          queryClient.setQueryData(ME_QUERY_KEY, meData);
           router.replace('/(tabs)');
           return;
         } catch {
@@ -103,7 +107,7 @@ export default function FirstPageScreen() {
 
       setChecking(false);
     })();
-  }, [router]);
+  }, [router, queryClient]);
 
   if (checking) {
     return (

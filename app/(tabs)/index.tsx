@@ -2,7 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { Image } from 'expo-image';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback } from 'react';
 import {
   ImageBackground,
   Pressable,
@@ -22,7 +22,8 @@ import Svg, {
 import { AppFonts } from '@/constants/theme';
 import { dashboardChecklistTasks } from '@/constants/checklistTasks';
 import { useChecklist } from '@/contexts/ChecklistContext';
-import { getCurrentUser } from '@/lib/haven-api';
+import { useUser } from '@/hooks/useUser';
+import { getDisplayName } from '@/lib/api/user';
 import { apiClient } from '@/lib/api/client';
 
 const dailyEaseProgress = 74;
@@ -47,108 +48,6 @@ const nextStepIcon = require('@/assets/icons/dashbord-flower-icon.svg');
 const stressHeartIcon = require('@/assets/icons/dashbord-heart-icon.svg');
 const resetClockIcon = require('@/assets/icons/dashbord-clock-icon.svg');
 
-type DashboardUser = Record<string, unknown>;
-
-function getStringValue(source: unknown, keys: string[]) {
-  if (!source || typeof source !== 'object') {
-    return '';
-  }
-
-  const record = source as Record<string, unknown>;
-
-  for (const key of keys) {
-    const value = record[key];
-
-    if (typeof value === 'string' && value.trim()) {
-      return value.trim();
-    }
-  }
-
-  return '';
-}
-
-function getNestedRecord(source: unknown, key: string) {
-  if (!source || typeof source !== 'object') {
-    return null;
-  }
-
-  const value = (source as Record<string, unknown>)[key];
-
-  return value && typeof value === 'object' ? (value as Record<string, unknown>) : null;
-}
-
-function unwrapCurrentUser(response: unknown) {
-  const root = response && typeof response === 'object' ? (response as Record<string, unknown>) : {};
-  const data = getNestedRecord(root, 'data');
-
-  return (
-    getNestedRecord(data, 'user') ??
-    getNestedRecord(root, 'user') ??
-    getNestedRecord(data, 'profile') ??
-    getNestedRecord(root, 'profile') ??
-    root
-  );
-}
-
-function getDisplayName(user: DashboardUser | null) {
-  const profile = getNestedRecord(user, 'profile');
-  const metadata = getNestedRecord(user, 'user_metadata');
-  const firstName = getStringValue(user, ['first_name', 'firstName']);
-  const lastName = getStringValue(user, ['last_name', 'lastName']);
-  const profileFirstName = getStringValue(profile, ['first_name', 'firstName']);
-  const profileLastName = getStringValue(profile, ['last_name', 'lastName']);
-  const joinedName = [firstName || profileFirstName, lastName || profileLastName]
-    .filter(Boolean)
-    .join(' ')
-    .trim();
-
-  if (joinedName) {
-    return joinedName;
-  }
-
-  const directName = getStringValue(user, ['name', 'full_name', 'fullName', 'display_name', 'username']);
-  const metadataName = getStringValue(metadata, ['name', 'full_name', 'fullName', 'display_name']);
-  const profileName = getStringValue(profile, ['name', 'full_name', 'fullName', 'display_name', 'username']);
-  const email = getStringValue(user, ['email']);
-
-  return directName || metadataName || profileName || (email ? email.split('@')[0] : 'Joy');
-}
-
-function getAvatarUri(user: DashboardUser | null) {
-  const profile = getNestedRecord(user, 'profile');
-  const metadata = getNestedRecord(user, 'user_metadata');
-
-  return (
-    getStringValue(user, [
-      'avatar_url',
-      'avatarUrl',
-      'profile_image',
-      'profileImage',
-      'profile_image_url',
-      'profileImageUrl',
-      'image_url',
-      'imageUrl',
-      'photo_url',
-      'photoUrl',
-      'picture',
-    ]) ||
-    getStringValue(profile, [
-      'avatar_url',
-      'avatarUrl',
-      'profile_image',
-      'profileImage',
-      'profile_image_url',
-      'profileImageUrl',
-      'image_url',
-      'imageUrl',
-      'photo_url',
-      'photoUrl',
-      'picture',
-    ]) ||
-    getStringValue(metadata, ['avatar_url', 'picture', 'photo_url'])
-  );
-}
-
 function getTimeGreeting() {
   const hour = new Date().getHours();
 
@@ -169,10 +68,15 @@ function getTimeGreeting() {
 
 export default function HomeScreen() {
   const router = useRouter();
-  const [avatarUri, setAvatarUri] = useState('');
-  const [displayName, setDisplayName] = useState('Joy');
-  const [greeting, setGreeting] = useState(getTimeGreeting());
+  const { data: me } = useUser();
   const { refreshTodayChecklist, savingTaskName, todayTasks, toggleTask } = useChecklist();
+
+  const displayName = getDisplayName(me) || 'Joy';
+  const avatarUri =
+    me?.profile?.profile_image_url ||
+    me?.user?.user_metadata?.avatar_url ||
+    '';
+  const greeting = getTimeGreeting();
   const avatarSource = avatarUri ? { uri: avatarUri } : avatarImage;
 
   useFocusEffect(
@@ -180,33 +84,6 @@ export default function HomeScreen() {
       void refreshTodayChecklist();
     }, [refreshTodayChecklist])
   );
-
-  useEffect(() => {
-    let isMounted = true;
-
-    setGreeting(getTimeGreeting());
-
-    getCurrentUser()
-      .then((response) => {
-        if (!isMounted) {
-          return;
-        }
-
-        const user = unwrapCurrentUser(response);
-        setDisplayName(getDisplayName(user));
-        setAvatarUri(getAvatarUri(user));
-      })
-      .catch(() => {
-        if (isMounted) {
-          setDisplayName('Joy');
-          setAvatarUri('');
-        }
-      });
-
-    return () => {
-      isMounted = false;
-    };
-  }, []);
 
   async function handleStartReset() {
     try {

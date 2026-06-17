@@ -80,6 +80,7 @@ export default function RootLayout() {
             <Stack.Screen name="daily-reflection" options={{ headerShown: false }} />
             <Stack.Screen name="thank-you" options={{ headerShown: false }} />
           <Stack.Screen name="insight-details" options={{ headerShown: false }} />
+            <Stack.Screen name="auth/callback" options={{ headerShown: false }} />
             <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />
           </Stack>
           <SystemBars style={{ navigationBar: 'dark', statusBar: 'dark' }} />
