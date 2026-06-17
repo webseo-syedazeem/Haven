@@ -5,7 +5,6 @@ import { memo, useCallback, useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   FlatList,
-  ImageBackground,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -13,10 +12,11 @@ import {
   useWindowDimensions,
   View,
 } from 'react-native';
-import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useQuery } from '@tanstack/react-query';
 import { Ionicons } from '@expo/vector-icons';
 import { Audio } from 'expo-av';
+import { StatusBar } from 'expo-status-bar';
 
 import { ExploreTabChip } from '@/components/ExploreTabChip';
 import { AppFonts } from '@/constants/theme';
@@ -106,12 +106,15 @@ const SoundscapeListCard = memo(function SoundscapeListCard({
         <Text style={styles.cardTitle} numberOfLines={1}>{soundscape.title}</Text>
         <Text style={styles.cardSubtitle}>{soundscape.subcategory}</Text>
       </View>
-      <View style={[styles.playSmall, isPlaying && styles.playSmallActive]}>
-        <Ionicons
-          name={isPlaying ? 'pause' : 'play'}
-          size={13}
-          color={isPlaying ? '#FFF' : '#173F5F'}
-        />
+      <View style={styles.playSmallShadow}>
+        <LinearGradient
+          colors={['#F5F8FD', '#FFFFFF', '#E3E9F2']}
+          end={{ x: 0.5, y: 1 }}
+          locations={[0, 0.45, 1]}
+          start={{ x: 0.5, y: 0 }}
+          style={styles.playSmall}>
+          <Ionicons name="play" size={13} color="#173F5F" style={styles.playSmallIcon} />
+        </LinearGradient>
       </View>
     </Pressable>
   );
@@ -120,9 +123,9 @@ const SoundscapeListCard = memo(function SoundscapeListCard({
 export default function SoundscapeScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { width: screenWidth } = useWindowDimensions();
-  const categoryTabInset = 4;
-  const tabWidth = Math.max(96, (screenWidth - 40 - 12 - categoryTabInset * 2) / 3);
+  const { height: screenHeight, width: screenWidth } = useWindowDimensions();
+  const imageSectionHeight = screenHeight * 0.5;
+  const tabWidth = Math.max(112, (screenWidth - 40 - 8) / 3);
   const [activeCategory, setActiveCategory] = useState('Calm');
   const [activeSubcategory, setActiveSubcategory] = useState<string>('All');
   const [playingId, setPlayingId] = useState<string | null>(null);
@@ -190,150 +193,189 @@ export default function SoundscapeScreen() {
   }, [router]);
 
   const renderListCard = useCallback(({ item, index }: { item: any; index: number }) => (
-    <SoundscapeListCard
-      index={index}
-      isLoading={audioLoading && playingId === item.id}
-      isPlaying={playingId === item.id}
-      onPress={handleListCardPress}
-      soundscape={item}
-    />
+    <View style={styles.listItemWrap}>
+      <SoundscapeListCard
+        index={index}
+        isLoading={audioLoading && playingId === item.id}
+        isPlaying={playingId === item.id}
+        onPress={handleListCardPress}
+        soundscape={item}
+      />
+    </View>
   ), [audioLoading, handleListCardPress, playingId]);
 
   return (
-    <ImageBackground source={backgroundImage} resizeMode="cover" style={styles.screen}>
-      <SafeAreaView edges={['top']} style={styles.safeArea}>
-        <ScrollView
+    <View style={styles.screen}>
+      <StatusBar style="dark" translucent backgroundColor="transparent" />
+      <View style={styles.safeArea}>
+        <FlatList
           bounces={false}
-          contentContainerStyle={[styles.scroll, { paddingBottom: insets.bottom + 68 }]}
-          showsVerticalScrollIndicator={false}>
-          <Pressable
-            accessibilityLabel="Go back"
-            hitSlop={12}
-            onPress={() => router.back()}
-            style={({ pressed }) => [styles.backButton, pressed && styles.pressed]}>
-            <Ionicons name="chevron-back" size={18} color="#000000" />
-          </Pressable>
-
-          <Text style={styles.title}>Soundscapes</Text>
-          <Text style={styles.subtitle}>Find your calm</Text>
-
-          <View style={styles.tabsShell}>
-            <ScrollView
-              horizontal
-              bounces={false}
-              contentContainerStyle={styles.tabsContent}
-              showsHorizontalScrollIndicator={false}>
-              {CATEGORIES.map((cat) => {
-                const isActive = activeCategory === cat;
-
-                return (
-                  <ExploreTabChip
-                    key={cat}
-                    active={isActive}
-                    label={cat}
-                    onPress={() => setActiveCategory(cat)}
-                    style={{ width: tabWidth, height: 48, flex: 0 }}
-                    variant="tab"
-                  />
-                );
-              })}
-            </ScrollView>
-          </View>
-
-          {!isLoading && (
-            <View style={styles.subTabsShell}>
-              <ScrollView
-                key={activeCategory}
-                horizontal
-                bounces={false}
-                showsHorizontalScrollIndicator={false}
-                contentContainerStyle={styles.subTabsContent}>
-                {subcategories.map((sub) => {
-                  const isActive = activeSubcategory === sub;
-
-                  return (
-                    <ExploreTabChip
-                      key={sub}
-                      active={isActive}
-                      icon={
-                        <Ionicons
-                          name={getSubcategoryIcon(sub) as any}
-                          size={20}
-                          color={isActive ? '#FFFFFF' : '#54555A'}
-                        />
-                      }
-                      label={sub}
-                      onPress={() => setActiveSubcategory(sub)}
-                      style={sub === 'All' ? styles.subTabCompact : undefined}
-                      variant="subtab"
-                    />
-                  );
-                })}
-              </ScrollView>
-            </View>
-          )}
-
-          {isLoading ? (
-            <View style={styles.loadingState}>
-              <ActivityIndicator color="#7B61FF" size="large" />
-            </View>
-          ) : (
-            <>
-              <View style={styles.seeAllRow}>
-                <Text style={styles.seeAllCount}>{filtered.length} tracks</Text>
-                <Pressable onPress={() => router.push('/tools/all-theme' as any)}>
-                  <Text style={styles.seeAllText}>See all</Text>
-                </Pressable>
+          contentContainerStyle={[
+            styles.scroll,
+            { paddingTop: insets.top + 16, paddingBottom: insets.bottom + 68 },
+          ]}
+          data={isLoading ? [] : rest}
+          initialNumToRender={8}
+          ItemSeparatorComponent={() => <View style={{ height: 10 }} />}
+          keyExtractor={(item, index) => String(item.id ?? item.title ?? index)}
+          maxToRenderPerBatch={8}
+          removeClippedSubviews
+          renderItem={renderListCard}
+          showsVerticalScrollIndicator={false}
+          style={styles.list}
+          updateCellsBatchingPeriod={40}
+          windowSize={5}
+          ListFooterComponent={() => <View style={styles.listFooter} />}
+          ListHeaderComponent={
+            <View style={styles.headerWrap}>
+              <View
+                pointerEvents="none"
+                style={[
+                  styles.scrollWhiteBg,
+                  { minHeight: screenHeight * 2, top: imageSectionHeight - 16 },
+                ]}
+              />
+              <View
+                pointerEvents="none"
+                style={[
+                  styles.scrollImageBg,
+                  { height: imageSectionHeight + insets.top, top: -(16 + insets.top) },
+                ]}>
+                <Image source={backgroundImage} style={styles.scrollImageFill} contentFit="cover" />
+                <LinearGradient
+                  colors={[
+                    'rgba(255,255,255,0)',
+                    'rgba(255,255,255,0.4)',
+                    'rgba(255,255,255,0.85)',
+                    '#FFFFFF',
+                  ]}
+                  locations={[0, 0.3, 0.7, 1]}
+                  style={styles.transitionFog}
+                />
               </View>
 
-              {featured && (
-                <Pressable onPress={() => router.push({ pathname: '/tools/soundscape-player', params: { id: featured.id, title: featured.title, subcategory: featured.subcategory, file_url: featured.file_url, duration_seconds: String(featured.duration_seconds ?? 180) } })} style={styles.featuredCard}>
-                  <Image source={featuredImage} style={styles.featuredBg} contentFit="cover" />
-                  <LinearGradient
-                    colors={['transparent', 'rgba(0,0,0,0.65)']}
-                    style={StyleSheet.absoluteFillObject}
-                  />
-                  <View style={styles.featuredContent}>
-                    <Text style={styles.featuredSub}>{featured.subcategory}</Text>
-                    <Text style={styles.featuredTitle}>{featured.title}</Text>
-                    <View style={styles.featuredBottom}>
-                      <View style={[styles.playBtn, audioLoading && !playingId && { opacity: 0.7 }]}>
-                        {audioLoading && playingId === null ? (
-                          <ActivityIndicator color="#FFF" size="small" />
-                        ) : (
-                          <Ionicons name={playingId === featured.id ? 'pause' : 'play'} size={18} color="#FFF" />
-                        )}
-                      </View>
-                      <Text style={styles.featuredDuration}>{formatDuration(featured.duration_seconds)}</Text>
-                    </View>
-                  </View>
-                </Pressable>
+              <View style={styles.headerContent}>
+              <Pressable
+                accessibilityLabel="Go back"
+                hitSlop={12}
+                onPress={() => router.back()}
+                style={({ pressed }) => [styles.backButton, pressed && styles.pressed]}>
+                <Ionicons name="chevron-back" size={18} color="#000000" />
+              </Pressable>
+
+              <Text style={styles.title}>Soundscapes</Text>
+              <Text style={styles.subtitle}>Find your calm</Text>
+
+              <View style={styles.tabs}>
+                <ScrollView
+                  horizontal
+                  bounces={false}
+                  contentContainerStyle={styles.tabsContent}
+                  showsHorizontalScrollIndicator={false}>
+                  {CATEGORIES.map((cat) => (
+                    <ExploreTabChip
+                      key={cat}
+                      active={activeCategory === cat}
+                      label={cat}
+                      onPress={() => setActiveCategory(cat)}
+                      style={[styles.tabChip, { width: tabWidth }]}
+                      variant="tab"
+                    />
+                  ))}
+                </ScrollView>
+              </View>
+
+              {!isLoading && (
+                <View style={styles.subTabsShell}>
+                  <ScrollView
+                    key={activeCategory}
+                    horizontal
+                    bounces={false}
+                    showsHorizontalScrollIndicator={false}
+                    contentContainerStyle={styles.subTabsContent}>
+                    {subcategories.map((sub) => {
+                      const isActive = activeSubcategory === sub;
+
+                      return (
+                        <ExploreTabChip
+                          key={sub}
+                          active={isActive}
+                          icon={
+                            <Ionicons
+                              name={getSubcategoryIcon(sub) as any}
+                              size={20}
+                              color={isActive ? '#FFFFFF' : '#54555A'}
+                            />
+                          }
+                          label={sub}
+                          onPress={() => setActiveSubcategory(sub)}
+                          style={sub === 'All' ? styles.subTabCompact : undefined}
+                          variant="subtab"
+                        />
+                      );
+                    })}
+                  </ScrollView>
+                </View>
               )}
 
-              <View style={styles.contentPanel}>
-                <LinearGradient
-                  colors={['rgba(255,255,255,0)', 'rgba(255,255,255,0.92)', '#FFFFFF']}
-                  locations={[0, 0.55, 1]}
-                  style={styles.panelFog}
-                />
-                <FlatList
-                  contentContainerStyle={styles.list}
-                  data={rest}
-                  initialNumToRender={8}
-                  keyExtractor={(item, index) => String(item.id ?? item.title ?? index)}
-                  maxToRenderPerBatch={8}
-                  nestedScrollEnabled
-                  removeClippedSubviews
-                  renderItem={renderListCard}
-                  scrollEnabled={false}
-                  updateCellsBatchingPeriod={40}
-                  windowSize={5}
-                />
+              {isLoading ? (
+                <View style={styles.loadingState}>
+                  <ActivityIndicator color="#7B61FF" size="large" />
+                </View>
+              ) : (
+                <>
+                  <View style={styles.seeAllRow}>
+                    <Text style={styles.seeAllCount}>{filtered.length} tracks</Text>
+                    <Pressable onPress={() => router.push('/tools/all-theme' as any)}>
+                      <Text style={styles.seeAllText}>See all</Text>
+                    </Pressable>
+                  </View>
+
+                  {featured && (
+                    <Pressable
+                      onPress={() => router.push({ pathname: '/tools/soundscape-player', params: { id: featured.id, title: featured.title, subcategory: featured.subcategory, file_url: featured.file_url, duration_seconds: String(featured.duration_seconds ?? 180) } })}
+                      style={styles.featuredCard}>
+                      <Image source={featuredImage} style={styles.featuredBg} contentFit="cover" />
+                      <LinearGradient
+                        colors={['transparent', 'rgba(0,0,0,0.65)']}
+                        style={StyleSheet.absoluteFillObject}
+                      />
+                      <View style={styles.featuredContent}>
+                        <Text style={styles.featuredSub}>{featured.subcategory}</Text>
+                        <Text style={styles.featuredTitle}>{featured.title}</Text>
+                        <View style={styles.featuredBottom}>
+                          <View style={[styles.playCircle, audioLoading && !playingId && { opacity: 0.7 }]}>
+                            <LinearGradient
+                              colors={['#9174EC', '#5275E8']}
+                              start={{ x: 0, y: 0 }}
+                              end={{ x: 1, y: 1 }}
+                              style={styles.playCircleGradient}>
+                              {audioLoading && playingId === null ? (
+                                <ActivityIndicator color="#FFF" size="small" />
+                              ) : (
+                                <Ionicons
+                                  name={playingId === featured.id ? 'pause' : 'play'}
+                                  size={18}
+                                  color="#FFFFFF"
+                                  style={styles.playCircleIcon}
+                                />
+                              )}
+                            </LinearGradient>
+                          </View>
+                          <Text style={styles.featuredDuration}>{formatDuration(featured.duration_seconds)}</Text>
+                        </View>
+                      </View>
+                    </Pressable>
+                  )}
+
+                  <View style={styles.listGap} />
+                </>
+              )}
               </View>
-            </>
-          )}
-        </ScrollView>
-      </SafeAreaView>
+            </View>
+          }
+        />
+      </View>
 
       <View style={[styles.floatingTabBar, { bottom: Math.max(insets.bottom, 8) }]}>
         {TAB_ITEMS.map((item) => (
@@ -353,14 +395,55 @@ export default function SoundscapeScreen() {
           </Pressable>
         ))}
       </View>
-    </ImageBackground>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: '#C8BFEE' },
-  safeArea: { flex: 1 },
-  scroll: { paddingHorizontal: 20, paddingTop: 16 },
+  screen: { backgroundColor: 'transparent', flex: 1 },
+  safeArea: { backgroundColor: 'transparent', flex: 1 },
+  list: { backgroundColor: 'transparent', flex: 1 },
+  scroll: { backgroundColor: 'transparent', paddingHorizontal: 20 },
+  headerWrap: {
+    overflow: 'visible',
+    position: 'relative',
+    zIndex: 1,
+  },
+  scrollImageBg: {
+    left: -20,
+    overflow: 'hidden',
+    position: 'absolute',
+    right: -20,
+    zIndex: 1,
+  },
+  scrollWhiteBg: {
+    backgroundColor: '#FFFFFF',
+    left: -20,
+    position: 'absolute',
+    right: -20,
+    zIndex: 0,
+  },
+  headerContent: {
+    position: 'relative',
+    zIndex: 2,
+  },
+  scrollImageFill: {
+    ...StyleSheet.absoluteFillObject,
+  },
+  transitionFog: {
+    bottom: 0,
+    height: 90,
+    left: 0,
+    position: 'absolute',
+    right: 0,
+    zIndex: 2,
+  },
+  listItemWrap: {
+    backgroundColor: '#FFFFFF',
+  },
+  listFooter: {
+    height: 16,
+  },
   backButton: {
     alignItems: 'center',
     backgroundColor: 'rgba(255, 255, 255, 0.5)',
@@ -374,8 +457,8 @@ const styles = StyleSheet.create({
   title: {
     color: '#173F5F',
     fontFamily: AppFonts.displayBold,
-    fontSize: 32,
-    lineHeight: 40,
+    fontSize: 34,
+    lineHeight: 42,
     marginBottom: 4,
     textAlign: 'center',
   },
@@ -387,23 +470,28 @@ const styles = StyleSheet.create({
     marginBottom: 20,
     textAlign: 'center',
   },
-  tabsShell: {
-    backgroundColor: 'rgba(255,255,255,0.85)',
-    borderRadius: 30,
-    marginBottom: 12,
+  tabs: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 34,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 24,
+    marginHorizontal: 0,
     overflow: 'hidden',
-    padding: 6,
-    shadowColor: '#5275E8',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.12,
-    shadowRadius: 12,
-    elevation: 4,
+    padding: 4,
+    shadowColor: '#8B8BA0',
+    shadowOffset: { width: 0, height: 12 },
+    shadowOpacity: 0.14,
+    shadowRadius: 24,
+    elevation: 8,
   },
   tabsContent: {
     alignItems: 'center',
-    gap: 0,
-    paddingLeft: 4,
-    paddingRight: 4,
+    flexDirection: 'row',
+    gap: 4,
+  },
+  tabChip: {
+    flex: 0,
   },
   subTabsShell: {
     marginBottom: 16,
@@ -423,22 +511,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     minHeight: 260,
   },
-  contentPanel: {
-    backgroundColor: '#FFFFFF',
-    marginHorizontal: -20,
-    marginTop: -96,
-    minHeight: 520,
-    overflow: 'visible',
-    paddingHorizontal: 20,
-    paddingTop: 112,
-    zIndex: 0,
-  },
-  panelFog: {
-    height: 92,
-    left: 0,
-    position: 'absolute',
-    right: 0,
-    top: -46,
+  listGap: {
+    height: 14,
   },
   featuredCard: {
     borderRadius: 20,
@@ -470,13 +544,28 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   featuredBottom: { alignItems: 'center', flexDirection: 'row', gap: 12 },
-  playBtn: {
+  playCircle: {
     alignItems: 'center',
-    backgroundColor: 'rgba(123,97,255,0.85)',
-    borderRadius: 20,
-    height: 40,
+    borderRadius: 22,
+    height: 44,
     justifyContent: 'center',
-    width: 40,
+    overflow: 'hidden',
+    width: 44,
+    shadowColor: '#5275E8',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.22,
+    shadowRadius: 18,
+    elevation: 7,
+  },
+  playCircleGradient: {
+    alignItems: 'center',
+    borderRadius: 22,
+    height: 44,
+    justifyContent: 'center',
+    width: 44,
+  },
+  playCircleIcon: {
+    marginLeft: 0,
   },
   featuredDuration: { color: '#FFFFFF', fontFamily: AppFonts.sansMedium, fontSize: 14 },
   seeAllRow: {
@@ -486,9 +575,8 @@ const styles = StyleSheet.create({
     marginBottom: 10,
     marginTop: -2,
   },
-  seeAllCount: { color: '#8C8C8C', fontFamily: AppFonts.sansRegular, fontSize: 13 },
-  seeAllText: { color: '#3770FC', fontFamily: AppFonts.sansMedium, fontSize: 16 },
-  list: { gap: 10, paddingBottom: 20 },
+  seeAllCount: { color: '#000000', fontFamily: AppFonts.sansRegular, fontSize: 13 },
+  seeAllText: { color: '#000000', fontFamily: AppFonts.sansMedium, fontSize: 16 },
   card: {
     alignItems: 'center',
     backgroundColor: 'rgba(255,255,255,0.92)',
@@ -509,27 +597,40 @@ const styles = StyleSheet.create({
   cardText: { flex: 1, paddingHorizontal: 12, paddingVertical: 8 },
   cardTitle: {
     color: '#173F5F',
-    fontFamily: AppFonts.sansSemiBold,
-    fontSize: 13,
-    lineHeight: 18,
-    marginBottom: 3,
+    fontFamily: AppFonts.sansBold,
+    fontSize: 14,
+    fontWeight: '700',
+    lineHeight: 20,
+    marginBottom: 4,
   },
   cardSubtitle: {
-    color: '#8C8C8C',
+    color: '#898989',
     fontFamily: AppFonts.sansRegular,
-    fontSize: 11,
-    lineHeight: 15,
+    fontSize: 12,
+    lineHeight: 16,
+  },
+  playSmallShadow: {
+    borderRadius: 16,
+    marginRight: 12,
+    shadowColor: '#5275E8',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.24,
+    shadowRadius: 14,
+    elevation: 4,
   },
   playSmall: {
     alignItems: 'center',
-    backgroundColor: '#F0F0F0',
+    borderColor: 'rgba(227,227,227,0.55)',
     borderRadius: 16,
+    borderWidth: 1,
     height: 32,
     justifyContent: 'center',
-    marginRight: 12,
+    overflow: 'hidden',
     width: 32,
   },
-  playSmallActive: { backgroundColor: '#7B61FF' },
+  playSmallIcon: {
+    marginLeft: 1,
+  },
   floatingTabBar: {
     alignItems: 'center',
     backgroundColor: '#FFFFFF',

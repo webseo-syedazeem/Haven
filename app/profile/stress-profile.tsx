@@ -1,6 +1,5 @@
 import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import {
@@ -182,7 +181,7 @@ export default function StressProfileScreen() {
       <SafeAreaView edges={['top']} style={styles.safeArea}>
         <ScrollView
           bounces={false}
-          contentContainerStyle={[styles.scroll, { paddingBottom: insets.bottom + 24 }]}
+          contentContainerStyle={styles.scroll}
           showsVerticalScrollIndicator={false}>
 
           {/* Back */}
@@ -195,118 +194,118 @@ export default function StressProfileScreen() {
           </Pressable>
 
           {/* Header */}
-          <Text style={styles.title}>Stress Profile</Text>
-          <Text style={styles.subtitle}>Understand Your patterns</Text>
+          <View style={styles.headerArea}>
+            <Text style={styles.title}>Stress Profile</Text>
+            <Text style={styles.subtitle}>Understand Your patterns</Text>
+          </View>
 
-          {isLoading ? (
-            <ActivityIndicator color="#7B61FF" size="large" style={{ marginTop: 40 }} />
-          ) : (
-            <View style={styles.card}>
-
-              {/* ── Common Triggers ── */}
-              <Text style={styles.sectionTitle}>Common triggers</Text>
-              <View style={styles.triggerGrid}>
-                {TRIGGERS.map((t) => {
-                  const isActive = selectedTriggers.has(t.key);
-                  return (
-                    <Pressable
-                      key={t.key}
-                      onPress={() => toggleTrigger(t.key)}
-                      style={[styles.triggerChip, isActive && styles.triggerChipActive]}>
-                      <Image
-                        source={t.icon}
-                        style={[
-                          styles.triggerIcon,
-                          { tintColor: isActive ? '#7B61FF' : '#8C8C8C' },
-                        ]}
-                        contentFit="contain"
-                      />
-                      <Text
-                        numberOfLines={1}
-                        style={[styles.triggerText, isActive && styles.triggerTextActive]}>
-                        {t.key}
-                      </Text>
-                      <View style={[styles.checkCircle, !isActive && styles.checkCircleInactive]}>
-                        <Text style={[styles.checkMark, !isActive && styles.checkMarkInactive]}>
-                          ✓
-                        </Text>
-                      </View>
-                    </Pressable>
-                  );
-                })}
-              </View>
-
-              {/* ── Stress Timing ── */}
-              <Text style={[styles.sectionTitle, { marginTop: 24 }]}>Stress Timming</Text>
-              <View style={styles.timingList}>
-                {TIMING.map((t) => (
-                  <View key={t.key} style={styles.timingRow}>
-                    <View style={[styles.timingIconCircle, { backgroundColor: t.iconBg }]}>
-                      <Image
-                        source={t.icon}
-                        style={[styles.timingIcon, { tintColor: t.iconColor }]}
-                        contentFit="contain"
-                      />
-                    </View>
-                    <View style={styles.timingText}>
-                      <Text style={styles.timingTitle}>{t.key}</Text>
-                      <Text style={styles.timingDesc}>{t.desc}</Text>
-                    </View>
-                    <BarChart bars={t.bars} />
-                  </View>
-                ))}
-              </View>
-
-              {/* ── What helped ── */}
-              <Text style={[styles.sectionTitle, { marginTop: 24 }]}>What helped you most?</Text>
-              {supportTypes.length === 0 ? (
-                <Text style={styles.emptyText}>Complete your setup to see insights.</Text>
-              ) : (
-                <View style={styles.helpList}>
-                  {supportTypes.map((s) => {
-                    const pct = SUPPORT_PERCENT[s] ?? 60;
-                    const icon = SUPPORT_ICONS[s];
+          {/* Full-width white sheet — extends to bottom */}
+          <View style={[styles.whiteSheet, { paddingBottom: insets.bottom + 24 }]}>
+            {isLoading ? (
+              <ActivityIndicator color="#7B61FF" size="large" style={{ marginTop: 40 }} />
+            ) : (
+              <>
+                {/* ── Common Triggers ── */}
+                <Text style={styles.sectionTitle}>Common triggers</Text>
+                <View style={styles.triggerGrid}>
+                  {TRIGGERS.map((t) => {
+                    const isActive = selectedTriggers.has(t.key);
                     return (
-                      <View key={s} style={styles.helpRow}>
-                        <View style={styles.helpTop}>
-                          <View style={styles.helpLeft}>
-                            {icon && (
-                              <Image
-                                source={icon}
-                                style={[styles.helpIcon, { tintColor: '#7B61FF' }]}
-                                contentFit="contain"
-                              />
-                            )}
-                            <Text style={styles.helpLabel}>{s}</Text>
+                      <Pressable
+                        key={t.key}
+                        onPress={() => toggleTrigger(t.key)}
+                        style={[styles.triggerChip, isActive && styles.triggerChipActive]}>
+                        <Image
+                          source={t.icon}
+                          style={[
+                            styles.triggerIcon,
+                            { tintColor: isActive ? '#7B61FF' : '#8C8C8C' },
+                          ]}
+                          contentFit="contain"
+                        />
+                        <Text
+                          numberOfLines={1}
+                          style={[styles.triggerText, isActive && styles.triggerTextActive]}>
+                          {t.key}
+                        </Text>
+                        {isActive && (
+                          <View style={styles.checkCircle}>
+                            <Text style={styles.checkMark}>✓</Text>
                           </View>
-                          <Text style={styles.helpPct}>{pct}%</Text>
-                        </View>
-                        <View style={styles.progressBg}>
-                          <LinearGradient
-                            colors={['#6339FB', '#2EB668']}
-                            start={{ x: 0, y: 0.5 }}
-                            end={{ x: 1, y: 0.5 }}
-                            style={[styles.progressFill, { width: `${pct}%` }]}
-                          />
-                        </View>
-                      </View>
+                        )}
+                      </Pressable>
                     );
                   })}
                 </View>
-              )}
 
-            </View>
-          )}
+                {/* ── Stress Timing ── */}
+                <View style={styles.timingSection}>
+                  <Text style={styles.sectionTitle}>Stress Timming</Text>
+                  <View style={styles.timingList}>
+                    {TIMING.map((t) => (
+                      <View key={t.key} style={styles.timingRow}>
+                        <View style={[styles.timingIconCircle, { backgroundColor: t.iconBg }]}>
+                          <Image
+                            source={t.icon}
+                            style={[styles.timingIcon, { tintColor: t.iconColor }]}
+                            contentFit="contain"
+                          />
+                        </View>
+                        <View style={styles.timingText}>
+                          <Text style={styles.timingTitle}>{t.key}</Text>
+                          <Text style={styles.timingDesc}>{t.desc}</Text>
+                        </View>
+                        <BarChart bars={t.bars} />
+                      </View>
+                    ))}
+                  </View>
+                </View>
 
-          {/* Save button */}
-          <ExploreButton
-            accessibilityRole="button"
-            label="Save Profile"
-            loading={saving}
-            disabled={saving}
-            onPress={handleSave}
-            style={styles.saveWrap}
-          />
+                {/* ── What helped ── */}
+                <Text style={[styles.sectionTitle, { marginTop: 24 }]}>What helped you most?</Text>
+                {supportTypes.length === 0 ? (
+                  <Text style={styles.emptyText}>Complete your setup to see insights.</Text>
+                ) : (
+                  <View style={styles.helpList}>
+                    {supportTypes.map((s) => {
+                      const pct = SUPPORT_PERCENT[s] ?? 60;
+                      const icon = SUPPORT_ICONS[s];
+                      return (
+                        <View key={s} style={styles.helpRow}>
+                          <View style={styles.helpTop}>
+                            <View style={styles.helpLeft}>
+                              {icon && (
+                                <Image
+                                  source={icon}
+                                  style={[styles.helpIcon, { tintColor: '#7B61FF' }]}
+                                  contentFit="contain"
+                                />
+                              )}
+                              <Text style={styles.helpLabel}>{s}</Text>
+                            </View>
+                            <Text style={styles.helpPct}>{pct}%</Text>
+                          </View>
+                          <View style={styles.progressBg}>
+                            <View style={[styles.progressFill, { width: `${pct}%` }]} />
+                          </View>
+                        </View>
+                      );
+                    })}
+                  </View>
+                )}
+              </>
+            )}
+
+            {/* Save button inside white sheet */}
+            <ExploreButton
+              accessibilityRole="button"
+              label="Save Profile"
+              loading={saving}
+              disabled={saving}
+              onPress={handleSave}
+              style={styles.saveWrap}
+            />
+          </View>
 
         </ScrollView>
         <SaveSuccessModal
@@ -323,7 +322,14 @@ export default function StressProfileScreen() {
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: '#C8BFEE' },
   safeArea: { flex: 1 },
-  scroll: { paddingHorizontal: 20, paddingTop: 76 },
+  scroll: { paddingTop: 76 },
+  headerArea: { paddingHorizontal: 20 },
+  whiteSheet: {
+    backgroundColor: '#FFFFFF',
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    padding: 20,
+  },
 
   backButton: {
     alignItems: 'center',
@@ -341,32 +347,22 @@ const styles = StyleSheet.create({
     color: '#173F5F',
     fontFamily: AppFonts.displayBold,
     fontSize: 34,
-    fontWeight: '700',
     lineHeight: 42,
-    marginBottom: 6,
+    marginBottom: 4,
+    textAlign: 'center',
   },
   subtitle: {
-    color: '#173F5F',
-    fontFamily: AppFonts.sansMedium,
+    color: '#8C8C8C',
+    fontFamily: AppFonts.sansRegular,
     fontSize: 14,
     lineHeight: 22,
     marginBottom: 20,
-  },
-  card: {
-    backgroundColor: 'rgba(255,255,255,0.92)',
-    borderRadius: 20,
-    padding: 20,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.08,
-    shadowRadius: 12,
-    elevation: 4,
+    textAlign: 'center',
   },
   sectionTitle: {
     color: '#173F5F',
     fontFamily: AppFonts.sansSemiBold,
-    fontSize: 15,
-    fontWeight: '600',
+    fontSize: 18,
     lineHeight: 24,
     marginBottom: 12,
   },
@@ -399,12 +395,12 @@ const styles = StyleSheet.create({
     color: '#8C8C8C',
     flex: 1,
     fontFamily: AppFonts.sansRegular,
-    fontSize: 12,
-    lineHeight: 16,
+    fontSize: 14,
+    lineHeight: 20,
   },
   triggerTextActive: {
     color: '#173F5F',
-    fontFamily: AppFonts.sansSemiBold,
+    fontFamily: AppFonts.sansMedium,
   },
   checkCircle: {
     alignItems: 'center',
@@ -414,15 +410,22 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     width: 20,
   },
-  checkCircleInactive: {
-    backgroundColor: '#E5E5EA',
-  },
   checkMark: { color: '#FFF', fontSize: 11, fontWeight: '700' },
-  checkMarkInactive: {
-    color: '#8C8C8C',
-  },
 
   // Timing
+  timingSection: {
+    backgroundColor: '#FFFFFF',
+    borderColor: 'rgba(227,227,227,0.55)',
+    borderRadius: 16,
+    borderWidth: 1,
+    elevation: 4,
+    marginTop: 24,
+    padding: 16,
+    shadowColor: '#B7C1D9',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.16,
+    shadowRadius: 16,
+  },
   timingList: { gap: 12 },
   timingRow: {
     alignItems: 'center',
@@ -440,44 +443,44 @@ const styles = StyleSheet.create({
   timingText: { flex: 1 },
   timingTitle: {
     color: '#173F5F',
-    fontFamily: AppFonts.sansSemiBold,
-    fontSize: 13,
-    fontWeight: '600',
+    fontFamily: AppFonts.sansMedium,
+    fontSize: 14,
+    lineHeight: 20,
   },
   timingDesc: {
-    color: '#8C8C8C',
+    color: '#898989',
     fontFamily: AppFonts.sansRegular,
-    fontSize: 11,
-    marginTop: 1,
+    fontSize: 12,
+    lineHeight: 16,
+    marginTop: 2,
   },
 
   // What helped
   emptyText: {
     color: '#8C8C8C',
     fontFamily: AppFonts.sansRegular,
-    fontSize: 13,
+    fontSize: 14,
     lineHeight: 20,
   },
-  helpList: { gap: 14 },
-  helpRow: { gap: 6 },
+  helpList: { gap: 20 },
+  helpRow: { gap: 10 },
   helpTop: {
     alignItems: 'center',
     flexDirection: 'row',
     justifyContent: 'space-between',
   },
-  helpLeft: { alignItems: 'center', flexDirection: 'row', gap: 8 },
+  helpLeft: { alignItems: 'center', flexDirection: 'row', gap: 14 },
   helpIcon: { height: 20, width: 20 },
   helpLabel: {
     color: '#173F5F',
     fontFamily: AppFonts.sansMedium,
-    fontSize: 13,
-    fontWeight: '500',
+    fontSize: 14,
+    lineHeight: 20,
   },
   helpPct: {
-    color: '#2EB668',
-    fontFamily: AppFonts.sansBold,
-    fontSize: 13,
-    fontWeight: '700',
+    color: '#6FCF97',
+    fontFamily: AppFonts.sansMedium,
+    fontSize: 14,
   },
   progressBg: {
     backgroundColor: '#F0F0F0',
@@ -486,6 +489,7 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   progressFill: {
+    backgroundColor: '#6FCF97',
     borderRadius: 6,
     height: 8,
   },
