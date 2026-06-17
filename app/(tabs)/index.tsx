@@ -18,6 +18,7 @@ import Svg, {
   LinearGradient as SvgLinearGradient,
   Stop,
 } from 'react-native-svg';
+import { useQuery } from '@tanstack/react-query';
 
 import { AppFonts } from '@/constants/theme';
 import { dashboardChecklistTasks } from '@/constants/checklistTasks';
@@ -26,21 +27,31 @@ import { useUser } from '@/hooks/useUser';
 import { getDisplayName } from '@/lib/api/user';
 import { apiClient } from '@/lib/api/client';
 
-const dailyEaseProgress = 74;
 const progressSize = 112;
 const progressStroke = 8;
 const progressRadius = (progressSize - progressStroke) / 2;
 const progressCircumference = 2 * Math.PI * progressRadius;
-const progressPercent = dailyEaseProgress / 100;
-const progressOffset = progressCircumference * (1 - progressPercent);
-const progressAngle = progressPercent * 360 - 90;
 const progressDotRadius = 8;
 const progressDotCenter = progressSize / 2;
 const progressDotDistance = progressRadius;
-const progressDotX =
-  progressDotCenter + progressDotDistance * Math.cos((progressAngle * Math.PI) / 180);
-const progressDotY =
-  progressDotCenter + progressDotDistance * Math.sin((progressAngle * Math.PI) / 180);
+
+function calcProgress(score: number) {
+  const percent = score / 100;
+  const offset = progressCircumference * (1 - percent);
+  const angle = percent * 360 - 90;
+  return {
+    offset,
+    dotX: progressDotCenter + progressDotDistance * Math.cos((angle * Math.PI) / 180),
+    dotY: progressDotCenter + progressDotDistance * Math.sin((angle * Math.PI) / 180),
+  };
+}
+
+type DailyEaseResponse = {
+  success: boolean;
+  data: {
+    daily_ease: { score: number; label: string };
+  };
+};
 
 const backgroundImage = require('@/assets/images/dashbord-background-img.png');
 const avatarImage = require('@/assets/images/profile-pic.jpg');
@@ -70,6 +81,16 @@ export default function HomeScreen() {
   const router = useRouter();
   const { data: me } = useUser();
   const { refreshTodayChecklist, savingTaskName, todayTasks, toggleTask } = useChecklist();
+
+  const { data: dailyEaseData } = useQuery<DailyEaseResponse>({
+    queryKey: ['daily-ease'],
+    queryFn: () => apiClient<DailyEaseResponse>('/api/daily-ease'),
+    staleTime: 1000 * 60 * 5,
+  });
+
+  const dailyEaseScore = dailyEaseData?.data?.daily_ease?.score ?? 0;
+  const dailyEaseLabel = dailyEaseData?.data?.daily_ease?.label ?? '—';
+  const { offset: progressOffset, dotX: progressDotX, dotY: progressDotY } = calcProgress(dailyEaseScore);
 
   const displayName = getDisplayName(me) || 'Joy';
   const avatarUri =
@@ -198,8 +219,8 @@ export default function HomeScreen() {
                 />
               </View>
               <View style={styles.progressCenter}>
-                <Text style={styles.progressValue}>{dailyEaseProgress}</Text>
-                <Text style={styles.progressCaption}>Supported</Text>
+                <Text style={styles.progressValue}>{dailyEaseScore}</Text>
+                <Text style={styles.progressCaption}>{dailyEaseLabel}</Text>
               </View>
             </View>
           </View>
