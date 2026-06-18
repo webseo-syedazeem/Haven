@@ -158,7 +158,7 @@ export default function HomeScreen() {
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}>
           <View style={styles.header}>
-            <View>
+            <View style={styles.headerCopy}>
               <Text style={styles.greeting}>{greeting}, {displayName}</Text>
               <Text style={styles.subtitle}>Small stress today, stronger you{'\n'}tomorrow</Text>
             </View>
@@ -362,6 +362,10 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     marginBottom: 16,
   },
+  headerCopy: {
+    flex: 1,
+    paddingRight: 12,
+  },
   greeting: {
     color: '#173F5F',
     fontFamily: AppFonts.displayBold,
@@ -381,17 +385,19 @@ const styles = StyleSheet.create({
   },
   avatarRing: {
     alignItems: 'center',
-    borderRadius: 20,
-    height: 40,
+    borderRadius: 28,
+    height: 56,
     justifyContent: 'center',
+    flexShrink: 0,
+    marginLeft: 8,
     marginTop: 5,
     overflow: 'hidden',
-    width: 40,
+    width: 56,
   },
   avatar: {
-    borderRadius: 20,
-    height: 40,
-    width: 40,
+    borderRadius: 28,
+    height: 56,
+    width: 56,
   },
   easeCard: {
     backgroundColor: 'rgba(255,255,255,0.6)',
