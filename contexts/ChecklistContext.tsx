@@ -2,6 +2,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useRef, use
 import { AppState, type AppStateStatus } from 'react-native';
 
 import { checklistTasks, getChecklistStatusMap, type ChecklistTask } from '@/constants/checklistTasks';
+import { useDailyEase } from '@/contexts/DailyEaseContext';
 import { getTodayChecklist, toggleChecklistTask } from '@/services/checklistService';
 
 const CHECKLIST_CACHE_KEY = 'haven.checklist.today';
@@ -141,6 +142,7 @@ function createCache(date: string, tasks: ChecklistTaskState[]): ChecklistCache 
 }
 
 export function ChecklistProvider({ children }: { children: ReactNode }) {
+  const { refreshDailyEase } = useDailyEase();
   const [error, setError] = useState('');
   const [lastChecklistDate, setLastChecklistDate] = useState(getLocalDateKey());
   const [loading, setLoading] = useState(true);
@@ -291,6 +293,8 @@ export function ChecklistProvider({ children }: { children: ReactNode }) {
           setLastChecklistDate(nextDate);
           await setStoredChecklistCache(createCache(nextDate, optimisticTasks));
         }
+
+        void refreshDailyEase();
       } catch (toggleError) {
         setTodayTasks(previousTasks);
         await setStoredChecklistCache(createCache(lastChecklistDate, previousTasks));
@@ -299,7 +303,7 @@ export function ChecklistProvider({ children }: { children: ReactNode }) {
         setSavingTaskName(null);
       }
     },
-    [lastChecklistDate, savingTaskName, todayTasks]
+    [lastChecklistDate, refreshDailyEase, savingTaskName, todayTasks]
   );
 
   const completedCount = todayTasks.filter((task) => task.completed).length;

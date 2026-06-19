@@ -13,7 +13,7 @@ import {
   Text,
   View,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, {
   Circle,
   Defs,
@@ -186,10 +186,10 @@ function ScoreCircle({ index, score }: { index: number; score: Score }) {
 }
 
 function ValueChart({ card }: { card: ChartCard }) {
-  const chartWidth = 170;
+  const chartWidth = 132;
   const chartHeight = 104;
-  const left = 32;
-  const right = 12;
+  const left = 28;
+  const right = 8;
   const top = 10;
   const bottom = 24;
   const plotWidth = chartWidth - left - right;
@@ -232,7 +232,7 @@ function ValueChart({ card }: { card: ChartCard }) {
   );
 
   return (
-    <Svg height={chartHeight} width="100%" viewBox={`0 0 ${chartWidth} ${chartHeight}`}>
+    <Svg height={chartHeight} width={chartWidth} viewBox={`0 0 ${chartWidth} ${chartHeight}`}>
       <Defs>
         <SvgLinearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
           <Stop offset="0" stopColor={barGradientStart} />
@@ -341,6 +341,7 @@ function ValueChart({ card }: { card: ChartCard }) {
 
 export default function ProgressScreen() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const {
     error,
     isLoading,
@@ -365,7 +366,7 @@ export default function ProgressScreen() {
       <SafeAreaView edges={['top']} style={styles.safeArea}>
         <ScrollView
           bounces={false}
-          contentContainerStyle={styles.content}
+          contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 132 }]}
           refreshControl={
             <RefreshControl refreshing={isRefreshing} onRefresh={refreshProgress} tintColor="#3770FC" />
           }
@@ -452,7 +453,9 @@ export default function ProgressScreen() {
                     )}
                   </View>
                 </View>
-                <ValueChart card={card} />
+                <View style={styles.chartPlot}>
+                  <ValueChart card={card} />
+                </View>
               </Pressable>
                   );
                 })}
@@ -478,9 +481,10 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     flexBasis: '48%',
     flexGrow: 1,
-    height: 148,
-    minHeight: 148,
-    padding: 10,
+    minHeight: 178,
+    paddingBottom: 12,
+    paddingHorizontal: 10,
+    paddingTop: 10,
     shadowColor: '#000000',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.07,
@@ -535,6 +539,10 @@ const styles = StyleSheet.create({
     height: 16,
     width: 16,
   },
+  chartPlot: {
+    alignItems: 'flex-start',
+    alignSelf: 'stretch',
+  },
   chartSubtitle: {
     color: '#173F5F',
     fontFamily: AppFonts.sansRegular,
@@ -557,7 +565,6 @@ const styles = StyleSheet.create({
     flexShrink: 1,
   },
   content: {
-    paddingBottom: 112,
     paddingHorizontal: 17,
     paddingTop: 64,
   },
@@ -701,7 +708,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingTop: 16,
     position: 'relative',
-    width: '100%',
+    alignSelf: 'stretch',
   },
   weekCardImage: {
     borderRadius: 8,
@@ -754,7 +761,7 @@ const styles = StyleSheet.create({
     fontWeight: '400',
     letterSpacing: 0,
     lineHeight: 26,
-    maxWidth: 260,
+    maxWidth: '100%',
   },
   weekTitle: {
     color: '#173F5F',

@@ -320,7 +320,7 @@ export default function MoodScreen() {
         <SafeAreaView edges={['top']} style={styles.safeArea}>
           <ScrollView
             bounces={false}
-            contentContainerStyle={styles.content}
+            contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 132 }]}
             showsVerticalScrollIndicator={false}>
             <View style={styles.header}>
               <Text style={styles.title}>{`How are you feeling\ntoday?`}</Text>
@@ -401,7 +401,7 @@ export default function MoodScreen() {
       <SafeAreaView edges={['top']} style={styles.safeArea}>
         <ScrollView
           bounces={false}
-          contentContainerStyle={[styles.historyContent, { paddingBottom: insets.bottom + 112 }]}
+          contentContainerStyle={[styles.historyContent, { paddingBottom: insets.bottom + 132 }]}
           showsVerticalScrollIndicator={false}>
           <View style={styles.historyHeader}>
             <Text style={styles.historyTitle}>Mood History</Text>
@@ -534,7 +534,6 @@ const styles = StyleSheet.create({
   },
   content: {
     alignItems: 'center',
-    paddingBottom: 112,
     paddingHorizontal: 17,
     paddingTop: 60,
   },

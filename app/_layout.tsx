@@ -14,6 +14,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { SetupProvider } from '@/contexts/SetupContext';
 import { ProgressProvider } from '@/contexts/ProgressContext';
 import { ChecklistProvider } from '@/contexts/ChecklistContext';
+import { DailyEaseProvider } from '@/contexts/DailyEaseContext';
 
 void SplashScreen.preventAutoHideAsync();
 
@@ -59,6 +60,7 @@ export default function RootLayout() {
         <QueryClientProvider client={queryClient}>
         <SetupProvider>
         <ProgressProvider>
+        <DailyEaseProvider>
         <ChecklistProvider>
           <Stack screenOptions={{ contentStyle: { backgroundColor: 'transparent' } }}>
             <Stack.Screen name="index" options={{ headerShown: false }} />
@@ -85,6 +87,7 @@ export default function RootLayout() {
           </Stack>
           <SystemBars style={{ navigationBar: 'dark', statusBar: 'dark' }} />
         </ChecklistProvider>
+        </DailyEaseProvider>
         </ProgressProvider>
         </SetupProvider>
         </QueryClientProvider>

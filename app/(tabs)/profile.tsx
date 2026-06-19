@@ -70,7 +70,7 @@ export default function ProfileScreen() {
       <SafeAreaView edges={['top']} style={styles.safeArea}>
         <ScrollView
           bounces
-          contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 120 }]}
+          contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 132 }]}
           overScrollMode="always"
           showsVerticalScrollIndicator={false}
           style={styles.scrollView}>

@@ -1,7 +1,7 @@
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { AppFonts } from '@/constants/theme';
 
@@ -53,6 +53,7 @@ const myMixesOption: ToolOption = {
 
 export default function ToolsScreen() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
 
   return (
     <View style={styles.screen}>
@@ -61,7 +62,7 @@ export default function ToolsScreen() {
       <SafeAreaView edges={['top']} style={styles.safeArea}>
         <ScrollView
           bounces={false}
-          contentContainerStyle={styles.content}
+          contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 132 }]}
           showsVerticalScrollIndicator={false}>
           <View style={styles.header}>
             <Text style={styles.title}>Tools</Text>
@@ -138,7 +139,6 @@ const styles = StyleSheet.create({
   },
   content: {
     alignItems: 'center',
-    paddingBottom: 112,
     paddingHorizontal: 17,
     paddingTop: 60,
   },

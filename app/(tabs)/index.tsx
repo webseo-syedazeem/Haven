@@ -1,31 +1,26 @@
 import { Ionicons } from '@expo/vector-icons';
+import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useFocusEffect, useRouter } from 'expo-router';
-import { Image } from 'expo-image';
 import { useCallback } from 'react';
 import {
-  ImageBackground,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  View,
+    ImageBackground,
+    Pressable,
+    ScrollView,
+    StyleSheet,
+    Text,
+    View,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import Svg, {
-  Circle,
-  Defs,
-  LinearGradient as SvgLinearGradient,
-  Stop,
-} from 'react-native-svg';
-import { useQuery } from '@tanstack/react-query';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import Svg, { Circle } from 'react-native-svg';
 
-import { AppFonts } from '@/constants/theme';
 import { dashboardChecklistTasks } from '@/constants/checklistTasks';
+import { AppFonts } from '@/constants/theme';
 import { useChecklist } from '@/contexts/ChecklistContext';
+import { useDailyEase } from '@/contexts/DailyEaseContext';
 import { useUser } from '@/hooks/useUser';
-import { getDisplayName } from '@/lib/api/user';
 import { apiClient } from '@/lib/api/client';
+import { getDisplayName } from '@/lib/api/user';
 
 const progressSize = 112;
 const progressStroke = 8;
@@ -36,22 +31,17 @@ const progressDotCenter = progressSize / 2;
 const progressDotDistance = progressRadius;
 
 function calcProgress(score: number) {
-  const percent = score / 100;
-  const offset = progressCircumference * (1 - percent);
+  const progress = Math.max(0, Math.min(score, 100));
+  const percent = progress / 100;
+  const dashOffset = progressCircumference - percent * progressCircumference;
   const angle = percent * 360 - 90;
   return {
-    offset,
+    progress,
+    dashOffset,
     dotX: progressDotCenter + progressDotDistance * Math.cos((angle * Math.PI) / 180),
     dotY: progressDotCenter + progressDotDistance * Math.sin((angle * Math.PI) / 180),
   };
 }
-
-type DailyEaseResponse = {
-  success: boolean;
-  data: {
-    daily_ease: { score: number; label: string };
-  };
-};
 
 const backgroundImage = require('@/assets/images/dashbord-background-img.png');
 const avatarImage = require('@/assets/images/profile-pic.jpg');
@@ -79,18 +69,24 @@ function getTimeGreeting() {
 
 export default function HomeScreen() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const { data: me } = useUser();
   const { refreshTodayChecklist, savingTaskName, todayTasks, toggleTask } = useChecklist();
+  const {
+    dailyEase,
+    loading: dailyEaseLoading,
+    refreshDailyEase,
+  } = useDailyEase();
 
-  const { data: dailyEaseData } = useQuery<DailyEaseResponse>({
-    queryKey: ['daily-ease'],
-    queryFn: () => apiClient<DailyEaseResponse>('/api/daily-ease'),
-    staleTime: 1000 * 60 * 5,
-  });
-
-  const dailyEaseScore = dailyEaseData?.data?.daily_ease?.score ?? 0;
-  const dailyEaseLabel = dailyEaseData?.data?.daily_ease?.label ?? '—';
-  const { offset: progressOffset, dotX: progressDotX, dotY: progressDotY } = calcProgress(dailyEaseScore);
+  const dailyEaseScore = dailyEaseLoading ? 0 : dailyEase.score;
+  const dailyEaseLabel = dailyEase.label;
+  const dailyEaseMessage = dailyEase.message;
+  const {
+    progress: dailyEaseProgress,
+    dashOffset: dailyEaseDashOffset,
+    dotX: progressDotX,
+    dotY: progressDotY,
+  } = calcProgress(dailyEaseScore);
 
   const displayName = getDisplayName(me) || 'Joy';
   const avatarUri =
@@ -103,7 +99,8 @@ export default function HomeScreen() {
   useFocusEffect(
     useCallback(() => {
       void refreshTodayChecklist();
-    }, [refreshTodayChecklist])
+      void refreshDailyEase();
+    }, [refreshDailyEase, refreshTodayChecklist])
   );
 
   async function handleStartReset() {
@@ -155,7 +152,7 @@ export default function HomeScreen() {
       <SafeAreaView edges={['top']} style={styles.safeArea}>
         <ScrollView
           bounces={false}
-          contentContainerStyle={styles.scrollContent}
+          contentContainerStyle={[styles.scrollContent, { paddingBottom: insets.bottom + 132 }]}
           showsVerticalScrollIndicator={false}>
           <View style={styles.header}>
             <View>
@@ -170,22 +167,13 @@ export default function HomeScreen() {
 
           <View style={styles.easeCard}>
             <View style={styles.easeCopy}>
-              <Text style={styles.easeTitle}>
-                You are building calm,{'\n'}and consistency. Keep{'\n'}going!
-              </Text>
+              <Text style={styles.easeTitle}>{dailyEaseMessage}</Text>
             </View>
 
             <View style={styles.easeMeter}>
               <Text style={styles.easeLabel}>Daily Ease</Text>
               <View style={styles.progressWrap}>
                 <Svg width={progressSize} height={progressSize} viewBox={`0 0 ${progressSize} ${progressSize}`}>
-                  <Defs>
-                    <SvgLinearGradient id="dailyEaseGradient" x1="0" y1="0" x2="1" y2="1">
-                      <Stop offset="0" stopColor="#70D48A" />
-                      <Stop offset="0.42" stopColor="#F9F4F0" />
-                      <Stop offset="1" stopColor="#7863DC" />
-                    </SvgLinearGradient>
-                  </Defs>
                   <Circle
                     cx={progressDotCenter}
                     cy={progressDotCenter}
@@ -194,32 +182,35 @@ export default function HomeScreen() {
                     strokeWidth={progressStroke}
                     fill="transparent"
                   />
-                  <Circle
-                    cx={progressDotCenter}
-                    cy={progressDotCenter}
-                    r={progressRadius}
-                    stroke="url(#dailyEaseGradient)"
-                    strokeWidth={progressStroke}
-                    fill="transparent"
-                    strokeDasharray={`${progressCircumference} ${progressCircumference}`}
-                    strokeDashoffset={progressOffset}
-                    strokeLinecap="round"
-                    rotation="-90"
-                    origin={`${progressDotCenter}, ${progressDotCenter}`}
-                  />
+                  {dailyEaseProgress > 0 ? (
+                    <Circle
+                      cx={progressDotCenter}
+                      cy={progressDotCenter}
+                      r={progressRadius}
+                      stroke="#8264F9"
+                      strokeWidth={progressStroke}
+                      fill="transparent"
+                      strokeDasharray={progressCircumference}
+                      strokeDashoffset={dailyEaseDashOffset}
+                      strokeLinecap="round"
+                      transform={`rotate(-90 ${progressDotCenter} ${progressDotCenter})`}
+                    />
+                  ) : null}
                 </Svg>
-                <View
-                  style={[
-                    styles.progressDot,
-                    {
-                      left: progressDotX - progressDotRadius,
-                      top: progressDotY - progressDotRadius,
-                    },
-                  ]}
-                />
+                {dailyEaseProgress > 0 ? (
+                  <View
+                    style={[
+                      styles.progressDot,
+                      {
+                        left: progressDotX - progressDotRadius,
+                        top: progressDotY - progressDotRadius,
+                      },
+                    ]}
+                  />
+                ) : null}
               </View>
               <View style={styles.progressCenter}>
-                <Text style={styles.progressValue}>{dailyEaseScore}</Text>
+                <Text style={styles.progressValue}>{dailyEaseLoading ? '...' : dailyEaseScore}</Text>
                 <Text style={styles.progressCaption}>{dailyEaseLabel}</Text>
               </View>
             </View>
@@ -354,7 +345,6 @@ const styles = StyleSheet.create({
   scrollContent: {
     paddingHorizontal: 12,
     paddingTop: 60,
-    paddingBottom: 112,
   },
   header: {
     alignItems: 'flex-start',
@@ -394,7 +384,7 @@ const styles = StyleSheet.create({
     width: 40,
   },
   easeCard: {
-    backgroundColor: 'rgba(255,255,255,0.6)',
+    backgroundColor: 'rgba(255, 255, 255, 0.5)',
     borderRadius: 12,
     flexDirection: 'row',
     justifyContent: 'space-between',

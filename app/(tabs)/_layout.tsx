@@ -15,8 +15,6 @@ const menuIcons: Record<string, keyof typeof Ionicons.glyphMap> = {
   profile: 'person-outline',
 };
 
-const HIDDEN_ROUTES = new Set(['screen4']);
-
 function ToolsTabIcon({ color }: { color: string }) {
   return (
     <Svg height={24} style={styles.tabBarIcon} viewBox="0 0 18 21" width={24}>
@@ -34,11 +32,11 @@ function FloatingTabBar({ state, descriptors, navigation }: BottomTabBarProps) {
   const insets = useSafeAreaInsets();
 
   return (
-    <View style={[styles.floatingTabBar, { bottom: Math.max(insets.bottom, 8) }]}>
+    <View style={[styles.floatingTabBar, { bottom: insets.bottom + 8 }]}>
       {state.routes.map((route, index) => {
         const options = descriptors[route.key]?.options;
 
-        if (HIDDEN_ROUTES.has(route.name) || (options as { href?: string | null } | undefined)?.href === null) {
+        if ((options as { href?: string | null } | undefined)?.href === null) {
           return null;
         }
 
@@ -118,12 +116,6 @@ export default function TabLayout() {
         options={{
           title: 'Profile',
           headerShown: false,
-        }}
-      />
-      <Tabs.Screen
-        name="screen4"
-        options={{
-          href: null,
         }}
       />
     </Tabs>
