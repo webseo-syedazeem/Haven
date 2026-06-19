@@ -7,10 +7,6 @@ const API_BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL ?? 'http://18.171.253.
 export const AUTH_TOKEN_KEY = 'haven.auth.access_token';
 const LEGACY_AUTH_TOKEN_KEY = 'access_token';
 
-function getShortTokenLog(token: string | null | undefined) {
-  return token ? `${token.slice(0, 10)}...` : '';
-}
-
 function getWebStorage() {
   return typeof globalThis !== 'undefined'
     ? (globalThis as unknown as { localStorage?: Storage }).localStorage
@@ -77,9 +73,6 @@ export async function apiClient<T>(
       await setStoredItem(LEGACY_AUTH_TOKEN_KEY, token);
     }
   }
-
-  console.log('API token exists:', Boolean(token), getShortTokenLog(token));
-
   const res = await fetch(`${API_BASE_URL}${path}`, {
     ...options,
     headers: {
@@ -88,9 +81,6 @@ export async function apiClient<T>(
       ...((options.headers as Record<string, string>) ?? {}),
     },
   });
-  if (__DEV__) {
-    console.log(`API: ${options.method || 'GET'} ${API_BASE_URL}${path} → ${res.status}`);
-  }
   const data = await res.json();
   if (!data.success) throw new Error(data.error ?? 'Request failed');
   return data;

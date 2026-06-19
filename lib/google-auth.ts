@@ -25,8 +25,6 @@ const withRedirectTo = (authUrl: string, redirectUri: string) => {
 export const signInWithGoogle = async () => {
   const redirectUri = Linking.createURL('auth/callback');
 
-  console.log('Google redirect URI:', redirectUri);
-
   const { data, error } = await supabase.auth.signInWithOAuth({
     options: {
       redirectTo: redirectUri,
@@ -40,8 +38,6 @@ export const signInWithGoogle = async () => {
   }
 
   const authUrl = withRedirectTo(data.url, redirectUri);
-
-  console.log('Google auth URL:', authUrl);
 
   const result = await WebBrowser.openAuthSessionAsync(authUrl, redirectUri);
 
