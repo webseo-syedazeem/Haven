@@ -36,6 +36,14 @@
     "plugins": [
       "expo-router",
       [
+        "expo-build-properties",
+        {
+          "android": {
+            "minSdkVersion": 26
+          }
+        }
+      ],
+      [
         "expo-splash-screen",
         {
           "backgroundColor": "#FFFFFF",
@@ -66,14 +74,16 @@
           "visibility": "visible"
         }
       ],
-      "expo-asset"
+      "expo-asset",
+      "expo-health-connect",
+      "react-native-health"
     ],
     "experiments": {
       "typedRoutes": true
     },
     "extra": {
       "eas": {
-        "projectId": "08fd4b46-0da6-4bfa-bb6a-ccf6cfaa634a"
+        "projectId": "4271f885-2f88-4105-af46-131bee5414ba"
       }
     }
   }
