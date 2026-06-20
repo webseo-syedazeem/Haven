@@ -1,4 +1,4 @@
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useState } from 'react';
 import {
@@ -47,6 +47,7 @@ function toggleOption(selectedValues: string[], optionId: string) {
 }
 
 export function DailyReflectionScreen() {
+  const params = useLocalSearchParams<{ stress?: string }>();
   const [selectedStressOptions, setSelectedStressOptions] = useState<string[]>([]);
   const [selectedHelpedOptions, setSelectedHelpedOptions] = useState<string[]>([]);
   const [reflection, setReflection] = useState('');
@@ -69,7 +70,10 @@ export function DailyReflectionScreen() {
     }
 
     setValidationMessage('');
-    router.push('/thank-you');
+    router.push({
+      pathname: '/thank-you',
+      params: params.stress ? { stress: params.stress } : {},
+    });
   };
 
   return (

@@ -14,9 +14,9 @@ export class ProgressAuthError extends Error {
 
 export type ProgressChartType =
   | 'stress-breathwork'
-  | 'movement-stress'
-  | 'sleep-mood'
-  | 'temperature-stress';
+  | 'daily-ease-trend'
+  | 'sleep-stress'
+  | 'tasks-stress';
 
 export type ProgressPeriod = 'Day' | 'Week' | 'Month' | 'Year';
 
@@ -67,36 +67,41 @@ export type ProgressResponse = {
 type UnknownRecord = Record<string, unknown>;
 
 type ApiProgressPayload = {
-  breathing_usage?: UnknownRecord;
-  daily_ease_trend?: {
-    daily_ease?: number;
+  breathing_usage_chart_data?: {
+    count?: number;
     date?: string;
-    stress_level?: number;
+    label?: string;
+    name?: string;
   }[];
-  mood_frequency?: UnknownRecord;
-  sleep_vs_stress?: {
+  sleep_mood_chart_data?: {
     avg_stress?: number;
+    date?: string;
+    hours?: number;
     sleep_quality?: string;
+    label?: string;
   }[];
-  soundscape_usage_count?: number;
   stress_vs_breathwork?: {
     breathwork_days_avg_stress?: number;
     insight?: string;
     no_breathwork_days_avg_stress?: number;
   };
   summary_insight?: string;
-  tasks_vs_stress?: {
-    high_completion_avg_stress?: number;
+  insight?: string;
+  summary?: string;
+  tasks_chart_data?: {
+    avg_stress?: number;
+    completion_pct?: number;
+    date?: string;
     insight?: string;
-    low_completion_avg_stress?: number;
-  };
+    label?: string;
+  }[];
 };
 
 const themeColors: Record<ProgressChartType, string> = {
-  'movement-stress': '#28B92A',
-  'sleep-mood': '#7B61FF',
+  'daily-ease-trend': '#28B92A',
+  'sleep-stress': '#7B61FF',
   'stress-breathwork': '#FF0059',
-  'temperature-stress': '#FD5728',
+  'tasks-stress': '#FD5728',
 };
 
 function isRecord(value: unknown): value is UnknownRecord {
@@ -239,61 +244,89 @@ function buildPeriod(
 
 function mapProgress(progress: ApiProgressPayload): ProgressResponse {
   const stress = progress.stress_vs_breathwork;
-  const sleep = progress.sleep_vs_stress ?? [];
-  const tasks = progress.tasks_vs_stress;
-  const dailyTrend = progress.daily_ease_trend ?? [];
-  const breathingUsage = sumRecordValues(progress.breathing_usage);
-  const moodFrequency = progress.mood_frequency;
-  const moodTotal = sumRecordValues(moodFrequency);
-  const soundscapeCount = progress.soundscape_usage_count;
-  const latestTrend = dailyTrend[dailyTrend.length - 1];
-  const previousTrend = dailyTrend[dailyTrend.length - 2];
-  const avgSleepStress = average(compactNumbers(sleep.map((item) => item.avg_stress)));
-  const avgDailyEase = average(compactNumbers(dailyTrend.map((item) => item.daily_ease)));
-  const stressValues = compactNumbers([
-    stress?.no_breathwork_days_avg_stress,
-    stress?.breathwork_days_avg_stress,
-  ]);
-  const taskValues = compactNumbers([
-    tasks?.low_completion_avg_stress,
-    tasks?.high_completion_avg_stress,
-  ]);
-  const trendEaseValues = compactNumbers(dailyTrend.map((item) => item.daily_ease));
-  const trendLabels = dailyTrend.map((item) => dateLabel(item.date)).filter(Boolean);
-  const stressChange = formatChange(
-    stress?.breathwork_days_avg_stress,
-    stress?.no_breathwork_days_avg_stress
+  const breathingUsageData = Array.isArray(progress.breathing_usage_chart_data)
+    ? progress.breathing_usage_chart_data
+    : [];
+  const sleepMoodData = Array.isArray(progress.sleep_mood_chart_data)
+    ? progress.sleep_mood_chart_data
+    : [];
+  const tasksChartData = Array.isArray(progress.tasks_chart_data)
+    ? progress.tasks_chart_data
+    : [];
+  const breathworkStress = Number(stress?.breathwork_days_avg_stress ?? 0);
+  const noBreathworkStress = Number(stress?.no_breathwork_days_avg_stress ?? 0);
+  const avgStress = breathworkStress > 0 || noBreathworkStress > 0
+    ? (breathworkStress + noBreathworkStress) / 2
+    : 0;
+  const totalBreathwork = breathingUsageData.reduce(
+    (sum, item) => sum + (Number.isFinite(Number(item.count)) ? Number(item.count) : 0),
+    0
+  );
+  const sleepData = sleepMoodData.filter((item) => Number(item.avg_stress ?? 0) > 0);
+  const avgSleep = sleepData.length > 0
+    ? sleepData.reduce((sum, item) => sum + (Number.isFinite(Number(item.hours)) ? Number(item.hours) : 0), 0) / sleepData.length
+    : 0;
+  const taskData = tasksChartData.filter((item) => Number(item.avg_stress ?? 0) > 0);
+  const avgTask = taskData.length > 0
+    ? taskData.reduce((sum, item) => sum + (Number.isFinite(Number(item.completion_pct)) ? Number(item.completion_pct) : 0), 0) / taskData.length
+    : 0;
+  const summaryText = progress.summary_insight || progress.insight || progress.summary || '';
+  const stressValues = [noBreathworkStress, breathworkStress];
+  const breathingValues = breathingUsageData.map((item) => Number(item.count ?? 0));
+  const breathingLabels = breathingUsageData.map((item, index) =>
+    item.label || item.name || dateLabel(item.date) || String(index + 1)
+  );
+  const sleepValues = sleepMoodData.map((item) => Number(item.avg_stress ?? 0));
+  const sleepLabels = sleepMoodData.map((item, index) =>
+    item.sleep_quality || item.label || dateLabel(item.date) || String(index + 1)
+  );
+  const taskValues = tasksChartData.map((item) => Number(item.avg_stress ?? 0));
+  const taskLabels = tasksChartData.map((item, index) => {
+    const completion = Number(item.completion_pct);
+    return Number.isFinite(completion)
+      ? `${Math.round(completion)}%`
+      : item.label || dateLabel(item.date) || String(index + 1);
+  });
+  const stressChange = formatChange(breathworkStress, noBreathworkStress);
+  const breathworkChange = formatChange(
+    breathingValues[breathingValues.length - 1],
+    breathingValues[breathingValues.length - 2],
+    false
+  );
+  const sleepChange = formatChange(
+    sleepValues[sleepValues.length - 1],
+    sleepValues[sleepValues.length - 2]
   );
   const tasksChange = formatChange(
-    tasks?.high_completion_avg_stress,
-    tasks?.low_completion_avg_stress
+    taskValues[taskValues.length - 1],
+    taskValues[taskValues.length - 2]
   );
-  const easeChange = formatChange(latestTrend?.daily_ease, previousTrend?.daily_ease, false);
+  const tasksInsight = tasksChartData.find((item) => item.insight)?.insight ?? '';
 
   const metrics: ProgressMetric[] = [
     {
-      change: formatChange(latestTrend?.stress_level, previousTrend?.stress_level),
-      changeTone: toneFromChange(formatChange(latestTrend?.stress_level, previousTrend?.stress_level)),
+      change: stressChange,
+      changeTone: toneFromChange(stressChange),
       icon: 'heart-outline',
-      label: 'Heart Rate',
+      label: 'Avg Stress',
       themeColor: '#FF0059',
-      value: formatNumber(latestTrend?.stress_level),
+      value: formatNumber(avgStress),
     },
     {
-      change: '',
+      change: breathworkChange,
       changeTone: 'positive',
       icon: 'leaf-outline',
       label: 'Breathwork',
       themeColor: '#6339FB',
-      value: formatNumber(breathingUsage, 0),
+      value: formatNumber(totalBreathwork, 0),
     },
     {
-      change: '',
-      changeTone: 'positive',
+      change: sleepChange,
+      changeTone: toneFromChange(sleepChange),
       icon: 'moon-outline',
-      label: 'Sleep Score',
+      label: 'Sleep',
       themeColor: '#018AFE',
-      value: formatNumber(avgSleepStress),
+      value: formatNumber(avgSleep),
     },
     {
       change: tasksChange,
@@ -301,7 +334,7 @@ function mapProgress(progress: ApiProgressPayload): ProgressResponse {
       icon: 'checkmark-circle-outline',
       label: 'Tasks',
       themeColor: '#2EB668',
-      value: formatNumber(tasks?.high_completion_avg_stress),
+      value: formatNumber(avgTask, 0),
     },
   ];
 
@@ -317,126 +350,126 @@ function mapProgress(progress: ApiProgressPayload): ProgressResponse {
       type: 'stress-breathwork',
     },
     {
-      data: trendEaseValues,
-      insight: progress.summary_insight ?? '',
-      labels: trendLabels,
-      stat: easeChange,
-      subtitle: progress.summary_insight ?? '',
-      themeColor: themeColors['movement-stress'],
+      data: breathingValues,
+      insight: summaryText,
+      labels: breathingLabels,
+      stat: breathworkChange,
+      subtitle: summaryText,
+      themeColor: themeColors['daily-ease-trend'],
       title: 'Daily Ease Trend',
-      type: 'movement-stress',
+      type: 'daily-ease-trend',
     },
     {
-      data: compactNumbers(sleep.map((item) => item.avg_stress)),
+      data: sleepValues,
       insight: '',
-      labels: sleep.map((item) => item.sleep_quality ?? '').filter(Boolean),
-      stat: '',
+      labels: sleepLabels,
+      stat: sleepChange,
       subtitle: 'Sleep quality compared with stress',
-      themeColor: themeColors['sleep-mood'],
+      themeColor: themeColors['sleep-stress'],
       title: 'Sleep Vs Stress',
-      type: 'sleep-mood',
+      type: 'sleep-stress',
     },
     {
       data: taskValues,
-      insight: tasks?.insight ?? '',
-      labels: ['Low completion', 'High completion'],
+      insight: tasksInsight,
+      labels: taskLabels,
       stat: tasksChange,
-      subtitle: tasks?.insight ?? '',
-      themeColor: themeColors['temperature-stress'],
+      subtitle: tasksInsight || 'Checklist and stress patterns are tracked',
+      themeColor: themeColors['tasks-stress'],
       title: 'Tasks Vs Stress',
-      type: 'temperature-stress',
+      type: 'tasks-stress',
     },
   ];
 
   const chartDetails: ProgressResponse['chartDetails'] = {
-    'movement-stress': {
+    'daily-ease-trend': {
       periods: {
-        Week: buildPeriod(trendLabels, trendEaseValues, progress.summary_insight ?? '', [
+        Week: buildPeriod(breathingLabels, breathingValues, summaryText, [
           {
-            change: easeChange,
-            changeTone: toneFromChange(easeChange, false),
+            change: breathworkChange,
+            changeTone: toneFromChange(breathworkChange, false),
             icon: 'analytics-outline',
-            label: 'Daily ease',
-            themeColor: themeColors['movement-stress'],
-            value: formatNumber(avgDailyEase),
+            label: 'Breathwork',
+            themeColor: themeColors['daily-ease-trend'],
+            value: formatNumber(totalBreathwork, 0),
           },
           {
-            change: formatChange(latestTrend?.stress_level, previousTrend?.stress_level),
-            changeTone: toneFromChange(formatChange(latestTrend?.stress_level, previousTrend?.stress_level)),
+            change: stressChange,
+            changeTone: toneFromChange(stressChange),
             icon: 'heart-outline',
-            label: 'Stress',
-            themeColor: themeColors['movement-stress'],
-            value: formatNumber(latestTrend?.stress_level),
+            label: 'Avg stress',
+            themeColor: themeColors['daily-ease-trend'],
+            value: formatNumber(avgStress),
           },
           {
             change: '',
             changeTone: 'positive',
-            icon: 'happy-outline',
-            label: 'Mood logs',
-            themeColor: themeColors['movement-stress'],
-            value: formatNumber(moodTotal, 0),
+            icon: 'moon-outline',
+            label: 'Sleep',
+            themeColor: themeColors['daily-ease-trend'],
+            value: formatNumber(avgSleep),
           },
           {
             change: '',
             changeTone: 'positive',
-            icon: 'musical-notes-outline',
-            label: 'Soundscapes',
-            themeColor: themeColors['movement-stress'],
-            value: formatNumber(soundscapeCount, 0),
+            icon: 'checkmark-circle-outline',
+            label: 'Tasks',
+            themeColor: themeColors['daily-ease-trend'],
+            value: formatNumber(avgTask, 0),
           },
         ]),
       },
-      subtitle: 'Daily ease and stress trend',
-      themeColor: themeColors['movement-stress'],
+      subtitle: summaryText || 'Daily ease trend',
+      themeColor: themeColors['daily-ease-trend'],
       title: 'Daily Ease Trend',
-      type: 'movement-stress',
+      type: 'daily-ease-trend',
     },
-    'sleep-mood': {
+    'sleep-stress': {
       periods: {
         Week: buildPeriod(
-          sleep.map((item) => item.sleep_quality ?? '').filter(Boolean),
-          compactNumbers(sleep.map((item) => item.avg_stress)),
+          sleepLabels,
+          sleepValues,
           'Sleep quality compared with stress',
           [
             {
-              change: '',
-              changeTone: 'positive',
+              change: sleepChange,
+              changeTone: toneFromChange(sleepChange),
               icon: 'moon-outline',
-              label: 'Avg stress',
-              themeColor: themeColors['sleep-mood'],
-              value: formatNumber(avgSleepStress),
+              label: 'Sleep',
+              themeColor: themeColors['sleep-stress'],
+              value: formatNumber(avgSleep),
             },
             {
               change: '',
               changeTone: 'positive',
               icon: 'list-outline',
-              label: 'Sleep groups',
-              themeColor: themeColors['sleep-mood'],
-              value: formatNumber(sleep.length, 0),
+              label: 'Groups',
+              themeColor: themeColors['sleep-stress'],
+              value: formatNumber(sleepMoodData.length, 0),
             },
             {
               change: '',
               changeTone: 'positive',
               icon: 'leaf-outline',
               label: 'Breathwork',
-              themeColor: themeColors['sleep-mood'],
-              value: formatNumber(breathingUsage, 0),
+              themeColor: themeColors['sleep-stress'],
+              value: formatNumber(totalBreathwork, 0),
             },
             {
               change: '',
               changeTone: 'positive',
-              icon: 'musical-notes-outline',
-              label: 'Soundscapes',
-              themeColor: themeColors['sleep-mood'],
-              value: formatNumber(soundscapeCount, 0),
+              icon: 'heart-outline',
+              label: 'Avg stress',
+              themeColor: themeColors['sleep-stress'],
+              value: formatNumber(average(sleepValues)),
             },
           ]
         ),
       },
       subtitle: 'Sleep quality compared with stress',
-      themeColor: themeColors['sleep-mood'],
+      themeColor: themeColors['sleep-stress'],
       title: 'Sleep Vs Stress',
-      type: 'sleep-mood',
+      type: 'sleep-stress',
     },
     'stress-breathwork': {
       periods: {
@@ -463,15 +496,15 @@ function mapProgress(progress: ApiProgressPayload): ProgressResponse {
             icon: 'leaf-outline',
             label: 'Breathwork',
             themeColor: themeColors['stress-breathwork'],
-            value: formatNumber(breathingUsage, 0),
+            value: formatNumber(totalBreathwork, 0),
           },
           {
             change: '',
             changeTone: 'positive',
-            icon: 'musical-notes-outline',
-            label: 'Soundscapes',
+            icon: 'moon-outline',
+            label: 'Sleep',
             themeColor: themeColors['stress-breathwork'],
-            value: formatNumber(soundscapeCount, 0),
+            value: formatNumber(avgSleep),
           },
         ]),
       },
@@ -480,47 +513,47 @@ function mapProgress(progress: ApiProgressPayload): ProgressResponse {
       title: 'Stress Vs Breathwork',
       type: 'stress-breathwork',
     },
-    'temperature-stress': {
+    'tasks-stress': {
       periods: {
-        Week: buildPeriod(['Low completion', 'High completion'], taskValues, tasks?.insight ?? '', [
+        Week: buildPeriod(taskLabels, taskValues, tasksInsight, [
           {
             change: tasksChange,
             changeTone: toneFromChange(tasksChange),
             icon: 'checkmark-circle-outline',
-            label: 'High tasks',
-            themeColor: themeColors['temperature-stress'],
-            value: formatNumber(tasks?.high_completion_avg_stress),
+            label: 'Tasks',
+            themeColor: themeColors['tasks-stress'],
+            value: formatNumber(avgTask, 0),
           },
           {
             change: '',
             changeTone: 'negative',
             icon: 'remove-circle-outline',
-            label: 'Low tasks',
-            themeColor: themeColors['temperature-stress'],
-            value: formatNumber(tasks?.low_completion_avg_stress),
+            label: 'Entries',
+            themeColor: themeColors['tasks-stress'],
+            value: formatNumber(tasksChartData.length, 0),
           },
           {
             change: '',
             changeTone: 'positive',
-            icon: 'happy-outline',
-            label: 'Mood logs',
-            themeColor: themeColors['temperature-stress'],
-            value: formatNumber(moodTotal, 0),
+            icon: 'heart-outline',
+            label: 'Avg stress',
+            themeColor: themeColors['tasks-stress'],
+            value: formatNumber(average(taskValues)),
           },
           {
             change: '',
             changeTone: 'positive',
-            icon: 'analytics-outline',
-            label: 'Daily ease',
-            themeColor: themeColors['temperature-stress'],
-            value: formatNumber(avgDailyEase),
+            icon: 'leaf-outline',
+            label: 'Breathwork',
+            themeColor: themeColors['tasks-stress'],
+            value: formatNumber(totalBreathwork, 0),
           },
         ]),
       },
       subtitle: 'How task completion relates to stress',
-      themeColor: themeColors['temperature-stress'],
+      themeColor: themeColors['tasks-stress'],
       title: 'Tasks Vs Stress',
-      type: 'temperature-stress',
+      type: 'tasks-stress',
     },
   };
 
@@ -528,7 +561,7 @@ function mapProgress(progress: ApiProgressPayload): ProgressResponse {
     chartDetails,
     charts,
     metrics,
-    summary: progress.summary_insight ?? '',
+    summary: summaryText,
   };
 }
 

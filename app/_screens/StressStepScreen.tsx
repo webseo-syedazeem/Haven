@@ -1,5 +1,5 @@
 import { Image } from 'expo-image';
-import { router, type Href } from 'expo-router';
+import { router } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
@@ -198,7 +198,10 @@ export function StressStepScreen() {
     }
 
     setValidationMessage('');
-    router.push('/daily-reflection' as Href);
+    router.push({
+      pathname: '/daily-reflection',
+      params: { stress: String(stressValue) },
+    });
   };
 
   const handleStressValueChange = (value: number) => {

@@ -62,7 +62,7 @@ export default function ToolsScreen() {
       <SafeAreaView edges={['top']} style={styles.safeArea}>
         <ScrollView
           bounces={false}
-          contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 132 }]}
+          contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 112 }]}
           showsVerticalScrollIndicator={false}>
           <View style={styles.header}>
             <Text style={styles.title}>Tools</Text>

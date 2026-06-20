@@ -5,7 +5,6 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useEffect } from 'react';
 import {
   ActivityIndicator,
-  ImageBackground,
   Pressable,
   RefreshControl,
   ScrollView,
@@ -75,15 +74,15 @@ function getMetricVisual(score: Score, index: number) {
 }
 
 function getChartIcon(card: ChartCard) {
-  if (card.type === 'movement-stress') {
+  if (card.type === 'daily-ease-trend') {
     return { iconAsset: movementIcon, iconName: undefined };
   }
 
-  if (card.type === 'sleep-mood') {
+  if (card.type === 'sleep-stress') {
     return { iconAsset: windDownIcon, iconName: undefined };
   }
 
-  if (card.type === 'temperature-stress') {
+  if (card.type === 'tasks-stress') {
     return { iconAsset: undefined, iconName: 'checkmark-circle-outline' as const };
   }
 
@@ -91,7 +90,7 @@ function getChartIcon(card: ChartCard) {
 }
 
 function getChartVisual(card: ProgressChartOverview): ChartCard {
-  if (card.type === 'movement-stress') {
+  if (card.type === 'daily-ease-trend') {
     return {
       ...card,
       barColor: '#0F8F24',
@@ -101,7 +100,7 @@ function getChartVisual(card: ProgressChartOverview): ChartCard {
     };
   }
 
-  if (card.type === 'temperature-stress') {
+  if (card.type === 'tasks-stress') {
     return {
       ...card,
       barColor: card.themeColor,
@@ -113,8 +112,35 @@ function getChartVisual(card: ProgressChartOverview): ChartCard {
 
   return {
     ...card,
-    lineColor: card.type === 'sleep-mood' ? '#A18EFF' : card.themeColor,
+    lineColor: card.type === 'sleep-stress' ? '#A18EFF' : card.themeColor,
   };
+}
+
+function splitChartLabel(label: string) {
+  const trimmedLabel = label.trim();
+  const normalized = trimmedLabel.toLowerCase();
+  const labelMap: Record<string, string[]> = {
+    breathwork: ['Breathwork'],
+    'high completion': ['High', 'completion'],
+    'low completion': ['Low', 'completion'],
+    'no breathwork': ['No', 'breathwork'],
+  };
+
+  if (labelMap[normalized]) {
+    return labelMap[normalized];
+  }
+
+  const words = trimmedLabel.split(/\s+/).filter(Boolean);
+
+  if (words.length <= 1) {
+    return [trimmedLabel.length > 11 ? `${trimmedLabel.slice(0, 10)}.` : trimmedLabel];
+  }
+
+  if (words.length === 2) {
+    return words;
+  }
+
+  return [words.slice(0, Math.ceil(words.length / 2)).join(' '), words.slice(Math.ceil(words.length / 2)).join(' ')];
 }
 
 function ScoreCircle({ index, score }: { index: number; score: Score }) {
@@ -186,12 +212,12 @@ function ScoreCircle({ index, score }: { index: number; score: Score }) {
 }
 
 function ValueChart({ card }: { card: ChartCard }) {
-  const chartWidth = 132;
-  const chartHeight = 104;
-  const left = 28;
-  const right = 8;
+  const chartWidth = 148;
+  const chartHeight = 112;
+  const left = 38;
+  const right = 18;
   const top = 10;
-  const bottom = 24;
+  const bottom = 34;
   const plotWidth = chartWidth - left - right;
   const plotHeight = chartHeight - top - bottom;
   const values = card.data.length ? card.data : [0, 0];
@@ -232,7 +258,11 @@ function ValueChart({ card }: { card: ChartCard }) {
   );
 
   return (
-    <Svg height={chartHeight} width={chartWidth} viewBox={`0 0 ${chartWidth} ${chartHeight}`}>
+    <Svg
+      height={chartHeight}
+      overflow="visible"
+      width={chartWidth}
+      viewBox={`0 0 ${chartWidth} ${chartHeight}`}>
       <Defs>
         <SvgLinearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
           <Stop offset="0" stopColor={barGradientStart} />
@@ -262,7 +292,7 @@ function ValueChart({ card }: { card: ChartCard }) {
         stroke="#D9D9D9"
         strokeWidth={1}
       />
-      {(card.type === 'movement-stress' || card.type === 'temperature-stress') &&
+      {(card.type === 'daily-ease-trend' || card.type === 'tasks-stress') &&
         points.slice(0, labels.length).map((point, index) => {
           const barY = Math.min(top + plotHeight, point.y + (card.barTopGap ?? 0));
           const barHeight = top + plotHeight - barY;
@@ -284,7 +314,7 @@ function ValueChart({ card }: { card: ChartCard }) {
           .map((point, index) => `${index === 0 ? 'M' : 'L'}${point.x} ${point.y}`)
           .join(' ')} L${points[points.length - 1].x} ${top + plotHeight} L${points[0].x} ${top + plotHeight} Z`}
         fill={accent}
-        opacity={card.type === 'stress-breathwork' || card.type === 'sleep-mood' ? 0.05 : 0}
+        opacity={card.type === 'stress-breathwork' || card.type === 'sleep-stress' ? 0.05 : 0}
       />
       <Polyline
         fill="none"
@@ -303,17 +333,24 @@ function ValueChart({ card }: { card: ChartCard }) {
           r={4}
         />
       ))}
-      {labels.map((label, index) => (
-        <SvgText
-          fill="#54555A"
-          fontSize="10"
-          key={`${card.title}-label-${label}-${index}`}
-          textAnchor="middle"
-          x={left + index * labelStep}
-          y={chartHeight - 6}>
-          {label}
-        </SvgText>
-      ))}
+      {labels.map((label, index) => {
+        const lines = splitChartLabel(label);
+        const baseX = left + index * labelStep;
+        const x = index === 0 ? baseX - 5 : index === labels.length - 1 ? baseX + 5 : baseX;
+        const textAnchor = index === 0 ? 'start' : index === labels.length - 1 ? 'end' : 'middle';
+
+        return lines.map((line, lineIndex) => (
+          <SvgText
+            fill="#54555A"
+            fontSize={line.length > 10 ? '8' : '9'}
+            key={`${card.title}-label-${label}-${index}-${lineIndex}`}
+            textAnchor={textAnchor}
+            x={x}
+            y={chartHeight - 17 + lineIndex * 10}>
+            {line}
+          </SvgText>
+        ));
+      })}
       {!!card.stat && (
         <>
           <Rect
@@ -366,7 +403,7 @@ export default function ProgressScreen() {
       <SafeAreaView edges={['top']} style={styles.safeArea}>
         <ScrollView
           bounces={false}
-          contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 132 }]}
+          contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 112 }]}
           refreshControl={
             <RefreshControl refreshing={isRefreshing} onRefresh={refreshProgress} tintColor="#3770FC" />
           }
@@ -377,11 +414,8 @@ export default function ProgressScreen() {
           </View>
 
           <View style={styles.weekPanel}>
-            <ImageBackground
-              source={thisWeekBackground}
-              resizeMode="cover"
-              imageStyle={styles.weekCardImage}
-              style={styles.weekCard}>
+            <View style={styles.weekCard}>
+              <Image source={thisWeekBackground} style={styles.weekCardImage} contentFit="cover" />
               <View style={styles.weekHeader}>
                 <View style={styles.weekIcon}>
                   <Image source={thisWeekIcon} style={styles.weekIconImage} contentFit="contain" />
@@ -389,7 +423,7 @@ export default function ProgressScreen() {
                 <Text style={styles.weekTitle}>This Week</Text>
               </View>
               <Text style={styles.weekText}>{progress?.summary}</Text>
-            </ImageBackground>
+            </View>
           </View>
 
           {isLoading ? (
@@ -481,9 +515,9 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     flexBasis: '48%',
     flexGrow: 1,
-    minHeight: 178,
+    minHeight: 188,
     paddingBottom: 12,
-    paddingHorizontal: 10,
+    paddingHorizontal: 8,
     paddingTop: 10,
     shadowColor: '#000000',
     shadowOffset: { width: 0, height: 4 },
@@ -542,6 +576,8 @@ const styles = StyleSheet.create({
   chartPlot: {
     alignItems: 'flex-start',
     alignSelf: 'stretch',
+    overflow: 'visible',
+    zIndex: 3,
   },
   chartSubtitle: {
     color: '#173F5F',
@@ -702,21 +738,22 @@ const styles = StyleSheet.create({
     lineHeight: 42,
   },
   weekCard: {
+    alignSelf: 'stretch',
     borderRadius: 8,
     minHeight: 150,
     overflow: 'hidden',
     paddingHorizontal: 16,
     paddingTop: 16,
     position: 'relative',
-    alignSelf: 'stretch',
+    width: '100%',
   },
   weekCardImage: {
     borderRadius: 8,
-    height: '100%',
+    bottom: 0,
     left: 0,
     position: 'absolute',
+    right: 0,
     top: 0,
-    width: '100%',
   },
   weekPanel: {
     backgroundColor: '#FFFFFF',
@@ -755,7 +792,7 @@ const styles = StyleSheet.create({
     width: 16,
   },
   weekText: {
-    color: '#173F5F',
+    color: '#FFFFFF',
     fontFamily: AppFonts.sansRegular,
     fontSize: 16,
     fontWeight: '400',

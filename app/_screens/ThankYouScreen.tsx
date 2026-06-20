@@ -1,5 +1,6 @@
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import {
   Pressable,
   ScrollView,
@@ -7,20 +8,44 @@ import {
   Text,
   View,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { ScreenWrapper, useScreenBottomPadding } from '@/components/ScreenWrapper';
+import { ScreenWrapper } from '@/components/ScreenWrapper';
 import { AppFonts } from '@/constants/theme';
+import { useDailyEase } from '@/contexts/DailyEaseContext';
+import { useUser } from '@/hooks/useUser';
+import { getDisplayName } from '@/lib/api/user';
 
 const CHECK_ICON = require('@/assets/images/done.svg');
 const LEAF_ICON = require('@/assets/images/leves.svg');
 
-const summaryStats = [
-  { id: 'stress-today', label: 'Stress Today', status: 'High' },
-  { id: 'daily-ease', label: 'Daily Ease', value: '72', status: 'Supported', accent: true },
-];
+function getStressStatus(value: number) {
+  if (value <= 3) {
+    return 'Normal';
+  }
+
+  if (value >= 4 && value <= 6) {
+    return 'Medium';
+  }
+
+  return 'High';
+}
 
 export function ThankYouScreen() {
-  const bottomPadding = useScreenBottomPadding();
+  const router = useRouter();
+  const insets = useSafeAreaInsets();
+  const { dailyEase } = useDailyEase();
+  const params = useLocalSearchParams<{ stress?: string }>();
+  const { data: me } = useUser();
+  const displayName = getDisplayName(me) || 'there';
+  const parsedStress = Number(params.stress);
+  const stressValue = Number.isFinite(parsedStress)
+    ? Math.min(10, Math.max(0, Math.round(parsedStress)))
+    : 7;
+  const summaryStats = [
+    { id: 'stress-today', label: 'Stress Today', status: getStressStatus(stressValue), value: String(stressValue) },
+    { id: 'daily-ease', label: 'Daily Ease', value: String(dailyEase.score), status: dailyEase.label, accent: true },
+  ];
 
   return (
     <View style={styles.screen}>
@@ -35,16 +60,16 @@ export function ThankYouScreen() {
             end={{ x: 0, y: 1 }}
             style={styles.backgroundFade}
           />
-        }
-        middleContent={
+        }>
+        <View style={styles.contentShell}>
           <ScrollView
             bounces={false}
-            contentContainerStyle={[styles.scrollContent, { paddingBottom: bottomPadding }]}
+            contentContainerStyle={styles.scrollContent}
             showsVerticalScrollIndicator={false}>
             <View style={styles.header}>
               <Image source={CHECK_ICON} style={styles.checkIcon} contentFit="contain" />
               <Text allowFontScaling={false} style={styles.heading}>
-                Thanks Jhon!
+                Thanks {displayName}!
               </Text>
               <Text allowFontScaling={false} style={styles.subtitle}>
                 Your reflection helps Heaven understand your pattern
@@ -60,7 +85,7 @@ export function ThankYouScreen() {
                   {stat.id === 'stress-today' ? (
                     <View style={styles.stressValueRow}>
                       <Text allowFontScaling={false} style={styles.statValue}>
-                        7
+                        {stat.value}
                       </Text>
                       <Text allowFontScaling={false} style={styles.statValueSmall}>
                         /10
@@ -94,17 +119,18 @@ export function ThankYouScreen() {
               </View>
             </View>
 
-            <View style={styles.bottomSpacer} />
-
+          </ScrollView>
+          <View style={[styles.bottomButtonContainer, { paddingBottom: insets.bottom + 24 }]}>
             <Pressable
               accessibilityRole="button"
-              style={({ pressed }) => [styles.doneButton, pressed && styles.pressed]}>
+              onPress={() => router.replace('/(tabs)')}
+              style={({ pressed }) => [styles.continueButton, pressed && styles.pressed]}>
               <LinearGradient
                 colors={['#5AA1E2', '#0D6FD0']}
                 end={{ x: 0, y: 1 }}
                 locations={[0.0379, 0.75]}
                 start={{ x: 0, y: 0 }}
-                style={styles.doneGradient}>
+                style={styles.continueGradient}>
                 <View pointerEvents="none" style={styles.innerShadow}>
                   <LinearGradient
                     colors={['rgba(255, 255, 255, 0.5)', 'rgba(255, 255, 255, 0)']}
@@ -119,13 +145,12 @@ export function ThankYouScreen() {
                     style={styles.innerShadowLeft}
                   />
                 </View>
-                <Text style={styles.doneText}>Done</Text>
+                <Text style={styles.continueText}>Done</Text>
               </LinearGradient>
             </Pressable>
-          </ScrollView>
-        }
-        middleContentStyle={styles.middleContent}
-      />
+          </View>
+        </View>
+      </ScreenWrapper>
     </View>
   );
 }
@@ -140,12 +165,13 @@ const styles = StyleSheet.create({
   backgroundFade: {
     ...StyleSheet.absoluteFillObject,
   },
-  middleContent: {
-    paddingHorizontal: 20,
+  contentShell: {
+    flex: 1,
     width: '100%',
   },
   scrollContent: {
     flexGrow: 1,
+    paddingHorizontal: 20,
     paddingTop: 60,
     width: '100%',
   },
@@ -180,7 +206,7 @@ const styles = StyleSheet.create({
   statsRow: {
     width: '100%',
     flexDirection: 'row',
-    gap: 4,
+    gap: 8,
     marginBottom: 27,
   },
   statCard: {
@@ -188,16 +214,11 @@ const styles = StyleSheet.create({
     height: 140,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.18)',
-    backgroundColor: 'rgba(255,255,255,0.34)',
+    borderColor: 'rgba(255, 255, 255, 0.28)',
+    backgroundColor: 'rgba(255, 255, 255, 0.5)',
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: 10,
-    shadowColor: '#000000',
-    shadowOpacity: 0.04,
-    shadowRadius: 10,
-    shadowOffset: { width: 0, height: 4 },
-    elevation: 1,
   },
   statLabel: {
     fontFamily: AppFonts.sansMedium,
@@ -242,16 +263,13 @@ const styles = StyleSheet.create({
     width: '100%',
     minHeight: 86,
     borderRadius: 12,
-    backgroundColor: '#2EB66814',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.24)',
+    backgroundColor: 'rgba(255, 255, 255, 0.5)',
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 12,
     paddingVertical: 12,
-    shadowColor: '#000000',
-    shadowOpacity: 0.04,
-    shadowRadius: 8,
-    shadowOffset: { width: 0, height: 4 },
-    elevation: 2,
   },
   leafIconCircle: {
     width: 40,
@@ -285,28 +303,27 @@ const styles = StyleSheet.create({
     color: '#2EB668',
     marginTop: 2,
   },
-  bottomSpacer: {
-    flex: 1,
-    minHeight: 31,
+  bottomButtonContainer: {
+    paddingHorizontal: 24,
+    paddingTop: 16,
+    width: '100%',
   },
-  doneButton: {
+  continueButton: {
     alignItems: 'center',
-    alignSelf: 'center',
     backgroundColor: '#0d6fd0',
     borderRadius: 27,
     elevation: 0,
     height: 54,
-    maxWidth: 348,
     overflow: 'hidden',
     width: '100%',
   },
-  doneGradient: {
+  continueGradient: {
     alignItems: 'center',
     height: '100%',
     justifyContent: 'center',
     width: '100%',
   },
-  doneText: {
+  continueText: {
     color: '#ffffff',
     fontFamily: AppFonts.sansMedium,
     fontSize: 18,

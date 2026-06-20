@@ -1,5 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
-import { AppState, type AppStateStatus } from 'react-native';
+import * as SecureStore from 'expo-secure-store';
+import { AppState, Platform, type AppStateStatus } from 'react-native';
 
 import { checklistTasks, getChecklistStatusMap, type ChecklistTask } from '@/constants/checklistTasks';
 import { useDailyEase } from '@/contexts/DailyEaseContext';
@@ -57,7 +58,10 @@ function getWebStorage() {
 }
 
 async function getStoredChecklistCache() {
-  const text = getWebStorage()?.getItem(CHECKLIST_CACHE_KEY);
+  const text =
+    Platform.OS === 'web'
+      ? getWebStorage()?.getItem(CHECKLIST_CACHE_KEY)
+      : await SecureStore.getItemAsync(CHECKLIST_CACHE_KEY);
 
   if (!text) {
     return null;
@@ -66,17 +70,29 @@ async function getStoredChecklistCache() {
   try {
     return JSON.parse(text) as ChecklistCache;
   } catch {
-    getWebStorage()?.removeItem(CHECKLIST_CACHE_KEY);
+    await clearStoredChecklistCache();
     return null;
   }
 }
 
 async function setStoredChecklistCache(cache: ChecklistCache) {
-  getWebStorage()?.setItem(CHECKLIST_CACHE_KEY, JSON.stringify(cache));
+  const text = JSON.stringify(cache);
+
+  if (Platform.OS === 'web') {
+    getWebStorage()?.setItem(CHECKLIST_CACHE_KEY, text);
+    return;
+  }
+
+  await SecureStore.setItemAsync(CHECKLIST_CACHE_KEY, text);
 }
 
 async function clearStoredChecklistCache() {
-  getWebStorage()?.removeItem(CHECKLIST_CACHE_KEY);
+  if (Platform.OS === 'web') {
+    getWebStorage()?.removeItem(CHECKLIST_CACHE_KEY);
+    return;
+  }
+
+  await SecureStore.deleteItemAsync(CHECKLIST_CACHE_KEY);
 }
 
 function hasUsableChecklistStatuses(checklist: unknown) {
@@ -141,6 +157,14 @@ function createCache(date: string, tasks: ChecklistTaskState[]): ChecklistCache 
   };
 }
 
+function cacheHasCompletedTask(cache: ChecklistCache | null) {
+  return Boolean(cache?.tasks.some((task) => task.completed));
+}
+
+function tasksHaveCompletedTask(tasks: ChecklistTaskState[]) {
+  return tasks.some((task) => task.completed);
+}
+
 export function ChecklistProvider({ children }: { children: ReactNode }) {
   const { refreshDailyEase } = useDailyEase();
   const [error, setError] = useState('');
@@ -171,6 +195,18 @@ export function ChecklistProvider({ children }: { children: ReactNode }) {
 
         if (hasUsableChecklistStatuses(checklist)) {
           const nextTasks = buildTaskState(checklist);
+
+          if (
+            cache?.date === localToday &&
+            cacheHasCompletedTask(cache) &&
+            !tasksHaveCompletedTask(nextTasks)
+          ) {
+            const cachedTasks = buildTaskStateFromCache(cache);
+            setTodayTasks(cachedTasks);
+            setLastChecklistDate(cache.date);
+            return;
+          }
+
           setTodayTasks(nextTasks);
           setLastChecklistDate(checklistDate);
           await setStoredChecklistCache(createCache(checklistDate, nextTasks));
