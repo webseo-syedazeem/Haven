@@ -18,18 +18,17 @@
         "ITSAppUsesNonExemptEncryption": false
       }
     },
-   "android": {
-  "package": "com.haven.preview",
-  "minSdkVersion": 26,
-  "adaptiveIcon": {
-    "foregroundImage": "./assets/images/icon.png",
-    "backgroundColor": "#16102A"
-  },
-  "edgeToEdgeEnabled": true,
-  "predictiveBackGestureEnabled": false,
-  "usesCleartextTraffic": true,
-  "jsEngine": "hermes"
-} ,
+    "android": {
+      "package": "com.haven.preview",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/images/icon.png",
+        "backgroundColor": "#16102A"
+      },
+      "edgeToEdgeEnabled": true,
+      "predictiveBackGestureEnabled": false,
+      "usesCleartextTraffic": true,
+      "jsEngine": "hermes"
+    },
     "web": {
       "output": "static",
       "favicon": "./assets/images/favicon.png"
@@ -67,9 +66,7 @@
           "visibility": "visible"
         }
       ],
-      "expo-asset",
-      "expo-health-connect",
-      "react-native-health"
+      "expo-asset"
     ],
     "experiments": {
       "typedRoutes": true
