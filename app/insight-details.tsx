@@ -26,9 +26,9 @@ const backgroundImage = require('@/assets/images/insight-detail-page-bg-img.png'
 
 const chartTypes: ProgressChartType[] = [
   'stress-breathwork',
-  'movement-stress',
-  'sleep-mood',
-  'temperature-stress',
+  'daily-ease-trend',
+  'sleep-stress',
+  'tasks-stress',
 ];
 const tabs: ProgressPeriod[] = ['Day', 'Week', 'Month', 'Year'];
 const navItems = [
@@ -90,6 +90,34 @@ function createSmoothPath(points: { x: number; y: number }[]) {
     const controlX = previous.x + (point.x - previous.x) / 2;
     return `${path} C ${controlX} ${previous.y}, ${controlX} ${point.y}, ${point.x} ${point.y}`;
   }, '');
+}
+
+function splitChartLabel(label: string) {
+  const trimmedLabel = label.trim();
+  const normalized = trimmedLabel.toLowerCase();
+  const labelMap: Record<string, string[]> = {
+    breathwork: ['Breathwork'],
+    'no breathwork': ['No', 'breathwork'],
+    'high completion': ['High', 'completion'],
+    'low completion': ['Low', 'completion'],
+  };
+
+  if (labelMap[normalized]) {
+    return labelMap[normalized];
+  }
+
+  const words = trimmedLabel.split(/\s+/).filter(Boolean);
+
+  if (words.length <= 1) {
+    return [trimmedLabel];
+  }
+
+  if (words.length === 2) {
+    return words;
+  }
+
+  const midpoint = Math.ceil(words.length / 2);
+  return [words.slice(0, midpoint).join(' '), words.slice(midpoint).join(' ')];
 }
 
 function SegmentedTabs({
@@ -168,7 +196,7 @@ function MoodTrendChart({
   const left = 30;
   const right = 14;
   const top = 14;
-  const bottom = 32;
+  const bottom = 34;
   const plotWidth = chartWidth - left - right;
   const plotHeight = chartHeight - top - bottom;
   const safeData = chartData.length ? chartData : [0, 0];
@@ -185,7 +213,10 @@ function MoodTrendChart({
   const ticks = [maxValue, (maxValue + minValue) / 2, minValue];
 
   return (
-    <Svg style={styles.moodChartSvg} viewBox={`0 0 ${chartWidth} ${chartHeight}`}>
+    <Svg
+      overflow="visible"
+      style={styles.moodChartSvg}
+      viewBox={`0 0 ${chartWidth} ${chartHeight}`}>
       <Defs>
         <SvgLinearGradient id="moodArea" x1="0" x2="0" y1="0" y2="1">
           <Stop offset="0" stopColor={themeColor} stopOpacity={0.28} />
@@ -213,17 +244,23 @@ function MoodTrendChart({
           strokeWidth={2}
         />
       ))}
-      {safeLabels.map((label, index) => (
-        <SvgText
-          fill="#6F7484"
-          fontSize="9"
-          key={`${label}-${index}`}
-          textAnchor="middle"
-          x={left + (plotWidth / Math.max(1, safeLabels.length - 1)) * index}
-          y={chartHeight - 8}>
-          {label}
-        </SvgText>
-      ))}
+      {safeLabels.map((label, index) => {
+        const lines = splitChartLabel(label);
+        const x = left + (plotWidth / Math.max(1, safeLabels.length - 1)) * index;
+        const textAnchor = index === 0 ? 'start' : index === safeLabels.length - 1 ? 'end' : 'middle';
+
+        return lines.map((line, lineIndex) => (
+          <SvgText
+            fill="#6F7484"
+            fontSize={line.length > 10 ? '8' : '9'}
+            key={`${label}-${index}-${lineIndex}`}
+            textAnchor={textAnchor}
+            x={x}
+            y={chartHeight - 16 + lineIndex * 10}>
+            {line}
+          </SvgText>
+        ));
+      })}
     </Svg>
   );
 }
@@ -404,10 +441,6 @@ export default function InsightDetailsScreen() {
                       <Text style={styles.trendTitle}>{detail.title}</Text>
                       <Text style={styles.trendSubtitle}>{detail.subtitle}</Text>
                     </View>
-                    <View style={styles.scoreDropdown}>
-                      <Text style={styles.scoreDropdownText}>{activeTab}</Text>
-                      <Ionicons color="#7B8190" name="chevron-down" size={11} />
-                    </View>
                   </View>
 
                   <MoodTrendChart
@@ -439,6 +472,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: 'rgba(255, 255, 255, 0.5)',
     borderRadius: 16,
+    elevation: 3,
     height: 32,
     justifyContent: 'center',
     shadowColor: '#7B61FF',
@@ -459,6 +493,7 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
     backgroundColor: '#FFFFFF',
     borderRadius: 22,
+    elevation: 10,
     flexDirection: 'row',
     height: 70,
     justifyContent: 'space-around',
@@ -480,6 +515,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: '#F7F8FF',
     borderRadius: 12,
+    elevation: 2,
     flexDirection: 'row',
     gap: 5,
     height: 34,
@@ -550,6 +586,7 @@ const styles = StyleSheet.create({
   mainCard: {
     backgroundColor: '#FFFFFF',
     borderRadius: 18,
+    elevation: 8,
     marginTop: 22,
     padding: 12,
     shadowColor: '#8E86D8',
@@ -562,6 +599,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: '#FFFFFF',
     borderRadius: 12,
+    elevation: 5,
     flex: 1,
     minWidth: 0,
     paddingHorizontal: 5,
@@ -638,6 +676,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: '#F7F8FF',
     borderRadius: 12,
+    elevation: 2,
     flexDirection: 'row',
     gap: 5,
     paddingHorizontal: 10,
@@ -681,6 +720,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: '#FFFFFF',
     borderRadius: 14,
+    elevation: 4,
     flex: 1,
     flexDirection: 'row',
     gap: 2,
@@ -722,6 +762,7 @@ const styles = StyleSheet.create({
   trendCard: {
     backgroundColor: '#FFFFFF',
     borderRadius: 14,
+    elevation: 6,
     marginTop: 12,
     padding: 12,
     shadowOffset: { width: 0, height: 6 },

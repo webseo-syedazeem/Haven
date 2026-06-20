@@ -152,7 +152,7 @@ export default function HomeScreen() {
       <SafeAreaView edges={['top']} style={styles.safeArea}>
         <ScrollView
           bounces={false}
-          contentContainerStyle={[styles.scrollContent, { paddingBottom: insets.bottom + 132 }]}
+          contentContainerStyle={[styles.scrollContent, { paddingBottom: insets.bottom + 112 }]}
           showsVerticalScrollIndicator={false}>
           <View style={styles.header}>
             <View style={styles.headerCopy}>
@@ -399,11 +399,6 @@ const styles = StyleSheet.create({
     paddingBottom: 18,
     paddingHorizontal: 18,
     paddingTop: 20,
-    shadowColor: '#000000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.08,
-    shadowRadius: 8,
-    elevation: 3,
     width: '100%',
   },
   easeCopy: {
