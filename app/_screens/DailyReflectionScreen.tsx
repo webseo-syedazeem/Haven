@@ -2,6 +2,7 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useState } from 'react';
 import {
+  ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -15,6 +16,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { MultiSelectOptionCard } from '@/components/onboarding/MultiSelectOptionCard';
 import { AppFonts } from '@/constants/theme';
+import { createCheckin } from '@/services/checkinService';
 
 const stressOptions = [
   { id: 'work-study', label: 'Work/study', icon: 'work-study' },
@@ -46,12 +48,30 @@ function toggleOption(selectedValues: string[], optionId: string) {
   return [...selectedValues, optionId];
 }
 
+function getSelectedLabels<T extends readonly { id: string; label: string }[]>(
+  options: T,
+  selectedValues: string[]
+) {
+  return options.filter((option) => selectedValues.includes(option.id)).map((option) => option.label);
+}
+
+function getSafeStressLevel(value?: string) {
+  const parsedValue = Number(value);
+
+  if (!Number.isFinite(parsedValue)) {
+    return 0;
+  }
+
+  return Math.max(0, Math.min(10, Math.round(parsedValue)));
+}
+
 export function DailyReflectionScreen() {
   const params = useLocalSearchParams<{ stress?: string }>();
   const [selectedStressOptions, setSelectedStressOptions] = useState<string[]>([]);
   const [selectedHelpedOptions, setSelectedHelpedOptions] = useState<string[]>([]);
   const [reflection, setReflection] = useState('');
   const [validationMessage, setValidationMessage] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleStressOptionPress = (optionId: string) => {
     setSelectedStressOptions((current) => toggleOption(current, optionId));
@@ -63,17 +83,40 @@ export function DailyReflectionScreen() {
     setValidationMessage('');
   };
 
-  const handleContinuePress = () => {
+  const handleContinuePress = async () => {
+    if (isSubmitting) {
+      return;
+    }
+
     if (!selectedStressOptions.length && !selectedHelpedOptions.length) {
       setValidationMessage('Please select at least one option before continuing.');
       return;
     }
 
     setValidationMessage('');
-    router.push({
-      pathname: '/thank-you',
-      params: params.stress ? { stress: params.stress } : {},
-    });
+    setIsSubmitting(true);
+
+    const stressLevel = getSafeStressLevel(params.stress);
+
+    try {
+      await createCheckin({
+        helpful_today: getSelectedLabels(helpedOptions, selectedHelpedOptions),
+        reflection: reflection.trim(),
+        stress_factors: getSelectedLabels(stressOptions, selectedStressOptions),
+        stress_level: stressLevel,
+      });
+
+      router.push({
+        pathname: '/thank-you',
+        params: { stress: String(stressLevel) },
+      });
+    } catch (error) {
+      setValidationMessage(
+        error instanceof Error ? error.message : 'Unable to save your check-in. Please try again.'
+      );
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -148,8 +191,13 @@ export function DailyReflectionScreen() {
 
             <Pressable
               accessibilityRole="button"
+              disabled={isSubmitting}
               onPress={handleContinuePress}
-              style={({ pressed }) => [styles.continueButton, pressed && styles.pressed]}>
+              style={({ pressed }) => [
+                styles.continueButton,
+                pressed && !isSubmitting && styles.pressed,
+                isSubmitting && styles.disabledButton,
+              ]}>
               <LinearGradient
                 colors={['#5AA1E2', '#0D6FD0']}
                 end={{ x: 0, y: 1 }}
@@ -170,7 +218,11 @@ export function DailyReflectionScreen() {
                     style={styles.innerShadowLeft}
                   />
                 </View>
-                <Text style={styles.continueText}>Continue</Text>
+                {isSubmitting ? (
+                  <ActivityIndicator color="#FFFFFF" />
+                ) : (
+                  <Text style={styles.continueText}>Continue</Text>
+                )}
               </LinearGradient>
             </Pressable>
 
@@ -329,6 +381,9 @@ const styles = StyleSheet.create({
   pressed: {
     opacity: 0.86,
     transform: [{ scale: 0.99 }],
+  },
+  disabledButton: {
+    opacity: 0.7,
   },
   validationText: {
     color: '#7B61FF',

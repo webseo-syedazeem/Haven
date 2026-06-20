@@ -214,7 +214,6 @@ function MoodTrendChart({
 
   return (
     <Svg
-      overflow="visible"
       style={styles.moodChartSvg}
       viewBox={`0 0 ${chartWidth} ${chartHeight}`}>
       <Defs>
