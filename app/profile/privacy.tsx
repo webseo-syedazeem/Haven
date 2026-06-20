@@ -12,22 +12,21 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons';
 
 import { AppFonts } from '@/constants/theme';
+import { useHealthConnect, type HealthProvider } from '@/hooks/useHealthConnect';
 
 const backgroundImage = require('@/assets/images/4a78c0b5bcbe750563b0d0e3ecbe9951c1d0f0cc.png');
 
 const CONNECTED_APPS = [
   {
-    key: 'apple',
+    key: 'apple' as const,
     name: 'Apple health',
-    status: 'Connected',
     icon: require('@/assets/icons/dashbord-heart-icon.svg'),
     iconBg: '#FF005914',
     iconColor: '#FF0059',
   },
   {
-    key: 'google',
+    key: 'google' as const,
     name: 'Google fit',
-    status: 'Connected',
     icon: require('@/assets/icons/dashbord-flower-icon.svg'),
     iconBg: '#3770FC14',
     iconColor: '#3770FC',
@@ -43,6 +42,18 @@ const PRIVACY_ACTIONS = [
 export default function PrivacyScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const { appleConnected, googleConnected, connectAppleHealth, connectGoogleFit } = useHealthConnect();
+
+  const isProviderConnected = (provider: HealthProvider) =>
+    provider === 'apple' ? appleConnected : googleConnected;
+
+  const handleConnectedAppPress = (provider: HealthProvider) => {
+    if (provider === 'apple') {
+      void connectAppleHealth();
+    } else {
+      void connectGoogleFit();
+    }
+  };
 
   return (
     <ImageBackground source={backgroundImage} resizeMode="cover" style={styles.screen}>
@@ -71,27 +82,34 @@ export default function PrivacyScreen() {
             {/* Connected data */}
             <Text style={styles.sectionTitle}>Connected data</Text>
             <View style={styles.connectedList}>
-              {CONNECTED_APPS.map((app, index) => (
-                <Pressable
-                  key={app.key}
-                  style={[
-                    styles.connectedRow,
-                    index < CONNECTED_APPS.length - 1 && styles.rowDivider,
-                  ]}>
-                  <View style={[styles.appIconCircle, { backgroundColor: app.iconBg }]}>
-                    <Image
-                      source={app.icon}
-                      style={[styles.appIcon, { tintColor: app.iconColor }]}
-                      contentFit="contain"
-                    />
-                  </View>
-                  <View style={styles.appText}>
-                    <Text style={styles.appName}>{app.name}</Text>
-                    <Text style={styles.appStatus}>{app.status}</Text>
-                  </View>
-                  <Ionicons name="chevron-forward" size={16} color="#8C8C8C" />
-                </Pressable>
-              ))}
+              {CONNECTED_APPS.map((app, index) => {
+                const connected = isProviderConnected(app.key);
+
+                return (
+                  <Pressable
+                    key={app.key}
+                    onPress={() => handleConnectedAppPress(app.key)}
+                    style={[
+                      styles.connectedRow,
+                      index < CONNECTED_APPS.length - 1 && styles.rowDivider,
+                    ]}>
+                    <View style={[styles.appIconCircle, { backgroundColor: app.iconBg }]}>
+                      <Image
+                        source={app.icon}
+                        style={[styles.appIcon, { tintColor: app.iconColor }]}
+                        contentFit="contain"
+                      />
+                    </View>
+                    <View style={styles.appText}>
+                      <Text style={styles.appName}>{app.name}</Text>
+                      <Text style={[styles.appStatus, { color: connected ? '#2EB668' : '#8C8C8C' }]}>
+                        {connected ? 'Connected' : 'Not Connected'}
+                      </Text>
+                    </View>
+                    <Ionicons name="chevron-forward" size={16} color="#8C8C8C" />
+                  </Pressable>
+                );
+              })}
             </View>
 
             {/* Divider */}
@@ -120,7 +138,6 @@ export default function PrivacyScreen() {
     </ImageBackground>
   );
 }
-
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: '#C8BFEE' },
   safeArea: { flex: 1 },

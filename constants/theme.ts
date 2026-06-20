@@ -11,6 +11,7 @@ export const AppFonts = {
   sansMedium: 'SFPro-500',
   sansSemiBold: 'SFPro-500',
   sansBold: 'SFPro-700',
+  displayRegular: 'PlayfairDisplay-400',
   displayMedium: 'PlayfairDisplay-500',
   displaySemiBold: 'PlayfairDisplay-SemiBold',
   displayBold: 'PlayfairDisplay-700',

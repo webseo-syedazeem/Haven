@@ -697,6 +697,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     marginBottom: 16,
     marginHorizontal: 20,
+    overflow: 'hidden',
     padding: 4,
     shadowColor: '#8B8BA0',
     shadowOffset: { width: 0, height: 12 },
@@ -705,7 +706,6 @@ const styles = StyleSheet.create({
   },
   tabChip: {
     flex: 1,
-    height: 48,
   },
   listContent: {
     gap: 12,

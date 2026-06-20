@@ -200,10 +200,12 @@ export default function StressProfileScreen() {
           </View>
 
           {/* Full-width white sheet — extends to bottom */}
-          <View style={[styles.whiteSheet, { paddingBottom: insets.bottom + 24 }]}>
-            {isLoading ? (
-              <ActivityIndicator color="#7B61FF" size="large" style={{ marginTop: 40 }} />
-            ) : (
+          {isLoading ? (
+            <View style={styles.loadingState}>
+              <ActivityIndicator color="#7B61FF" size="large" />
+            </View>
+          ) : (
+            <View style={[styles.whiteSheet, { paddingBottom: insets.bottom + 24 }]}>
               <>
                 {/* ── Common Triggers ── */}
                 <Text style={styles.sectionTitle}>Common triggers</Text>
@@ -294,18 +296,18 @@ export default function StressProfileScreen() {
                   </View>
                 )}
               </>
-            )}
 
-            {/* Save button inside white sheet */}
-            <ExploreButton
-              accessibilityRole="button"
-              label="Save Profile"
-              loading={saving}
-              disabled={saving}
-              onPress={handleSave}
-              style={styles.saveWrap}
-            />
-          </View>
+              {/* Save button inside white sheet */}
+              <ExploreButton
+                accessibilityRole="button"
+                label="Save Profile"
+                loading={saving}
+                disabled={saving}
+                onPress={handleSave}
+                style={styles.saveWrap}
+              />
+            </View>
+          )}
 
         </ScrollView>
         <SaveSuccessModal
@@ -324,6 +326,11 @@ const styles = StyleSheet.create({
   safeArea: { flex: 1 },
   scroll: { paddingTop: 76 },
   headerArea: { paddingHorizontal: 20 },
+  loadingState: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    minHeight: 240,
+  },
   whiteSheet: {
     backgroundColor: '#FFFFFF',
     borderTopLeftRadius: 24,
