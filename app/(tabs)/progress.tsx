@@ -260,7 +260,7 @@ function ValueChart({ card }: { card: ChartCard }) {
   return (
     <Svg
       height={chartHeight}
-      overflow="visible"
+      style={styles.chartSvgOverflow}
       width={chartWidth}
       viewBox={`0 0 ${chartWidth} ${chartHeight}`}>
       <Defs>
@@ -578,6 +578,9 @@ const styles = StyleSheet.create({
     alignSelf: 'stretch',
     overflow: 'visible',
     zIndex: 3,
+  },
+  chartSvgOverflow: {
+    overflow: 'visible',
   },
   chartSubtitle: {
     color: '#173F5F',
