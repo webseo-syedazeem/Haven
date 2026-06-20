@@ -8,6 +8,7 @@ import {
   ScrollView,
   StyleSheet,
   Text,
+  useWindowDimensions,
   View,
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -24,6 +25,7 @@ import {
 } from '@/lib/breathing/config';
 
 const backgroundImage = require('@/assets/images/45fbaa58583a9264f393398d7cbf7a6e3d1e3e55.png');
+const boxBreathingIconImage = require('@/assets/images/466c3aaac798a9fda58c5d3cf86c108a80d46520.png');
 
 const CATEGORIES = ['Calm', 'Sleep', 'Focus'];
 
@@ -108,6 +110,7 @@ const EXERCISES = [
 export default function BreathingScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const { height: screenHeight } = useWindowDimensions();
   const [activeCategory, setActiveCategory] = useState('Calm');
 
   function handleStart(exerciseName: string) {
@@ -139,8 +142,16 @@ export default function BreathingScreen() {
       <SafeAreaView edges={['top']} style={styles.safeArea}>
         <ScrollView
           bounces={false}
-          contentContainerStyle={[styles.scroll, { paddingBottom: insets.bottom + 100 }]}
+          contentContainerStyle={[styles.scroll, { minHeight: screenHeight, paddingBottom: insets.bottom + 100 }]}
           showsVerticalScrollIndicator={false}>
+          <View pointerEvents="none" style={styles.fogBackdrop}>
+            <LinearGradient
+              colors={['rgba(255,255,255,0)', 'rgba(255,255,255,0.72)', '#FFFFFF']}
+              locations={[0, 0.45, 1]}
+              style={styles.fogGradient}
+            />
+            <View style={styles.fogWhiteFill} />
+          </View>
 
           {/* Back */}
           <Pressable
@@ -171,7 +182,7 @@ export default function BreathingScreen() {
           {/* Featured card */}
           <Pressable onPress={() => handleStart(featured.name)} style={styles.featuredCard}>
             <LinearGradient
-              colors={['#E8DEFF', '#C8B8FF']}
+              colors={['#F6B9D8', '#EEE2FF', '#CBD6FF']}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 1 }}
               style={styles.featuredGradient}>
@@ -182,27 +193,25 @@ export default function BreathingScreen() {
                 contentFit="cover"
               />
               <View style={styles.featuredContent}>
-                <View style={styles.featuredIconCircle}>
-                  <Image
-                    source={require('@/assets/icons/dashbord-breathing-icon.svg')}
-                    style={[styles.featuredIcon, { tintColor: '#7B61FF' }]}
-                    contentFit="contain"
-                  />
-                </View>
+                <Image
+                  source={boxBreathingIconImage}
+                  style={styles.featuredIconImage}
+                  contentFit="cover"
+                />
                 <View style={styles.featuredText}>
-                  <Text style={styles.featuredTitle}>{featured.name}</Text>
-                  <Text style={styles.featuredDesc}>{featured.desc}</Text>
-                  <Text style={styles.featuredPattern}>{featured.pattern}</Text>
+                  <Text style={styles.featuredTitle} numberOfLines={1}>{featured.name}</Text>
+                  <Text style={styles.featuredDesc} numberOfLines={1}>{featured.desc}</Text>
+                  <Text style={styles.featuredPattern} numberOfLines={1}>{featured.pattern}</Text>
                 </View>
                 <Pressable
                   onPress={() => handleStart(featured.name)}
-                  style={styles.playCircle}>
+                  style={styles.featuredPlayButton}>
                   <LinearGradient
-                    colors={['#9174EC', '#5275E8']}
-                    start={{ x: 0, y: 0 }}
-                    end={{ x: 1, y: 1 }}
-                    style={styles.playCircleGradient}>
-                    <Ionicons name="play" size={18} color="#FFFFFF" style={styles.playCircleIcon} />
+                    colors={['#B98DE8', '#668DF4']}
+                    start={{ x: 0.5, y: 0 }}
+                    end={{ x: 0.5, y: 1 }}
+                    style={styles.featuredPlayGradient}>
+                    <Ionicons name="play" size={24} color="#FFFFFF" style={styles.featuredPlayIcon} />
                   </LinearGradient>
                 </Pressable>
               </View>
@@ -228,15 +237,8 @@ export default function BreathingScreen() {
                   <Text style={styles.cardTitle}>{ex.name}</Text>
                   <Text style={styles.cardSubtitle}>{ex.duration}</Text>
                 </View>
-                <View style={styles.playSmallShadow}>
-                  <LinearGradient
-                    colors={['#F5F8FD', '#FFFFFF', '#E3E9F2']}
-                    end={{ x: 0.5, y: 1 }}
-                    locations={[0, 0.45, 1]}
-                    start={{ x: 0.5, y: 0 }}
-                    style={styles.playSmall}>
-                    <Ionicons name="play" size={16} color="#173F5F" style={styles.playSmallIcon} />
-                  </LinearGradient>
+                <View style={styles.playSmall}>
+                  <Ionicons name="play" size={13} color="#173F5F" style={styles.playSmallIcon} />
                 </View>
               </Pressable>
             ))}
@@ -270,7 +272,21 @@ export default function BreathingScreen() {
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: '#C8BFEE' },
   safeArea: { flex: 1 },
-  scroll: { paddingHorizontal: 20, paddingTop: 16 },
+  scroll: { paddingHorizontal: 20, paddingTop: 16, position: 'relative' },
+  fogBackdrop: {
+    bottom: -240,
+    left: -20,
+    position: 'absolute',
+    right: -20,
+    top: 260,
+  },
+  fogGradient: {
+    height: 150,
+  },
+  fogWhiteFill: {
+    backgroundColor: '#FFFFFF',
+    flex: 1,
+  },
 
   backButton: {
     alignItems: 'center',
@@ -318,30 +334,29 @@ const styles = StyleSheet.create({
 
   // Featured
   featuredCard: {
-    borderRadius: 20,
+    borderRadius: 28,
     marginBottom: 22,
     overflow: 'hidden',
-    shadowColor: '#8367E8',
-    shadowOffset: { width: 0, height: 16 },
-    shadowOpacity: 0.18,
-    shadowRadius: 24,
-    elevation: 8,
+    elevation: 0,
   },
   featuredGradient: {
-    borderRadius: 26,
+    borderRadius: 28,
     overflow: 'hidden',
-    minHeight: 110,
+    height: 104,
   },
   featuredBgImage: {
     ...StyleSheet.absoluteFillObject,
-    opacity: 0.15,
+    opacity: 0.26,
   },
   featuredContent: {
     alignItems: 'center',
     flexDirection: 'row',
-    gap: 12,
-    paddingHorizontal: 14,
-    paddingVertical: 16,
+    justifyContent: 'center',
+    gap: 10,
+    minHeight: 104,
+    paddingHorizontal: 16,
+    paddingBottom: 6,
+    paddingTop: 0,
   },
   featuredIconCircle: {
     alignItems: 'center',
@@ -352,66 +367,67 @@ const styles = StyleSheet.create({
     width: 56,
   },
   featuredIcon: { height: 28, width: 28 },
-  featuredText: { flex: 1 },
+  featuredIconImage: {
+    alignSelf: 'center',
+    borderRadius: 15,
+    height: 62,
+    width: 62,
+  },
+  featuredText: { flex: 1, minWidth: 0 },
   featuredTitle: {
     color: '#071A78',
-    fontFamily: AppFonts.displayBold,
-    fontSize: 18,
-    lineHeight: 24,
+    fontFamily: AppFonts.displayRegular,
+    fontSize: 24,
+    fontWeight: '400',
+    lineHeight: 30,
+    letterSpacing: 0,
   },
   featuredDesc: {
-    color: '#6F56B8',
+    color: '#7357B8',
     fontFamily: AppFonts.sansRegular,
     fontSize: 12,
-    lineHeight: 18,
-    marginTop: 6,
+    lineHeight: 17,
+    marginTop: 3,
   },
   featuredPattern: {
-    color: '#6F56B8',
+    color: '#7357B8',
     fontFamily: AppFonts.sansRegular,
-    fontSize: 11,
-    lineHeight: 16,
-    marginTop: 4,
+    fontSize: 12,
+    lineHeight: 17,
+    marginTop: 3,
   },
-  playCircle: {
-    alignItems: 'center',
-    borderRadius: 22,
-    height: 44,
-    justifyContent: 'center',
+  featuredPlayButton: {
+    borderRadius: 24,
+    flexShrink: 0,
+    height: 48,
+    backgroundColor: 'transparent',
     overflow: 'hidden',
-    width: 44,
-    shadowColor: '#5275E8',
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.22,
-    shadowRadius: 18,
-    elevation: 7,
+    width: 48,
   },
-  playCircleGradient: {
+  featuredPlayGradient: {
     alignItems: 'center',
-    borderRadius: 22,
-    height: 44,
+    borderRadius: 24,
+    height: 48,
     justifyContent: 'center',
-    width: 44,
+    width: 48,
   },
-  playCircleIcon: {
-    marginLeft: 0,
+  featuredPlayIcon: {
+    marginLeft: 3,
   },
+
 
   // List
   list: { gap: 14 },
   card: {
     alignItems: 'center',
     backgroundColor: '#FFFFFF',
+    borderColor: 'rgba(227,227,227,0.75)',
     borderRadius: 16,
+    borderWidth: 1,
     flexDirection: 'row',
     minHeight: 76,
     paddingHorizontal: 14,
     paddingVertical: 10,
-    shadowColor: '#B7C1D9',
-    shadowOffset: { width: 0, height: 18 },
-    shadowOpacity: 0.24,
-    shadowRadius: 26,
-    elevation: 8,
   },
   cardPressed: { opacity: 0.88, transform: [{ scale: 0.99 }] },
   thumbWrap: {
@@ -443,26 +459,18 @@ const styles = StyleSheet.create({
     fontSize: 12,
     lineHeight: 16,
   },
-  playSmallShadow: {
-    borderRadius: 22,
-    shadowColor: '#5275E8',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.24,
-    shadowRadius: 14,
-    elevation: 4,
-  },
   playSmall: {
     alignItems: 'center',
     borderColor: 'rgba(227,227,227,0.55)',
-    borderRadius: 22,
+    borderRadius: 16,
     borderWidth: 1,
-    height: 44,
+    height: 32,
     justifyContent: 'center',
     overflow: 'hidden',
-    width: 44,
+    width: 32,
   },
   playSmallIcon: {
-    marginLeft: 2,
+    marginLeft: 1,
   },
   floatingTabBar: {
     alignItems: 'center',

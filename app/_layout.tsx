@@ -32,6 +32,7 @@ export default function RootLayout() {
     [AppFonts.sansMedium]: require('../assets/fonts/SFPro-500.OTF'),
     [AppFonts.sansSemiBold]: require('../assets/fonts/SFPro-500.OTF'),
     [AppFonts.sansBold]: require('../assets/fonts/SFPro-700.OTF'),
+    [AppFonts.displayRegular]: require('../assets/fonts/PlayfairDisplay-400.ttf'),
     [AppFonts.displayMedium]: require('../assets/fonts/PlayfairDisplay-500.ttf'),
     [AppFonts.displaySemiBold]: require('../assets/fonts/PlayfairDisplay-SemiBold.ttf'),
     [AppFonts.displayBold]: require('../assets/fonts/PlayfairDisplay-700.ttf'),

@@ -1,7 +1,7 @@
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
-import { memo, useCallback, useEffect, useRef, useState } from 'react';
+import { memo, startTransition, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   FlatList,
@@ -36,6 +36,9 @@ const soundscapeThumbImages = [
 ];
 
 const CATEGORIES = ['Calm', 'Sleep', 'Focus', 'Meditate', 'Nature', 'Noise', 'Music', 'Frequencies', 'Premixed'];
+const LIST_CARD_HEIGHT = 68;
+const LIST_SEPARATOR_HEIGHT = 10;
+const LIST_ROW_HEIGHT = LIST_CARD_HEIGHT + LIST_SEPARATOR_HEIGHT;
 
 const TAB_ITEMS = [
   { label: 'Home', icon: 'home-outline', route: '/(tabs)', active: false },
@@ -61,6 +64,8 @@ function getSubcategoryIcon(subcategory: string) {
 }
 
 function getSoundscapeThumb(soundscape: any, index: number) {
+  if (soundscape?.thumbSource) return soundscape.thumbSource;
+
   const key = String(soundscape?.id ?? soundscape?.title ?? index);
   const hash = key.split('').reduce((sum, char) => sum + char.charCodeAt(0), index);
   return soundscapeThumbImages[hash % soundscapeThumbImages.length];
@@ -106,15 +111,8 @@ const SoundscapeListCard = memo(function SoundscapeListCard({
         <Text style={styles.cardTitle} numberOfLines={1}>{soundscape.title}</Text>
         <Text style={styles.cardSubtitle}>{soundscape.subcategory}</Text>
       </View>
-      <View style={styles.playSmallShadow}>
-        <LinearGradient
-          colors={['#F5F8FD', '#FFFFFF', '#E3E9F2']}
-          end={{ x: 0.5, y: 1 }}
-          locations={[0, 0.45, 1]}
-          start={{ x: 0.5, y: 0 }}
-          style={styles.playSmall}>
-          <Ionicons name="play" size={13} color="#173F5F" style={styles.playSmallIcon} />
-        </LinearGradient>
+      <View style={styles.playSmall}>
+        <Ionicons name="play" size={13} color="#173F5F" style={styles.playSmallIcon} />
       </View>
     </Pressable>
   );
@@ -125,9 +123,11 @@ export default function SoundscapeScreen() {
   const insets = useSafeAreaInsets();
   const { height: screenHeight, width: screenWidth } = useWindowDimensions();
   const imageSectionHeight = screenHeight * 0.5;
-  const tabWidth = Math.max(112, (screenWidth - 40 - 8) / 3);
+  const tabWidth = Math.max(104, (screenWidth - 40 - 12 - 8) / 3);
   const [activeCategory, setActiveCategory] = useState('Calm');
   const [activeSubcategory, setActiveSubcategory] = useState<string>('All');
+  const [selectedCategory, setSelectedCategory] = useState('Calm');
+  const [selectedSubcategory, setSelectedSubcategory] = useState<string>('All');
   const [playingId, setPlayingId] = useState<string | null>(null);
   const [audioLoading, setAudioLoading] = useState(false);
   const soundRef = useRef<Audio.Sound | null>(null);
@@ -137,18 +137,44 @@ export default function SoundscapeScreen() {
     queryFn: () => apiClient<any>('/api/soundscapes'),
   });
 
-  const grouped: Record<string, any[]> = (data as any)?.data ?? {};
-  const currentList: any[] = grouped[activeCategory] ?? [];
-  const subcategories = ['All', ...Array.from(new Set(currentList.map((s: any) => s.subcategory)))];
-  const filtered = activeSubcategory === 'All'
-    ? currentList
-    : currentList.filter((s: any) => s.subcategory === activeSubcategory);
+  const grouped: Record<string, any[]> = useMemo(() => (data as any)?.data ?? {}, [data]);
+  const currentList: any[] = useMemo(() => grouped[activeCategory] ?? [], [activeCategory, grouped]);
+  const subcategories = useMemo(
+    () => ['All', ...Array.from(new Set(currentList.map((s: any) => s.subcategory)))],
+    [currentList]
+  );
+  const filtered = useMemo(
+    () => activeSubcategory === 'All'
+      ? currentList
+      : currentList.filter((s: any) => s.subcategory === activeSubcategory),
+    [activeSubcategory, currentList]
+  );
   const featured = filtered[0] ?? null;
-  const rest = filtered.slice(1);
+  const rest = useMemo(
+    () => filtered.slice(1).map((soundscape: any, index: number) => ({
+      ...soundscape,
+      thumbSource: getSoundscapeThumb(soundscape, index),
+    })),
+    [filtered]
+  );
 
-  useEffect(() => {
-    setActiveSubcategory('All');
-  }, [activeCategory]);
+  const handleCategoryPress = useCallback((category: string) => {
+    setSelectedCategory(category);
+    setSelectedSubcategory('All');
+
+    startTransition(() => {
+      setActiveCategory(category);
+      setActiveSubcategory('All');
+    });
+  }, []);
+
+  const handleSubcategoryPress = useCallback((subcategory: string) => {
+    setSelectedSubcategory(subcategory);
+
+    startTransition(() => {
+      setActiveSubcategory(subcategory);
+    });
+  }, []);
 
   useEffect(() => {
     return () => { soundRef.current?.unloadAsync().catch(() => {}); };
@@ -192,6 +218,12 @@ export default function SoundscapeScreen() {
     });
   }, [router]);
 
+  const getItemLayout = useCallback((_: ArrayLike<any> | null | undefined, index: number) => ({
+    length: LIST_ROW_HEIGHT,
+    offset: LIST_ROW_HEIGHT * index,
+    index,
+  }), []);
+
   const renderListCard = useCallback(({ item, index }: { item: any; index: number }) => (
     <View style={styles.listItemWrap}>
       <SoundscapeListCard
@@ -215,16 +247,17 @@ export default function SoundscapeScreen() {
             { paddingTop: insets.top + 16, paddingBottom: insets.bottom + 68 },
           ]}
           data={isLoading ? [] : rest}
-          initialNumToRender={8}
-          ItemSeparatorComponent={() => <View style={{ height: 10 }} />}
+          getItemLayout={getItemLayout}
+          initialNumToRender={6}
+          ItemSeparatorComponent={() => <View style={styles.itemSeparator} />}
           keyExtractor={(item, index) => String(item.id ?? item.title ?? index)}
-          maxToRenderPerBatch={8}
+          maxToRenderPerBatch={6}
           removeClippedSubviews
           renderItem={renderListCard}
           showsVerticalScrollIndicator={false}
           style={styles.list}
-          updateCellsBatchingPeriod={40}
-          windowSize={5}
+          updateCellsBatchingPeriod={60}
+          windowSize={7}
           ListFooterComponent={() => <View style={styles.listFooter} />}
           ListHeaderComponent={
             <View style={styles.headerWrap}>
@@ -275,9 +308,9 @@ export default function SoundscapeScreen() {
                   {CATEGORIES.map((cat) => (
                     <ExploreTabChip
                       key={cat}
-                      active={activeCategory === cat}
+                      active={selectedCategory === cat}
                       label={cat}
-                      onPress={() => setActiveCategory(cat)}
+                      onPress={() => handleCategoryPress(cat)}
                       style={[styles.tabChip, { width: tabWidth }]}
                       variant="tab"
                     />
@@ -294,7 +327,7 @@ export default function SoundscapeScreen() {
                     showsHorizontalScrollIndicator={false}
                     contentContainerStyle={styles.subTabsContent}>
                     {subcategories.map((sub) => {
-                      const isActive = activeSubcategory === sub;
+                      const isActive = selectedSubcategory === sub;
 
                       return (
                         <ExploreTabChip
@@ -308,7 +341,7 @@ export default function SoundscapeScreen() {
                             />
                           }
                           label={sub}
-                          onPress={() => setActiveSubcategory(sub)}
+                          onPress={() => handleSubcategoryPress(sub)}
                           style={sub === 'All' ? styles.subTabCompact : undefined}
                           variant="subtab"
                         />
@@ -400,10 +433,10 @@ export default function SoundscapeScreen() {
 }
 
 const styles = StyleSheet.create({
-  screen: { backgroundColor: 'transparent', flex: 1 },
-  safeArea: { backgroundColor: 'transparent', flex: 1 },
-  list: { backgroundColor: 'transparent', flex: 1 },
-  scroll: { backgroundColor: 'transparent', paddingHorizontal: 20 },
+  screen: { backgroundColor: '#FFFFFF', flex: 1 },
+  safeArea: { backgroundColor: '#FFFFFF', flex: 1 },
+  list: { backgroundColor: '#FFFFFF', flex: 1 },
+  scroll: { backgroundColor: '#FFFFFF', paddingHorizontal: 20 },
   headerWrap: {
     overflow: 'visible',
     position: 'relative',
@@ -440,6 +473,10 @@ const styles = StyleSheet.create({
   },
   listItemWrap: {
     backgroundColor: '#FFFFFF',
+  },
+  itemSeparator: {
+    backgroundColor: '#FFFFFF',
+    height: 10,
   },
   listFooter: {
     height: 16,
@@ -583,7 +620,8 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     flexDirection: 'row',
     overflow: 'hidden',
-    elevation: 3,
+    borderColor: 'rgba(227,227,227,0.55)',
+    borderWidth: 1,
   },
   cardPressed: { opacity: 0.88, transform: [{ scale: 0.99 }] },
   thumbWrap: { height: 68, width: 90 },
@@ -609,16 +647,8 @@ const styles = StyleSheet.create({
     fontSize: 12,
     lineHeight: 16,
   },
-  playSmallShadow: {
-    borderRadius: 16,
-    marginRight: 12,
-    shadowColor: '#5275E8',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.24,
-    shadowRadius: 14,
-    elevation: 4,
-  },
   playSmall: {
+    marginRight: 12,
     alignItems: 'center',
     borderColor: 'rgba(227,227,227,0.55)',
     borderRadius: 16,
