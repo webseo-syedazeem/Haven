@@ -97,12 +97,15 @@ export function DailyReflectionScreen() {
     setIsSubmitting(true);
 
     const stressLevel = getSafeStressLevel(params.stress);
+    const selectedStressFactors = getSelectedLabels(stressOptions, selectedStressOptions);
+    const selectedHelpfulToday = getSelectedLabels(helpedOptions, selectedHelpedOptions);
+    const reflectionText = reflection.trim();
 
     try {
       await createCheckin({
-        helpful_today: getSelectedLabels(helpedOptions, selectedHelpedOptions),
-        reflection: reflection.trim(),
-        stress_factors: getSelectedLabels(stressOptions, selectedStressOptions),
+        helpful_today: selectedHelpfulToday,
+        reflection: reflectionText,
+        stress_factors: selectedStressFactors,
         stress_level: stressLevel,
       });
 
