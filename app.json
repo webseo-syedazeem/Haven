@@ -1,4 +1,4 @@
-{
+﻿{
   "expo": {
     "name": "Haven",
     "slug": "Haven",
@@ -20,6 +20,16 @@
     },
     "android": {
       "package": "com.haven.preview",
+      "permissions": [
+        "android.permission.health.READ_STEPS",
+        "android.permission.health.READ_DISTANCE",
+        "android.permission.health.READ_ACTIVE_CALORIES_BURNED",
+        "android.permission.health.READ_SLEEP",
+        "android.permission.health.READ_HEART_RATE",
+        "android.permission.health.READ_RESTING_HEART_RATE",
+        "android.permission.health.READ_HEART_RATE_VARIABILITY",
+        "android.permission.health.READ_RESPIRATORY_RATE"
+      ],
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/icon.png",
         "backgroundColor": "#16102A"
@@ -35,6 +45,7 @@
     },
     "plugins": [
       "expo-router",
+      "./plugins/withHealthConnectManifest",
       [
         "expo-build-properties",
         {
@@ -76,14 +87,20 @@
       ],
       "expo-asset",
       "expo-health-connect",
-      "react-native-health"
+      [
+        "react-native-health",
+        {
+          "healthSharePermission": "Haven uses your health data (steps, sleep, heart rate and recovery) to personalise your Daily Ease and insights.",
+          "healthUpdatePermission": "Haven does not write to your health data."
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true
     },
     "extra": {
       "eas": {
-        "projectId": "4271f885-2f88-4105-af46-131bee5414ba"
+        "projectId": "1355a617-92b4-443f-8678-b2c77b4ee3b3"
       }
     }
   }

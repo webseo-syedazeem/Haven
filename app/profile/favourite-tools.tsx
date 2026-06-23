@@ -6,6 +6,7 @@ import {
   ActivityIndicator,
   Alert,
   ImageBackground,
+  Modal,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -73,6 +74,7 @@ export default function FavouriteToolsScreen() {
   const [isLoadingFavourites, setIsLoadingFavourites] = useState(true);
   const [saving, setSaving] = useState(false);
   const [showSavedModal, setShowSavedModal] = useState(false);
+  const [showSelectWarningModal, setShowSelectWarningModal] = useState(false);
 
   // existing favourites from server: { tool_id → record id }
   const serverFavMap: Record<string, string> = {};
@@ -139,9 +141,15 @@ function toggleTool(toolId: string) {
 
   // ── Save ──────────────────────────────────────────────────────────────────
   async function handleSave() {
+    const selectedSet = selected ?? new Set<string>();
+
+    if (selectedSet.size === 0) {
+      setShowSelectWarningModal(true);
+      return;
+    }
+
     setSaving(true);
     try {
-      const selectedSet = selected ?? new Set<string>();
       const toAdd = ALL_TOOLS.filter(
         (t) => selectedSet.has(t.tool_id) && !serverFavMap[t.tool_id]
       );
@@ -263,6 +271,29 @@ function toggleTool(toolId: string) {
 
         </ScrollView>
       </SafeAreaView>
+
+      <Modal
+        animationType="fade"
+        onRequestClose={() => setShowSelectWarningModal(false)}
+        transparent
+        visible={showSelectWarningModal}>
+        <View style={styles.warningOverlay}>
+          <View style={styles.warningCard}>
+            <View style={styles.warningIconCircle}>
+              <Ionicons color="#FFC43D" name="heart-outline" size={34} />
+            </View>
+            <Text style={styles.warningTitle}>Select a favourite</Text>
+            <Text style={styles.warningMessage}>
+              Please select at least one heart icon before saving your favourite tools.
+            </Text>
+            <ExploreButton
+              label="OK"
+              onPress={() => setShowSelectWarningModal(false)}
+              style={styles.warningButton}
+            />
+          </View>
+        </View>
+      </Modal>
 
       <SaveSuccessModal
         visible={showSavedModal}
@@ -389,5 +420,57 @@ const styles = StyleSheet.create({
   pressed: {
     opacity: 0.86,
     transform: [{ scale: 0.99 }],
+  },
+  warningOverlay: {
+    alignItems: 'center',
+    backgroundColor: 'rgba(23, 63, 95, 0.42)',
+    flex: 1,
+    justifyContent: 'center',
+    paddingHorizontal: 24,
+  },
+  warningCard: {
+    alignItems: 'center',
+    backgroundColor: 'rgba(255, 255, 255, 0.96)',
+    borderRadius: 24,
+    elevation: 12,
+    maxWidth: 360,
+    paddingHorizontal: 24,
+    paddingVertical: 28,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 14 },
+    shadowOpacity: 0.18,
+    shadowRadius: 24,
+    width: '100%',
+  },
+  warningIconCircle: {
+    alignItems: 'center',
+    backgroundColor: '#FFF8DF',
+    borderColor: 'rgba(255, 196, 61, 0.28)',
+    borderRadius: 34,
+    borderWidth: 1,
+    height: 68,
+    justifyContent: 'center',
+    width: 68,
+  },
+  warningTitle: {
+    color: '#173F5F',
+    fontFamily: AppFonts.displayBold,
+    fontSize: 26,
+    fontWeight: '700',
+    lineHeight: 32,
+    marginBottom: 8,
+    marginTop: 18,
+    textAlign: 'center',
+  },
+  warningMessage: {
+    color: '#6F7E8B',
+    fontFamily: AppFonts.sansRegular,
+    fontSize: 14,
+    lineHeight: 22,
+    marginBottom: 22,
+    textAlign: 'center',
+  },
+  warningButton: {
+    width: '100%',
   },
 });

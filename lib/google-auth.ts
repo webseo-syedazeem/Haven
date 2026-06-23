@@ -2,7 +2,10 @@ import * as Linking from 'expo-linking';
 import * as WebBrowser from 'expo-web-browser';
 
 import { supabase } from './supabase';
+import { ME_QUERY_KEY } from '@/hooks/useUser';
+import { queryClient } from '@/lib/query-client';
 import { apiClient } from './api/client';
+import { userApi } from './api/user';
 
 WebBrowser.maybeCompleteAuthSession();
 
@@ -54,11 +57,9 @@ export const signInWithGoogle = async () => {
         throw new Error(sessionError.message);
       }
 
-      try {
-        await apiClient('/api/auth/sync-profile', { method: 'POST' });
-      } catch (e) {
-        console.warn('Profile sync failed:', e);
-      }
+      await apiClient('/api/auth/sync-profile', { method: 'POST' });
+      await queryClient.invalidateQueries({ queryKey: ME_QUERY_KEY });
+      await queryClient.fetchQuery({ queryKey: ME_QUERY_KEY, queryFn: userApi.get, staleTime: 0 });
 
       return sessionData;
     }

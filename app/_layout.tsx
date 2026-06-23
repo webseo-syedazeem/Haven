@@ -10,19 +10,17 @@ import { SystemBars } from 'react-native-edge-to-edge';
 import { AppFonts } from '@/constants/theme';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { useColorScheme } from '@/hooks/use-color-scheme';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { QueryClientProvider } from '@tanstack/react-query';
 import { SetupProvider } from '@/contexts/SetupContext';
 import { ProgressProvider } from '@/contexts/ProgressContext';
 import { ChecklistProvider } from '@/contexts/ChecklistContext';
 import { DailyEaseProvider } from '@/contexts/DailyEaseContext';
+import { queryClient } from '@/lib/query-client';
 
 void SplashScreen.preventAutoHideAsync();
 
 export const unstable_settings = { anchor: '(tabs)' };
 
-const queryClient = new QueryClient({
-  defaultOptions: { queries: { retry: 1, staleTime: 1000 * 60 * 5 } },
-});
 
 export default function RootLayout() {
   const colorScheme = useColorScheme();

@@ -73,12 +73,16 @@ export async function apiClient<T>(
       await setStoredItem(LEGACY_AUTH_TOKEN_KEY, token);
     }
   }
+  const { body, headers: optionHeaders, ...fetchOptions } = options;
+  const hasBody = body !== undefined && body !== null;
+
   const res = await fetch(`${API_BASE_URL}${path}`, {
-    ...options,
+    ...fetchOptions,
+    ...(hasBody ? { body } : {}),
     headers: {
-      'Content-Type': 'application/json',
+      ...(hasBody ? { 'Content-Type': 'application/json' } : {}),
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
-      ...((options.headers as Record<string, string>) ?? {}),
+      ...((optionHeaders as Record<string, string>) ?? {}),
     },
   });
   const data = await res.json();

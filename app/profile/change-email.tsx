@@ -1,6 +1,9 @@
 import { Ionicons } from '@expo/vector-icons';
+import { useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
+import { useState } from 'react';
 import {
+  Alert,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -11,17 +14,41 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { AppFonts } from '@/constants/theme';
 import { ExploreButton } from '@/components/ExploreButton';
+import { ConfirmActionModal } from '@/components/profile/ConfirmActionModal';
+import { AppFonts } from '@/constants/theme';
 import { useUser } from '@/hooks/useUser';
 import { getProfileEmail } from '@/lib/api/user';
+import { clearUserSession } from '@/lib/auth/clearSession';
+import { deleteAccount } from '@/lib/haven-api';
 
 const noFocusOutline = Platform.OS === 'web' ? ({ outlineStyle: 'none' } as any) : null;
 
 export default function ChangeEmailScreen() {
   const router = useRouter();
+  const queryClient = useQueryClient();
   const { data: me } = useUser();
   const email = getProfileEmail(me);
+  const [showDeleteAccountModal, setShowDeleteAccountModal] = useState(false);
+  const [deletingAccount, setDeletingAccount] = useState(false);
+
+  async function confirmDeleteAccount() {
+    setDeletingAccount(true);
+    try {
+      await deleteAccount();
+      await clearUserSession(queryClient);
+      setShowDeleteAccountModal(false);
+      router.dismissAll();
+      router.replace('/login');
+    } catch (error) {
+      Alert.alert(
+        'Could not delete account',
+        error instanceof Error ? error.message : 'Please try again in a moment.'
+      );
+    } finally {
+      setDeletingAccount(false);
+    }
+  }
 
   return (
     <SafeAreaView edges={['top']} style={styles.safeArea}>
@@ -59,7 +86,9 @@ export default function ChangeEmailScreen() {
             <View style={styles.deleteSection}>
               <Text style={styles.deleteSectionLabel}>Account Action</Text>
               <View style={styles.deleteCard}>
-                <Pressable style={styles.deleteRow}>
+                <Pressable
+                  onPress={() => setShowDeleteAccountModal(true)}
+                  style={({ pressed }) => [styles.deleteRow, pressed && styles.pressed]}>
                   <Text style={styles.deleteLabel}>Delete my account</Text>
                   <Ionicons name="chevron-forward" size={16} color="#FF0059" />
                 </Pressable>
@@ -75,6 +104,16 @@ export default function ChangeEmailScreen() {
 
         </View>
       </KeyboardAvoidingView>
+      <ConfirmActionModal
+        confirmLabel="Delete account"
+        icon="alert-circle-outline"
+        loading={deletingAccount}
+        message="This will permanently delete your account and data. This process cannot be undone."
+        title="Delete account?"
+        visible={showDeleteAccountModal}
+        onCancel={() => setShowDeleteAccountModal(false)}
+        onConfirm={confirmDeleteAccount}
+      />
     </SafeAreaView>
   );
 }

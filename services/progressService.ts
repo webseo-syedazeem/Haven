@@ -568,8 +568,6 @@ function mapProgress(progress: ApiProgressPayload): ProgressResponse {
 export async function getProgress() {
   const token = await getStoredAccessToken();
 
-  console.log('Progress token exists:', Boolean(token), getShortTokenLog(token));
-
   if (!token) {
     throw new ProgressAuthError();
   }

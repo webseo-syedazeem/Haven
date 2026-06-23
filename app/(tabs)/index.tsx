@@ -2,8 +2,9 @@ import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useFocusEffect, useRouter } from 'expo-router';
-import { useCallback } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
 import {
+    Animated,
     ImageBackground,
     Pressable,
     ScrollView,
@@ -67,10 +68,25 @@ function getTimeGreeting() {
   return 'Good night';
 }
 
+function SkeletonPulse({ width, height, borderRadius }: { width: number; height: number; borderRadius: number }) {
+  const opacity = useRef(new Animated.Value(0.35)).current;
+
+  useEffect(() => {
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(opacity, { toValue: 0.85, duration: 900, useNativeDriver: true }),
+        Animated.timing(opacity, { toValue: 0.35, duration: 900, useNativeDriver: true }),
+      ])
+    ).start();
+  }, [opacity]);
+
+  return <Animated.View style={{ width, height, borderRadius, backgroundColor: '#D6CAFF', opacity }} />;
+}
+
 export default function HomeScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { data: me } = useUser();
+  const { data: me, isLoading: userLoading } = useUser();
   const { refreshTodayChecklist, savingTaskName, todayTasks, toggleTask } = useChecklist();
   const {
     dailyEase,
@@ -88,7 +104,7 @@ export default function HomeScreen() {
     dotY: progressDotY,
   } = calcProgress(dailyEaseScore);
 
-  const displayName = getDisplayName(me) || 'Joy';
+  const displayName = getDisplayName(me);
   const avatarUri =
     me?.profile?.profile_image_url ||
     me?.user?.user_metadata?.avatar_url ||
@@ -156,12 +172,26 @@ export default function HomeScreen() {
           showsVerticalScrollIndicator={false}>
           <View style={styles.header}>
             <View style={styles.headerCopy}>
-              <Text style={styles.greeting}>{greeting}, {displayName}</Text>
-              <Text style={styles.subtitle}>Small stress today, stronger you{'\n'}tomorrow</Text>
+              {userLoading ? (
+                <>
+                  <SkeletonPulse width={180} height={30} borderRadius={8} />
+                  <View style={{ marginTop: 8 }}>
+                    <SkeletonPulse width={220} height={22} borderRadius={6} />
+                  </View>
+                </>
+              ) : (
+                <>
+                  <Text style={styles.greeting}>{greeting}{displayName ? `, ${displayName}` : ''}</Text>
+                  <Text style={styles.subtitle}>Small stress today, stronger you{'\n'}tomorrow</Text>
+                </>
+              )}
             </View>
-
             <View style={styles.avatarRing}>
-              <Image source={avatarSource} style={styles.avatar} contentFit="cover" />
+              {userLoading ? (
+                <SkeletonPulse width={56} height={56} borderRadius={28} />
+              ) : (
+                <Image source={avatarSource} style={styles.avatar} contentFit="cover" />
+              )}
             </View>
           </View>
 
