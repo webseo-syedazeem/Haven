@@ -2,7 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useFocusEffect, useRouter } from 'expo-router';
-import { useCallback, useEffect, useRef } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import {
     Animated,
     ImageBackground,
@@ -15,6 +15,7 @@ import {
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Circle } from 'react-native-svg';
 
+import { AvatarPreview } from '@/components/profile/AvatarPreview';
 import { dashboardChecklistTasks } from '@/constants/checklistTasks';
 import { AppFonts } from '@/constants/theme';
 import { useChecklist } from '@/contexts/ChecklistContext';
@@ -87,6 +88,7 @@ export default function HomeScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { data: me, isLoading: userLoading } = useUser();
+  const [avatarPreviewVisible, setAvatarPreviewVisible] = useState(false);
   const { refreshTodayChecklist, savingTaskName, todayTasks, toggleTask } = useChecklist();
   const {
     dailyEase,
@@ -186,13 +188,21 @@ export default function HomeScreen() {
                 </>
               )}
             </View>
-            <View style={styles.avatarRing}>
+            <Pressable
+              accessibilityRole={avatarUri ? 'button' : undefined}
+              disabled={!avatarUri || userLoading}
+              onPress={() => {
+                if (avatarUri) {
+                  setAvatarPreviewVisible(true);
+                }
+              }}
+              style={({ pressed }) => [styles.avatarRing, pressed && avatarUri && styles.pressed]}>
               {userLoading ? (
                 <SkeletonPulse width={56} height={56} borderRadius={28} />
               ) : (
                 <Image source={avatarSource} style={styles.avatar} contentFit="cover" />
               )}
-            </View>
+            </Pressable>
           </View>
 
           <View style={styles.easeCard}>
@@ -355,6 +365,11 @@ export default function HomeScreen() {
           </View>
         </ScrollView>
       </SafeAreaView>
+      <AvatarPreview
+        visible={avatarPreviewVisible}
+        imageUrl={avatarUri}
+        onClose={() => setAvatarPreviewVisible(false)}
+      />
     </ImageBackground>
   );
 }

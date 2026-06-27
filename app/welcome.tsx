@@ -1,12 +1,13 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useCallback } from 'react';
-import { BackHandler, Pressable, StyleSheet, Text, View } from 'react-native';
+import { BackHandler, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 
 import { AuthButton } from '@/components/AuthButton';
 import { ScreenWrapper } from '@/components/ScreenWrapper';
 import { AppFonts } from '@/constants/theme';
+import { signInWithApple } from '@/lib/apple-auth';
 import { signInWithGoogle } from '@/lib/google-auth';
 
 const welcomeBackground = require('@/assets/images/welcome-background.png');
@@ -43,7 +44,16 @@ export default function WelcomeScreen() {
     }
   };
 
-  const handleApplePress = () => {};
+  const handleApplePress = async () => {
+    try {
+      const session = await signInWithApple();
+      if (session) {
+        router.replace('/(tabs)');
+      }
+    } catch (error) {
+      console.error('Apple sign in error:', error);
+    }
+  };
   const handleEmailPress = () => {
     router.push('/login');
   };
@@ -84,11 +94,13 @@ export default function WelcomeScreen() {
               label="Continue with google"
               onPress={handleGooglePress}
             />
-            <AuthButton
-              iconSource={appleIcon}
-              label="Continue with Apple"
-              onPress={handleApplePress}
-            />
+        {(Platform.OS === 'ios' || __DEV__) && (
+              <AuthButton
+                iconSource={appleIcon}
+                label="Continue with Apple"
+                onPress={handleApplePress}
+              />
+            )}
             <AuthButton
               iconSource={emailIcon}
               label="Continue with Email"

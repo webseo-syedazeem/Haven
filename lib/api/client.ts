@@ -3,7 +3,7 @@ import * as SecureStore from 'expo-secure-store';
 import { getAccessToken } from '@/lib/haven-api';
 import { Platform } from 'react-native';
 
-const API_BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL ?? 'http://18.171.253.186';
+const API_BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL ?? 'https://thehappyapp.co.uk';
 export const AUTH_TOKEN_KEY = 'haven.auth.access_token';
 const LEGACY_AUTH_TOKEN_KEY = 'access_token';
 

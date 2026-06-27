@@ -12,6 +12,7 @@ import {
   ScrollView,
   StyleSheet,
   Text,
+  useWindowDimensions,
   View,
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -69,6 +70,7 @@ const TAB_ITEMS = [
 export default function BreathingSessionScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const { height: windowHeight } = useWindowDimensions();
   const params = useLocalSearchParams<{
     sessionId: string;
     apiType: string;
@@ -281,8 +283,14 @@ export default function BreathingSessionScreen() {
 
   return (
     <ImageBackground source={backgroundImage} resizeMode="cover" style={[styles.screen, { opacity: 1 }]}>
-      {/* Top half: background image */}
-      <View style={styles.topHalf}>
+      <ScrollView
+        bounces={false}
+        contentContainerStyle={[styles.screenScrollContent, { minHeight: windowHeight }]}
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
+        style={styles.screenScroll}>
+        {/* Top half: background image */}
+        <View style={[styles.topHalf, { height: windowHeight * 0.44 }]}>
         <SafeAreaView edges={['top']} style={styles.topSafe}>
           {/* Back button */}
           <Pressable
@@ -311,8 +319,8 @@ export default function BreathingSessionScreen() {
         </SafeAreaView>
       </View>
 
-      {/* Bottom half: white/blur card */}
-      <View style={styles.bottomCard}>
+        {/* Bottom half: white/blur card */}
+        <View style={[styles.bottomCard, { minHeight: windowHeight * 0.56, paddingBottom: insets.bottom + 48 }]}>
       
         <LinearGradient
   colors={[
@@ -324,13 +332,7 @@ export default function BreathingSessionScreen() {
   locations={[0, 0.3, 0.7, 1]}
   style={styles.transitionFog}
 />
-        <ScrollView
-          bounces={false}
-          contentContainerStyle={[styles.bottomContent, { paddingBottom: insets.bottom + 40 }]}
-          keyboardShouldPersistTaps="handled"
-          nestedScrollEnabled
-          style={styles.bottomScroll}
-          showsVerticalScrollIndicator={false}>
+          <View style={styles.bottomContent}>
           {/* Pattern chip */}
           <View style={styles.patternChip}>
             <Text style={styles.patternText}>{patternText}</Text>
@@ -403,9 +405,9 @@ export default function BreathingSessionScreen() {
               {params.name} activate your body naturally Clam response help You feel grounded, center and in control
             </Text>
           </View>
-          <View style={styles.scrollSpacer} />
-        </ScrollView>
-      </View>
+        </View>
+        </View>
+      </ScrollView>
 
       <View style={[styles.floatingTabBar, { bottom: Math.max(insets.bottom, 8) }]}>
         {TAB_ITEMS.map((item) => (
@@ -484,11 +486,15 @@ export default function BreathingSessionScreen() {
 
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: '#F0EEFF' },
+  screenScroll: { flex: 1 },
+  screenScrollContent: {},
 
   // Top half
   topHalf: {
     height: '44%',
     backgroundColor: 'transparent',
+    position: 'relative',
+    zIndex: 2,
   },
   topSafe: {
     flex: 1,
@@ -571,11 +577,11 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     borderTopLeftRadius: 0,
     borderTopRightRadius: 0,
-    flex: 1,
     marginTop: 64,
     overflow: 'visible',
     paddingHorizontal: 20,
-  
+    position: 'relative',
+    zIndex: 1,
   },
   fogFade: {
     height: 160,
@@ -595,12 +601,10 @@ const styles = StyleSheet.create({
   ...StyleSheet.absoluteFillObject,
   backgroundColor: 'transparent',
 },
-  bottomScroll: {
-    flex: 1,
-  },
   bottomContent: {
-    flexGrow: 1,
     paddingTop: 0,
+    position: 'relative',
+    zIndex: 1,
   },
 
   // Pattern chip
@@ -716,7 +720,7 @@ const styles = StyleSheet.create({
   right: 0,
   top: -90,
   height: 90,
-  zIndex: 50,
+  zIndex: 0,
 },
   infoIcon: { color: '#8c8af0', fontSize: 16, marginTop: 2 },
   infoText: {

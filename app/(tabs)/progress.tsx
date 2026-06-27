@@ -1,8 +1,8 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
-import { useRouter } from 'expo-router';
+import { useFocusEffect, useRouter } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useEffect } from 'react';
+import { useCallback, useRef } from 'react';
 import {
   ActivityIndicator,
   Pressable,
@@ -78,12 +78,24 @@ function getChartIcon(card: ChartCard) {
     return { iconAsset: movementIcon, iconName: undefined };
   }
 
-  if (card.type === 'sleep-stress') {
+  if (card.type === 'sleep-stress' || card.type === 'sleep-mood') {
     return { iconAsset: windDownIcon, iconName: undefined };
   }
 
   if (card.type === 'tasks-stress') {
     return { iconAsset: undefined, iconName: 'checkmark-circle-outline' as const };
+  }
+
+  if (card.type === 'breathwork-minutes' || card.type === 'breathing-usage') {
+    return { iconAsset: breathworkIcon, iconName: undefined };
+  }
+
+  if (card.type === 'movement-stress' || card.type === 'soundscape-usage') {
+    return { iconAsset: undefined, iconName: 'musical-notes-outline' as const };
+  }
+
+  if (card.type === 'mood-frequency') {
+    return { iconAsset: undefined, iconName: 'happy-outline' as const };
   }
 
   return { iconAsset: undefined, iconName: 'heart-outline' as const };
@@ -110,10 +122,59 @@ function getChartVisual(card: ProgressChartOverview): ChartCard {
     };
   }
 
-  return {
-    ...card,
-    lineColor: card.type === 'sleep-stress' ? '#A18EFF' : card.themeColor,
-  };
+  if (card.type === 'breathwork-minutes') {
+    return {
+      ...card,
+      barColor: '#5B2FBE',
+      barGradientStart: '#D8CFFF',
+      barTopGap: 7,
+      lineColor: '#8B6EFF',
+    };
+  }
+
+  if (card.type === 'movement-stress') {
+    return {
+      ...card,
+      barColor: '#0166BE',
+      barGradientStart: '#C2E5FF',
+      barTopGap: 7,
+      lineColor: '#4DAEFF',
+    };
+  }
+
+  if (card.type === 'breathing-usage') {
+    return {
+      ...card,
+      barColor: '#009688',
+      barGradientStart: '#B2EBE8',
+      barTopGap: 7,
+      lineColor: '#26C6C0',
+    };
+  }
+
+  if (card.type === 'soundscape-usage') {
+    return {
+      ...card,
+      barColor: '#7B1FA2',
+      barGradientStart: '#E1BEF0',
+      barTopGap: 7,
+      lineColor: '#BA68C8',
+    };
+  }
+
+  if (card.type === 'sleep-stress') {
+    return { ...card, lineColor: '#A18EFF' };
+  }
+
+  if (card.type === 'mood-frequency') {
+    return { ...card, lineColor: '#FF8C5A' };
+  }
+
+  if (card.type === 'sleep-mood') {
+    return { ...card, lineColor: '#5B9BFF' };
+  }
+
+  return { ...card, lineColor: card.themeColor };
 }
 
 function splitChartLabel(label: string) {
@@ -121,9 +182,13 @@ function splitChartLabel(label: string) {
   const normalized = trimmedLabel.toLowerCase();
   const labelMap: Record<string, string[]> = {
     breathwork: ['Breathwork'],
-    'high completion': ['High', 'completion'],
-    'low completion': ['Low', 'completion'],
-    'no breathwork': ['No', 'breathwork'],
+    'high completion': ['High', 'compl.'],
+    'low completion': ['Low', 'compl.'],
+    'no breathwork': ['No', 'breath.'],
+    'light sleep': ['Light', 'sleep'],
+    'waking often': ['Waking', 'often'],
+    'hard to fall asleep': ['Hard', 'asleep'],
+    'very tired': ['Very', 'tired'],
   };
 
   if (labelMap[normalized]) {
@@ -133,14 +198,16 @@ function splitChartLabel(label: string) {
   const words = trimmedLabel.split(/\s+/).filter(Boolean);
 
   if (words.length <= 1) {
-    return [trimmedLabel.length > 11 ? `${trimmedLabel.slice(0, 10)}.` : trimmedLabel];
+    const word = words[0] ?? trimmedLabel;
+    return [word.length > 9 ? `${word.slice(0, 8)}.` : word];
   }
 
   if (words.length === 2) {
-    return words;
+    return [words[0], words[1].length > 8 ? `${words[1].slice(0, 7)}.` : words[1]];
   }
 
-  return [words.slice(0, Math.ceil(words.length / 2)).join(' '), words.slice(Math.ceil(words.length / 2)).join(' ')];
+  // 3+ words: first two words only
+  return [words[0], words[1]];
 }
 
 function ScoreCircle({ index, score }: { index: number; score: Score }) {
@@ -213,16 +280,38 @@ function ScoreCircle({ index, score }: { index: number; score: Score }) {
 
 function ValueChart({ card }: { card: ChartCard }) {
   const chartWidth = 148;
-  const chartHeight = 112;
+  const chartHeight = 124;
   const left = 38;
   const right = 18;
   const top = 10;
-  const bottom = 34;
+  const bottom = 44;
   const plotWidth = chartWidth - left - right;
   const plotHeight = chartHeight - top - bottom;
   const values = card.data.length ? card.data : [0, 0];
   const labels = card.labels.length ? card.labels : values.map((_, index) => String(index + 1));
-  const maxValue = Math.max(100, ...values);
+
+  const isCountChart = (
+    card.type === 'mood-frequency' ||
+    card.type === 'breathing-usage' ||
+    card.type === 'soundscape-usage'
+  );
+  const isBarChart = (
+    card.type === 'daily-ease-trend' ||
+    card.type === 'tasks-stress' ||
+    card.type === 'breathwork-minutes' ||
+    card.type === 'movement-stress' ||
+    card.type === 'breathing-usage' ||
+    card.type === 'soundscape-usage'
+  );
+
+  const rawMax = Math.max(...values);
+  const maxValue = isCountChart
+    ? Math.max(rawMax > 0 ? Math.ceil(rawMax * 1.2) : 5, 5)
+    : Math.max(100, rawMax);
+  const yTicks = isCountChart
+    ? [maxValue, Math.round(maxValue / 2), 0]
+    : [100, 75, 50, 25, 0];
+
   const step = plotWidth / Math.max(1, values.length - 1);
   const points = values.map((value, index) => ({
     x: left + index * step,
@@ -236,26 +325,29 @@ function ValueChart({ card }: { card: ChartCard }) {
   const lineColor = card.lineColor ?? accent;
   const gradientId = `chartFill${barColor.replace('#', '')}`;
   const labelStep = plotWidth / Math.max(1, labels.length - 1);
-  const visiblePointCount = Math.max(1, Math.min(labels.length, points.length));
-  const visiblePoints = points.slice(0, visiblePointCount);
+
+  // Show max 3 labels — first, middle, last — for dense charts
+  const visibleLabelIndices = new Set<number>();
+  if (labels.length <= 3) {
+    labels.forEach((_, i) => visibleLabelIndices.add(i));
+  } else {
+    visibleLabelIndices.add(0);
+    visibleLabelIndices.add(labels.length - 1);
+    visibleLabelIndices.add(Math.round((labels.length - 1) / 2));
+  }
+
   const statBubbleWidth = 42;
   const statBubbleHeight = 24;
   const statBubbleGap = 10;
   const statBubbleEdgePadding = 2;
-  const statPoint = visiblePoints[visiblePoints.length - 1] ?? points[points.length - 1];
-  const statPreviousPoint = visiblePoints[Math.max(0, visiblePoints.length - 2)] ?? statPoint;
+  const statPoint = points[points.length - 1] ?? points[0];
+  const statPreviousPoint = points[Math.max(0, points.length - 2)] ?? statPoint;
   const statBubbleX = Math.max(
     statBubbleEdgePadding,
-    Math.min(
-      chartWidth - statBubbleWidth - statBubbleEdgePadding,
-      statPoint.x - statBubbleWidth / 2,
-    ),
+    Math.min(chartWidth - statBubbleWidth - statBubbleEdgePadding, statPoint.x - statBubbleWidth / 2),
   );
   const statSafeLineY = Math.min(statPoint.y, statPreviousPoint.y);
-  const statBubbleY = Math.max(
-    statBubbleEdgePadding,
-    statSafeLineY - statBubbleHeight - statBubbleGap,
-  );
+  const statBubbleY = Math.max(statBubbleEdgePadding, statSafeLineY - statBubbleHeight - statBubbleGap);
 
   return (
     <Svg
@@ -269,8 +361,8 @@ function ValueChart({ card }: { card: ChartCard }) {
           <Stop offset="1" stopColor={barColor} stopOpacity={barGradientEndOpacity} />
         </SvgLinearGradient>
       </Defs>
-      {[100, 75, 50, 25, 0].map((tick) => {
-        const y = top + (1 - tick / 100) * plotHeight;
+      {yTicks.map((tick) => {
+        const y = top + (1 - tick / maxValue) * plotHeight;
         return (
           <SvgText
             fill="#54555A"
@@ -292,14 +384,14 @@ function ValueChart({ card }: { card: ChartCard }) {
         stroke="#D9D9D9"
         strokeWidth={1}
       />
-      {(card.type === 'daily-ease-trend' || card.type === 'tasks-stress') &&
-        points.slice(0, labels.length).map((point, index) => {
+      {isBarChart &&
+        points.map((point, index) => {
           const barY = Math.min(top + plotHeight, point.y + (card.barTopGap ?? 0));
           const barHeight = top + plotHeight - barY;
           return (
             <Rect
               fill={`url(#${gradientId})`}
-              height={barHeight}
+              height={Math.max(0, barHeight)}
               key={`${card.title}-bar-${index}`}
               opacity={0.75}
               rx={3}
@@ -324,7 +416,7 @@ function ValueChart({ card }: { card: ChartCard }) {
         strokeLinejoin="round"
         strokeWidth={3}
       />
-      {visiblePoints.map((point, index) => (
+      {points.map((point, index) => (
         <Circle
           cx={point.x}
           cy={point.y}
@@ -334,6 +426,7 @@ function ValueChart({ card }: { card: ChartCard }) {
         />
       ))}
       {labels.map((label, index) => {
+        if (!visibleLabelIndices.has(index)) return null;
         const lines = splitChartLabel(label);
         const baseX = left + index * labelStep;
         const x = index === 0 ? baseX - 5 : index === labels.length - 1 ? baseX + 5 : baseX;
@@ -342,11 +435,11 @@ function ValueChart({ card }: { card: ChartCard }) {
         return lines.map((line, lineIndex) => (
           <SvgText
             fill="#54555A"
-            fontSize={line.length > 10 ? '8' : '9'}
+            fontSize={line.length > 9 ? '8' : '9'}
             key={`${card.title}-label-${label}-${index}-${lineIndex}`}
             textAnchor={textAnchor}
             x={x}
-            y={chartHeight - 17 + lineIndex * 10}>
+            y={chartHeight - 27 + lineIndex * 12}>
             {line}
           </SvgText>
         ));
@@ -386,15 +479,30 @@ export default function ProgressScreen() {
     progress,
     loadProgressIfNeeded,
     refreshProgress,
+    silentRefresh,
     setSelectedChartType,
   } = useProgress();
   const scores = progress?.metrics ?? [];
   const chartCards = (progress?.charts ?? []).map(getChartVisual);
   const hasProgressData = Boolean(progress && (scores.length || chartCards.length || progress.summary));
 
-  useEffect(() => {
-    void loadProgressIfNeeded();
-  }, [loadProgressIfNeeded]);
+  // Stable refs so the useFocusEffect callback never needs to change identity
+  const loadRef = useRef(loadProgressIfNeeded);
+  const silentRef = useRef(silentRefresh);
+  loadRef.current = loadProgressIfNeeded;
+  silentRef.current = silentRefresh;
+  const hasFocused = useRef(false);
+
+  useFocusEffect(
+    useCallback(() => {
+      if (!hasFocused.current) {
+        hasFocused.current = true;
+        void loadRef.current();   // first focus: show loading spinner
+      } else {
+        void silentRef.current(); // return visits: silent background refresh
+      }
+    }, [])
+  );
 
   return (
     <View style={styles.screen}>
@@ -403,7 +511,7 @@ export default function ProgressScreen() {
       <SafeAreaView edges={['top']} style={styles.safeArea}>
         <ScrollView
           bounces={false}
-          contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 112 }]}
+          contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 88 }]}
           refreshControl={
             <RefreshControl refreshing={isRefreshing} onRefresh={refreshProgress} tintColor="#3770FC" />
           }
@@ -420,7 +528,9 @@ export default function ProgressScreen() {
                 <View style={styles.weekIcon}>
                   <Image source={thisWeekIcon} style={styles.weekIconImage} contentFit="contain" />
                 </View>
-                <Text style={styles.weekTitle}>This Week</Text>
+                <View style={styles.weekTitleWrap}>
+                  <Text adjustsFontSizeToFit numberOfLines={1} style={styles.weekTitle}>This Week</Text>
+                </View>
               </View>
               <Text style={styles.weekText}>{progress?.summary}</Text>
             </View>
@@ -515,8 +625,8 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     flexBasis: '48%',
     flexGrow: 1,
-    minHeight: 188,
-    paddingBottom: 12,
+    minHeight: 200,
+    paddingBottom: 8,
     paddingHorizontal: 8,
     paddingTop: 10,
     shadowColor: '#000000',
@@ -803,8 +913,11 @@ const styles = StyleSheet.create({
     lineHeight: 26,
     maxWidth: '100%',
   },
+  weekTitleWrap: {
+    flex: 1,
+  },
   weekTitle: {
-    color: '#173F5F',
+    color: '#000000',
     fontFamily: AppFonts.displayBold,
     fontSize: 20,
     fontWeight: '700',

@@ -28,7 +28,11 @@
         "android.permission.health.READ_HEART_RATE",
         "android.permission.health.READ_RESTING_HEART_RATE",
         "android.permission.health.READ_HEART_RATE_VARIABILITY",
-        "android.permission.health.READ_RESPIRATORY_RATE"
+        "android.permission.health.READ_RESPIRATORY_RATE",
+        "android.permission.SCHEDULE_EXACT_ALARM",
+        "android.permission.USE_EXACT_ALARM",
+        "android.permission.RECEIVE_BOOT_COMPLETED",
+        "android.permission.VIBRATE"
       ],
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/icon.png",
@@ -45,6 +49,15 @@
     },
     "plugins": [
       "expo-router",
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/images/icon.png",
+          "color": "#16102A",
+          "defaultChannel": "default",
+          "sounds": []
+        }
+      ],
       "./plugins/withHealthConnectManifest",
       [
         "expo-build-properties",

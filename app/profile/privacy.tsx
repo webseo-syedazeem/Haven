@@ -1,7 +1,8 @@
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
+  Animated,
   ActivityIndicator,
   ImageBackground,
   Modal,
@@ -19,6 +20,21 @@ import { AppFonts } from '@/constants/theme';
 import { useHealthConnect, type HealthProvider } from '@/hooks/useHealthConnect';
 
 const backgroundImage = require('@/assets/images/4a78c0b5bcbe750563b0d0e3ecbe9951c1d0f0cc.png');
+
+function StatusSkeleton() {
+  const pulse = useRef(new Animated.Value(0.4)).current;
+
+  useEffect(() => {
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(pulse, { toValue: 1, duration: 700, useNativeDriver: true }),
+        Animated.timing(pulse, { toValue: 0.4, duration: 700, useNativeDriver: true }),
+      ])
+    ).start();
+  }, [pulse]);
+
+  return <Animated.View style={[styles.statusSkeleton, { opacity: pulse }]} />;
+}
 
 const CONNECTED_APPS = [
   {
@@ -52,6 +68,7 @@ export default function PrivacyScreen() {
     appleConnected,
     googleConnected,
     loading,
+    statusLoading,
     connectAppleHealth,
     connectGoogleFit,
     disconnectProvider,
@@ -161,9 +178,13 @@ export default function PrivacyScreen() {
                     </View>
                     <View style={styles.appText}>
                       <Text style={styles.appName}>{app.name}</Text>
-                      <Text style={[styles.appStatus, { color: connected ? '#2EB668' : '#8C8C8C' }]}>
-                        {connected ? 'Connected' : 'Not Connected'}
-                      </Text>
+                      {statusLoading ? (
+                        <StatusSkeleton />
+                      ) : (
+                        <Text style={[styles.appStatus, { color: connected ? '#2EB668' : '#8C8C8C' }]}>
+                          {connected ? 'Connected' : 'Not Connected'}
+                        </Text>
+                      )}
                     </View>
                     <Ionicons name="chevron-forward" size={16} color="#8C8C8C" />
                   </Pressable>
@@ -382,6 +403,13 @@ const styles = StyleSheet.create({
     fontSize: 12,
     lineHeight: 18,
     marginTop: 2,
+  },
+  statusSkeleton: {
+    backgroundColor: '#E0E0E0',
+    borderRadius: 6,
+    height: 12,
+    marginTop: 4,
+    width: 80,
   },
 
   sectionDivider: {

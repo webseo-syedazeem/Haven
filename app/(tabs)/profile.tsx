@@ -1,5 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter, type Href } from 'expo-router';
+import { useState } from 'react';
 import {
   ImageBackground,
   ScrollView,
@@ -11,6 +12,7 @@ import {
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { AppFonts } from '@/constants/theme';
+import { AvatarPreview } from '@/components/profile/AvatarPreview';
 import { ProfileAvatar } from '@/components/profile/ProfileAvatar';
 import { useUser } from '@/hooks/useUser';
 import { getDisplayName } from '@/lib/api/user';
@@ -62,8 +64,10 @@ function SectionCard({ label, rows }: { label: string; rows: readonly ProfileRow
 export default function ProfileScreen() {
   const insets = useSafeAreaInsets();
   const { data: me } = useUser();
+  const [avatarPreviewVisible, setAvatarPreviewVisible] = useState(false);
   const greeting = getUkGreeting();
   const displayName = getDisplayName(me) || 'there';
+  const profileImageUrl = me?.profile?.profile_image_url ?? '';
 
   return (
     <ImageBackground source={backgroundImage} resizeMode="cover" style={styles.screen}>
@@ -79,16 +83,30 @@ export default function ProfileScreen() {
               <Text style={styles.greetingLine}>{`${greeting},`}</Text>
               <Text style={styles.greetingName}>{displayName}</Text>
             </View>
-            <ProfileAvatar
-              imageUrl={me?.profile?.profile_image_url}
-              size={56}
-              style={styles.avatarRing}
-            />
+            <TouchableOpacity
+              activeOpacity={0.86}
+              disabled={!profileImageUrl}
+              onPress={() => {
+                if (profileImageUrl) {
+                  setAvatarPreviewVisible(true);
+                }
+              }}>
+              <ProfileAvatar
+                imageUrl={profileImageUrl}
+                size={56}
+                style={styles.avatarRing}
+              />
+            </TouchableOpacity>
           </View>
           <SectionCard label="Your Plan" rows={planRows} />
           <SectionCard label="Setting" rows={settingRows} />
         </ScrollView>
       </SafeAreaView>
+      <AvatarPreview
+        visible={avatarPreviewVisible}
+        imageUrl={profileImageUrl}
+        onClose={() => setAvatarPreviewVisible(false)}
+      />
     </ImageBackground>
   );
 }

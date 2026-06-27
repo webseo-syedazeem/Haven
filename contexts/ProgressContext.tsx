@@ -15,6 +15,7 @@ type ProgressContextValue = {
   isRefreshing: boolean;
   progress: ProgressResponse | null;
   refreshProgress: () => Promise<void>;
+  silentRefresh: () => Promise<void>;
   selectedChartType: ProgressChartType | null;
   setSelectedChartType: (type: ProgressChartType | null) => void;
   loadProgressIfNeeded: () => Promise<void>;
@@ -60,6 +61,7 @@ export function ProgressProvider({ children }: { children: ReactNode }) {
   }, [router]);
 
   const refreshProgress = useCallback(() => fetchProgress('refresh'), [fetchProgress]);
+  const silentRefresh = useCallback(() => fetchProgress('silent'), [fetchProgress]);
 
   const loadProgressIfNeeded = useCallback(async () => {
     if (!progress && !isLoading) {
@@ -75,6 +77,7 @@ export function ProgressProvider({ children }: { children: ReactNode }) {
       loadProgressIfNeeded,
       progress,
       refreshProgress,
+      silentRefresh,
       selectedChartType,
       setSelectedChartType,
     }),
@@ -85,6 +88,7 @@ export function ProgressProvider({ children }: { children: ReactNode }) {
       loadProgressIfNeeded,
       progress,
       refreshProgress,
+      silentRefresh,
       selectedChartType,
     ]
   );

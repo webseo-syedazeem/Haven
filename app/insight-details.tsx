@@ -29,6 +29,12 @@ const chartTypes: ProgressChartType[] = [
   'daily-ease-trend',
   'sleep-stress',
   'tasks-stress',
+  'breathwork-minutes',
+  'movement-stress',
+  'mood-frequency',
+  'breathing-usage',
+  'soundscape-usage',
+  'sleep-mood',
 ];
 const tabs: ProgressPeriod[] = ['Day', 'Week', 'Month', 'Year'];
 const navItems = [

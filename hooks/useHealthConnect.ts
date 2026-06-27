@@ -1,5 +1,6 @@
 // Haven - HealthConnect Integration
 import { useCallback, useEffect, useState } from 'react';
+import { File as FSFile } from 'expo-file-system';
 import * as Print from 'expo-print';
 import { isAvailableAsync, shareAsync } from 'expo-sharing';
 import { Alert, Linking, Platform } from 'react-native';
@@ -17,6 +18,7 @@ import {
 } from 'react-native-health-connect';
 
 import { apiClient } from '@/lib/api/client';
+import { getAccessToken } from '@/lib/haven-api';
 import { supabase } from '@/lib/supabase';
 
 export type HealthProvider = 'apple' | 'google';
@@ -212,19 +214,37 @@ const showHealthError = (message: string) => {
   Alert.alert('Health connect', message);
 };
 
+function extractUserIdFromJwt(token: string): string | null {
+  try {
+    const parts = token.split('.');
+    if (parts.length !== 3) return null;
+    const base64 = parts[1].replace(/-/g, '+').replace(/_/g, '/');
+    const payload = JSON.parse(atob(base64)) as Record<string, unknown>;
+    const id = payload.sub ?? payload.user_id ?? payload.id;
+    return typeof id === 'string' ? id : null;
+  } catch {
+    return null;
+  }
+}
+
 export function useHealthConnect() {
   const [appleConnected, setAppleConnected] = useState(false);
   const [googleConnected, setGoogleConnected] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [statusLoading, setStatusLoading] = useState(true);
 
   const getCurrentUserId = useCallback(async () => {
-    const { data, error } = await supabase.auth.getUser();
+    const { data } = await supabase.auth.getUser();
+    if (data.user?.id) return data.user.id;
 
-    if (error || !data.user?.id) {
-      throw new Error('Please sign in again to connect health data.');
+    // Supabase has no session — try decoding the custom backend JWT
+    const token = getAccessToken();
+    if (token) {
+      const id = extractUserIdFromJwt(token);
+      if (id) return id;
     }
 
-    return data.user.id;
+    throw new Error('Please sign in again to connect health data.');
   }, []);
 
   const saveConnection = useCallback(
@@ -248,6 +268,7 @@ export function useHealthConnect() {
   );
 
   const fetchStatus = useCallback(async () => {
+    setStatusLoading(true);
     try {
       const userId = await getCurrentUserId();
       const response = await apiClient<StatusResponse>(`/api/health-connect/status/${userId}`);
@@ -261,6 +282,8 @@ export function useHealthConnect() {
       );
     } catch (error) {
       console.warn('Fetch health connection status failed:', error);
+    } finally {
+      setStatusLoading(false);
     }
   }, [getCurrentUserId]);
 
@@ -582,10 +605,20 @@ export function useHealthConnect() {
       const connections = response.data.connections ?? [];
 
       const html = buildExportHtml(userId, connections);
-      const { uri } = await Print.printToFileAsync({ html });
+      const { uri: tempUri } = await Print.printToFileAsync({ html });
+
+      const date = new Date().toISOString().split('T')[0];
+      const fileName = `Haven_Health_Data_${date}.pdf`;
+      const parentDir = tempUri.substring(0, tempUri.lastIndexOf('/') + 1);
+      const existing = new FSFile(parentDir + fileName);
+      if (existing.exists) {
+        existing.delete();
+      }
+      const tempFile = new FSFile(tempUri);
+      tempFile.rename(fileName);
 
       if (await isAvailableAsync()) {
-        await shareAsync(uri, {
+        await shareAsync(tempFile.uri, {
           mimeType: 'application/pdf',
           dialogTitle: 'Haven health data',
           UTI: 'com.adobe.pdf',
@@ -593,6 +626,8 @@ export function useHealthConnect() {
       } else {
         showHealthError('Sharing is not available on this device.');
       }
+
+      try { tempFile.delete(); } catch { /* ignore cleanup errors */ }
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Data export failed.';
       showHealthError(message);
@@ -630,6 +665,7 @@ export function useHealthConnect() {
     appleConnected,
     googleConnected,
     loading,
+    statusLoading,
     connectAppleHealth,
     connectGoogleFit,
     disconnectProvider,
