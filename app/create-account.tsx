@@ -14,6 +14,7 @@ import {
 
 import { AuthButton } from '@/components/AuthButton';
 import { ExploreButton } from '@/components/ExploreButton';
+import { LegalDisclaimer } from '@/components/LegalDisclaimer';
 import { ScreenWrapper, useScreenBottomPadding } from '@/components/ScreenWrapper';
 import { AppFonts } from '@/constants/theme';
 import { signInWithApple } from '@/lib/apple-auth';
@@ -225,17 +226,11 @@ export default function CreateAccountScreen() {
               </View>
             </View>
 
-            <Text style={styles.termsText}>
-              By continuing, you agree to our{' '}
-              <Text onPress={() => router.push('/profile/terms' as any)} style={styles.textLink}>
-                Terms of Service
-              </Text>
-              {' and '}
-              <Text onPress={() => router.push('/profile/privacy-policy' as any)} style={styles.textLink}>
-                Privacy Policy
-              </Text>
-              .
-            </Text>
+            <LegalDisclaimer
+              linkStyle={styles.textLink}
+              style={styles.termsDisclaimer}
+              textStyle={styles.termsText}
+            />
 
             {!!errorMessage && <Text style={styles.errorText}>{errorMessage}</Text>}
           </View>
@@ -501,6 +496,10 @@ loginRow: {
     letterSpacing: 0,
     lineHeight: 26,
   },
+  termsDisclaimer: {
+    marginTop: 12,
+    maxWidth: 310,
+  },
   termsText: {
     color: '#173F5F',
     fontFamily: AppFonts.sansMedium,
@@ -508,8 +507,6 @@ loginRow: {
     fontWeight: '500',
     letterSpacing: 0,
     lineHeight: 26,
-    marginTop: 12,
-    maxWidth: 310,
     textAlign: 'center',
   },
   authBtn: {

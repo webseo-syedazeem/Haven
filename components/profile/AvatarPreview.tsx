@@ -1,6 +1,4 @@
 import { BlurView } from 'expo-blur';
-import * as NavigationBar from 'expo-navigation-bar';
-import { useEffect } from 'react';
 import { Dimensions, Image, Modal, Platform, Pressable, StyleSheet, View } from 'react-native';
 
 type AvatarPreviewProps = {
@@ -13,26 +11,6 @@ const { width } = Dimensions.get('window');
 const CIRCLE_SIZE = Math.min(width * 0.78, 320);
 
 export function AvatarPreview({ visible, imageUrl, onClose }: AvatarPreviewProps) {
-  useEffect(() => {
-    if (Platform.OS !== 'android' || !visible || !imageUrl) {
-      return;
-    }
-
-    void (async () => {
-      try {
-        await NavigationBar.setVisibilityAsync('hidden');
-      } catch {}
-    })();
-
-    return () => {
-      void (async () => {
-        try {
-          await NavigationBar.setVisibilityAsync('visible');
-        } catch {}
-      })();
-    };
-  }, [visible, imageUrl]);
-
   if (!imageUrl) {
     return null;
   }
@@ -42,8 +20,8 @@ export function AvatarPreview({ visible, imageUrl, onClose }: AvatarPreviewProps
       visible={visible}
       transparent
       statusBarTranslucent
-      navigationBarTranslucent
       animationType="fade"
+      presentationStyle="overFullScreen"
       onRequestClose={onClose}>
       <Pressable style={styles.backdrop} onPress={onClose}>
         <BlurView intensity={55} tint="dark" style={StyleSheet.absoluteFill} />

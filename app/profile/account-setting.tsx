@@ -11,6 +11,7 @@ import {
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { LegalDisclaimer } from '@/components/LegalDisclaimer';
 import { ConfirmActionModal } from '@/components/profile/ConfirmActionModal';
 import { AppFonts } from '@/constants/theme';
 import { clearUserSession } from '@/lib/auth/clearSession';
@@ -114,17 +115,12 @@ export default function AccountSettingScreen() {
 
       </ScrollView>
 
-      <Text style={[styles.legalText, { paddingBottom: insets.bottom + 16 }]}>
-        {'By using Haven, you agree to our '}
-        <Text onPress={() => router.push('/profile/terms' as any)} style={styles.legalLink}>
-          Terms of Service
-        </Text>
-        {' and '}
-        <Text onPress={() => router.push('/profile/privacy-policy' as any)} style={styles.legalLink}>
-          Privacy Policy
-        </Text>
-        .
-      </Text>
+      <LegalDisclaimer
+        linkStyle={styles.legalLink}
+        prefix="By using Haven, you agree to our"
+        style={{ paddingBottom: insets.bottom + 16, paddingHorizontal: 24, paddingTop: 12 }}
+        textStyle={styles.legalText}
+      />
 
       <ConfirmActionModal
         confirmLabel="Logout"
@@ -245,8 +241,6 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     lineHeight: 20,
     opacity: 0.7,
-    paddingHorizontal: 24,
-    paddingTop: 12,
     textAlign: 'center',
   },
   legalLink: {

@@ -1,10 +1,11 @@
 ﻿import { Ionicons } from '@expo/vector-icons';
-import { Link, useRouter } from 'expo-router';
+import { useRouter } from 'expo-router';
 import { useCallback } from 'react';
 import { BackHandler, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 
 import { AuthButton } from '@/components/AuthButton';
+import { LegalDisclaimer } from '@/components/LegalDisclaimer';
 import { ScreenWrapper } from '@/components/ScreenWrapper';
 import { AppFonts } from '@/constants/theme';
 import { signInWithApple } from '@/lib/apple-auth';
@@ -72,17 +73,11 @@ export default function WelcomeScreen() {
       }
       topContentStyle={styles.topContent}
       bottomContent={
-        <Text style={styles.footer}>
-          By continuing, you agree to our{' '}
-          <Link href="/profile/terms" asChild>
-            <Text style={styles.footerLink}>Terms of Service</Text>
-          </Link>
-          {' and '}
-          <Text onPress={() => router.push('/profile/privacy-policy' as any)} style={styles.footerLink}>
-            Privacy Policy
-          </Text>
-          .
-        </Text>
+        <LegalDisclaimer
+          linkStyle={styles.footerLink}
+          style={styles.footerDisclaimer}
+          textStyle={styles.footer}
+        />
       }
       middleContent={
         <View style={styles.centerContent}>
@@ -140,12 +135,14 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     letterSpacing: 0,
     lineHeight: 26,
-    maxWidth: 310,
-    paddingHorizontal: 24,
     textAlign: 'center',
     textShadowColor: 'rgba(0, 0, 0, 0.32)',
     textShadowOffset: { width: 0, height: 1 },
     textShadowRadius: 2,
+  },
+  footerDisclaimer: {
+    maxWidth: 310,
+    paddingHorizontal: 24,
     width: '100%',
   },
   footerLink: {
