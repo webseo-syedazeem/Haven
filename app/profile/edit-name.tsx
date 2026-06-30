@@ -14,9 +14,11 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { AvatarPreview } from '@/components/profile/AvatarPreview';
 import { ExploreButton } from '@/components/ExploreButton';
-import { AppFonts } from '@/constants/theme';
+import { ProfileAvatar } from '@/components/profile/ProfileAvatar';
 import { SaveSuccessModal } from '@/components/profile/SaveSuccessModal';
+import { AppFonts } from '@/constants/theme';
 import { useUpdateName, useUser } from '@/hooks/useUser';
 import { getFirstName, getLastName } from '@/lib/api/user';
 
@@ -38,6 +40,7 @@ export default function EditNameScreen() {
   const [error, setError] = useState('');
   const [showSavedModal, setShowSavedModal] = useState(false);
   const [prefilled, setPrefilled] = useState(false);
+  const [avatarPreviewVisible, setAvatarPreviewVisible] = useState(false);
 
   const savedFirstName = getFirstName(me);
   const savedLastName = getLastName(me);
@@ -46,6 +49,7 @@ export default function EditNameScreen() {
     [savedFirstName, savedLastName],
   );
   const hasSavedName = !!(savedFirstName || savedLastName);
+  const profileImageUrl = me?.profile?.profile_image_url ?? '';
 
   useEffect(() => {
     if (!me || prefilled) return;
@@ -91,13 +95,23 @@ export default function EditNameScreen() {
             <ActivityIndicator color="#6339FB" style={styles.loader} />
           ) : hasSavedName ? (
             <View style={styles.nameCard}>
-              <LinearGradient
-                colors={['#B087E5', '#7863DC']}
-                end={{ x: 1, y: 1 }}
-                start={{ x: 0, y: 0 }}
-                style={styles.initialsCircle}>
-                <Text style={styles.initials}>{initials}</Text>
-              </LinearGradient>
+              {profileImageUrl ? (
+                <Pressable hitSlop={8} onPress={() => setAvatarPreviewVisible(true)}>
+                  <ProfileAvatar
+                    imageUrl={profileImageUrl}
+                    size={52}
+                    style={styles.initialsCircle}
+                  />
+                </Pressable>
+              ) : (
+                <LinearGradient
+                  colors={['#B087E5', '#7863DC']}
+                  end={{ x: 1, y: 1 }}
+                  start={{ x: 0, y: 0 }}
+                  style={styles.initialsCircle}>
+                  <Text style={styles.initials}>{initials}</Text>
+                </LinearGradient>
+              )}
               <View style={styles.nameCopy}>
                 <Text style={styles.nameLabel}>Your name</Text>
                 <Text style={styles.nameValue}>
@@ -187,6 +201,12 @@ export default function EditNameScreen() {
 
 
         </View>
+
+        <AvatarPreview
+          visible={avatarPreviewVisible}
+          imageUrl={profileImageUrl}
+          onClose={() => setAvatarPreviewVisible(false)}
+        />
 
         <SaveSuccessModal
 

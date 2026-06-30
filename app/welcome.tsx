@@ -1,5 +1,5 @@
-import { Ionicons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
+﻿import { Ionicons } from '@expo/vector-icons';
+import { Link, useRouter } from 'expo-router';
 import { useCallback } from 'react';
 import { BackHandler, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
@@ -74,9 +74,9 @@ export default function WelcomeScreen() {
       bottomContent={
         <Text style={styles.footer}>
           By continuing, you agree to our{' '}
-          <Text onPress={() => router.push('/profile/terms' as any)} style={styles.footerLink}>
-            Terms of Service
-          </Text>
+          <Link href="/profile/terms" asChild>
+            <Text style={styles.footerLink}>Terms of Service</Text>
+          </Link>
           {' and '}
           <Text onPress={() => router.push('/profile/privacy-policy' as any)} style={styles.footerLink}>
             Privacy Policy
@@ -176,3 +176,4 @@ const styles = StyleSheet.create({
     zIndex: 3,
   },
 });
+

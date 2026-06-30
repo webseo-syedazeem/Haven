@@ -29,13 +29,13 @@ const POLICY_SECTIONS: PolicySection[] = [
     bg: '#7B61FF14',
     icon: 'person-outline',
     title: '1. Information We Collect',
-    body: ['We collect information to provide and improve our services. This includes:'],
+    body: ['We only collect what helps Haven work for you. This can include:'],
     bullets: [
-      'Account information (name, email, preferences)',
-      'Mood, reflections and journal entries',
-      'Usage data (features you use, time spent)',
-      'Device information (type, OS, unique identifiers)',
-      'Health data (with your permission from Apple Health / Google Fit)',
+      'Account details: your name and email, plus basic Google profile info if you sign in with Google',
+      'Your entries: onboarding answers, mood check-ins, nightly stress reflections, notes, glimmers, tasks, and breathing sessions',
+      'Soundscape preferences: saved mixes, layers, and favourites',
+      'Optional health data (only if you choose to connect it)',
+      'Limited device info such as device type, operating system, and app version',
     ],
   },
   {
@@ -43,13 +43,9 @@ const POLICY_SECTIONS: PolicySection[] = [
     bg: '#7B61FF14',
     icon: 'bar-chart-outline',
     title: '2. How We Use Your Information',
-    body: ['We use your information to:'],
-    bullets: [
-      'Provide, personalize and improve Haven',
-      'Generate insights and track your progress',
-      'Communicate with you about your account and updates',
-      'Ensure app security and prevent fraud',
-      'Comply with legal obligations',
+    body: [
+      'We use your information to calculate your Daily Ease and compare it with your Stress Today, generate gentle plain-language insights, provide soundscapes and breathing tools, manage your account and subscription, and keep the app secure.',
+      'We never use your data to diagnose, treat, or make medical claims.',
     ],
   },
   {
@@ -58,71 +54,82 @@ const POLICY_SECTIONS: PolicySection[] = [
     icon: 'heart-outline',
     title: '3. Health Data & Permissions',
     body: [
-      'With your permission, we access health data to provide better insights (e.g., sleep, heart rate, steps).',
-      'You can connect or disconnect anytime in the app settings.',
-      'We never share your health data with third parties.',
+      'Connecting Apple Health (iOS) or Health Connect (Android) is optional. We only read the categories you allow, such as steps, sleep, heart rate, HRV, and resting heart rate.',
+      'We read your health data but never write to it, and we store only the summary values needed for your insights — not your full health records.',
+      'We never sell your health data or share it with third parties for their own purposes, and Apple Health data is never stored in iCloud.',
+      'You can disconnect any health source at any time in settings.',
+    ],
+  },
+  {
+    accent: '#7B61FF',
+    bg: '#7B61FF14',
+    icon: 'eye-off-outline',
+    title: '4. No Analytics or Ad Tracking',
+    body: [
+      'Haven does not use third-party analytics, advertising, or tracking tools, and we do not track you across other apps or websites.',
     ],
   },
   {
     accent: '#7B61FF',
     bg: '#7B61FF14',
     icon: 'people-outline',
-    title: '4. Data Sharing',
-    body: ['We do not sell your personal data. We may share data only in these cases:'],
+    title: '5. How We Share Information',
+    body: ['We do not sell your personal data. We share it only with the providers needed to run Haven:'],
     bullets: [
-      'With trusted service providers who help us operate the app (analytics, hosting, notifications)',
-      'When required by law or to protect rights and safety',
-      'In connection with a business transfer (merger, sale, etc.)',
+      'Supabase — secure sign-in, database, and storage (including your profile photo)',
+      'RevenueCat — to manage your subscription',
+      'Google — only if you choose to sign in with Google',
+      'When required by law, or as part of a business transfer',
+    ],
+  },
+  {
+    accent: '#7B61FF',
+    bg: '#7B61FF14',
+    icon: 'card-outline',
+    title: '6. Subscriptions',
+    body: [
+      'If you subscribe, payment is processed by the App Store (Apple). We and our subscription provider (RevenueCat) receive subscription status, such as the product and expiry date, to manage your access. We never receive your full payment-card details.',
     ],
   },
   {
     accent: '#7B61FF',
     bg: '#7B61FF14',
     icon: 'lock-closed-outline',
-    title: '5. Data Storage & Security',
+    title: '7. Data Storage & Security',
     body: [
-      'We use industry-standard security measures to protect your data. Your information is encrypted in transit and at rest. We store data on secure servers and retain it only as long as necessary.',
+      'Your data is encrypted in transit and at rest and stored on secure servers with reputable providers. No system is completely secure, but we take strong measures to protect your information.',
     ],
   },
   {
     accent: '#7B61FF',
     bg: '#7B61FF14',
     icon: 'person-circle-outline',
-    title: '6. Your Choices & Rights',
-    body: ['You have control over your data:'],
+    title: '8. Your Choices & Rights',
+    body: ['You are in control of your data. You can:'],
     bullets: [
-      'View, update or delete your information anytime',
-      'Download your data',
-      'Disconnect health data',
-      'Delete your account (this will permanently remove your data)',
+      'Access, update, or correct your information',
+      'Delete your account and data from the app settings',
+      'Export a copy of your data',
+      'Disconnect health data or withdraw consent at any time',
     ],
   },
   {
     accent: '#7B61FF',
     bg: '#7B61FF14',
     icon: 'happy-outline',
-    title: "7. Children's Privacy",
+    title: "9. Children's Privacy",
     body: [
-      'Haven is not intended for children under 13. We do not knowingly collect data from children under 13.',
-    ],
-  },
-  {
-    accent: '#7B61FF',
-    bg: '#7B61FF14',
-    icon: 'document-text-outline',
-    title: '8. Changes to This Policy',
-    body: [
-      'We may update this Privacy Policy from time to time. We will notify you of important changes via the app or email.',
+      'Haven is not intended for children under 13, and we do not knowingly collect their data.',
     ],
   },
   {
     accent: '#7B61FF',
     bg: '#7B61FF14',
     icon: 'mail-outline',
-    title: '9. Contact Us',
+    title: '10. Changes & Contact',
     body: [
-      'If you have questions about this Privacy Policy or your data, contact us at:',
-      'Email: privacy@haven.app',
+      'We may update this Privacy Policy from time to time and will update the date above.',
+      'If you have questions about this Privacy Policy or your data, contact us at [CONTACT EMAIL].',
     ],
   },
 ];
@@ -153,7 +160,7 @@ export default function PrivacyPolicyScreen() {
 
             <View style={styles.heroCopy}>
               <Text style={styles.title}>Privacy Policy</Text>
-              <Text style={styles.updated}>Last updated: 20 May 2024</Text>
+              <Text style={styles.updated}>Last updated: [INSERT LAUNCH DATE]</Text>
             </View>
           </SafeAreaView>
         </ImageBackground>
@@ -219,11 +226,9 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     height: 32,
     justifyContent: 'center',
-    left: 18,
-    position: 'absolute',
-    top: 15,
+    marginLeft: 18,
+    marginTop: 8,
     width: 32,
-    zIndex: 3,
   },
   bodyText: {
     color: '#4A5565',
@@ -295,12 +300,12 @@ const styles = StyleSheet.create({
     lineHeight: 21,
   },
   hero: {
-    height: 240,
+    height: 260,
     overflow: 'hidden',
   },
   heroCopy: {
     alignItems: 'center',
-    marginTop: 86,
+    marginTop: 80,
     paddingHorizontal: 24,
   },
   heroImage: {

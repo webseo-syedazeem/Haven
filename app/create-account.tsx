@@ -1,9 +1,8 @@
-import { Ionicons } from '@expo/vector-icons';
+﻿import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import {
-  Image,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -13,14 +12,17 @@ import {
   View,
 } from 'react-native';
 
+import { AuthButton } from '@/components/AuthButton';
 import { ExploreButton } from '@/components/ExploreButton';
 import { ScreenWrapper, useScreenBottomPadding } from '@/components/ScreenWrapper';
 import { AppFonts } from '@/constants/theme';
+import { signInWithApple } from '@/lib/apple-auth';
 import { signInWithGoogle } from '@/lib/google-auth';
 import { setAuthTokens, signUp } from '@/lib/haven-api';
 
 const createAccountBackground = require('@/assets/images/create-account-page-background-image.png');
 const googleIcon = require('@/assets/icons/google.png');
+const appleIcon = require('@/assets/icons/apple.png');
 const noFocusOutline = Platform.OS === 'web' ? ({ outlineStyle: 'none' } as any) : null;
 
 function InnerShadow() {
@@ -77,6 +79,23 @@ export default function CreateAccountScreen() {
     }
   };
 
+  const handleApplePress = async () => {
+    if (isSubmitting) return;
+    setErrorMessage('');
+    setIsSubmitting(true);
+    try {
+      const session = await signInWithApple();
+      if (session) {
+        router.replace('/feeling-lately');
+      }
+    } catch (error) {
+      console.error('Apple sign in error:', error);
+      setErrorMessage(error instanceof Error ? error.message : 'Apple sign in failed.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   const handleCreateAccount = async () => {
     if (isSubmitting) {
       return;
@@ -128,20 +147,21 @@ export default function CreateAccountScreen() {
               <Text style={styles.description}>Start checking in and feel better slowly</Text>
             </View>
 
-            <Pressable
-              accessibilityRole="button"
-              disabled={isSubmitting}
+            <AuthButton
+              iconSource={googleIcon}
+              label="Continue with google"
               onPress={handleGooglePress}
-              style={({ pressed }) => [
-                styles.googleButton,
-                isSubmitting && styles.disabled,
-                pressed && styles.pressed,
-              ]}>
-              <Image source={googleIcon} resizeMode="contain" style={styles.googleIcon} />
-              <Text adjustsFontSizeToFit numberOfLines={1} style={styles.googleText}>
-                Continue with google
-              </Text>
-            </Pressable>
+              style={[styles.authBtn, isSubmitting && styles.disabled]}
+            />
+
+            {(Platform.OS === 'ios' || __DEV__) && (
+              <AuthButton
+                iconSource={appleIcon}
+                label="Continue with Apple"
+                onPress={handleApplePress}
+                style={[styles.authBtn, styles.authBtnTop, isSubmitting && styles.disabled]}
+              />
+            )}
 
             <View style={styles.separatorRow}>
               <View style={styles.separatorLine} />
@@ -492,8 +512,19 @@ loginRow: {
     maxWidth: 310,
     textAlign: 'center',
   },
+  authBtn: {
+    height: 54,
+    maxWidth: 310,
+    paddingBottom: 0,
+    paddingTop: 0,
+    width: '100%',
+  },
+  authBtnTop: {
+    marginTop: 12,
+  },
   textLink: {
     textDecorationLine: 'underline',
     textDecorationStyle: 'solid',
   },
 });
+

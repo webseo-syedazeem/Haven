@@ -26,81 +26,115 @@ const TERMS_SECTIONS: TermsSection[] = [
     icon: 'checkbox-outline',
     title: '1. Acceptance of Terms',
     body: [
-      'By accessing or using Haven, you agree to be bound by these Terms of Service and our Privacy Policy. If you do not agree, please do not use the app.',
+      'By creating an account or using Haven, you agree to these Terms of Service and our Privacy Policy. If you do not agree, please do not use the app.',
     ],
   },
   {
     icon: 'leaf-outline',
     title: '2. About Haven',
     body: [
-      'Haven is a wellbeing app that provides tools for mood tracking, meditation, sleep, breathwork, reflections and insights to support your mental well-being. Haven is not a medical service and does not replace professional advice, diagnosis or treatment.',
+      'Haven is a stress-navigation and wellbeing app. It offers tools such as mood check-ins, nightly stress reflection, breathing exercises, soundscapes, daily routines, and personalised insights to help you understand and manage everyday stress.',
+    ],
+  },
+  {
+    icon: 'medical-outline',
+    title: '3. Not Medical Advice',
+    body: [
+      'Haven supports general wellbeing and stress awareness. It is not a medical device and does not provide medical advice, diagnosis, or treatment.',
+      'Insights are based on the information you provide and are not a substitute for professional care. Always consult a qualified professional for any medical or mental-health concerns.',
+      'If you ever feel unsafe or are in crisis, contact your local emergency services or a crisis support line immediately.',
     ],
   },
   {
     icon: 'person-outline',
-    title: '3. Your Account',
-    body: [],
+    title: '4. Eligibility & Your Account',
+    body: ['To use Haven:'],
     bullets: [
-      'You must be at least 13 years old to use Haven.',
-      'You are responsible for maintaining the confidentiality of your account.',
-      'You agree to provide accurate and complete information when creating your account.',
-    ],
-  },
-  {
-    icon: 'shield-checkmark-outline',
-    title: '4. Acceptable Use',
-    body: ['You agree not to:'],
-    bullets: [
-      'Use the app for any illegal or unauthorized purpose.',
-      'Attempt to access or interfere with our systems.',
-      "Misuse or share other users' content.",
-      'Upload harmful, offensive or inappropriate content.',
+      'You must be at least 13 years old.',
+      'You are responsible for keeping your login details secure.',
+      'You agree to provide accurate information and keep it up to date.',
+      'You are responsible for activity that happens under your account.',
     ],
   },
   {
     icon: 'card-outline',
     title: '5. Subscriptions & Payments',
-    body: ['Some features may require a subscription.'],
+    body: ['Haven may offer premium features through a paid subscription:'],
     bullets: [
-      'Payments are charged through your app store account.',
-      'Subscriptions auto-renew unless turned off at least 24 hours before the end of the current period.',
-      'Refunds are managed by the App Store or Google Play.',
+      'Subscriptions are billed through your App Store (Apple) account.',
+      'Your subscription auto-renews unless you turn off auto-renew at least 24 hours before the end of the current period.',
+      'You can manage or cancel your subscription anytime in your App Store account settings.',
+      'Any unused portion of a free trial is forfeited when you start a paid subscription.',
+      'Refunds are handled by Apple under their policies.',
+    ],
+  },
+  {
+    icon: 'create-outline',
+    title: '6. Your Content',
+    body: [
+      'The reflections, notes, moods, and other entries you create remain yours.',
+      'You grant us permission to store and process this content only to operate and personalise the app for you. We do not sell it.',
+    ],
+  },
+  {
+    icon: 'shield-checkmark-outline',
+    title: '7. Acceptable Use',
+    body: ['You agree not to:'],
+    bullets: [
+      'Use Haven for any unlawful or unauthorised purpose.',
+      'Attempt to access, disrupt, or reverse-engineer our systems.',
+      'Upload harmful, offensive, or infringing content.',
+      'Interfere with other users or the security of the app.',
+    ],
+  },
+  {
+    icon: 'pulse-outline',
+    title: '8. Connected Health Data',
+    body: [
+      'Connecting Apple Health or Android Health Connect is optional and fully under your control.',
+      'You can connect or disconnect these sources at any time. See our Privacy Policy for how this data is used.',
     ],
   },
   {
     icon: 'at-circle-outline',
-    title: '6. Intellectual Property',
+    title: '9. Intellectual Property',
     body: [
-      'All content, designs, logos, features and materials in Haven are owned by us and protected by copyright and trademark laws. You may not copy, modify or distribute any part of the app without permission.',
+      'The Haven name, design, content, soundscapes, and software are owned by us or our licensors and protected by intellectual-property laws. You may not copy, modify, distribute, or create derivative works without our written permission.',
     ],
   },
   {
     icon: 'warning-outline',
-    title: '7. Limitation of Liability',
+    title: '10. Disclaimers & Limitation of Liability',
     body: [
-      'Haven is provided "as is" without warranties of any kind. We are not liable for any indirect, incidental or consequential damages arising from your use of the app.',
+      'Haven is provided "as is" and "as available" without warranties of any kind.',
+      'To the maximum extent permitted by law, we are not liable for any indirect, incidental, or consequential damages arising from your use of the app.',
     ],
   },
   {
     icon: 'close-outline',
-    title: '8. Termination',
+    title: '11. Termination',
     body: [
-      'We may suspend or terminate your account if you violate these Terms or misuse the app. You may also delete your account at any time.',
+      'We may suspend or end your access if you breach these Terms or misuse the app. You can stop using Haven and delete your account at any time from the app settings.',
     ],
   },
   {
     icon: 'refresh-outline',
-    title: '9. Changes to Terms',
+    title: '12. Changes to These Terms',
     body: [
-      'We may update these Terms from time to time. We will notify you of important changes. Continued use of the app means you accept the updated Terms.',
+      'We may update these Terms from time to time. We will update the date above and, where appropriate, notify you in the app. Continued use after changes means you accept the updated Terms.',
+    ],
+  },
+  {
+    icon: 'globe-outline',
+    title: '13. Governing Law',
+    body: [
+      'These Terms are governed by the laws of [GOVERNING JURISDICTION], without regard to conflict-of-law rules.',
     ],
   },
   {
     icon: 'headset-outline',
-    title: '10. Contact Us',
-    body: [
-      'If you have any questions about these Terms, please contact us at support@haven.app',
-    ],
+    title: '14. Contact Us',
+    body: ['If you have any questions about these Terms, please contact us at [CONTACT EMAIL].'],
   },
 ];
 
@@ -130,7 +164,7 @@ export default function TermsScreen() {
 
             <View style={styles.heroCopy}>
               <Text style={styles.title}>Terms of Service</Text>
-              <Text style={styles.updated}>Last updated: 20 May 2024</Text>
+              <Text style={styles.updated}>Last updated: [INSERT LAUNCH DATE]</Text>
             </View>
           </SafeAreaView>
         </ImageBackground>
@@ -196,11 +230,9 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     height: 32,
     justifyContent: 'center',
-    left: 18,
-    position: 'absolute',
-    top: 15,
+    marginLeft: 18,
+    marginTop: 8,
     width: 32,
-    zIndex: 3,
   },
   bodyText: {
     color: '#4A5565',
@@ -272,12 +304,12 @@ const styles = StyleSheet.create({
     lineHeight: 21,
   },
   hero: {
-    height: 240,
+    height: 260,
     overflow: 'hidden',
   },
   heroCopy: {
     alignItems: 'center',
-    marginTop: 86,
+    marginTop: 80,
     paddingHorizontal: 24,
   },
   heroImage: {

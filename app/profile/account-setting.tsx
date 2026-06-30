@@ -111,7 +111,20 @@ export default function AccountSettingScreen() {
             <Text style={styles.logoutLabel}>Logout</Text>
           </Pressable>
         </View>
+
       </ScrollView>
+
+      <Text style={[styles.legalText, { paddingBottom: insets.bottom + 16 }]}>
+        {'By using Haven, you agree to our '}
+        <Text onPress={() => router.push('/profile/terms' as any)} style={styles.legalLink}>
+          Terms of Service
+        </Text>
+        {' and '}
+        <Text onPress={() => router.push('/profile/privacy-policy' as any)} style={styles.legalLink}>
+          Privacy Policy
+        </Text>
+        .
+      </Text>
 
       <ConfirmActionModal
         confirmLabel="Logout"
@@ -224,5 +237,20 @@ const styles = StyleSheet.create({
     letterSpacing: 0.3,
     marginBottom: 8,
     paddingHorizontal: 2,
+  },
+  legalText: {
+    color: '#173F5F',
+    fontFamily: AppFonts.sansMedium,
+    fontSize: 13,
+    fontWeight: '500',
+    lineHeight: 20,
+    opacity: 0.7,
+    paddingHorizontal: 24,
+    paddingTop: 12,
+    textAlign: 'center',
+  },
+  legalLink: {
+    textDecorationLine: 'underline',
+    textDecorationStyle: 'solid',
   },
 });
