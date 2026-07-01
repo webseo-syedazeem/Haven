@@ -1,9 +1,10 @@
+import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
 import {
-  Animated,
   ActivityIndicator,
+  Animated,
   ImageBackground,
   Modal,
   Pressable,
@@ -13,7 +14,6 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Ionicons } from '@expo/vector-icons';
 
 import { ConfirmActionModal } from '@/components/profile/ConfirmActionModal';
 import { AppFonts } from '@/constants/theme';
@@ -39,14 +39,14 @@ function StatusSkeleton() {
 const CONNECTED_APPS = [
   {
     key: 'apple' as const,
-    name: 'Apple health',
+    name: 'Apple Health',
     icon: require('@/assets/icons/dashbord-heart-icon.svg'),
     iconBg: '#FF005914',
     iconColor: '#FF0059',
   },
   {
     key: 'google' as const,
-    name: 'Google fit',
+    name: 'Google Fit',
     icon: require('@/assets/icons/dashbord-flower-icon.svg'),
     iconBg: '#3770FC14',
     iconColor: '#3770FC',
@@ -54,7 +54,7 @@ const CONNECTED_APPS = [
 ];
 
 const PRIVACY_ACTIONS = [
-  { key: 'permission', label: 'Manage permission' },
+  { key: 'permission', label: 'Manage permissions' },
   { key: 'download', label: 'Download my data' },
   { key: 'delete', label: 'Delete my data' },
 ];

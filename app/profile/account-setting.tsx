@@ -24,7 +24,7 @@ const SETTINGS_ROWS = [
   },
   {
     key: 'email',
-    label: 'Email adress',
+    label: 'Email address',
     icon: 'mail-outline' as const,
   },
   {
@@ -79,7 +79,7 @@ export default function AccountSettingScreen() {
           <Ionicons name="chevron-back" size={18} color="#000000" />
         </Pressable>
 
-        <Text style={styles.title}>Account Setting</Text>
+        <Text style={styles.title}>Account Settings</Text>
         <Text style={styles.subtitle}>Manage your account details</Text>
 
         <View style={styles.card}>
@@ -101,7 +101,7 @@ export default function AccountSettingScreen() {
           ))}
         </View>
 
-        <Text style={styles.sectionLabel}>Account Action</Text>
+        <Text style={styles.sectionLabel}>Account Actions</Text>
         <View style={styles.card}>
           <Pressable
             onPress={() => setShowLogoutModal(true)}

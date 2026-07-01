@@ -1,5 +1,6 @@
-import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
+import { useQueryClient } from '@tanstack/react-query';
+import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import {
@@ -14,12 +15,11 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useQueryClient } from '@tanstack/react-query';
 
 import { ExploreButton } from '@/components/ExploreButton';
-import { apiClient } from '@/lib/api/client';
-import { AppFonts } from '@/constants/theme';
 import { SaveSuccessModal } from '@/components/profile/SaveSuccessModal';
+import { AppFonts } from '@/constants/theme';
+import { apiClient } from '@/lib/api/client';
 import { requestNotificationPermission, scheduleNotifications } from '@/lib/notifications';
 
 const backgroundImage = require('@/assets/images/29dd3fece0aba2a99777eeac0658bccbe2ed402a.png');
@@ -30,7 +30,7 @@ const NOTIFICATIONS = [
     key: 'morning_reminder',
     timeKey: 'morning_reminder_time',
     label: 'Morning Reminder',
-    defaultTime: '9:00',
+    defaultTime: '9:00 AM',
     icon: require('@/assets/icons/dashbord-morning-icon.svg'),
     iconColor: '#FFC43D',
     iconBg: '#FFC1031A',
@@ -38,8 +38,8 @@ const NOTIFICATIONS = [
   {
     key: 'mood_checkin',
     timeKey: 'mood_checkin_time',
-    label: 'Mood check-in',
-    defaultTime: '6:00pm',
+    label: 'Mood Check-in',
+    defaultTime: '6:00 PM',
     icon: require('@/assets/icons/dashbord-clock-icon.svg'),
     iconColor: '#7B61FF',
     iconBg: '#7B61FF14',
@@ -56,7 +56,7 @@ const NOTIFICATIONS = [
   {
     key: 'evening_wind_down',
     timeKey: 'evening_wind_down_time',
-    label: 'Evening wind down',
+    label: 'Evening Wind Down',
     defaultTime: '9:00 PM',
     icon: require('@/assets/icons/dashbord-clock-icon.svg'),
     iconColor: '#7B61FF',
@@ -189,8 +189,8 @@ export default function NotificationScreen() {
           </Pressable>
 
           {/* Header */}
-          <Text style={styles.title}>Notification</Text>
-          <Text style={styles.subtitle}>Set Your daily reminder.</Text>
+          <Text style={styles.title}>Notifications</Text>
+          <Text style={styles.subtitle}>Set your daily reminder.</Text>
 
           {loading ? (
             <ActivityIndicator color="#7B61FF" size="large" style={{ marginTop: 40 }} />

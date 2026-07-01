@@ -14,8 +14,8 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { AvatarPreview } from '@/components/profile/AvatarPreview';
 import { ExploreButton } from '@/components/ExploreButton';
+import { AvatarPreview } from '@/components/profile/AvatarPreview';
 import { ProfileAvatar } from '@/components/profile/ProfileAvatar';
 import { SaveSuccessModal } from '@/components/profile/SaveSuccessModal';
 import { AppFonts } from '@/constants/theme';
@@ -113,7 +113,7 @@ export default function EditNameScreen() {
                 </LinearGradient>
               )}
               <View style={styles.nameCopy}>
-                <Text style={styles.nameLabel}>Your name</Text>
+                <Text style={styles.nameLabel}>Your Name</Text>
                 <Text style={styles.nameValue}>
                   {savedFirstName}
                   {savedLastName ? ` ${savedLastName}` : ''}
@@ -162,7 +162,7 @@ export default function EditNameScreen() {
 
                 onChangeText={setLastName}
 
-                placeholder="Doe"
+                placeholder="Enter your last name"
 
                 placeholderTextColor="#C0C0C0"
 

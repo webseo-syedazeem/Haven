@@ -150,7 +150,7 @@ export default function CreateAccountScreen() {
 
             <AuthButton
               iconSource={googleIcon}
-              label="Continue with google"
+              label="Continue with Google"
               onPress={handleGooglePress}
               style={[styles.authBtn, isSubmitting && styles.disabled]}
             />

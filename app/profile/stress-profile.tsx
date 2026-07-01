@@ -1,5 +1,6 @@
-import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import {
@@ -13,13 +14,12 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
 
 import { ExploreButton } from '@/components/ExploreButton';
-import { AppFonts } from '@/constants/theme';
 import { SaveSuccessModal } from '@/components/profile/SaveSuccessModal';
-import { setupApi } from '@/lib/api';
+import { AppFonts } from '@/constants/theme';
 import { useSetup } from '@/hooks/useSetup';
+import { setupApi } from '@/lib/api';
 
 const backgroundImage = require('@/assets/images/29dd3fece0aba2a99777eeac0658bccbe2ed402a.png');
 
@@ -50,7 +50,7 @@ const TIMING = [
   },
   {
     key: 'Evening',
-    desc: 'Stress tend to rise',
+    desc: 'Stress tends to rise',
     icon: require('@/assets/icons/dashbord-clock-icon.svg'),
     iconColor: '#7B61FF',
     iconBg: '#7B61FF14',
@@ -196,7 +196,7 @@ export default function StressProfileScreen() {
           {/* Header */}
           <View style={styles.headerArea}>
             <Text style={styles.title}>Stress Profile</Text>
-            <Text style={styles.subtitle}>Understand Your patterns</Text>
+            <Text style={styles.subtitle}>Understand your patterns</Text>
           </View>
 
           {/* Full-width white sheet — extends to bottom */}
@@ -242,7 +242,7 @@ export default function StressProfileScreen() {
 
                 {/* ── Stress Timing ── */}
                 <View style={styles.timingSection}>
-                  <Text style={styles.sectionTitle}>Stress Timming</Text>
+                  <Text style={styles.sectionTitle}>Stress Timing</Text>
                   <View style={styles.timingList}>
                     {TIMING.map((t) => (
                       <View key={t.key} style={styles.timingRow}>

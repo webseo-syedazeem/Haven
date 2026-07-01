@@ -6,8 +6,8 @@ import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-nati
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ExploreButton } from '@/components/ExploreButton';
-import { ProfileAvatar } from '@/components/profile/ProfileAvatar';
 import { ConfirmActionModal } from '@/components/profile/ConfirmActionModal';
+import { ProfileAvatar } from '@/components/profile/ProfileAvatar';
 import { ProfileImageSourceSheet } from '@/components/profile/ProfileImageSourceSheet';
 import { SaveSuccessModal } from '@/components/profile/SaveSuccessModal';
 import { AppFonts } from '@/constants/theme';
@@ -124,7 +124,7 @@ export default function ProfilePictureScreen() {
 
         <ExploreButton
           disabled={uploadImage.isPending || removeImage.isPending}
-          label="Change Image"
+          label="Change Picture"
           loading={uploadImage.isPending}
           onPress={() => setShowSourceSheet(true)}
           style={styles.actionButton}
@@ -141,7 +141,7 @@ export default function ProfilePictureScreen() {
               (uploadImage.isPending || removeImage.isPending) && styles.disabledButton,
             ]}>
             <Ionicons color="#FF0059" name="trash-outline" size={18} />
-            <Text style={styles.removeButtonText}>Remove Image</Text>
+            <Text style={styles.removeButtonText}>Remove Picture</Text>
           </Pressable>
         ) : null}
       </ScrollView>

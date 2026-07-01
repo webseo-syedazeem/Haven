@@ -13,8 +13,8 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ExploreButton } from '@/components/ExploreButton';
-import { AppFonts } from '@/constants/theme';
 import { SaveSuccessModal } from '@/components/profile/SaveSuccessModal';
+import { AppFonts } from '@/constants/theme';
 import { useChangePassword } from '@/hooks/useUser';
 
 const noFocusOutline = Platform.OS === 'web' ? ({ outlineStyle: 'none' } as any) : null;
@@ -103,7 +103,7 @@ export default function UpdatePasswordScreen() {
 
             {/* New Password */}
             <View style={styles.inputCard}>
-              <Text style={styles.inputLabel}>New passowrd</Text>
+              <Text style={styles.inputLabel}>New Password</Text>
               <View style={styles.inputRow}>
                 <TextInput
                   autoCapitalize="none"
@@ -126,7 +126,7 @@ export default function UpdatePasswordScreen() {
 
             {/* Confirm Password */}
             <View style={styles.inputCard}>
-              <Text style={styles.inputLabel}>Confirm password</Text>
+              <Text style={styles.inputLabel}>Confirm Password</Text>
               <View style={styles.inputRow}>
                 <TextInput
                   autoCapitalize="none"
@@ -151,7 +151,7 @@ export default function UpdatePasswordScreen() {
 
             {/* Update button */}
             <ExploreButton
-              label="Update password"
+              label="Update Password"
               loading={changePassword.isPending}
               disabled={changePassword.isPending}
               onPress={handleUpdate}
