@@ -11,6 +11,7 @@ import {
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { SwipeTabsWrapper } from '@/components/navigation/SwipeTabsWrapper';
 import { AppFonts } from '@/constants/theme';
 import { AvatarPreview } from '@/components/profile/AvatarPreview';
 import { ProfileAvatar } from '@/components/profile/ProfileAvatar';
@@ -70,14 +71,15 @@ export default function ProfileScreen() {
   const profileImageUrl = me?.profile?.profile_image_url ?? '';
 
   return (
-    <ImageBackground source={backgroundImage} resizeMode="cover" style={styles.screen}>
-      <SafeAreaView edges={['top']} style={styles.safeArea}>
-        <ScrollView
-          bounces
-          contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 112 }]}
-          overScrollMode="always"
-          showsVerticalScrollIndicator={false}
-          style={styles.scrollView}>
+    <SwipeTabsWrapper>
+      <ImageBackground source={backgroundImage} resizeMode="cover" style={styles.screen}>
+        <SafeAreaView edges={['top']} style={styles.safeArea}>
+          <ScrollView
+            bounces
+            contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 112 }]}
+            overScrollMode="always"
+            showsVerticalScrollIndicator={false}
+            style={styles.scrollView}>
           <View style={styles.headerRow}>
             <View style={styles.greetingBlock}>
               <Text style={styles.greetingLine}>{`${greeting},`}</Text>
@@ -100,14 +102,15 @@ export default function ProfileScreen() {
           </View>
           <SectionCard label="Your Plan" rows={planRows} />
           <SectionCard label="Setting" rows={settingRows} />
-        </ScrollView>
-      </SafeAreaView>
-      <AvatarPreview
-        visible={avatarPreviewVisible}
-        imageUrl={profileImageUrl}
-        onClose={() => setAvatarPreviewVisible(false)}
-      />
-    </ImageBackground>
+          </ScrollView>
+        </SafeAreaView>
+        <AvatarPreview
+          visible={avatarPreviewVisible}
+          imageUrl={profileImageUrl}
+          onClose={() => setAvatarPreviewVisible(false)}
+        />
+      </ImageBackground>
+    </SwipeTabsWrapper>
   );
 }
 

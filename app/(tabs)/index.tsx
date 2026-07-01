@@ -16,6 +16,7 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import Svg, { Circle } from 'react-native-svg';
 
 import { AvatarPreview } from '@/components/profile/AvatarPreview';
+import { SwipeTabsWrapper } from '@/components/navigation/SwipeTabsWrapper';
 import { dashboardChecklistTasks } from '@/constants/checklistTasks';
 import { AppFonts } from '@/constants/theme';
 import { useChecklist } from '@/contexts/ChecklistContext';
@@ -162,16 +163,17 @@ export default function HomeScreen() {
   }
 
   return (
-    <ImageBackground
-      source={backgroundImage}
-      resizeMode="cover"
-      imageStyle={styles.backgroundImage}
-      style={styles.screen}>
-      <SafeAreaView edges={['top']} style={styles.safeArea}>
-        <ScrollView
-          bounces={false}
-          contentContainerStyle={[styles.scrollContent, { paddingBottom: insets.bottom + 112 }]}
-          showsVerticalScrollIndicator={false}>
+    <SwipeTabsWrapper>
+      <ImageBackground
+        source={backgroundImage}
+        resizeMode="cover"
+        imageStyle={styles.backgroundImage}
+        style={styles.screen}>
+        <SafeAreaView edges={['top']} style={styles.safeArea}>
+          <ScrollView
+            bounces={false}
+            contentContainerStyle={[styles.scrollContent, { paddingBottom: insets.bottom + 112 }]}
+            showsVerticalScrollIndicator={false}>
           <View style={styles.header}>
             <View style={styles.headerCopy}>
               {userLoading ? (
@@ -363,14 +365,15 @@ export default function HomeScreen() {
               </View>
             </Pressable>
           </View>
-        </ScrollView>
-      </SafeAreaView>
-      <AvatarPreview
-        visible={avatarPreviewVisible}
-        imageUrl={avatarUri}
-        onClose={() => setAvatarPreviewVisible(false)}
-      />
-    </ImageBackground>
+          </ScrollView>
+        </SafeAreaView>
+        <AvatarPreview
+          visible={avatarPreviewVisible}
+          imageUrl={avatarUri}
+          onClose={() => setAvatarPreviewVisible(false)}
+        />
+      </ImageBackground>
+    </SwipeTabsWrapper>
   );
 }
 

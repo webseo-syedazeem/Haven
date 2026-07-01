@@ -25,6 +25,7 @@ import Svg, {
   Text as SvgText,
 } from 'react-native-svg';
 
+import { SwipeTabsWrapper } from '@/components/navigation/SwipeTabsWrapper';
 import { AppFonts } from '@/constants/theme';
 import { useProgress } from '@/contexts/ProgressContext';
 import {
@@ -505,8 +506,9 @@ export default function ProgressScreen() {
   );
 
   return (
-    <View style={styles.screen}>
-      <Image source={backgroundImage} style={styles.backgroundImage} contentFit="cover" />
+    <SwipeTabsWrapper>
+      <View style={styles.screen}>
+        <Image source={backgroundImage} style={styles.backgroundImage} contentFit="cover" />
 
       <SafeAreaView edges={['top']} style={styles.safeArea}>
         <ScrollView
@@ -607,8 +609,9 @@ export default function ProgressScreen() {
             </>
           )}
         </ScrollView>
-      </SafeAreaView>
-    </View>
+        </SafeAreaView>
+      </View>
+    </SwipeTabsWrapper>
   );
 }
 

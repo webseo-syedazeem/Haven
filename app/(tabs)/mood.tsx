@@ -6,6 +6,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { SwipeTabsWrapper } from '@/components/navigation/SwipeTabsWrapper';
 import { AppFonts } from '@/constants/theme';
 import {
   createMoodWithFallbacks,
@@ -259,8 +260,10 @@ export default function MoodScreen() {
     setIsUpdatingMood(true);
   };
 
+  let content: JSX.Element;
+
   if (isLoading) {
-    return (
+    content = (
       <View style={styles.screen}>
         <Image source={backgroundImage} style={styles.backgroundImage} contentFit="cover" />
         <SafeAreaView edges={['top']} style={styles.safeArea}>
@@ -271,10 +274,8 @@ export default function MoodScreen() {
         </SafeAreaView>
       </View>
     );
-  }
-
-  if (errorMessage && !isUpdatingMood && !latestMood) {
-    return (
+  } else if (errorMessage && !isUpdatingMood && !latestMood) {
+    content = (
       <View style={styles.screen}>
         <Image source={backgroundImage} style={styles.backgroundImage} contentFit="cover" />
         <SafeAreaView edges={['top']} style={styles.safeArea}>
@@ -310,10 +311,8 @@ export default function MoodScreen() {
         </SafeAreaView>
       </View>
     );
-  }
-
-  if (shouldShowCheckIn) {
-    return (
+  } else if (shouldShowCheckIn) {
+    content = (
       <View style={styles.screen}>
         <Image source={backgroundImage} style={styles.backgroundImage} contentFit="cover" />
 
@@ -393,130 +392,132 @@ export default function MoodScreen() {
         </SafeAreaView>
       </View>
     );
-  }
+  } else {
+    content = (
+      <View style={styles.screen}>
+        <Image source={backgroundImage} style={styles.backgroundImage} contentFit="cover" />
+        <SafeAreaView edges={['top']} style={styles.safeArea}>
+          <ScrollView
+            bounces={false}
+            contentContainerStyle={[styles.historyContent, { paddingBottom: insets.bottom + 112 }]}
+            showsVerticalScrollIndicator={false}>
+            <View style={styles.historyHeader}>
+              <Text style={styles.historyTitle}>Mood History</Text>
+              <Text style={styles.historySubtitle}>Track how your feelings change over time</Text>
+            </View>
 
-  return (
-    <View style={styles.screen}>
-      <Image source={backgroundImage} style={styles.backgroundImage} contentFit="cover" />
-      <SafeAreaView edges={['top']} style={styles.safeArea}>
-        <ScrollView
-          bounces={false}
-          contentContainerStyle={[styles.historyContent, { paddingBottom: insets.bottom + 112 }]}
-          showsVerticalScrollIndicator={false}>
-          <View style={styles.historyHeader}>
-            <Text style={styles.historyTitle}>Mood History</Text>
-            <Text style={styles.historySubtitle}>Track how your feelings change over time</Text>
-          </View>
-
-          <LinearGradient
-            colors={['rgba(255,255,255,0.92)', 'rgba(244,232,255,0.88)']}
-            end={{ x: 1, y: 1 }}
-            start={{ x: 0, y: 0 }}
-            style={styles.latestCard}>
-            <Text style={styles.latestBadge}>Latest Mood</Text>
-            <View style={styles.latestBody}>
-              <View style={[styles.latestIconWrap, { backgroundColor: `${latestOption.tone}18` }]}>
-                <Image source={latestOption.icon} style={styles.latestIcon} contentFit="contain" />
-              </View>
-              <View style={styles.latestCopy}>
-                <Text style={styles.latestMood}>{latestMood.label}</Text>
-                <Text style={styles.latestText}>Your most recent check-in</Text>
-                <View style={styles.latestMeta}>
-                  <Ionicons color="#54555A" name="calendar-outline" size={16} />
-                  <Text style={styles.latestMetaText}>{formatDate(latestMood.createdAt)}</Text>
-                  <Text style={styles.latestDot}>-</Text>
-                  <Ionicons color="#54555A" name="time-outline" size={16} />
-                  <Text style={styles.latestMetaText}>{formatTime(latestMood.createdAt)}</Text>
+            <LinearGradient
+              colors={['rgba(255,255,255,0.92)', 'rgba(244,232,255,0.88)']}
+              end={{ x: 1, y: 1 }}
+              start={{ x: 0, y: 0 }}
+              style={styles.latestCard}>
+              <Text style={styles.latestBadge}>Latest Mood</Text>
+              <View style={styles.latestBody}>
+                <View style={[styles.latestIconWrap, { backgroundColor: `${latestOption.tone}18` }]}>
+                  <Image source={latestOption.icon} style={styles.latestIcon} contentFit="contain" />
+                </View>
+                <View style={styles.latestCopy}>
+                  <Text style={styles.latestMood}>{latestMood.label}</Text>
+                  <Text style={styles.latestText}>Your most recent check-in</Text>
+                  <View style={styles.latestMeta}>
+                    <Ionicons color="#54555A" name="calendar-outline" size={16} />
+                    <Text style={styles.latestMetaText}>{formatDate(latestMood.createdAt)}</Text>
+                    <Text style={styles.latestDot}>-</Text>
+                    <Ionicons color="#54555A" name="time-outline" size={16} />
+                    <Text style={styles.latestMetaText}>{formatTime(latestMood.createdAt)}</Text>
+                  </View>
                 </View>
               </View>
+            </LinearGradient>
+
+            <View style={styles.historySectionHeader}>
+              <Text style={styles.sectionHeading}>Mood History List</Text>
             </View>
-          </LinearGradient>
 
-          <View style={styles.historySectionHeader}>
-            <Text style={styles.sectionHeading}>Mood History List</Text>
-          </View>
+            <View style={styles.historyList}>
+              {history.slice(0, 5).map((entry) => {
+                const option = getMoodOption(entry.label);
 
-          <View style={styles.historyList}>
-            {history.slice(0, 5).map((entry) => {
-              const option = getMoodOption(entry.label);
-
-              return (
-                <View key={entry.id} style={styles.historyRow}>
-                  <View style={[styles.historyMoodIconWrap, { backgroundColor: `${option.tone}18` }]}>
-                    <Image source={option.icon} style={styles.historyMoodIcon} contentFit="contain" />
-                  </View>
-                  <View style={styles.historyRowCopy}>
-                    <Text style={styles.historyMoodTitle}>{entry.label}</Text>
-                    <Text style={styles.historyMoodText}>{option.description}</Text>
-                  </View>
-                  <View style={styles.historyDateBlock}>
-                    <Text style={styles.historyDate}>{formatDate(entry.createdAt)}</Text>
-                    <View style={styles.historyTimeRow}>
-                      <Ionicons color="#54555A" name="time-outline" size={14} />
-                      <Text style={styles.historyTime}>{formatTime(entry.createdAt)}</Text>
+                return (
+                  <View key={entry.id} style={styles.historyRow}>
+                    <View style={[styles.historyMoodIconWrap, { backgroundColor: `${option.tone}18` }]}>
+                      <Image source={option.icon} style={styles.historyMoodIcon} contentFit="contain" />
+                    </View>
+                    <View style={styles.historyRowCopy}>
+                      <Text style={styles.historyMoodTitle}>{entry.label}</Text>
+                      <Text style={styles.historyMoodText}>{option.description}</Text>
+                    </View>
+                    <View style={styles.historyDateBlock}>
+                      <Text style={styles.historyDate}>{formatDate(entry.createdAt)}</Text>
+                      <View style={styles.historyTimeRow}>
+                        <Ionicons color="#54555A" name="time-outline" size={14} />
+                        <Text style={styles.historyTime}>{formatTime(entry.createdAt)}</Text>
+                      </View>
                     </View>
                   </View>
-                </View>
-              );
-            })}
-          </View>
-
-          <LinearGradient
-            colors={['rgba(255,255,255,0.86)', 'rgba(238,232,255,0.86)']}
-            end={{ x: 1, y: 1 }}
-            start={{ x: 0, y: 0 }}
-            style={styles.weekSummaryCard}>
-            <View style={styles.weekSummaryIcon}>
-              <Ionicons color="#7B61FF" name="bar-chart" size={25} />
+                );
+              })}
             </View>
-            <View style={styles.weekSummaryCopy}>
-              <Text style={styles.weekSummaryTitle}>This week</Text>
-              <View style={styles.weekSummaryLine}>
-                <Ionicons color="#7B61FF" name="checkmark-circle" size={18} />
-                <Text style={styles.weekSummaryText}>{history.length} mood check-ins</Text>
-              </View>
-              <View style={styles.weekSummaryLine}>
-                <Ionicons color="#2EB668" name="happy-outline" size={18} />
-                <Text style={styles.weekSummaryText}>
-                  Most common mood: <Text style={styles.commonMood}>{commonMood}</Text>
-                </Text>
-              </View>
-            </View>
-          </LinearGradient>
 
-          {!!updateMoodMessage && <Text style={styles.updateMoodMessage}>{updateMoodMessage}</Text>}
-
-          <Pressable
-            accessibilityRole="button"
-            onPress={handleUpdateMoodPress}
-            style={({ pressed }) => [styles.updateButton, pressed && styles.pressed]}>
             <LinearGradient
-              colors={['#5AA1E2', '#0D6FD0']}
-              end={{ x: 0, y: 1 }}
-              locations={[0.0379, 0.75]}
+              colors={['rgba(255,255,255,0.86)', 'rgba(238,232,255,0.86)']}
+              end={{ x: 1, y: 1 }}
               start={{ x: 0, y: 0 }}
-              style={styles.doneGradient}>
-              <View pointerEvents="none" style={styles.innerShadow}>
-                <LinearGradient
-                  colors={['rgba(255, 255, 255, 0.5)', 'rgba(255, 255, 255, 0)']}
-                  end={{ x: 0, y: 1 }}
-                  start={{ x: 0, y: 0 }}
-                  style={styles.innerShadowTop}
-                />
-                <LinearGradient
-                  colors={['rgba(255, 255, 255, 0.5)', 'rgba(255, 255, 255, 0)']}
-                  end={{ x: 1, y: 0 }}
-                  start={{ x: 0, y: 0 }}
-                  style={styles.innerShadowLeft}
-                />
+              style={styles.weekSummaryCard}>
+              <View style={styles.weekSummaryIcon}>
+                <Ionicons color="#7B61FF" name="bar-chart" size={25} />
               </View>
-              <Text style={styles.doneText}>Update Mood</Text>
+              <View style={styles.weekSummaryCopy}>
+                <Text style={styles.weekSummaryTitle}>This week</Text>
+                <View style={styles.weekSummaryLine}>
+                  <Ionicons color="#7B61FF" name="checkmark-circle" size={18} />
+                  <Text style={styles.weekSummaryText}>{history.length} mood check-ins</Text>
+                </View>
+                <View style={styles.weekSummaryLine}>
+                  <Ionicons color="#2EB668" name="happy-outline" size={18} />
+                  <Text style={styles.weekSummaryText}>
+                    Most common mood: <Text style={styles.commonMood}>{commonMood}</Text>
+                  </Text>
+                </View>
+              </View>
             </LinearGradient>
-          </Pressable>
-        </ScrollView>
-      </SafeAreaView>
-    </View>
-  );
+
+            {!!updateMoodMessage && <Text style={styles.updateMoodMessage}>{updateMoodMessage}</Text>}
+
+            <Pressable
+              accessibilityRole="button"
+              onPress={handleUpdateMoodPress}
+              style={({ pressed }) => [styles.updateButton, pressed && styles.pressed]}>
+              <LinearGradient
+                colors={['#5AA1E2', '#0D6FD0']}
+                end={{ x: 0, y: 1 }}
+                locations={[0.0379, 0.75]}
+                start={{ x: 0, y: 0 }}
+                style={styles.doneGradient}>
+                <View pointerEvents="none" style={styles.innerShadow}>
+                  <LinearGradient
+                    colors={['rgba(255, 255, 255, 0.5)', 'rgba(255, 255, 255, 0)']}
+                    end={{ x: 0, y: 1 }}
+                    start={{ x: 0, y: 0 }}
+                    style={styles.innerShadowTop}
+                  />
+                  <LinearGradient
+                    colors={['rgba(255, 255, 255, 0.5)', 'rgba(255, 255, 255, 0)']}
+                    end={{ x: 1, y: 0 }}
+                    start={{ x: 0, y: 0 }}
+                    style={styles.innerShadowLeft}
+                  />
+                </View>
+                <Text style={styles.doneText}>Update Mood</Text>
+              </LinearGradient>
+            </Pressable>
+          </ScrollView>
+        </SafeAreaView>
+      </View>
+    );
+  }
+
+  return <SwipeTabsWrapper>{content}</SwipeTabsWrapper>;
 }
 
 const styles = StyleSheet.create({

@@ -29,7 +29,7 @@ export function SwipeTabsWrapper({ children }: { children: ReactNode }) {
         Math.abs(e.translationX) > DISTANCE_THRESHOLD ||
         Math.abs(e.velocityX) > VELOCITY_THRESHOLD;
       if (!passed) return;
-      goToAdjacentTab(e.translationX < 0 ? 1 : -1); // swap 1 / -1 to reverse direction
+      goToAdjacentTab(e.translationX < 0 ? 1 : -1); // swap 1 / -1 to reverse
     });
 
   return (
@@ -39,4 +39,4 @@ export function SwipeTabsWrapper({ children }: { children: ReactNode }) {
   );
 }
 
-const styles = StyleSheet.create({ fill: { flex: 1 } });
+const styles = StyleSheet.create({ fill: { flex: 1, backgroundColor: '#fff' } });

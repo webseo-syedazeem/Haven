@@ -3,6 +3,7 @@ import { useRouter } from 'expo-router';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { SwipeTabsWrapper } from '@/components/navigation/SwipeTabsWrapper';
 import { AppFonts } from '@/constants/theme';
 
 const backgroundImage = require('@/assets/images/tool-page-bg-image.png');
@@ -56,8 +57,9 @@ export default function ToolsScreen() {
   const insets = useSafeAreaInsets();
 
   return (
-    <View style={styles.screen}>
-      <Image source={backgroundImage} style={styles.backgroundImage} contentFit="cover" />
+    <SwipeTabsWrapper>
+      <View style={styles.screen}>
+        <Image source={backgroundImage} style={styles.backgroundImage} contentFit="cover" />
 
       <SafeAreaView edges={['top']} style={styles.safeArea}>
         <ScrollView
@@ -124,8 +126,9 @@ export default function ToolsScreen() {
             </Pressable>
           </View>
         </ScrollView>
-      </SafeAreaView>
-    </View>
+        </SafeAreaView>
+      </View>
+    </SwipeTabsWrapper>
   );
 }
 
