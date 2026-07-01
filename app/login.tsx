@@ -1,4 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
+import { useFocusEffect } from '@react-navigation/native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { useCallback, useState } from 'react';
@@ -12,7 +13,6 @@ import {
   TextInput,
   View,
 } from 'react-native';
-import { useFocusEffect } from '@react-navigation/native';
 
 import { ExploreButton } from '@/components/ExploreButton';
 import { ScreenWrapper, useScreenBottomPadding } from '@/components/ScreenWrapper';
@@ -159,7 +159,7 @@ export default function LoginScreen() {
                 accessibilityRole="button"
                 onPress={() => router.push('/reset-password')}
                 style={styles.forgotButton}>
-                <Text style={styles.forgotText}>Forget Password?</Text>
+                <Text style={styles.forgotText}>Forgot Password?</Text>
               </Pressable>
 
               {!!errorMessage && <Text style={styles.errorText}>{errorMessage}</Text>}

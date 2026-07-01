@@ -329,7 +329,7 @@ export default function HomeScreen() {
             <View style={styles.stressCopy}>
               <Text style={styles.stressTitle}>Stress today?</Text>
               <Text style={styles.stressSubtitle}>
-                Your nightly check-in helps heaven learn support You
+                Your nightly check-in helps Heaven learn support You
               </Text>
             </View>
             <Pressable

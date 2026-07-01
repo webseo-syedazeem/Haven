@@ -67,12 +67,12 @@ export default function ChangeEmailScreen() {
           </Pressable>
 
           {/* Header */}
-          <Text style={styles.title}>Change email</Text>
+          <Text style={styles.title}>Change Email</Text>
 
           {/* Form */}
           <View style={styles.form}>
             <View style={styles.inputCard}>
-              <Text style={styles.inputLabel}>Current email</Text>
+              <Text style={styles.inputLabel}>Current Email</Text>
               <TextInput
                 editable={false}
                 placeholder="your@email.com"

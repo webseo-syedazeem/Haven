@@ -1,8 +1,8 @@
 ﻿import { Ionicons } from '@expo/vector-icons';
+import { useFocusEffect } from '@react-navigation/native';
 import { useRouter } from 'expo-router';
 import { useCallback } from 'react';
 import { BackHandler, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
-import { useFocusEffect } from '@react-navigation/native';
 
 import { AuthButton } from '@/components/AuthButton';
 import { LegalDisclaimer } from '@/components/LegalDisclaimer';
@@ -86,7 +86,7 @@ export default function WelcomeScreen() {
           <View style={styles.buttonGroup}>
             <AuthButton
               iconSource={googleIcon}
-              label="Continue with google"
+              label="Continue with Google"
               onPress={handleGooglePress}
             />
         {(Platform.OS === 'ios' || __DEV__) && (

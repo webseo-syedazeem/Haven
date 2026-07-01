@@ -1,5 +1,5 @@
-import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
+import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
@@ -18,8 +18,8 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 
 
 import { ExploreButton } from '@/components/ExploreButton';
-import { AppFonts } from '@/constants/theme';
 import { SaveSuccessModal } from '@/components/profile/SaveSuccessModal';
+import { AppFonts } from '@/constants/theme';
 import { useGoals, useSaveGoals, useUpdateGoals } from '@/hooks/useGoals';
 
 const backgroundImage = require('@/assets/images/264ee61d943a0f70fc621c11756d688038af0dc6.png');
@@ -167,7 +167,7 @@ export default function GoalsScreen() {
 
           {/* Header */}
           <Text style={styles.title}>Goals</Text>
-          <Text style={styles.subtitle}>What Would You like to focus on?</Text>
+          <Text style={styles.subtitle}>What would you like to focus on?</Text>
           <Text style={styles.caption}>You can choose multiple options</Text>
 
           {/* Loading */}
@@ -216,7 +216,7 @@ export default function GoalsScreen() {
           <View style={styles.noteCard}>
             <Text style={styles.noteIcon}>?</Text>
             <Text style={styles.noteText}>
-              Your goals help heaven to personalize Your daily plan and insights
+              Your goals help Heaven to personalize your daily plan and insights
             </Text>
           </View>
 
