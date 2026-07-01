@@ -201,12 +201,12 @@ const buildExportHtml = (userId: string, connections: HealthConnection[]) => {
     </head>
     <body>
       <div class="header">
-        <h1>Haven - Your Health Data</h1>
+        <h1>Steadia - Your Health Data</h1>
         <p>Exported: ${escapeHtml(exportedAt)}</p>
         <p>User ID: ${escapeHtml(userId)}</p>
       </div>
       ${sections}
-      <p class="footer">Your data is used only to personalise your Haven experience. You can disconnect anytime.</p>
+      <p class="footer">Your data is used only to personalise your Steadia experience. You can disconnect anytime.</p>
     </body>
     </html>`;
 };
@@ -620,7 +620,7 @@ export function useHealthConnect() {
       if (await isAvailableAsync()) {
         await shareAsync(tempFile.uri, {
           mimeType: 'application/pdf',
-          dialogTitle: 'Haven health data',
+          dialogTitle: 'Steadia health data',
           UTI: 'com.adobe.pdf',
         });
       } else {

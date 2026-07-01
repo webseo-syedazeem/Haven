@@ -26,21 +26,21 @@ const TERMS_SECTIONS: TermsSection[] = [
     icon: 'checkbox-outline',
     title: '1. Acceptance of Terms',
     body: [
-      'By creating an account or using Haven, you agree to these Terms of Service and our Privacy Policy. If you do not agree, please do not use the app.',
+      'By creating an account or using Steadia, you agree to these Terms of Service and our Privacy Policy. If you do not agree, please do not use the app.',
     ],
   },
   {
     icon: 'leaf-outline',
-    title: '2. About Haven',
+    title: '2. About Steadia',
     body: [
-      'Haven is a stress-navigation and wellbeing app. It offers tools such as mood check-ins, nightly stress reflection, breathing exercises, soundscapes, daily routines, and personalised insights to help you understand and manage everyday stress.',
+      'Steadia is a stress-navigation and wellbeing app. It offers tools such as mood check-ins, nightly stress reflection, breathing exercises, soundscapes, daily routines, and personalised insights to help you understand and manage everyday stress.',
     ],
   },
   {
     icon: 'medical-outline',
     title: '3. Not Medical Advice',
     body: [
-      'Haven supports general wellbeing and stress awareness. It is not a medical device and does not provide medical advice, diagnosis, or treatment.',
+      'Steadia supports general wellbeing and stress awareness. It is not a medical device and does not provide medical advice, diagnosis, or treatment.',
       'Insights are based on the information you provide and are not a substitute for professional care. Always consult a qualified professional for any medical or mental-health concerns.',
       'If you ever feel unsafe or are in crisis, contact your local emergency services or a crisis support line immediately.',
     ],
@@ -48,7 +48,7 @@ const TERMS_SECTIONS: TermsSection[] = [
   {
     icon: 'person-outline',
     title: '4. Eligibility & Your Account',
-    body: ['To use Haven:'],
+    body: ['To use Steadia:'],
     bullets: [
       'You must be at least 13 years old.',
       'You are responsible for keeping your login details secure.',
@@ -59,7 +59,7 @@ const TERMS_SECTIONS: TermsSection[] = [
   {
     icon: 'card-outline',
     title: '5. Subscriptions & Payments',
-    body: ['Haven may offer premium features through a paid subscription:'],
+    body: ['Steadia may offer premium features through a paid subscription:'],
     bullets: [
       'Subscriptions are billed through your App Store (Apple) account.',
       'Your subscription auto-renews unless you turn off auto-renew at least 24 hours before the end of the current period.',
@@ -81,7 +81,7 @@ const TERMS_SECTIONS: TermsSection[] = [
     title: '7. Acceptable Use',
     body: ['You agree not to:'],
     bullets: [
-      'Use Haven for any unlawful or unauthorised purpose.',
+      'Use Steadia for any unlawful or unauthorised purpose.',
       'Attempt to access, disrupt, or reverse-engineer our systems.',
       'Upload harmful, offensive, or infringing content.',
       'Interfere with other users or the security of the app.',
@@ -99,14 +99,14 @@ const TERMS_SECTIONS: TermsSection[] = [
     icon: 'at-circle-outline',
     title: '9. Intellectual Property',
     body: [
-      'The Haven name, design, content, soundscapes, and software are owned by us or our licensors and protected by intellectual-property laws. You may not copy, modify, distribute, or create derivative works without our written permission.',
+      'The Steadia name, design, content, soundscapes, and software are owned by us or our licensors and protected by intellectual-property laws. You may not copy, modify, distribute, or create derivative works without our written permission.',
     ],
   },
   {
     icon: 'warning-outline',
     title: '10. Disclaimers & Limitation of Liability',
     body: [
-      'Haven is provided "as is" and "as available" without warranties of any kind.',
+      'Steadia is provided "as is" and "as available" without warranties of any kind.',
       'To the maximum extent permitted by law, we are not liable for any indirect, incidental, or consequential damages arising from your use of the app.',
     ],
   },
@@ -114,7 +114,7 @@ const TERMS_SECTIONS: TermsSection[] = [
     icon: 'close-outline',
     title: '11. Termination',
     body: [
-      'We may suspend or end your access if you breach these Terms or misuse the app. You can stop using Haven and delete your account at any time from the app settings.',
+      'We may suspend or end your access if you breach these Terms or misuse the app. You can stop using Steadia and delete your account at any time from the app settings.',
     ],
   },
   {
@@ -172,7 +172,7 @@ export default function TermsScreen() {
         <View style={styles.contentCard}>
           <View style={styles.introCard}>
             <Text style={styles.introText}>
-              Welcome to Haven. By using our app, you agree to these Terms of Service. Please read
+              Welcome to Steadia. By using our app, you agree to these Terms of Service. Please read
               them carefully.
             </Text>
           </View>
@@ -214,7 +214,7 @@ export default function TermsScreen() {
               <Ionicons color="#7E56D9" name="heart-circle-outline" size={30} />
             </View>
             <Text style={styles.footerText}>
-              Thank you for being a part of Haven. Together, let's build a calmer, healthier you.
+              Thank you for being a part of Steadia. Together, let's build a calmer, healthier you.
             </Text>
           </View>
         </View>

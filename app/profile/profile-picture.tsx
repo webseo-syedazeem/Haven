@@ -115,7 +115,7 @@ export default function ProfilePictureScreen() {
         </Pressable>
 
         <Text style={styles.title}>Profile Picture</Text>
-        <Text style={styles.subtitle}>Update how you appear across Haven</Text>
+        <Text style={styles.subtitle}>Update how you appear across Steadia</Text>
 
         <View style={styles.avatarSection}>
           <ProfileAvatar imageUrl={profileImageUrl} size={138} style={styles.avatarRing} />

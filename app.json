@@ -1,16 +1,16 @@
 ﻿{
   "expo": {
-    "name": "Haven",
-    "slug": "Haven",
+    "name": "Steadia",
+    "slug": "Steadia",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "haven",
+    "scheme": "steadia",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.haven.preview",
+      "bundleIdentifier": "com.steadia.preview",
       "infoPlist": {
         "NSAppTransportSecurity": {
           "NSAllowsArbitraryLoads": true
@@ -19,7 +19,7 @@
       }
     },
     "android": {
-      "package": "com.haven.preview",
+      "package": "com.steadia.preview",
       "permissions": [
         "android.permission.health.READ_STEPS",
         "android.permission.health.READ_DISTANCE",
@@ -103,8 +103,8 @@
       [
         "react-native-health",
         {
-          "healthSharePermission": "Haven uses your health data (steps, sleep, heart rate and recovery) to personalise your Daily Ease and insights.",
-          "healthUpdatePermission": "Haven does not write to your health data."
+          "healthSharePermission": "Steadia uses your health data (steps, sleep, heart rate and recovery) to personalise your Daily Ease and insights.",
+          "healthUpdatePermission": "Steadia does not write to your health data."
         }
       ]
     ],
