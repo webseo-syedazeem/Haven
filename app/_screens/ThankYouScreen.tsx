@@ -72,7 +72,7 @@ export function ThankYouScreen() {
                 Thanks {displayName}!
               </Text>
               <Text allowFontScaling={false} style={styles.subtitle}>
-                Your reflection helps Heaven understand your pattern
+                Your reflection helps Steadia understand your pattern
               </Text>
             </View>
 

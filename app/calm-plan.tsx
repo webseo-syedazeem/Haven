@@ -94,7 +94,7 @@ export default function PlanScreen() {
                 <Image source={heartIcon} style={styles.noteIcon} contentFit="contain" />
               </View>
               <Text style={styles.noteText}>
-                {plan?.message ?? 'Heaven adapts support into your real life,\nnot a perfect routine.'}
+                {plan?.message ?? 'Steadia adapts support into your real life,\nnot a perfect routine.'}
               </Text>
             </View>
           </View>

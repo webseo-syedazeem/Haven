@@ -164,7 +164,7 @@ export default function TimeScreen() {
               <Image source={starsNoteIcon} style={styles.noteIcon} contentFit="contain" />
             </View>
             <Text style={styles.noteText}>
-              Heaven adapts support into your real life,{'\n'}not a perfect routine.
+              Steadia adapts support into your real life,{'\n'}not a perfect routine.
             </Text>
           </View>
 

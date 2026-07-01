@@ -216,7 +216,7 @@ export default function GoalsScreen() {
           <View style={styles.noteCard}>
             <Text style={styles.noteIcon}>?</Text>
             <Text style={styles.noteText}>
-              Your goals help Heaven to personalize your daily plan and insights
+              Your goals help Steadia to personalize your daily plan and insights
             </Text>
           </View>
 

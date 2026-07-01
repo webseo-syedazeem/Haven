@@ -1,4 +1,4 @@
-import { Ionicons } from '@expo/vector-icons';
+﻿import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useFocusEffect, useRouter } from 'expo-router';
@@ -329,7 +329,7 @@ export default function HomeScreen() {
             <View style={styles.stressCopy}>
               <Text style={styles.stressTitle}>Stress today?</Text>
               <Text style={styles.stressSubtitle}>
-                Your nightly check-in helps Heaven learn support You
+                Your nightly check-in helps Steadia learn support You
               </Text>
             </View>
             <Pressable

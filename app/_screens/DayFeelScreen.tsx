@@ -82,7 +82,7 @@ export function DayFeelScreen() {
 
             <View style={styles.infoBox}>
               <Text style={styles.infoText}>
-                Heaven adapts support into your real life, not a{'\n'}perfect routine.
+                Steadia adapts support into your real life, not a{'\n'}perfect routine.
               </Text>
             </View>
 
