@@ -608,7 +608,7 @@ export function useHealthConnect() {
       const { uri: tempUri } = await Print.printToFileAsync({ html });
 
       const date = new Date().toISOString().split('T')[0];
-      const fileName = `Haven_Health_Data_${date}.pdf`;
+      const fileName = `Halcyon_Health_Data_${date}.pdf`;
       const parentDir = tempUri.substring(0, tempUri.lastIndexOf('/') + 1);
       const existing = new FSFile(parentDir + fileName);
       if (existing.exists) {
