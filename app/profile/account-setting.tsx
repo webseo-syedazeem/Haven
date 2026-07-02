@@ -117,7 +117,7 @@ export default function AccountSettingScreen() {
 
       <LegalDisclaimer
         linkStyle={styles.legalLink}
-        prefix="By using Steadia, you agree to our"
+        prefix="By using Halcyon, you agree to our"
         style={{ paddingBottom: insets.bottom + 16, paddingHorizontal: 24, paddingTop: 12 }}
         textStyle={styles.legalText}
       />

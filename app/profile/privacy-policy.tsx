@@ -29,7 +29,7 @@ const POLICY_SECTIONS: PolicySection[] = [
     bg: '#7B61FF14',
     icon: 'person-outline',
     title: '1. Information We Collect',
-    body: ['We only collect what helps Steadia work for you. This can include:'],
+    body: ['We only collect what helps Halcyon work for you. This can include:'],
     bullets: [
       'Account details: your name and email, plus basic Google profile info if you sign in with Google',
       'Your entries: onboarding answers, mood check-ins, nightly stress reflections, notes, glimmers, tasks, and breathing sessions',
@@ -66,7 +66,7 @@ const POLICY_SECTIONS: PolicySection[] = [
     icon: 'eye-off-outline',
     title: '4. No Analytics or Ad Tracking',
     body: [
-      'Steadia does not use third-party analytics, advertising, or tracking tools, and we do not track you across other apps or websites.',
+      'Halcyon does not use third-party analytics, advertising, or tracking tools, and we do not track you across other apps or websites.',
     ],
   },
   {
@@ -74,7 +74,7 @@ const POLICY_SECTIONS: PolicySection[] = [
     bg: '#7B61FF14',
     icon: 'people-outline',
     title: '5. How We Share Information',
-    body: ['We do not sell your personal data. We share it only with the providers needed to run Steadia:'],
+    body: ['We do not sell your personal data. We share it only with the providers needed to run Halcyon:'],
     bullets: [
       'Supabase — secure sign-in, database, and storage (including your profile photo)',
       'RevenueCat — to manage your subscription',
@@ -119,7 +119,7 @@ const POLICY_SECTIONS: PolicySection[] = [
     icon: 'happy-outline',
     title: "9. Children's Privacy",
     body: [
-      'Steadia is not intended for children under 13, and we do not knowingly collect their data.',
+      'Halcyon is not intended for children under 13, and we do not knowingly collect their data.',
     ],
   },
   {

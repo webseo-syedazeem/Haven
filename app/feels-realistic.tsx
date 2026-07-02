@@ -164,7 +164,7 @@ export default function TimeScreen() {
               <Image source={starsNoteIcon} style={styles.noteIcon} contentFit="contain" />
             </View>
             <Text style={styles.noteText}>
-              Steadia adapts support into your real life,{'\n'}not a perfect routine.
+              Halcyon adapts support into your real life,{'\n'}not a perfect routine.
             </Text>
           </View>
 

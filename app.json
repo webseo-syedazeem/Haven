@@ -1,16 +1,16 @@
 ﻿{
   "expo": {
-    "name": "Steadia",
-    "slug": "Steadia",
+    "name": "Halcyon",
+    "slug": "Halcyon",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "steadia",
+    "scheme": "Halcyon",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.steadia.preview",
+      "bundleIdentifier": "com.Halcyon.preview",
       "infoPlist": {
         "NSAppTransportSecurity": {
           "NSAllowsArbitraryLoads": true
@@ -19,7 +19,7 @@
       }
     },
     "android": {
-      "package": "com.steadia.preview",
+      "package": "com.Halcyon.preview",
       "permissions": [
         "android.permission.health.READ_STEPS",
         "android.permission.health.READ_DISTANCE",
@@ -103,8 +103,8 @@
       [
         "react-native-health",
         {
-          "healthSharePermission": "Steadia uses your health data (steps, sleep, heart rate and recovery) to personalise your Daily Ease and insights.",
-          "healthUpdatePermission": "Steadia does not write to your health data."
+          "healthSharePermission": "Halcyon uses your health data (steps, sleep, heart rate and recovery) to personalise your Daily Ease and insights.",
+          "healthUpdatePermission": "Halcyon does not write to your health data."
         }
       ]
     ],
@@ -113,7 +113,7 @@
     },
     "extra": {
       "eas": {
-        "projectId": "1355a617-92b4-443f-8678-b2c77b4ee3b3"
+        "projectId": "b0ae10af-c91c-453f-a3ed-4387460be116"
       }
     }
   }

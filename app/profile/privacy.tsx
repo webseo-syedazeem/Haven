@@ -236,7 +236,7 @@ export default function PrivacyScreen() {
           confirmLabel="Delete"
           icon="trash-outline"
           loading={loading}
-          message="This permanently deletes your connected health data from Steadia. This cannot be undone."
+          message="This permanently deletes your connected health data from Halcyon. This cannot be undone."
           title="Delete my data?"
           visible={showDeleteDataModal}
           onCancel={() => setShowDeleteDataModal(false)}
@@ -275,7 +275,7 @@ export default function PrivacyScreen() {
                 <Text style={styles.modalTitle}>{selectedProviderApp.name}</Text>
                 <View style={styles.connectedBadge}>
                   <Ionicons name="checkmark-circle" size={15} color="#2EB668" />
-                  <Text style={styles.connectedBadgeText}>Connected to Steadia</Text>
+                  <Text style={styles.connectedBadgeText}>Connected to Halcyon</Text>
                 </View>
                 <Text style={styles.modalMessage}>
                   Your health data sync is active. You can update permissions or disconnect this

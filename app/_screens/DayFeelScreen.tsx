@@ -82,7 +82,7 @@ export function DayFeelScreen() {
 
             <View style={styles.infoBox}>
               <Text style={styles.infoText}>
-                Steadia adapts support into your real life, not a{'\n'}perfect routine.
+                Halcyon adapts support into your real life, not a{'\n'}perfect routine.
               </Text>
             </View>
 

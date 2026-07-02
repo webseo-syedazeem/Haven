@@ -11,8 +11,8 @@ export async function requestNotificationPermission(): Promise<boolean> {
 
 async function ensureAndroidChannel(Notifications: any): Promise<void> {
   if (Platform.OS !== 'android') return;
-  await Notifications.setNotificationChannelAsync('steadia-reminders', {
-    name: 'Steadia Reminders',
+  await Notifications.setNotificationChannelAsync('Halcyon-reminders', {
+    name: 'Halcyon Reminders',
     importance: Notifications.AndroidImportance.HIGH,
     sound: 'default',
     vibrationPattern: [0, 250, 250, 250],
@@ -80,13 +80,13 @@ export async function scheduleNotifications(notifState: Record<string, any>): Pr
             title: config.title,
             body: config.body,
             sound: 'default',
-            channelId: 'Steadia-reminders',
+            channelId: 'Halcyon-reminders',
             priority: Notifications.AndroidNotificationPriority?.HIGH ?? 'high',
           },
           trigger: {
             type: Notifications.SchedulableTriggerInputTypes.DATE,
             date,
-            channelId: 'Steadia-reminders',
+            channelId: 'Halcyon-reminders',
           },
         });
       }
