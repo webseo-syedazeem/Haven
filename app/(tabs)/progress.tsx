@@ -2,7 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useCallback, useRef } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Pressable,
@@ -212,7 +212,7 @@ function splitChartLabel(label: string) {
 }
 
 function ScoreCircle({ index, score }: { index: number; score: Score }) {
-  const size = 74;
+  const size = 100;
   const stroke = 3;
   const radius = (size - stroke) / 2;
   const circumference = 2 * Math.PI * radius;
@@ -280,12 +280,12 @@ function ScoreCircle({ index, score }: { index: number; score: Score }) {
 }
 
 function ValueChart({ card }: { card: ChartCard }) {
-  const chartWidth = 148;
-  const chartHeight = 124;
-  const left = 38;
-  const right = 18;
-  const top = 10;
-  const bottom = 44;
+  const chartWidth = 300;
+  const chartHeight = 126;
+  const left = 40;
+  const right = 16;
+  const top = 12;
+  const bottom = 34;
   const plotWidth = chartWidth - left - right;
   const plotHeight = chartHeight - top - bottom;
   const values = card.data.length ? card.data : [0, 0];
@@ -354,7 +354,7 @@ function ValueChart({ card }: { card: ChartCard }) {
     <Svg
       height={chartHeight}
       style={styles.chartSvgOverflow}
-      width={chartWidth}
+      width="100%"
       viewBox={`0 0 ${chartWidth} ${chartHeight}`}>
       <Defs>
         <SvgLinearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
@@ -473,6 +473,7 @@ function ValueChart({ card }: { card: ChartCard }) {
 export default function ProgressScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const [expandedCharts, setExpandedCharts] = useState<Record<string, boolean>>({});
   const {
     error,
     isLoading,
@@ -486,6 +487,12 @@ export default function ProgressScreen() {
   const scores = progress?.metrics ?? [];
   const chartCards = (progress?.charts ?? []).map(getChartVisual);
   const hasProgressData = Boolean(progress && (scores.length || chartCards.length || progress.summary));
+  const toggleChart = useCallback((chartType: string) => {
+    setExpandedCharts((current) => ({
+      ...current,
+      [chartType]: !current[chartType],
+    }));
+  }, []);
 
   // Stable refs so the useFocusEffect callback never needs to change identity
   const loadRef = useRef(loadProgressIfNeeded);
@@ -513,7 +520,7 @@ export default function ProgressScreen() {
       <SafeAreaView edges={['top']} style={styles.safeArea}>
         <ScrollView
           bounces={false}
-          contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 88 }]}
+          contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 250 }]}
           refreshControl={
             <RefreshControl refreshing={isRefreshing} onRefresh={refreshProgress} tintColor="#3770FC" />
           }
@@ -526,6 +533,13 @@ export default function ProgressScreen() {
           <View style={styles.weekPanel}>
             <View style={styles.weekCard}>
               <Image source={thisWeekBackground} style={styles.weekCardImage} contentFit="cover" />
+              <LinearGradient
+                colors={['rgb(255,255,255)', 'rgb(255,255,255)', 'rgba(255,255,255,0)']}
+                locations={[0, 0.52, 1]}
+                start={{ x: 0, y: 0.5 }}
+                end={{ x: 1, y: 0.5 }}
+                style={styles.weekCardOverlay}
+              />
               <View style={styles.weekHeader}>
                 <View style={styles.weekIcon}>
                   <Image source={thisWeekIcon} style={styles.weekIconImage} contentFit="contain" />
@@ -567,26 +581,11 @@ export default function ProgressScreen() {
               <View style={styles.chartGrid}>
                 {chartCards.map((card) => {
                   const icon = getChartIcon(card);
+                  const isExpanded = Boolean(expandedCharts[card.type]);
 
                   return (
-              <Pressable
-                key={card.title}
-                onPress={() => {
-                  setSelectedChartType(card.type);
-                  router.push({
-                    pathname: '/insight-details',
-                    params: { type: card.type },
-                  });
-                }}
-                style={({ pressed }) => [
-                  styles.chartCard,
-                  pressed && styles.chartCardPressed,
-                ]}>
+              <View key={card.title} style={styles.chartCard}>
                 <View style={styles.chartHeader}>
-                  <View style={styles.chartHeaderText}>
-                    <Text style={styles.chartTitle}>{card.title}</Text>
-                    <Text style={styles.chartSubtitle}>{card.subtitle}</Text>
-                  </View>
                   <View style={[styles.chartIcon, { backgroundColor: `${card.themeColor}1A` }]}>
                     {icon.iconAsset ? (
                       <Image
@@ -595,14 +594,45 @@ export default function ProgressScreen() {
                         contentFit="contain"
                       />
                     ) : (
-                      <Ionicons color={card.themeColor} name={icon.iconName ?? 'ellipse-outline'} size={16} />
+                      <Ionicons color={card.themeColor} name={icon.iconName ?? 'ellipse-outline'} size={20} />
                     )}
                   </View>
+                  <View style={styles.chartHeaderText}>
+                    <Text style={styles.chartTitle}>{card.title}</Text>
+                    <Text style={styles.chartSubtitle}>{card.subtitle}</Text>
+                  </View>
+                  <Pressable
+                    accessibilityLabel={`${isExpanded ? 'Hide' : 'Show'} ${card.title} chart`}
+                    accessibilityRole="button"
+                    hitSlop={10}
+                    onPress={() => toggleChart(card.type)}
+                    style={({ pressed }) => [
+                      styles.chartToggle,
+                      { backgroundColor: `${card.themeColor}14` },
+                      pressed && styles.chartTogglePressed,
+                    ]}>
+                    <Ionicons
+                      color={card.themeColor}
+                      name={isExpanded ? 'chevron-up' : 'chevron-down'}
+                      size={22}
+                    />
+                  </Pressable>
                 </View>
-                <View style={styles.chartPlot}>
-                  <ValueChart card={card} />
-                </View>
-              </Pressable>
+                {isExpanded ? (
+                  <Pressable
+                    accessibilityRole="button"
+                    onPress={() => {
+                      setSelectedChartType(card.type);
+                      router.push({
+                        pathname: '/insight-details',
+                        params: { type: card.type },
+                      });
+                    }}
+                    style={({ pressed }) => [styles.chartPlot, pressed && styles.chartCardPressed]}>
+                    <ValueChart card={card} />
+                  </Pressable>
+                ) : null}
+              </View>
                   );
                 })}
               </View>
@@ -625,27 +655,24 @@ const styles = StyleSheet.create({
   },
   chartCard: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 12,
-    flexBasis: '48%',
-    flexGrow: 1,
-    minHeight: 200,
-    paddingBottom: 8,
-    paddingHorizontal: 8,
-    paddingTop: 10,
+    borderRadius: 18,
+    minHeight: 104,
+    paddingBottom: 16,
+    paddingHorizontal: 18,
+    paddingTop: 16,
     shadowColor: '#000000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.07,
-    shadowRadius: 14,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.08,
+    shadowRadius: 18,
+    width: '100%',
   },
   chartCardPressed: {
     opacity: 0.9,
     transform: [{ scale: 0.99 }],
   },
   chartGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 10,
-    marginTop: 10,
+    gap: 12,
+    marginTop: 40,
     width: '100%',
   },
   chartDays: {
@@ -665,31 +692,32 @@ const styles = StyleSheet.create({
   chartHeader: {
     alignItems: 'flex-start',
     flexDirection: 'row',
-    gap: 8,
+    gap: 12,
     justifyContent: 'space-between',
-    marginBottom: 4,
   },
   chartHeaderText: {
     flex: 1,
     minWidth: 0,
-    paddingRight: 2,
+    paddingRight: 8,
   },
   chartIcon: {
     alignItems: 'center',
-    borderRadius: 14,
+    borderRadius: 24,
     flexShrink: 0,
-    height: 28,
+    height: 48,
     justifyContent: 'center',
-    width: 28,
+    width: 48,
   },
   chartIconImage: {
-    height: 16,
-    width: 16,
+    height: 26,
+    width: 26,
   },
   chartPlot: {
     alignItems: 'flex-start',
     alignSelf: 'stretch',
+    marginTop: 12,
     overflow: 'visible',
+    width: '100%',
     zIndex: 3,
   },
   chartSvgOverflow: {
@@ -698,9 +726,9 @@ const styles = StyleSheet.create({
   chartSubtitle: {
     color: '#173F5F',
     fontFamily: AppFonts.sansRegular,
-    fontSize: 8,
+    fontSize: 12,
     fontWeight: '400',
-    lineHeight: 12,
+    lineHeight: 17,
   },
   chartStat: {
     fontFamily: AppFonts.sansBold,
@@ -711,10 +739,22 @@ const styles = StyleSheet.create({
   chartTitle: {
     color: '#173F5F',
     fontFamily: AppFonts.sansBold,
-    fontSize: 10,
+    fontSize: 18,
     fontWeight: '700',
-    lineHeight: 14,
+    lineHeight: 24,
     flexShrink: 1,
+  },
+  chartToggle: {
+    alignItems: 'center',
+    borderRadius: 22,
+    flexShrink: 0,
+    height: 44,
+    justifyContent: 'center',
+    width: 44,
+  },
+  chartTogglePressed: {
+    opacity: 0.75,
+    transform: [{ scale: 0.96 }],
   },
   content: {
     paddingHorizontal: 17,
@@ -745,7 +785,7 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.08,
     shadowRadius: 16,
-    top: -5,
+    top: -10,
     width: 30,
     zIndex: 2,
   },
@@ -755,11 +795,12 @@ const styles = StyleSheet.create({
   },
   scoreItem: {
     alignItems: 'center',
+    backgroundColor: '#FFFFFF',
     borderRadius: 12,
-    height: 96,
+    height: 132,
     justifyContent: 'center',
     position: 'relative',
-    width: 74,
+    width: '48%',
   },
   scoreLabel: {
     color: '#173F5F',
@@ -777,10 +818,11 @@ const styles = StyleSheet.create({
   scoreRow: {
     alignSelf: 'stretch',
     flexDirection: 'row',
-    gap: 5,
-    justifyContent: 'space-between',
-    marginHorizontal: 10,
-    marginTop: -90,
+    flexWrap: 'wrap',
+    justifyContent: 'center',
+    columnGap: 12,
+    rowGap: 20,
+    marginTop: 16,
     zIndex: 2,
   },
   scoreValue: {
@@ -806,7 +848,7 @@ const styles = StyleSheet.create({
     lineHeight: 16,
   },
   screen: {
-    backgroundColor: '#EEF0FF',
+    backgroundColor: '#F1F3FC',
     flex: 1,
     overflow: 'hidden',
   },
@@ -855,33 +897,39 @@ const styles = StyleSheet.create({
   },
   weekCard: {
     alignSelf: 'stretch',
-    borderRadius: 8,
-    minHeight: 150,
+    borderRadius: 16,
+    minHeight: 116,
     overflow: 'hidden',
-    paddingHorizontal: 16,
-    paddingTop: 16,
+    paddingHorizontal: 20,
+    paddingTop: 18,
     position: 'relative',
     width: '100%',
   },
   weekCardImage: {
-    borderRadius: 8,
+    borderRadius: 16,
     bottom: 0,
     left: 0,
     position: 'absolute',
     right: 0,
     top: 0,
   },
+  weekCardOverlay: {
+    bottom: 0,
+    left: 0,
+    position: 'absolute',
+    top: 0,
+    width: '74%',
+  },
   weekPanel: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 8,
-    paddingBottom: 100,
-    paddingLeft: 10,
-    paddingRight: 10,
-    paddingTop: 10,
+    borderColor: 'rgba(255,255,255,0.72)',
+    borderRadius: 20,
+    borderWidth: 2,
+    padding: 8,
     shadowColor: '#000000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.07,
-    shadowRadius: 14,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.08,
+    shadowRadius: 18,
     width: '100%',
   },
   weekHeader: {
@@ -908,23 +956,23 @@ const styles = StyleSheet.create({
     width: 16,
   },
   weekText: {
-    color: '#FFFFFF',
-    fontFamily: AppFonts.sansRegular,
-    fontSize: 16,
-    fontWeight: '400',
+    color: '#173F5F',
+    fontFamily: AppFonts.sansMedium,
+    fontSize: 13,
+    fontWeight: '500',
     letterSpacing: 0,
-    lineHeight: 26,
-    maxWidth: '100%',
+    lineHeight: 20,
+    maxWidth: '56%',
   },
   weekTitleWrap: {
     flex: 1,
   },
   weekTitle: {
-    color: '#000000',
+    color: '#173F5F',
     fontFamily: AppFonts.displayBold,
-    fontSize: 20,
+    fontSize: 22,
     fontWeight: '700',
     letterSpacing: 0,
-    lineHeight: 26,
+    lineHeight: 30,
   },
 });
