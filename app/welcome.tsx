@@ -1,8 +1,8 @@
 ﻿import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
 import { useRouter } from 'expo-router';
-import { useCallback } from 'react';
-import { BackHandler, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
+import { useCallback, useState } from 'react';
+import { ActivityIndicator, BackHandler, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { AuthButton } from '@/components/AuthButton';
 import { LegalDisclaimer } from '@/components/LegalDisclaimer';
@@ -18,6 +18,7 @@ const emailIcon = require('@/assets/icons/email.png');
 
 export default function WelcomeScreen() {
   const router = useRouter();
+  const [isGoogleLoading, setIsGoogleLoading] = useState(false);
 
   const goBackToLanding = useCallback(() => {
     router.replace('/');
@@ -35,6 +36,12 @@ export default function WelcomeScreen() {
   );
 
   const handleGooglePress = async () => {
+    if (isGoogleLoading) {
+      return;
+    }
+
+    setIsGoogleLoading(true);
+
     try {
       const session = await signInWithGoogle();
       if (session) {
@@ -42,6 +49,8 @@ export default function WelcomeScreen() {
       }
     } catch (error) {
       console.error('Google sign in error:', error);
+    } finally {
+      setIsGoogleLoading(false);
     }
   };
 
@@ -84,11 +93,19 @@ export default function WelcomeScreen() {
           <Text style={styles.heading}>{`Welcome!\nTake a breath and\ncome in`}</Text>
 
           <View style={styles.buttonGroup}>
-            <AuthButton
-              iconSource={googleIcon}
-              label="Continue with Google"
-              onPress={handleGooglePress}
-            />
+            <View pointerEvents={isGoogleLoading ? 'none' : 'auto'} style={styles.authButtonWrap}>
+              <AuthButton
+                iconSource={googleIcon}
+                label={isGoogleLoading ? '' : 'Continue with Google'}
+                onPress={handleGooglePress}
+                style={isGoogleLoading && styles.disabled}
+              />
+              {isGoogleLoading && (
+                <View pointerEvents="none" style={styles.loaderOverlay}>
+                  <ActivityIndicator color="#7863DC" />
+                </View>
+              )}
+            </View>
         {(Platform.OS === 'ios' || __DEV__) && (
               <AuthButton
                 iconSource={appleIcon}
@@ -110,6 +127,11 @@ export default function WelcomeScreen() {
 }
 
 const styles = StyleSheet.create({
+  authButtonWrap: {
+    alignItems: 'center',
+    position: 'relative',
+    width: '100%',
+  },
   backButton: {
     alignItems: 'center',
     backgroundColor: 'rgba(255, 255, 255, 0.5)',
@@ -149,6 +171,9 @@ const styles = StyleSheet.create({
     textDecorationLine: 'underline',
     textDecorationStyle: 'solid',
   },
+  disabled: {
+    opacity: 0.72,
+  },
   heading: {
     color: '#173F5F',
     fontFamily: AppFonts.displaySemiBold,
@@ -157,6 +182,11 @@ const styles = StyleSheet.create({
     letterSpacing: 0,
     lineHeight: 42,
     textAlign: 'center',
+  },
+  loaderOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   pressed: {
     opacity: 0.86,

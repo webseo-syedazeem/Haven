@@ -1,69 +1,79 @@
-import * as Linking from 'expo-linking';
-import * as WebBrowser from 'expo-web-browser';
+import {
+  GoogleSignin,
+  isErrorWithCode,
+  isSuccessResponse,
+  statusCodes,
+} from '@react-native-google-signin/google-signin';
 
-import { supabase } from './supabase';
 import { ME_QUERY_KEY } from '@/hooks/useUser';
-import { queryClient } from '@/lib/query-client';
 import { apiClient } from './api/client';
 import { userApi } from './api/user';
+import { queryClient } from './query-client';
+import { supabase } from './supabase';
 
-WebBrowser.maybeCompleteAuthSession();
+GoogleSignin.configure({
+  webClientId: process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID,
+  iosClientId: process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID,
+  scopes: ['profile', 'email'],
+});
 
-const getAuthTokens = (url: string) => {
-  const parsedUrl = new URL(url);
-  const params = new URLSearchParams(parsedUrl.hash ? parsedUrl.hash.substring(1) : parsedUrl.search);
-
-  return {
-    access_token: params.get('access_token'),
-    refresh_token: params.get('refresh_token'),
-  };
-};
-
-const withRedirectTo = (authUrl: string, redirectUri: string) => {
-  const url = new URL(authUrl);
-  url.searchParams.set('redirect_to', redirectUri);
-  return url.toString();
+type LegacyGoogleSignInResponse = {
+  data?: {
+    idToken?: string | null;
+  } | null;
+  idToken?: string | null;
 };
 
 export const signInWithGoogle = async () => {
-  const redirectUri = Linking.createURL('auth/callback');
+  try {
+    await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true });
 
-  const { data, error } = await supabase.auth.signInWithOAuth({
-    options: {
-      redirectTo: redirectUri,
-      skipBrowserRedirect: true,
-    },
-    provider: 'google',
-  });
+    try {
+      await GoogleSignin.signOut();
+    } catch {
+      // Ignore if there is no native Google session to clear.
+    }
 
-  if (error || !data.url) {
-    throw new Error(error?.message || 'Failed to get Google auth URL');
-  }
+    const response = await GoogleSignin.signIn();
 
-  const authUrl = withRedirectTo(data.url, redirectUri);
+    const responseType = (response as { type?: string }).type;
 
-  const result = await WebBrowser.openAuthSessionAsync(authUrl, redirectUri);
+    if (responseType && !isSuccessResponse(response)) {
+      return null;
+    }
 
-  if (result.type === 'success') {
-    const { access_token, refresh_token } = getAuthTokens(result.url);
+    const legacyResponse = response as LegacyGoogleSignInResponse;
+    const idToken = legacyResponse.data?.idToken ?? legacyResponse.idToken;
 
-    if (access_token && refresh_token) {
-      const { data: sessionData, error: sessionError } = await supabase.auth.setSession({
-        access_token,
-        refresh_token,
-      });
+    if (!idToken) {
+      throw new Error('Google sign in did not return an ID token.');
+    }
 
-      if (sessionError) {
-        throw new Error(sessionError.message);
+    const { data: sessionData, error } = await supabase.auth.signInWithIdToken({
+      provider: 'google',
+      token: idToken,
+    });
+
+    if (error) {
+      throw new Error(error.message);
+    }
+
+    await apiClient('/api/auth/sync-profile', { method: 'POST' });
+    await queryClient.invalidateQueries({ queryKey: ME_QUERY_KEY });
+    await queryClient.fetchQuery({ queryKey: ME_QUERY_KEY, queryFn: userApi.get, staleTime: 0 });
+
+    return sessionData;
+  } catch (error) {
+    if (isErrorWithCode(error)) {
+      if (error.code === statusCodes.SIGN_IN_CANCELLED || error.code === statusCodes.IN_PROGRESS) {
+        return null;
       }
 
-      await apiClient('/api/auth/sync-profile', { method: 'POST' });
-      await queryClient.invalidateQueries({ queryKey: ME_QUERY_KEY });
-      await queryClient.fetchQuery({ queryKey: ME_QUERY_KEY, queryFn: userApi.get, staleTime: 0 });
-
-      return sessionData;
+      if (error.code === statusCodes.PLAY_SERVICES_NOT_AVAILABLE) {
+        throw new Error('Google Play Services is not available or needs to be updated.');
+      }
     }
-  }
 
-  throw new Error('Google sign in cancelled or failed');
+    throw error;
+  }
 };

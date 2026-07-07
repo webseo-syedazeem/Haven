@@ -108,10 +108,7 @@ export default function HomeScreen() {
   } = calcProgress(dailyEaseScore);
 
   const displayName = getDisplayName(me);
-  const avatarUri =
-    me?.profile?.profile_image_url ||
-    me?.user?.user_metadata?.avatar_url ||
-    '';
+  const avatarUri = me?.profile?.profile_image_url || '';
   const greeting = getTimeGreeting();
   const avatarSource = avatarUri ? { uri: avatarUri } : avatarImage;
 

@@ -1,16 +1,16 @@
-﻿{
+{
   "expo": {
     "name": "Halcyon",
     "slug": "Halcyon",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "Halcyon",
+    "scheme": "halcyon",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.Halcyon.preview",
+      "bundleIdentifier": "com.halcyon.preview",
       "infoPlist": {
         "NSAppTransportSecurity": {
           "NSAllowsArbitraryLoads": true
@@ -19,7 +19,7 @@
       }
     },
     "android": {
-      "package": "com.Halcyon.preview",
+      "package": "com.halcyon.preview",
       "permissions": [
         "android.permission.health.READ_STEPS",
         "android.permission.health.READ_DISTANCE",
@@ -68,6 +68,12 @@
         }
       ],
       [
+        "@react-native-google-signin/google-signin",
+        {
+          "iosUrlScheme": "com.googleusercontent.apps.31808509810-rreep0tjd63s7gvrc9ft1u554tg3auq1"
+        }
+      ],
+      [
         "expo-splash-screen",
         {
           "backgroundColor": "#FFFFFF",
@@ -113,7 +119,7 @@
     },
     "extra": {
       "eas": {
-        "projectId": "b0ae10af-c91c-453f-a3ed-4387460be116"
+        "projectId": "b7bb382a-d98a-4e42-8ba6-dcf0cb75e23e"
       }
     }
   }
