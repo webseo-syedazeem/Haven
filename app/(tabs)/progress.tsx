@@ -185,7 +185,7 @@ function splitChartLabel(label: string) {
     breathwork: ['Breathwork'],
     'high completion': ['High', 'compl.'],
     'low completion': ['Low', 'compl.'],
-    'no breathwork': ['No', 'breath.'],
+    'no breathwork': ['No breathwork'],
     'light sleep': ['Light', 'sleep'],
     'waking often': ['Waking', 'often'],
     'hard to fall asleep': ['Hard', 'asleep'],
@@ -281,11 +281,11 @@ function ScoreCircle({ index, score }: { index: number; score: Score }) {
 
 function ValueChart({ card }: { card: ChartCard }) {
   const chartWidth = 300;
-  const chartHeight = 126;
+  const chartHeight = 175;
   const left = 40;
   const right = 16;
   const top = 12;
-  const bottom = 34;
+  const bottom = 40;
   const plotWidth = chartWidth - left - right;
   const plotHeight = chartHeight - top - bottom;
   const values = card.data.length ? card.data : [0, 0];
@@ -367,7 +367,7 @@ function ValueChart({ card }: { card: ChartCard }) {
         return (
           <SvgText
             fill="#54555A"
-            fontSize="10"
+            fontSize="13"
             key={tick}
             textAnchor="end"
             x={left - 12}
@@ -436,11 +436,11 @@ function ValueChart({ card }: { card: ChartCard }) {
         return lines.map((line, lineIndex) => (
           <SvgText
             fill="#54555A"
-            fontSize={line.length > 9 ? '8' : '9'}
+            fontSize="13"
             key={`${card.title}-label-${label}-${index}-${lineIndex}`}
             textAnchor={textAnchor}
             x={x}
-            y={chartHeight - 27 + lineIndex * 12}>
+            y={153 + lineIndex * 12}>
             {line}
           </SvgText>
         ));
@@ -520,7 +520,7 @@ export default function ProgressScreen() {
       <SafeAreaView edges={['top']} style={styles.safeArea}>
         <ScrollView
           bounces={false}
-          contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 250 }]}
+          contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 100 }]}
           refreshControl={
             <RefreshControl refreshing={isRefreshing} onRefresh={refreshProgress} tintColor="#3770FC" />
           }
@@ -785,7 +785,7 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.08,
     shadowRadius: 16,
-    top: -10,
+    top: 5,
     width: 30,
     zIndex: 2,
   },
@@ -805,15 +805,15 @@ const styles = StyleSheet.create({
   scoreLabel: {
     color: '#173F5F',
     fontFamily: AppFonts.sansRegular,
-    fontSize: 8,
+    fontSize: 12,
     fontWeight: '400',
-    lineHeight: 12,
+    lineHeight: 22,
   },
   scoreMeta: {
     fontFamily: AppFonts.sansRegular,
-    fontSize: 8,
+    fontSize: 12,
     fontWeight: '400',
-    lineHeight: 10,
+    lineHeight: 22,
   },
   scoreRow: {
     alignSelf: 'stretch',
@@ -828,9 +828,9 @@ const styles = StyleSheet.create({
   scoreValue: {
     color: '#000000',
     fontFamily: AppFonts.displayMedium,
-    fontSize: 24,
+    fontSize: 35,
     fontWeight: '400',
-    lineHeight: 26,
+    lineHeight: 35,
   },
   retryButton: {
     alignItems: 'center',
