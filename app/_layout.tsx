@@ -27,14 +27,8 @@ export default function RootLayout() {
   const colorScheme = useColorScheme();
 
   const [fontsLoaded] = useFonts({
-    [AppFonts.sansRegular]: require('../assets/fonts/SFPro-400.OTF'),
-    [AppFonts.sansMedium]: require('../assets/fonts/SFPro-500.OTF'),
-    [AppFonts.sansSemiBold]: require('../assets/fonts/SFPro-500.OTF'),
-    [AppFonts.sansBold]: require('../assets/fonts/SFPro-700.OTF'),
-    [AppFonts.displayRegular]: require('../assets/fonts/PlayfairDisplay-400.ttf'),
-    [AppFonts.displayMedium]: require('../assets/fonts/PlayfairDisplay-500.ttf'),
-    [AppFonts.displaySemiBold]: require('../assets/fonts/PlayfairDisplay-SemiBold.ttf'),
-    [AppFonts.displayBold]: require('../assets/fonts/PlayfairDisplay-700.ttf'),
+    [AppFonts.sansRegular]: require('../assets/fonts/Inter-VariableFont_opsz,wght.ttf'),
+    [AppFonts.displayRegular]: require('../assets/fonts/CormorantGaramond-VariableFont_wght.ttf'),
   });
 
   useEffect(() => {
@@ -66,6 +60,12 @@ export default function RootLayout() {
             <Stack screenOptions={{ contentStyle: { backgroundColor: 'transparent' } }}>
               <Stack.Screen name="index" options={{ headerShown: false }} />
               <Stack.Screen name="create-account" options={{ headerShown: false }} />
+              <Stack.Screen name="environment" options={{ headerShown: false }} />
+              <Stack.Screen name="how-it-works" options={{ headerShown: false }} />
+              <Stack.Screen name="trusted" options={{ headerShown: false }} />
+              <Stack.Screen name="backed-by-science" options={{ headerShown: false }} />
+              <Stack.Screen name="unique" options={{ headerShown: false }} />
+              <Stack.Screen name="halcyon-help" options={{ headerShown: false }} />
               <Stack.Screen name="welcome" options={{ headerShown: false }} />
               <Stack.Screen name="login" options={{ headerShown: false }} />
               <Stack.Screen name="reset-password" options={{ headerShown: false }} />

@@ -12,8 +12,8 @@ import { signInWithApple } from '@/lib/apple-auth';
 import { signInWithGoogle } from '@/lib/google-auth';
 
 const welcomeBackground = require('@/assets/images/welcome-background.png');
-const googleIcon = require('@/assets/icons/google.png');
-const appleIcon = require('@/assets/icons/apple.png');
+const googleIcon = require('@/assets/icons/google icon.png');
+const appleIcon = require('@/assets/icons/apple icon.png');
 const emailIcon = require('@/assets/icons/email.png');
 
 export default function WelcomeScreen() {

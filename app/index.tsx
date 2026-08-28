@@ -1,18 +1,30 @@
-import { useRouter } from 'expo-router';
-import { useEffect, useState } from 'react';
-import { ActivityIndicator, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
-import { StatusBar } from 'expo-status-bar';
-import * as SecureStore from 'expo-secure-store';
 import { useQueryClient } from '@tanstack/react-query';
+import { Asset } from 'expo-asset';
+import { useRouter } from 'expo-router';
+import * as SecureStore from 'expo-secure-store';
+import { StatusBar } from 'expo-status-bar';
+import { useEffect, useState } from 'react';
+import {
+    ActivityIndicator,
+    Image,
+    ImageBackground,
+    Platform,
+    Pressable,
+    StyleSheet,
+    Text,
+    View,
+} from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { ExploreButton } from '@/components/ExploreButton';
-import { ScreenWrapper } from '@/components/ScreenWrapper';
 import { AppFonts } from '@/constants/theme';
-import { setAccessToken, setAuthTokens, refreshSession, clearAuthTokens } from '@/lib/haven-api';
-import { userApi } from '@/lib/api/user';
 import { ME_QUERY_KEY } from '@/hooks/useUser';
+import { userApi } from '@/lib/api/user';
+import { clearAuthTokens, refreshSession, setAccessToken, setAuthTokens } from '@/lib/haven-api';
 
-const firstPageBackground = require('@/assets/images/first-page-background-image.png');
+const background = require('@/assets/images/welcome-page-background.webp');
+const logo = require('@/assets/images/Logo.webp');
+const buttonBackground = require('@/assets/images/button backgound.jpg');
+const buttonBackgroundUri = Asset.fromModule(buttonBackground).uri;
 
 function getWebStorage() {
   return typeof globalThis !== 'undefined'
@@ -21,10 +33,7 @@ function getWebStorage() {
 }
 
 async function getStoredItem(key: string) {
-  if (Platform.OS === 'web') {
-    return getWebStorage()?.getItem(key) ?? null;
-  }
-
+  if (Platform.OS === 'web') return getWebStorage()?.getItem(key) ?? null;
   return SecureStore.getItemAsync(key);
 }
 
@@ -33,7 +42,6 @@ async function setStoredItem(key: string, value: string) {
     getWebStorage()?.setItem(key, value);
     return;
   }
-
   await SecureStore.setItemAsync(key, value);
 }
 
@@ -42,7 +50,6 @@ async function deleteStoredItem(key: string) {
     getWebStorage()?.removeItem(key);
     return;
   }
-
   await SecureStore.deleteItemAsync(key);
 }
 
@@ -65,9 +72,7 @@ export default function FirstPageScreen() {
         }
 
         setAccessToken(accessToken);
-        if (refreshToken) {
-          setAuthTokens({ refreshToken });
-        }
+        if (refreshToken) setAuthTokens({ refreshToken });
 
         try {
           const meData = await userApi.get();
@@ -75,7 +80,6 @@ export default function FirstPageScreen() {
           router.replace('/(tabs)');
           return;
         } catch {
-          // Access token invalid/expired, try refresh
           if (refreshToken) {
             try {
               const res: any = await refreshSession(refreshToken);
@@ -92,13 +96,10 @@ export default function FirstPageScreen() {
                 router.replace('/(tabs)');
                 return;
               }
-            } catch {
-              // Refresh failed too
-            }
+            } catch {}
           }
         }
 
-        // All checks failed — clear stale tokens
         clearAuthTokens();
         await deleteStoredItem('access_token');
         await deleteStoredItem('haven.auth.access_token');
@@ -107,111 +108,145 @@ export default function FirstPageScreen() {
 
       setChecking(false);
     })();
-  }, [router, queryClient]);
+  }, [queryClient, router]);
 
   if (checking) {
     return (
       <View style={styles.loadingScreen}>
-        <ActivityIndicator color="#7863DC" size="large" />
+        <StatusBar style="light" />
+        <ActivityIndicator color="#BB834F" size="small" />
       </View>
     );
   }
 
   return (
-    <>
-      <StatusBar hidden />
-      <ScreenWrapper
-        backgroundImage={firstPageBackground}
-        bottomReserve={170}
-        bottomContent={
-          <>
-            <ExploreButton
-              label="Get Started"
+    <ImageBackground
+      imageStyle={styles.backgroundImage}
+      resizeMode="cover"
+      source={background}
+      style={[styles.background, Platform.OS === 'web' && styles.backgroundWeb]}>
+      <StatusBar style="light" translucent />
+      <View pointerEvents="none" style={styles.overlay} />
+
+      <SafeAreaView edges={['top', 'bottom']} style={styles.safeArea}>
+        <View style={styles.content}>
+          <View style={styles.brandBlock}>
+            <Image resizeMode="contain" source={logo} style={styles.logo} />
+            <Text style={styles.tagline}>{`Soundscapes for\nFocus, Sleep & Reset`}</Text>
+          </View>
+
+          <View style={styles.actions}>
+            <Pressable
+              accessibilityRole="button"
               onPress={() => router.push('/create-account')}
-              style={styles.getStartedButton}
-            />
+              style={({ pressed }) => [styles.button, styles.primaryButton, pressed && styles.pressed]}>
+              <Text style={styles.primaryLabel}>Get started</Text>
+            </Pressable>
 
             <Pressable
               accessibilityRole="button"
-              onPress={() => router.push('/welcome')}
-              style={styles.loginLinkButton}>
-              <Text style={styles.loginPrompt}>
-                Already have an account? <Text style={styles.loginLink}>Login</Text>
-              </Text>
+              onPress={() => router.push('/login')}
+              style={({ pressed }) => [styles.button, styles.secondaryButton, pressed && styles.pressed]}>
+              <Text style={styles.secondaryLabel}>Sign in</Text>
             </Pressable>
-          </>
-        }
-        bottomContentStyle={styles.bottomArea}
-        middleContent={
-          <View style={styles.copy}>
-            <Text style={styles.heading}>{`Feel better now.\nThink clearer later`}</Text>
-            <Text style={styles.description}>Understand your stress, sleep</Text>
           </View>
-        }
-        middleContentStyle={styles.content}
-      />
-    </>
+        </View>
+      </SafeAreaView>
+    </ImageBackground>
   );
 }
 
 const styles = StyleSheet.create({
-  loadingScreen: {
+  actions: {
+    gap: 14,
+    marginHorizontal: '19%',
+  },
+  background: {
+    backgroundColor: '#050505',
     flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#F4EAF8',
-  },
-  bottomArea: {
-    paddingHorizontal: 12,
-  },
-  content: {
-    paddingHorizontal: 20,
-  },
-  copy: {
-    alignItems: 'center',
-  },
-  description: {
-    color: '#173F5F',
-    fontFamily: AppFonts.sansMedium,
-    fontSize: 16,
-    fontWeight: '500',
-    letterSpacing: 0,
-    lineHeight: 26,
-    textAlign: 'center',
-  },
-  getStartedButton: {
-    alignSelf: 'center',
-    maxWidth: 348,
+    overflow: 'hidden',
     width: '100%',
   },
-  heading: {
-    color: '#173F5F',
-    fontFamily: AppFonts.displaySemiBold,
-    fontSize: 32,
-    fontWeight: '600',
-    letterSpacing: 0,
-    lineHeight: 42,
-    textAlign: 'center',
+  backgroundImage: {
+    height: '100%',
+    width: '100%',
   },
-  loginLink: {
-    color: '#ffffff',
+  backgroundWeb: {
+    height: '100vh' as unknown as number,
+    minHeight: '100vh' as unknown as number,
   },
-  loginLinkButton: {
-    alignSelf: 'center',
-    marginTop: 6,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
+  brandBlock: {
+    alignItems: 'center',
+    marginTop: '17%',
   },
-  loginPrompt: {
-    color: '#ffffff',
+  button: {
+    alignItems: 'center',
+    borderColor: '#28221D',
+    borderRadius: 12,
+    borderWidth: 1,
+    justifyContent: 'center',
+    minHeight: 54,
+    paddingHorizontal: 20,
+    paddingVertical: 14,
+  },
+  content: {
+    flex: 1,
+    justifyContent: 'space-between',
+    paddingBottom: 38,
+  },
+  loadingScreen: {
+    alignItems: 'center',
+    backgroundColor: '#050505',
+    flex: 1,
+    justifyContent: 'center',
+  },
+  logo: {
+    height: 150,
+    width: '65%',
+  },
+  overlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0,0,0,0.10)',
+  },
+  pressed: {
+    opacity: 0.88,
+    transform: [{ scale: 0.99 }],
+  },
+  primaryButton: {
+    backgroundColor: '#D2AE7E',
+    backgroundImage: `url("${buttonBackgroundUri}")`,
+    backgroundPosition: 'center',
+    backgroundRepeat: 'no-repeat',
+    backgroundSize: 'cover',
+  } as any,
+  primaryLabel: {
+    color: '#12100E',
     fontFamily: AppFonts.sansMedium,
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: '500',
-    letterSpacing: 0,
-    lineHeight: 26,
+    letterSpacing: 0.2,
+  },
+  safeArea: {
+    flex: 1,
+  },
+  secondaryButton: {
+    backgroundColor: 'rgba(5,5,5,0.58)',
+  },
+  secondaryLabel: {
+    color: '#F1E9DD',
+    fontFamily: AppFonts.sansMedium,
+    fontSize: 15,
+    fontWeight: '500',
+    letterSpacing: 0.2,
+  },
+  tagline: {
+    color: '#F1E9DD',
+    fontFamily: AppFonts.displayRegular,
+    fontSize: 25,
+    fontWeight: '400',
+    letterSpacing: 0.6,
+    lineHeight: 34,
+    marginTop: 14,
     textAlign: 'center',
-    textShadowColor: 'rgba(0, 0, 0, 0.3)',
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 2,
   },
 });

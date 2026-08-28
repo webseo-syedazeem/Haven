@@ -1,53 +1,46 @@
-﻿import { Ionicons } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
+import { Ionicons } from '@expo/vector-icons';
+import { Asset } from 'expo-asset';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import {
+  ActivityIndicator,
+  Image,
   KeyboardAvoidingView,
   Platform,
   Pressable,
+  SafeAreaView,
+  ScrollView,
   StyleSheet,
   Text,
   TextInput,
   View,
 } from 'react-native';
 
-import { AuthButton } from '@/components/AuthButton';
-import { ExploreButton } from '@/components/ExploreButton';
 import { LegalDisclaimer } from '@/components/LegalDisclaimer';
-import { ScreenWrapper, useScreenBottomPadding } from '@/components/ScreenWrapper';
 import { AppFonts } from '@/constants/theme';
-import { signInWithApple } from '@/lib/apple-auth';
-import { signInWithGoogle } from '@/lib/google-auth';
-import { setAuthTokens, signUp } from '@/lib/haven-api';
+import { signUp } from '@/lib/haven-api';
 
-const createAccountBackground = require('@/assets/images/create-account-page-background-image.png');
-const googleIcon = require('@/assets/icons/google.png');
-const appleIcon = require('@/assets/icons/apple.png');
+const backIcon = require('@/assets/icons/back icon.svg');
+const pageBackground = require('@/assets/images/sign-in-background.png');
+const buttonBackground = require('@/assets/images/button backgound.jpg');
+const pageBackgroundUri = Asset.fromModule(pageBackground).uri;
+const buttonBackgroundUri = Asset.fromModule(buttonBackground).uri;
+
+const colors = {
+  background: '#050505',
+  surface: '#0E0E0F',
+  primary: '#F1E9DD',
+  secondary: '#B8AFA4',
+  muted: '#77716A',
+  gold: '#BB834F',
+  buttonText: '#12100E',
+  border: '#28221D',
+};
+
 const noFocusOutline = Platform.OS === 'web' ? ({ outlineStyle: 'none' } as any) : null;
-
-function InnerShadow() {
-  return (
-    <View pointerEvents="none" style={styles.innerShadow}>
-      <LinearGradient
-        colors={['rgba(255, 255, 255, 0.5)', 'rgba(255, 255, 255, 0)']}
-        end={{ x: 0, y: 1 }}
-        start={{ x: 0, y: 0 }}
-        style={styles.innerShadowTop}
-      />
-      <LinearGradient
-        colors={['rgba(255, 255, 255, 0.5)', 'rgba(255, 255, 255, 0)']}
-        end={{ x: 1, y: 0 }}
-        start={{ x: 0, y: 0 }}
-        style={styles.innerShadowLeft}
-      />
-    </View>
-  );
-}
 
 export default function CreateAccountScreen() {
   const router = useRouter();
-  const bottomPadding = useScreenBottomPadding();
   const [email, setEmail] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -55,52 +48,8 @@ export default function CreateAccountScreen() {
   const [passwordVisible, setPasswordVisible] = useState(false);
   const [username, setUsername] = useState('');
 
-  const handleGooglePress = async () => {
-    if (isSubmitting) {
-      return;
-    }
-
-    setErrorMessage('');
-    setIsSubmitting(true);
-
-    try {
-      const session = await signInWithGoogle();
-      if (session?.session?.access_token) {
-        setAuthTokens({
-          accessToken: session.session.access_token,
-          refreshToken: session.session.refresh_token,
-        });
-        router.replace('/feeling-lately');
-      }
-    } catch (error) {
-      console.error('Google sign in error:', error);
-      setErrorMessage(error instanceof Error ? error.message : 'Google sign in failed.');
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  const handleApplePress = async () => {
-    if (isSubmitting) return;
-    setErrorMessage('');
-    setIsSubmitting(true);
-    try {
-      const session = await signInWithApple();
-      if (session) {
-        router.replace('/feeling-lately');
-      }
-    } catch (error) {
-      console.error('Apple sign in error:', error);
-      setErrorMessage(error instanceof Error ? error.message : 'Apple sign in failed.');
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
   const handleCreateAccount = async () => {
-    if (isSubmitting) {
-      return;
-    }
+    if (isSubmitting) return;
 
     const trimmedEmail = email.trim();
     const trimmedUsername = username.trim();
@@ -120,7 +69,7 @@ export default function CreateAccountScreen() {
 
     try {
       await signUp({ email: trimmedEmail, password, username: trimmedUsername });
-      router.replace('/feeling-lately');
+      router.replace('/environment');
     } catch (error) {
       setErrorMessage(error instanceof Error ? error.message : 'Unable to create account right now.');
     } finally {
@@ -129,399 +78,221 @@ export default function CreateAccountScreen() {
   };
 
   return (
-    <ScreenWrapper backgroundImage={createAccountBackground}>
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        style={styles.keyboardView}>
-        <View style={styles.contentWrapper}>
-          <Pressable
-            accessibilityLabel="Go back"
-            hitSlop={12}
-            onPress={() => router.back()}
-            style={({ pressed }) => [styles.backButton, pressed && styles.pressed]}>
-            <Ionicons color="#000000" name="chevron-back" size={18} />
-          </Pressable>
+    <View style={styles.screen}>
+      <SafeAreaView style={styles.safeArea}>
+        <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={styles.keyboardView}>
+          <ScrollView
+            contentContainerStyle={styles.scrollContent}
+            keyboardShouldPersistTaps="handled"
+            showsVerticalScrollIndicator={false}>
+            <Pressable
+              accessibilityLabel="Go back"
+              hitSlop={12}
+              onPress={() => router.back()}
+              style={({ pressed }) => [styles.backButton, pressed && styles.pressed]}>
+              <Image resizeMode="contain" source={backIcon} style={styles.backIcon} />
+            </Pressable>
 
-          <View style={styles.content}>
-            <View style={styles.copy}>
-              <Text style={styles.heading}>Create Account</Text>
-              <Text style={styles.description}>Start checking in and feel better slowly</Text>
-            </View>
-
-            <AuthButton
-              iconSource={googleIcon}
-              label="Continue with Google"
-              onPress={handleGooglePress}
-              style={[styles.authBtn, isSubmitting && styles.disabled]}
-            />
-
-            {(Platform.OS === 'ios' || __DEV__) && (
-              <AuthButton
-                iconSource={appleIcon}
-                label="Continue with Apple"
-                onPress={handleApplePress}
-                style={[styles.authBtn, styles.authBtnTop, isSubmitting && styles.disabled]}
-              />
-            )}
-
-            <View style={styles.separatorRow}>
-              <View style={styles.separatorLine} />
-              <Text style={styles.separatorText}>or</Text>
-              <View style={styles.separatorLine} />
+            <View style={styles.header}>
+              <Text style={styles.heading}>Create your account</Text>
+              <Text style={styles.description}>Start your journey.</Text>
             </View>
 
             <View style={styles.form}>
-              <View style={styles.inputWrap}>
-                <InnerShadow />
-                <Ionicons color="#173F5F" name="person-outline" size={20} style={styles.inputIcon} />
-                <TextInput
-                  autoCapitalize="words"
-                  autoComplete="name"
-                  onChangeText={setUsername}
-                  placeholder="Name"
-                  placeholderTextColor="#8C8C8C"
-                  style={[styles.input, noFocusOutline]}
-                  value={username}
-                />
-              </View>
-
-              <View style={styles.inputWrap}>
-                <InnerShadow />
-                <Ionicons color="#173F5F" name="mail-outline" size={20} style={styles.inputIcon} />
-                <TextInput
-                  autoCapitalize="none"
-                  autoComplete="email"
-                  keyboardType="email-address"
-                  onChangeText={setEmail}
-                  placeholder="Enter Email"
-                  placeholderTextColor="#8C8C8C"
-                  style={[styles.input, noFocusOutline]}
-                  value={email}
-                />
-              </View>
-
-              <View style={styles.inputWrap}>
-                <InnerShadow />
-                <Ionicons color="#173F5F" name="lock-closed" size={20} style={styles.inputIcon} />
-                <TextInput
-                  autoCapitalize="none"
-                  onChangeText={setPassword}
-                  placeholder="Password"
-                  placeholderTextColor="#8C8C8C"
-                  secureTextEntry={!passwordVisible}
-                  style={[styles.input, styles.passwordInput, noFocusOutline]}
-                  value={password}
-                />
-                <Pressable
-                  accessibilityLabel={passwordVisible ? 'Hide password' : 'Show password'}
-                  hitSlop={10}
-                  onPress={() => setPasswordVisible((visible) => !visible)}
-                  style={styles.eyeButton}>
-                  <Ionicons
-                    color="#1f2937"
-                    name={passwordVisible ? 'eye-off-outline' : 'eye-outline'}
-                    size={18}
+              <View style={styles.fieldGroup}>
+                <Text style={styles.label}>Full name</Text>
+                <View style={styles.inputWrap}>
+                  <TextInput
+                    autoCapitalize="words"
+                    autoComplete="name"
+                    onChangeText={setUsername}
+                    placeholder="Enter your full name"
+                    placeholderTextColor={colors.muted}
+                    style={[styles.input, noFocusOutline]}
+                    value={username}
                   />
+                  <Ionicons color={colors.gold} name="person-outline" size={22} style={styles.inputIcon} />
+                </View>
+              </View>
+
+              <View style={styles.fieldGroup}>
+                <Text style={styles.label}>Email</Text>
+                <View style={styles.inputWrap}>
+                  <TextInput
+                    autoCapitalize="none"
+                    autoComplete="email"
+                    keyboardType="email-address"
+                    onChangeText={setEmail}
+                    placeholder="name@halcyon.com"
+                    placeholderTextColor={colors.muted}
+                    style={[styles.input, noFocusOutline]}
+                    value={email}
+                  />
+                  <Ionicons color={colors.gold} name="mail-outline" size={22} style={styles.inputIcon} />
+                </View>
+              </View>
+
+              <View style={styles.fieldGroup}>
+                <Text style={styles.label}>Password</Text>
+                <View style={styles.inputWrap}>
+                  <TextInput
+                    autoCapitalize="none"
+                    autoComplete="new-password"
+                    onChangeText={setPassword}
+                    placeholder="Create a password"
+                    placeholderTextColor={colors.muted}
+                    secureTextEntry={!passwordVisible}
+                    style={[styles.input, noFocusOutline]}
+                    value={password}
+                  />
+                  <Pressable
+                    accessibilityLabel={passwordVisible ? 'Hide password' : 'Show password'}
+                    hitSlop={10}
+                    onPress={() => setPasswordVisible((visible) => !visible)}
+                    style={styles.eyeButton}>
+                    <Ionicons color={colors.gold} name={passwordVisible ? 'eye-off-outline' : 'eye-outline'} size={22} />
+                  </Pressable>
+                </View>
+              </View>
+
+              {!!errorMessage && <Text style={styles.errorText}>{errorMessage}</Text>}
+
+              <Pressable
+                accessibilityRole="button"
+                disabled={isSubmitting}
+                onPress={handleCreateAccount}
+                style={({ pressed }) => [styles.createButton, pressed && styles.pressed, isSubmitting && styles.disabled]}>
+                {isSubmitting ? (
+                  <ActivityIndicator color={colors.buttonText} />
+                ) : (
+                  <Text style={styles.createButtonText}>Create account</Text>
+                )}
+              </Pressable>
+
+              <LegalDisclaimer linkStyle={styles.termsLink} style={styles.terms} textStyle={styles.termsText} />
+
+              <View style={styles.loginRow}>
+                <Text style={styles.loginPrompt}>Already have an account?</Text>
+                <Pressable accessibilityRole="button" hitSlop={6} onPress={() => router.push('/login')}>
+                  <Text style={styles.loginLink}>Sign in</Text>
                 </Pressable>
               </View>
             </View>
-
-            <LegalDisclaimer
-              linkStyle={styles.textLink}
-              style={styles.termsDisclaimer}
-              textStyle={styles.termsText}
-            />
-
-            {!!errorMessage && <Text style={styles.errorText}>{errorMessage}</Text>}
-          </View>
-
-          <View style={[styles.bottomArea, { paddingBottom: bottomPadding }]}>
-            <ExploreButton
-              disabled={isSubmitting}
-              gradientColors={['#B087E5', '#7863DC']}
-              gradientEnd={{ x: 0, y: 1 }}
-              gradientLocations={[0.0379, 0.75]}
-              gradientStart={{ x: 0, y: 0 }}
-              label="Create Account"
-              loading={isSubmitting}
-              shadowColor="rgb(120, 99, 220)"
-              style={styles.createButton}
-              onPress={handleCreateAccount}
-            />
-
-           <View style={styles.loginRow}>
-  <Text style={styles.loginPrompt}>Already have an account?</Text>
-  <Pressable
-    accessibilityRole="button"
-    hitSlop={6}
-    onPress={() => router.push('/welcome')}
-    style={styles.loginLinkButton}>
-    <Text style={styles.loginLink}>Login</Text>
-  </Pressable>
-</View>
-          </View>
-        </View>
-      </KeyboardAvoidingView>
-    </ScreenWrapper>
+          </ScrollView>
+        </KeyboardAvoidingView>
+      </SafeAreaView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  bottomArea: {
-    paddingHorizontal: 12,
-    width: '100%',
-  },
+  screen: {
+    backgroundColor: colors.background,
+    backgroundImage: `url("${pageBackgroundUri}")`,
+    backgroundPosition: 'center',
+    backgroundRepeat: 'no-repeat',
+    backgroundSize: 'cover',
+    flex: 1,
+  } as any,
+  safeArea: { flex: 1 },
+  keyboardView: { flex: 1 },
+  scrollContent: { minHeight: '100%', paddingBottom: 40, paddingHorizontal: 30, paddingTop: 90 },
   backButton: {
     alignItems: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.5)',
-    borderRadius: 16,
-    height: 32,
+    backgroundColor: colors.surface,
+    borderColor: colors.border,
+    borderRadius: 999,
+    borderWidth: 1,
+    height: 35,
     justifyContent: 'center',
-    left: 18,
-    position: 'absolute',
-    top: 15,
-    width: 32,
-    zIndex: 3,
-  },
-  content: {
-    alignItems: 'center',
-    flex: 1,
-    justifyContent: 'center',
-    paddingHorizontal: 18,
-    width: '100%',
-  },
-loginRow: {
-  flexDirection: 'row',
-  alignItems: 'center',
-  justifyContent: 'center',
-  marginTop: 6,  // button se 6 margin
-  gap: 4,
-},
-  contentWrapper: {
-    flex: 1,
-    justifyContent: 'space-between',
-  },
-  copy: {
-    alignItems: 'center',
-    marginBottom: 17,
-  },
-  createButton: {
-    alignSelf: 'center',
-    maxWidth: 348,
-    width: '100%',
+    left: 20,
+    paddingRight: 3,
+    position: 'fixed',
+    top: 20,
+    width: 35,
+    zIndex: 10,
+  } as any,
+  backIcon: { height: 20, width: 20 },
+  header: { marginBottom: 34 },
+  heading: {
+    color: colors.primary,
+    fontFamily: AppFonts.displayRegular,
+    fontSize: 35,
+    fontWeight: '500',
+    lineHeight: 42,
   },
   description: {
-    color: '#173F5F',
-    fontFamily: AppFonts.sansMedium,
-    fontSize: 16,
-    fontWeight: '500',
-    letterSpacing: 0,
-    lineHeight: 26,
-    textAlign: 'center',
-  },
-  disabled: {
-    opacity: 0.72,
-  },
-  eyeButton: {
-    alignItems: 'center',
-    bottom: 0,
-    justifyContent: 'center',
-    position: 'absolute',
-    right: 17,
-    top: 0,
-    width: 28,
-  },
-  errorText: {
-    color: '#173F5F',
-    fontFamily: AppFonts.sansMedium,
-    fontSize: 13,
-    fontWeight: '500',
-    lineHeight: 18,
+    color: colors.secondary,
+    fontFamily: AppFonts.sansRegular,
+    fontSize: 15,
     marginTop: 8,
-    maxWidth: 310,
-    textAlign: 'center',
   },
-  form: {
-    gap: 14,
-    width: '100%',
-  },
-  googleButton: {
-    alignItems: 'center',
-    alignSelf: 'center',
-    backgroundColor: '#ffffff',
-    borderRadius: 12,
-    elevation: 4,
-    height: 54,
-    justifyContent: 'center',
-    maxWidth: 310,
-    position: 'relative',
-    shadowColor: '#ffffff',
-    shadowOffset: {
-      width: 4,
-      height: 4,
-    },
-    shadowOpacity: 0.5,
-    shadowRadius: 16,
-    width: '100%',
-  },
-  googleIcon: {
-    height: 20,
-    left: 24,
-    position: 'absolute',
-    width: 20,
-  },
-  googleText: {
-    color: '#000000',
+  form: { width: '100%' },
+  fieldGroup: { marginBottom: 20 },
+  label: {
+    color: colors.secondary,
     fontFamily: AppFonts.sansMedium,
-    fontSize: 16,
-    fontWeight: '500',
-    letterSpacing: 0,
-    lineHeight: 26,
-    paddingHorizontal: 62,
-    textAlign: 'center',
-    width: '100%',
-  },
-  heading: {
-    color: '#173F5F',
-    fontFamily: AppFonts.displaySemiBold,
-    fontSize: 32,
-    fontWeight: '600',
-    letterSpacing: 0,
-    lineHeight: 42,
-    textAlign: 'center',
-  },
-  innerShadow: {
-    ...StyleSheet.absoluteFillObject,
-  },
-  innerShadowLeft: {
-    bottom: 0,
-    left: 0,
-    position: 'absolute',
-    top: 4,
-    width: 16,
-  },
-  innerShadowTop: {
-    height: 16,
-    left: 4,
-    position: 'absolute',
-    right: 0,
-    top: 0,
-  },
-  input: {
-    color: '#000000',
-    flex: 1,
-    fontFamily: AppFonts.sansMedium,
-    fontSize: 16,
-    fontWeight: '500',
-    height: '100%',
-    letterSpacing: 0,
-    lineHeight: 26,
-    paddingLeft: 42,
-    paddingRight: 18,
-  },
-  inputIcon: {
-    left: 14,
-    position: 'absolute',
-    zIndex: 1,
+    fontSize: 14,
+    marginBottom: 8,
   },
   inputWrap: {
     alignItems: 'center',
-    alignSelf: 'center',
-    backgroundColor: '#ffffff',
-    borderRadius: 12,
-    borderWidth: 0,
-    elevation: 5,
+    backgroundColor: colors.surface,
+    borderColor: colors.border,
+    borderRadius: 14,
+    borderWidth: 1,
     flexDirection: 'row',
-    height: 54,
-    overflow: 'hidden',
-    shadowColor: '#ffffff',
-    shadowOffset: {
-      width: 4,
-      height: 4,
-    },
-    shadowOpacity: 0.5,
-    shadowRadius: 16,
-    width: '100%',
   },
-  keyboardView: {
+  input: {
+    color: colors.primary,
     flex: 1,
+    fontFamily: AppFonts.sansRegular,
+    fontSize: 15,
+    paddingHorizontal: 16,
+    paddingVertical: 20,
   },
-  loginLink: {
-    color: '#173F5F',
+  inputIcon: { marginRight: 16 },
+  eyeButton: { alignItems: 'center', justifyContent: 'center', marginRight: 8, padding: 8 },
+  errorText: {
+    color: colors.primary,
     fontFamily: AppFonts.sansMedium,
-    fontSize: 16,
-    fontWeight: '500',
-    letterSpacing: 0,
-    lineHeight: 26,
+    fontSize: 13,
+    marginBottom: 8,
     textAlign: 'center',
   },
-  loginLinkButton: {
-    margin: 0,
-    padding: 0,
-  },
- loginPrompt: {
-  color: '#173F5F',
-  fontFamily: AppFonts.sansMedium,
-  fontSize: 16,
-  fontWeight: '500',
-  letterSpacing: 0,
-  lineHeight: 26,  // 10 se 26 karo
-  textAlign: 'center',
-},
-  passwordInput: {
-    paddingRight: 54,
-  },
-  pressed: {
-    opacity: 0.86,
-    transform: [{ scale: 0.99 }],
-  },
-  separatorLine: {
-    backgroundColor: 'rgba(23, 63, 95, 0.32)',
-    flex: 1,
-    height: 1,
-  },
-  separatorRow: {
+  createButton: {
     alignItems: 'center',
-    flexDirection: 'row',
-    gap: 12,
-    marginVertical: 16,
-    maxWidth: 310,
-    width: '100%',
-  },
-  separatorText: {
-    color: '#173F5F',
+    backgroundColor: colors.gold,
+    backgroundImage: `url("${buttonBackgroundUri}")`,
+    backgroundPosition: 'center',
+    backgroundRepeat: 'no-repeat',
+    backgroundSize: 'cover',
+    borderColor: colors.border,
+    borderRadius: 12,
+    borderWidth: 1,
+    justifyContent: 'center',
+    marginTop: 4,
+    overflow: 'hidden',
+    paddingVertical: 20,
+  } as any,
+  createButtonText: {
+    color: colors.buttonText,
     fontFamily: AppFonts.sansMedium,
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: '500',
-    letterSpacing: 0,
-    lineHeight: 26,
   },
-  termsDisclaimer: {
-    marginTop: 12,
-    maxWidth: 310,
-  },
+  terms: { marginTop: 24 },
   termsText: {
-    color: '#173F5F',
-    fontFamily: AppFonts.sansMedium,
-    fontSize: 16,
-    fontWeight: '500',
-    letterSpacing: 0,
-    lineHeight: 26,
+    color: colors.secondary,
+    fontFamily: AppFonts.sansRegular,
+    fontSize: 14,
+    lineHeight: 21,
     textAlign: 'center',
   },
-  authBtn: {
-    height: 54,
-    maxWidth: 310,
-    paddingBottom: 0,
-    paddingTop: 0,
-    width: '100%',
-  },
-  authBtnTop: {
-    marginTop: 12,
-  },
-  textLink: {
-    textDecorationLine: 'underline',
-    textDecorationStyle: 'solid',
-  },
+  termsLink: { color: colors.gold, textDecorationLine: 'none' },
+  loginRow: { flexDirection: 'row', gap: 4, justifyContent: 'center', marginTop: 20 },
+  loginPrompt: { color: colors.secondary, fontFamily: AppFonts.sansRegular, fontSize: 14 },
+  loginLink: { color: colors.gold, fontFamily: AppFonts.sansMedium, fontSize: 14 },
+  pressed: { opacity: 0.88 },
+  disabled: { opacity: 0.6 },
 });
-
