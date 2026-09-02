@@ -14,17 +14,17 @@ const steps = [
   {
     number: '1',
     title: 'Tell us what you need',
-    description: 'Share your sleep, focus, and reset goals so Halcyon can understand what will help most.',
+    description: 'Share your sleep, relax, and focus preferences so Passage can understand what fits the moment.',
   },
   {
     number: '2',
-    title: 'We build your soundscape',
-    description: 'Halcyon creates personalized recommendations based on your preferences, routines, and mood.',
+    title: 'Find your exact environment',
+    description: 'Passage matches your preferences with complete, precisely labelled soundscapes.',
   },
   {
     number: '3',
     title: 'Press play and let go',
-    description: 'Start listening and come back anytime for better sleep, deeper focus, and calm resets.',
+    description: 'Start listening instantly and return to your saved environments anytime.',
   },
 ];
 
@@ -53,7 +53,7 @@ export default function HowItWorksScreen() {
             <Image resizeMode="contain" source={backIcon} style={styles.backIcon} />
           </Pressable>
 
-          <Text style={styles.heading}>How Halcyon works</Text>
+          <Text style={styles.heading}>How Passage works</Text>
 
           <View style={styles.timeline}>
             {steps.map((step, index) => (

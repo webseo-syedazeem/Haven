@@ -12,23 +12,23 @@ const buttonBackgroundUri = Asset.fromModule(buttonBackground).uri;
 
 const features = [
   {
-    title: 'Layered soundscapes',
-    subtitle: 'Built with depth and intention',
+    title: 'Precise, not generic',
+    subtitle: 'Go beyond broad labels like “forest sounds” with exact, named environments.',
     icon: require('@/assets/icons/what-make-icon-1.webp'),
   },
   {
-    title: 'Backed by science',
-    subtitle: 'Guided by research in sound and wellbeing',
+    title: 'Verified contents',
+    subtitle: 'See what each soundscape contains before you start listening.',
     icon: require('@/assets/icons/what-make-icon-2.webp'),
   },
   {
-    title: 'No ads, no interruptions',
-    subtitle: 'Just pure, immersive listening',
+    title: 'Verified exclusions',
+    subtitle: 'Know what is absent, such as voices, thunder, wildlife, or music.',
     icon: require('@/assets/icons/what-make-icon-3.webp'),
   },
   {
-    title: 'Personalized routines',
-    subtitle: 'Support tailored to your rhythm',
+    title: 'Complete listening',
+    subtitle: 'Pre-authored soundscapes with no mixing, no ads, and no hidden content.',
     icon: require('@/assets/icons/what-make-icon-4.webp'),
   },
 ];
@@ -58,7 +58,7 @@ export default function WhatMakesUniqueScreen() {
             <Image resizeMode="contain" source={backIcon} style={styles.backIcon} />
           </Pressable>
 
-          <Text style={styles.heading}>What makes Halcyon unique?</Text>
+          <Text style={styles.heading}>What makes Passage unique?</Text>
 
           <View style={styles.ornamentRow}>
             <View style={styles.ornamentLine} />
@@ -81,7 +81,7 @@ export default function WhatMakesUniqueScreen() {
 
           <Pressable
             accessibilityRole="button"
-            onPress={() => router.push('/halcyon-help')}
+            onPress={() => router.push('/passage-help')}
             style={({ pressed }) => [styles.continueButton, pressed && styles.pressed]}>
             <Text style={styles.continueText}>Continue</Text>
           </Pressable>

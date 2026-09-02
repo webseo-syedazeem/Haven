@@ -65,7 +65,7 @@ export default function RootLayout() {
               <Stack.Screen name="trusted" options={{ headerShown: false }} />
               <Stack.Screen name="backed-by-science" options={{ headerShown: false }} />
               <Stack.Screen name="unique" options={{ headerShown: false }} />
-              <Stack.Screen name="halcyon-help" options={{ headerShown: false }} />
+              <Stack.Screen name="passage-help" options={{ headerShown: false }} />
               <Stack.Screen name="welcome" options={{ headerShown: false }} />
               <Stack.Screen name="login" options={{ headerShown: false }} />
               <Stack.Screen name="reset-password" options={{ headerShown: false }} />

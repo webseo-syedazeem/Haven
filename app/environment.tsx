@@ -15,20 +15,20 @@ const options = [
   {
     id: 'sleep',
     title: 'Sleep',
-    description: 'Fall asleep faster\nand stay asleep longer',
+    description: 'Calm, predictable environments for settling into the night.',
     icon: require('@/assets/icons/sleep-icon.webp'),
+  },
+  {
+    id: 'relax',
+    title: 'Relax',
+    description: 'Steady environments for unwinding and creating space.',
+    icon: require('@/assets/icons/reset-icon.webp'),
   },
   {
     id: 'focus',
     title: 'Focus',
-    description: 'Reduce distractions\nand stay productive',
+    description: 'Low-distraction environments for writing, reading, studying, and deep work.',
     icon: require('@/assets/icons/focus-icon.webp'),
-  },
-  {
-    id: 'reset',
-    title: 'Reset',
-    description: 'Unwind, release tension,\nand feel restored',
-    icon: require('@/assets/icons/reset-icon.webp'),
   },
 ] as const;
 
@@ -69,8 +69,7 @@ export default function EnvironmentScreen() {
           <View style={styles.header}>
             <Text style={styles.heading}>Create the right environment for every moment.</Text>
             <Text style={styles.description}>
-              Halcyon combines the power of sound, motion, and emotion to help you find balance, focus clearly,
-              and sleep deeply.
+              Passage helps you find complete, precisely labelled soundscapes for the exact moment you're in.
             </Text>
           </View>
 

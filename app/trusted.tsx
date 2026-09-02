@@ -15,6 +15,15 @@ const ratingPeople = [
   require('@/assets/images/rating-person-4.webp'),
   require('@/assets/images/rating-person-5.webp'),
 ];
+const socialProof = {
+  listenerTotal: '250,000+',
+  rating: '4.8',
+  reviewCount: null as string | null,
+  storeLabel: 'App Store',
+  portraits: ratingPeople,
+  testimonial: 'Passage has completely changed how I relax and reset.”',
+  testimonialAuthor: '— Sesh, 34',
+};
 const backgroundUri = Asset.fromModule(background).uri;
 const buttonBackgroundUri = Asset.fromModule(buttonBackground).uri;
 
@@ -51,13 +60,13 @@ export default function TrustedScreen() {
             <View style={styles.ornamentLine} />
           </View>
 
-          <Text adjustsFontSizeToFit numberOfLines={1} style={styles.total}>250,000+</Text>
-          <Text style={styles.supportText}>people use Halcyon to support{`\n`}sleep, focus, and reset</Text>
+          <Text adjustsFontSizeToFit numberOfLines={1} style={styles.total}>{socialProof.listenerTotal}</Text>
+          <Text style={styles.supportText}>people use Passage to support{`\n`}sleep, focus, and reset</Text>
 
           <View style={styles.divider} />
 
           <View style={styles.ratingRow}>
-            <Text style={styles.ratingValue}>4.8</Text>
+            <Text style={styles.ratingValue}>{socialProof.rating}</Text>
             <Text style={styles.ratingLabel}>rating</Text>
             <View style={styles.stars}>
               {[0, 1, 2, 3, 4].map((star) => (
@@ -65,18 +74,20 @@ export default function TrustedScreen() {
               ))}
             </View>
           </View>
-          <Text style={styles.storeLabel}>App Store</Text>
+          <Text style={styles.storeLabel}>
+            {socialProof.storeLabel}{socialProof.reviewCount ? ` · ${socialProof.reviewCount} reviews` : ''}
+          </Text>
 
           <View style={styles.avatarRow}>
-            {ratingPeople.map((person, index) => (
+            {socialProof.portraits.map((person, index) => (
               <Image key={index} resizeMode="cover" source={person} style={styles.avatar} />
             ))}
           </View>
 
           <View style={styles.quoteBlock}>
             <Text style={styles.quoteMark}>“</Text>
-            <Text style={styles.quote}>Halcyon has completely changed how I relax and reset.”</Text>
-            <Text style={styles.author}>— Sesh, 34</Text>
+            <Text style={styles.quote}>{socialProof.testimonial}</Text>
+            <Text style={styles.author}>{socialProof.testimonialAuthor}</Text>
           </View>
 
           <Pressable

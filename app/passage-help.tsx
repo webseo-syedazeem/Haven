@@ -12,37 +12,37 @@ const buttonBackgroundUri = Asset.fromModule(buttonBackground).uri;
 
 const options = [
   {
-    id: 'sleep',
-    title: 'Sleep better',
-    description: 'Fall asleep faster\nand stay asleep longer',
+    id: 'back-to-sleep',
+    title: 'Go back to sleep',
+    description: 'Settle again after waking during the night.',
     iconBackground: '#070C13',
     icon: require('@/assets/icons/halcyon-help-icon-1.png'),
   },
   {
-    id: 'stress',
-    title: 'Reduce stress',
-    description: 'Lower stress and\nfeel more at ease',
+    id: 'post-work-chill',
+    title: 'Post-work chill',
+    description: 'Transition out of a busy workday.',
     iconBackground: '#1D261F',
     icon: require('@/assets/icons/halcyon-help-icon-2.png'),
   },
   {
-    id: 'focus',
-    title: 'Focus & productivity',
-    description: 'Improve concentration\nand get more done',
+    id: 'writing',
+    title: 'Writing',
+    description: 'Choose a steady background for focused writing.',
     iconBackground: '#13222D',
     icon: require('@/assets/icons/science-icon-4.png'),
   },
   {
-    id: 'relax',
-    title: 'Relax & unwind',
-    description: 'Disconnect and\ncalm your mind',
+    id: 'sensory-overload',
+    title: 'Sensory overload',
+    description: 'Find low-intensity, minimal-detail environments.',
     iconBackground: '#3B2514',
     icon: require('@/assets/icons/halcyon-help-icon-3.png'),
   },
   {
-    id: 'soundscapes',
-    title: 'Expert soundscapes',
-    description: 'Curated by experts,\nmade for you',
+    id: 'block-conversations',
+    title: 'Block conversations',
+    description: 'Mask nearby voices while you focus.',
     iconBackground: '#261E2E',
     icon: require('@/assets/icons/halcyon-help-icon-4.png'),
   },
@@ -63,12 +63,14 @@ const colors = {
 
 export default function HalcyonHelpScreen() {
   const router = useRouter();
-  const [selected, setSelected] = useState<HelpId[]>(['sleep']);
+  const [selected, setSelected] = useState<HelpId[]>([]);
 
   const toggleOption = (id: HelpId) => {
-    setSelected((current) =>
-      current.includes(id) ? current.filter((selectedId) => selectedId !== id) : [...current, id]
-    );
+    setSelected((current) => {
+      if (current.includes(id)) return current.filter((selectedId) => selectedId !== id);
+      if (current.length >= 5) return current;
+      return [...current, id];
+    });
   };
 
   return (
@@ -84,8 +86,8 @@ export default function HalcyonHelpScreen() {
           </Pressable>
 
           <View style={styles.header}>
-            <Text style={styles.heading}>What would you like Halcyon to help with?</Text>
-            <Text style={styles.description}>Choose all that apply</Text>
+            <Text style={styles.heading}>What would you like Passage to help with?</Text>
+            <Text style={styles.description}>Choose up to five</Text>
           </View>
 
           <View style={styles.optionList}>
@@ -192,7 +194,9 @@ const styles = StyleSheet.create({
   },
   optionIconCircle: {
     alignItems: 'center',
+    borderColor: colors.gold,
     borderRadius: 999,
+    borderWidth: 1,
     height: 72,
     justifyContent: 'center',
     width: 72,

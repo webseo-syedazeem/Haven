@@ -2,9 +2,17 @@ import 'react-native-url-polyfill/auto';
 import { createClient } from '@supabase/supabase-js';
 import * as SecureStore from 'expo-secure-store';
 import { Platform } from 'react-native';
+import NodeWebSocket from 'ws';
 
 const supabaseUrl = 'https://wqludhqymhcyrjhazjcq.supabase.co';
 const supabaseAnonKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY!;
+
+// Expo Router renders web routes in Node before hydrating them in the browser.
+// Node versions without a global WebSocket therefore need an explicit transport.
+const realtimeTransport =
+  typeof globalThis.WebSocket === 'undefined'
+    ? NodeWebSocket
+    : globalThis.WebSocket;
 
 function getWebStorage() {
   return typeof globalThis !== 'undefined'
@@ -81,6 +89,9 @@ const createChunkedSecureStore = () => {
 };
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+  realtime: {
+    transport: realtimeTransport,
+  },
   auth: {
     storage: createChunkedSecureStore(),
     autoRefreshToken: true,

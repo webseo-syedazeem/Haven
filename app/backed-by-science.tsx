@@ -11,10 +11,10 @@ const backgroundUri = Asset.fromModule(background).uri;
 const buttonBackgroundUri = Asset.fromModule(buttonBackground).uri;
 
 const benefits = [
-  { label: 'Better sleep quality', icon: require('@/assets/icons/science-icon-1.png') },
-  { label: 'Reduced stress', icon: require('@/assets/icons/science-icon-2.png') },
-  { label: 'Improved focus', icon: require('@/assets/icons/science-icon-3.png') },
-  { label: 'Enhanced mood', icon: require('@/assets/icons/science-icon-4.png') },
+  { label: 'Restful listening', icon: require('@/assets/icons/science-icon-1.png') },
+  { label: 'Less unwanted distraction', icon: require('@/assets/icons/science-icon-2.png') },
+  { label: 'Support for sustained focus', icon: require('@/assets/icons/science-icon-3.png') },
+  { label: 'Calm, predictable environments', icon: require('@/assets/icons/science-icon-4.png') },
 ];
 
 const colors = {
@@ -50,8 +50,9 @@ export default function BackedByScienceScreen() {
           </View>
 
           <Text style={styles.description}>
-            Halcyon combines research in neuroscience, psychology, and sound therapy to create soundscapes that
-            support peace of mind and better daily rhythms.
+            Passage is informed by research on natural sound, sound masking, and predictable listening
+            environments. Individual responses vary, so Passage does not promise specific health, sleep, or
+            productivity outcomes.
           </Text>
 
           <View style={styles.benefitList}>

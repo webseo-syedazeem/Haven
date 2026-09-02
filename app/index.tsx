@@ -6,7 +6,6 @@ import { StatusBar } from 'expo-status-bar';
 import { useEffect, useState } from 'react';
 import {
     ActivityIndicator,
-    Image,
     ImageBackground,
     Platform,
     Pressable,
@@ -22,7 +21,6 @@ import { userApi } from '@/lib/api/user';
 import { clearAuthTokens, refreshSession, setAccessToken, setAuthTokens } from '@/lib/haven-api';
 
 const background = require('@/assets/images/welcome-page-background.webp');
-const logo = require('@/assets/images/Logo.webp');
 const buttonBackground = require('@/assets/images/button backgound.jpg');
 const buttonBackgroundUri = Asset.fromModule(buttonBackground).uri;
 
@@ -131,8 +129,8 @@ export default function FirstPageScreen() {
       <SafeAreaView edges={['top', 'bottom']} style={styles.safeArea}>
         <View style={styles.content}>
           <View style={styles.brandBlock}>
-            <Image resizeMode="contain" source={logo} style={styles.logo} />
-            <Text style={styles.tagline}>{`Soundscapes for\nFocus, Sleep & Reset`}</Text>
+            <Text style={styles.heading}>Passage — Escape the Noise</Text>
+            <Text style={styles.tagline}>Focus, Sleep & Reset</Text>
           </View>
 
           <View style={styles.actions}>
@@ -194,15 +192,19 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingBottom: 38,
   },
+  heading: {
+    color: '#F1E9DD',
+    fontFamily: AppFonts.displayRegular,
+    fontSize: 35,
+    fontWeight: '500',
+    lineHeight: 42,
+    textAlign: 'center',
+  },
   loadingScreen: {
     alignItems: 'center',
     backgroundColor: '#050505',
     flex: 1,
     justifyContent: 'center',
-  },
-  logo: {
-    height: 150,
-    width: '65%',
   },
   overlay: {
     ...StyleSheet.absoluteFillObject,
