@@ -1,16 +1,16 @@
 {
   "expo": {
-    "name": "Halcyon",
-    "slug": "Halcyon",
+    "name": "Passage",
+    "slug": "Passage",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "halcyon",
+    "scheme": "passage",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.halcyon.preview",
+      "bundleIdentifier": "com.passage.preview",
       "infoPlist": {
         "NSAppTransportSecurity": {
           "NSAllowsArbitraryLoads": true
@@ -19,7 +19,7 @@
       }
     },
     "android": {
-      "package": "com.halcyon.preview",
+      "package": "com.passage.preview",
       "permissions": [
         "android.permission.health.READ_STEPS",
         "android.permission.health.READ_DISTANCE",
@@ -40,7 +40,6 @@
       },
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
-      "usesCleartextTraffic": true,
       "jsEngine": "hermes"
     },
     "web": {
@@ -109,8 +108,8 @@
       [
         "react-native-health",
         {
-          "healthSharePermission": "Halcyon uses your health data (steps, sleep, heart rate and recovery) to personalise your Daily Ease and insights.",
-          "healthUpdatePermission": "Halcyon does not write to your health data."
+          "healthSharePermission": "Passage uses your health data (steps, sleep, heart rate and recovery) to personalise your Daily Ease and insights.",
+          "healthUpdatePermission": "Passage does not write to your health data."
         }
       ]
     ],
