@@ -1,5 +1,0 @@
-env: load .env
-env: export EXPO_PUBLIC_API_BASE_URL EXPO_OFFLINE EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID EXPO_PUBLIC_SUPABASE_ANON_KEY
-Starting project at E:\G disk Data\Office\Heaven App\halcyon
-› Port 8081 is being used by another process
-› Skipping dev server
