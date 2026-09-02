@@ -122,7 +122,7 @@ export default function HalcyonHelpScreen() {
           <Pressable
             accessibilityRole="button"
             disabled={selected.length === 0}
-            onPress={() => router.push('/feeling-lately')}
+            onPress={() => router.replace('/(tabs)')}
             style={({ pressed }) => [
               styles.continueButton,
               selected.length === 0 && styles.continueButtonDisabled,

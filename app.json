@@ -21,14 +21,6 @@
     "android": {
       "package": "com.passage.preview",
       "permissions": [
-        "android.permission.health.READ_STEPS",
-        "android.permission.health.READ_DISTANCE",
-        "android.permission.health.READ_ACTIVE_CALORIES_BURNED",
-        "android.permission.health.READ_SLEEP",
-        "android.permission.health.READ_HEART_RATE",
-        "android.permission.health.READ_RESTING_HEART_RATE",
-        "android.permission.health.READ_HEART_RATE_VARIABILITY",
-        "android.permission.health.READ_RESPIRATORY_RATE",
         "android.permission.SCHEDULE_EXACT_ALARM",
         "android.permission.USE_EXACT_ALARM",
         "android.permission.RECEIVE_BOOT_COMPLETED",
@@ -57,7 +49,6 @@
           "sounds": []
         }
       ],
-      "./plugins/withHealthConnectManifest",
       [
         "expo-build-properties",
         {
@@ -97,21 +88,13 @@
       [
         "expo-navigation-bar",
         {
-          "backgroundColor": "#00000000",
+          "backgroundColor": "#FFFFFF",
           "barStyle": "dark",
           "position": "absolute",
           "visibility": "visible"
         }
       ],
-      "expo-asset",
-      "expo-health-connect",
-      [
-        "react-native-health",
-        {
-          "healthSharePermission": "Passage uses your health data (steps, sleep, heart rate and recovery) to personalise your Daily Ease and insights.",
-          "healthUpdatePermission": "Passage does not write to your health data."
-        }
-      ]
+      "expo-asset"
     ],
     "experiments": {
       "typedRoutes": true
