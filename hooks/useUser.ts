@@ -1,13 +1,19 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
+import { useHasSession } from '@/hooks/useSession';
 import { userApi } from '@/lib/api/user';
 
 export const ME_QUERY_KEY = ['me'] as const;
 
 export function useUser() {
+  const hasSession = useHasSession();
+
   return useQuery({
     queryKey: ME_QUERY_KEY,
     queryFn: userApi.get,
+    // Never hit `/api/me` until a session is restored from storage or created
+    // by a sign in, otherwise the request fails with a missing auth header.
+    enabled: hasSession,
     select: (response) => response.data,
   });
 }

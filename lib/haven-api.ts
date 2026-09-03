@@ -1,6 +1,8 @@
 import * as SecureStore from 'expo-secure-store';
 import { Platform } from 'react-native';
 
+import { setSessionSource } from '@/lib/auth/session-state';
+
 const REMOTE_API_BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL ?? 'https://thehappyapp.co.uk';
 const API_BASE_URL = Platform.OS === 'web' ? '/api-proxy' : REMOTE_API_BASE_URL;
 const ACCESS_TOKEN_KEY = 'access_token';
@@ -70,6 +72,11 @@ export type ProfileImageUpload = {
 let accessToken: string | null = null;
 let refreshToken: string | null = null;
 
+/** Keeps the shared session flag in sync with the in-memory access token. */
+function syncSessionState() {
+  setSessionSource('haven', Boolean(accessToken));
+}
+
 function getWebStorage() {
   return typeof globalThis !== 'undefined'
     ? (globalThis as unknown as { localStorage?: Storage }).localStorage
@@ -127,6 +134,8 @@ async function clearStoredAccessTokens() {
 }
 
 async function persistTokens() {
+  syncSessionState();
+
   await Promise.all([
     setStoredItem(ACCESS_TOKEN_KEY, accessToken),
     setStoredItem(REFRESH_TOKEN_KEY, refreshToken),
@@ -262,17 +271,20 @@ export function getRefreshToken() {
 export function setAuthTokens(tokens: { accessToken?: string | null; refreshToken?: string | null }) {
   accessToken = tokens.accessToken ?? accessToken;
   refreshToken = tokens.refreshToken ?? refreshToken;
+  syncSessionState();
   void persistTokens();
 }
 
 export function setAccessToken(token: string | null) {
   accessToken = token;
+  syncSessionState();
   void setStoredItem(ACCESS_TOKEN_KEY, token);
 }
 
 export function clearAuthTokens() {
   accessToken = null;
   refreshToken = null;
+  syncSessionState();
   void Promise.all([persistTokens(), clearStoredAccessTokens()]);
 }
 
@@ -293,6 +305,7 @@ export async function refreshSession(token = refreshToken) {
 export async function signUp(payload: { email: string; password: string; username: string }) {
   accessToken = null;
   refreshToken = null;
+  syncSessionState();
   await clearStoredAccessTokens();
 
   const response = await apiRequest<AuthResponse>('/api/signup', {
@@ -307,6 +320,7 @@ export async function signUp(payload: { email: string; password: string; usernam
 export async function signIn(payload: { email: string; password: string }) {
   accessToken = null;
   refreshToken = null;
+  syncSessionState();
   await clearStoredAccessTokens();
 
   const response = await apiRequest<AuthResponse>('/api/signin', {

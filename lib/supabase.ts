@@ -1,5 +1,6 @@
 import 'react-native-url-polyfill/auto';
 import { createClient } from '@supabase/supabase-js';
+import { setSessionSource } from './auth/session-state';
 import * as SecureStore from 'expo-secure-store';
 import { Platform } from 'react-native';
 import { realtimeTransport } from './realtimeTransport';
@@ -91,4 +92,12 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
     persistSession: true,
     detectSessionInUrl: false,
   },
+});
+
+// Google/Apple sign in store their session with Supabase rather than with the
+// Haven API tokens, so mirror it into the shared session flag. This also fires
+// once on start up with the session restored from SecureStore (or `null` on a
+// fresh install, which keeps authenticated queries disabled).
+supabase.auth.onAuthStateChange((_event, session) => {
+  setSessionSource('supabase', Boolean(session?.access_token));
 });

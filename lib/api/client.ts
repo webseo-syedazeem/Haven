@@ -1,5 +1,6 @@
 import { supabase } from '@/lib/supabase';
 import * as SecureStore from 'expo-secure-store';
+import { setSessionSource } from '@/lib/auth/session-state';
 import { getAccessToken } from '@/lib/haven-api';
 import { Platform } from 'react-native';
 
@@ -48,6 +49,8 @@ async function getStoredToken() {
 }
 
 export async function clearStoredAccessToken() {
+  setSessionSource('haven', false);
+
   await Promise.all([
     deleteStoredItem(AUTH_TOKEN_KEY),
     deleteStoredItem(LEGACY_AUTH_TOKEN_KEY),

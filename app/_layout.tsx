@@ -1,17 +1,16 @@
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
 import { useFonts } from 'expo-font';
 import { Stack } from 'expo-router';
-import * as NavigationBar from 'expo-navigation-bar';
 import * as SplashScreen from 'expo-splash-screen';
 import * as SystemUI from 'expo-system-ui';
 import { useEffect } from 'react';
-import { Platform } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SystemBars } from 'react-native-edge-to-edge';
 import { AppFonts } from '@/constants/theme';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { QueryClientProvider } from '@tanstack/react-query';
+import { restoreSession } from '@/lib/auth/restore-session';
 import { queryClient } from '@/lib/query-client';
 
 void SplashScreen.preventAutoHideAsync();
@@ -29,10 +28,9 @@ export default function RootLayout() {
 
   useEffect(() => {
     void SystemUI.setBackgroundColorAsync('transparent');
-    if (Platform.OS === 'android') {
-      void NavigationBar.setBackgroundColorAsync('#FFFFFF');
-      void NavigationBar.setButtonStyleAsync('dark');
-    }
+    // Runs once per launch, whatever route the app was opened on, so screens
+    // deep linked past the entry screen still get their session restored.
+    void restoreSession();
   }, []);
 
   useEffect(() => {
@@ -68,7 +66,8 @@ export default function RootLayout() {
               <Stack.Screen name="auth/callback" options={{ headerShown: false }} />
               <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />
             </Stack>
-            <SystemBars style={{ navigationBar: 'dark', statusBar: 'dark' }} />
+            {/* `light` means light bar content, i.e. white navigation arrows. */}
+            <SystemBars style={{ navigationBar: 'light', statusBar: 'dark' }} />
           </QueryClientProvider>
         </ThemeProvider>
       </SafeAreaProvider>

@@ -88,9 +88,7 @@
       [
         "expo-navigation-bar",
         {
-          "backgroundColor": "#FFFFFF",
-          "barStyle": "dark",
-          "position": "absolute",
+          "barStyle": "light",
           "visibility": "visible"
         }
       ],
@@ -101,7 +99,7 @@
     },
     "extra": {
       "eas": {
-        "projectId": "b7bb382a-d98a-4e42-8ba6-dcf0cb75e23e"
+        "projectId": "8f3a5379-9315-4c6e-878a-5dfa7b3b50aa"
       }
     }
   }

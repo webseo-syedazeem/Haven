@@ -1,7 +1,5 @@
-import { useQueryClient } from '@tanstack/react-query';
 import { Asset } from 'expo-asset';
 import { useRouter } from 'expo-router';
-import * as SecureStore from 'expo-secure-store';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect, useState } from 'react';
 import {
@@ -16,97 +14,33 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { AppFonts } from '@/constants/theme';
-import { ME_QUERY_KEY } from '@/hooks/useUser';
-import { userApi } from '@/lib/api/user';
-import { clearAuthTokens, refreshSession, setAccessToken, setAuthTokens } from '@/lib/haven-api';
+import { restoreSession } from '@/lib/auth/restore-session';
 
 const background = require('@/assets/images/welcome-page-background.webp');
 const buttonBackground = require('@/assets/images/button backgound.jpg');
 const buttonBackgroundUri = Asset.fromModule(buttonBackground).uri;
 
-function getWebStorage() {
-  return typeof globalThis !== 'undefined'
-    ? (globalThis as unknown as { localStorage?: Storage }).localStorage
-    : undefined;
-}
-
-async function getStoredItem(key: string) {
-  if (Platform.OS === 'web') return getWebStorage()?.getItem(key) ?? null;
-  return SecureStore.getItemAsync(key);
-}
-
-async function setStoredItem(key: string, value: string) {
-  if (Platform.OS === 'web') {
-    getWebStorage()?.setItem(key, value);
-    return;
-  }
-  await SecureStore.setItemAsync(key, value);
-}
-
-async function deleteStoredItem(key: string) {
-  if (Platform.OS === 'web') {
-    getWebStorage()?.removeItem(key);
-    return;
-  }
-  await SecureStore.deleteItemAsync(key);
-}
-
 export default function FirstPageScreen() {
   const router = useRouter();
-  const queryClient = useQueryClient();
   const [checking, setChecking] = useState(true);
 
   useEffect(() => {
-    (async () => {
-      try {
-        const accessToken =
-          (await getStoredItem('access_token')) ??
-          (await getStoredItem('haven.auth.access_token'));
-        const refreshToken = await getStoredItem('haven.auth.refresh_token');
+    let active = true;
 
-        if (!accessToken) {
-          setChecking(false);
-          return;
-        }
+    void restoreSession().then((restored) => {
+      if (!active) return;
 
-        setAccessToken(accessToken);
-        if (refreshToken) setAuthTokens({ refreshToken });
+      if (restored) {
+        router.replace('/(tabs)');
+      } else {
+        setChecking(false);
+      }
+    });
 
-        try {
-          const meData = await userApi.get();
-          queryClient.setQueryData(ME_QUERY_KEY, meData);
-          router.replace('/(tabs)');
-          return;
-        } catch {
-          if (refreshToken) {
-            try {
-              const res: any = await refreshSession(refreshToken);
-              const session = res?.data?.session ?? res;
-              const newAccessToken = session?.access_token ?? session?.accessToken ?? session?.token;
-              const newRefreshToken = session?.refresh_token ?? session?.refreshToken;
-
-              if (newAccessToken) {
-                await setStoredItem('access_token', newAccessToken);
-                if (newRefreshToken) {
-                  await setStoredItem('haven.auth.refresh_token', newRefreshToken);
-                }
-                setAccessToken(newAccessToken);
-                router.replace('/(tabs)');
-                return;
-              }
-            } catch {}
-          }
-        }
-
-        clearAuthTokens();
-        await deleteStoredItem('access_token');
-        await deleteStoredItem('haven.auth.access_token');
-        await deleteStoredItem('haven.auth.refresh_token');
-      } catch {}
-
-      setChecking(false);
-    })();
-  }, [queryClient, router]);
+    return () => {
+      active = false;
+    };
+  }, [router]);
 
   if (checking) {
     return (
