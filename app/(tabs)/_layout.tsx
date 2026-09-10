@@ -5,54 +5,81 @@ import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { MiniPlayer } from '@/components/MiniPlayer';
+import { HALCYON_TAB_BAR_HEIGHT, HalcyonColors } from '@/constants/design';
 import { AppFonts } from '@/constants/theme';
 
 const menuIcons: Record<string, keyof typeof Ionicons.glyphMap> = {
-  index: 'person-outline',
+  index: 'home-outline',
+  explore: 'compass-outline',
+  library: 'book-outline',
+  saved: 'heart-outline',
+  profile: 'person-outline',
+};
+
+const activeMenuIcons: Record<string, keyof typeof Ionicons.glyphMap> = {
+  index: 'home',
+  explore: 'compass',
+  library: 'book',
+  saved: 'heart',
+  profile: 'person',
 };
 
 function FloatingTabBar({ state, descriptors, navigation }: BottomTabBarProps) {
   const insets = useSafeAreaInsets();
 
   return (
-    <View style={[styles.floatingTabBar, { bottom: insets.bottom + 8 }]}>
-      {state.routes.map((route, index) => {
-        const options = descriptors[route.key]?.options;
+    <View style={styles.dock}>
+      {/* Sits directly above the bar, so it is present on every tab. */}
+      <MiniPlayer />
+      <View
+        style={[
+          styles.tabBar,
+          { height: HALCYON_TAB_BAR_HEIGHT + insets.bottom, paddingBottom: insets.bottom },
+        ]}>
+        {state.routes.map((route, index) => {
+          const options = descriptors[route.key]?.options;
 
-        if ((options as { href?: string | null } | undefined)?.href === null) {
-          return null;
-        }
+          if ((options as { href?: string | null } | undefined)?.href === null) {
+            return null;
+          }
 
-        const isFocused = state.index === index;
-        const label =
-          typeof options?.title === 'string'
-            ? options.title
-            : route.name.charAt(0).toUpperCase() + route.name.slice(1);
-          const icon = menuIcons[route.name] ?? 'ellipse-outline';
-          const iconColor = isFocused ? '#3770FC' : '#8C8C8C';
+          const isFocused = state.index === index;
+          const label =
+            typeof options?.title === 'string'
+              ? options.title
+              : route.name.charAt(0).toUpperCase() + route.name.slice(1);
+          const icon = isFocused
+            ? activeMenuIcons[route.name] ?? menuIcons[route.name] ?? 'ellipse'
+            : menuIcons[route.name] ?? 'ellipse-outline';
+          const iconColor = isFocused ? HalcyonColors.accent : HalcyonColors.textSecondary;
 
-        return (
-          <Pressable
-            key={route.key}
-            onPress={() => {
-              const event = navigation.emit({
-                type: 'tabPress',
-                target: route.key,
-                canPreventDefault: true,
-              });
+          return (
+            <Pressable
+              accessibilityLabel={label}
+              accessibilityRole="button"
+              accessibilityState={isFocused ? { selected: true } : {}}
+              key={route.key}
+              onPress={() => {
+                const event = navigation.emit({
+                  type: 'tabPress',
+                  target: route.key,
+                  canPreventDefault: true,
+                });
 
-              if (!isFocused && !event.defaultPrevented) {
-                navigation.navigate(route.name, route.params);
-              }
-            }}
-            style={styles.tabBarItem}>
-            <Ionicons name={icon} size={22} color={iconColor} style={styles.tabBarIcon} />
-            <Text style={[styles.tabBarLabel, isFocused && styles.tabBarLabelActive]}>
-              {label}
-            </Text>
-          </Pressable>
-        );
-      })}
+                if (!isFocused && !event.defaultPrevented) {
+                  navigation.navigate(route.name, route.params);
+                }
+              }}
+              style={styles.tabBarItem}>
+              <Ionicons name={icon} size={21} color={iconColor} style={styles.tabBarIcon} />
+              <Text style={[styles.tabBarLabel, isFocused && styles.tabBarLabelActive]}>
+                {label}
+              </Text>
+            </Pressable>
+          );
+        })}
+      </View>
     </View>
   );
 }
@@ -63,59 +90,53 @@ export default function TabLayout() {
       tabBar={(props) => <FloatingTabBar {...props} />}
       screenOptions={{
         headerShown: false,
+        sceneStyle: { backgroundColor: HalcyonColors.background },
       }}>
-      <Tabs.Screen
-        name="index"
-        options={{
-          title: 'Profile',
-        }}
-      />
+      <Tabs.Screen name="index" options={{ title: 'Home' }} />
+      <Tabs.Screen name="explore" options={{ title: 'Explore' }} />
+      <Tabs.Screen name="library" options={{ title: 'Library' }} />
+      <Tabs.Screen name="saved" options={{ title: 'Saved' }} />
+      <Tabs.Screen name="profile" options={{ title: 'Profile' }} />
     </Tabs>
   );
 }
 
 const styles = StyleSheet.create({
-  floatingTabBar: {
-    alignItems: 'center',
-    backgroundColor: '#FFFFFF',
-    borderColor: 'rgba(227,227,227,0.55)',
-    borderRadius: 24,
-    borderWidth: 1,
-    elevation: 14,
-    flexDirection: 'row',
-    height: 68,
-    justifyContent: 'space-around',
-    left: 8,
-    overflow: 'hidden',
-    paddingBottom: 8,
-    paddingTop: 8,
+  dock: {
+    bottom: 0,
+    left: 0,
     position: 'absolute',
-    right: 8,
-    shadowColor: '#3770FC',
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.22,
-    shadowRadius: 24,
+    right: 0,
+  },
+  tabBar: {
+    alignItems: 'center',
+    backgroundColor: HalcyonColors.background,
+    borderTopColor: HalcyonColors.border,
+    borderTopWidth: 1,
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    paddingTop: 10,
   },
   tabBarItem: {
     alignItems: 'center',
     flex: 1,
-    justifyContent: 'center',
+    justifyContent: 'flex-start',
   },
   tabBarIcon: {
-    height: 24,
-    width: 24,
+    height: 22,
+    width: 22,
   },
   tabBarLabel: {
-    color: '#8C8C8C',
+    color: HalcyonColors.textSecondary,
     fontFamily: AppFonts.sansMedium,
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: '500',
-    letterSpacing: 0.4,
-    lineHeight: 16,
-    marginTop: 2,
+    letterSpacing: 0.3,
+    lineHeight: 15,
+    marginTop: 5,
     textAlign: 'center',
   },
   tabBarLabelActive: {
-    color: '#3770FC',
+    color: HalcyonColors.accent,
   },
 });

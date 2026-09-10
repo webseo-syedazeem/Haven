@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { useHasSession } from '@/hooks/useSession';
 import { userApi } from '@/lib/api/user';
+import { cacheProfile } from '@/lib/auth/offline-session';
 
 export const ME_QUERY_KEY = ['me'] as const;
 
@@ -10,7 +11,13 @@ export function useUser() {
 
   return useQuery({
     queryKey: ME_QUERY_KEY,
-    queryFn: userApi.get,
+    // Every successful `/api/me` refreshes the offline copy, so the greeting
+    // and avatar still render on a launch with no connection.
+    queryFn: async () => {
+      const response = await userApi.get();
+      void cacheProfile(response);
+      return response;
+    },
     // Never hit `/api/me` until a session is restored from storage or created
     // by a sign in, otherwise the request fails with a missing auth header.
     enabled: hasSession,

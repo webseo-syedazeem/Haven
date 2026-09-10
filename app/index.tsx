@@ -1,188 +1,266 @@
-import { Asset } from 'expo-asset';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { useEffect, useState } from 'react';
-import {
-    ActivityIndicator,
-    ImageBackground,
-    Platform,
-    Pressable,
-    StyleSheet,
-    Text,
-    View,
-} from 'react-native';
+import { useEffect, useRef, useState } from 'react';
+import { Animated, ImageBackground, Pressable, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { OnboardingContinueButton } from '@/components/onboarding/OnboardingContinueButton';
+import { PassageLogo } from '@/components/onboarding/PassageLogo';
+import { HalcyonColors } from '@/constants/design';
 import { AppFonts } from '@/constants/theme';
+import { ME_QUERY_KEY } from '@/hooks/useUser';
+import type { MeApiResponse } from '@/lib/api/user';
+import {
+  profileNeedsOnboarding,
+  resetToAuthenticatedOnboarding,
+} from '@/lib/auth/onboarding-routing';
+import { readCachedOnboardingCompleted } from '@/lib/auth/offline-session';
 import { restoreSession } from '@/lib/auth/restore-session';
+import { hasPlayableDownloads, hydrateLocalDownloads } from '@/lib/local-downloads';
+import {
+  isGuestOnboardingComplete,
+  migrateGuestOnboardingAfterAuth,
+} from '@/lib/onboarding';
+import { queryClient } from '@/lib/query-client';
 
-const background = require('@/assets/images/welcome-page-background.webp');
-const buttonBackground = require('@/assets/images/button backgound.jpg');
-const buttonBackgroundUri = Asset.fromModule(buttonBackground).uri;
+const welcomeBackground = require('@/assets/images/welcome-bg.png');
+
+type LaunchState = 'checking' | 'welcome';
 
 export default function FirstPageScreen() {
   const router = useRouter();
-  const [checking, setChecking] = useState(true);
+  const [launchState, setLaunchState] = useState<LaunchState>('checking');
 
   useEffect(() => {
     let active = true;
 
-    void restoreSession().then((restored) => {
+    void (async () => {
+      const [status, guestOnboardingComplete] = await Promise.all([
+        restoreSession(),
+        isGuestOnboardingComplete(),
+      ]);
       if (!active) return;
 
-      if (restored) {
-        router.replace('/(tabs)');
-      } else {
-        setChecking(false);
+      if (status === 'signed-out') {
+        if (guestOnboardingComplete) {
+          router.replace('/(tabs)');
+          return;
+        }
+
+        setLaunchState('welcome');
+        return;
       }
-    });
+
+      if (status === 'offline') {
+        const cachedOnboardingCompleted = await readCachedOnboardingCompleted();
+
+        if (cachedOnboardingCompleted === true) {
+          await hydrateLocalDownloads();
+          if (!active) return;
+
+          if (hasPlayableDownloads()) {
+            router.replace('/(tabs)/saved?segment=downloads');
+            return;
+          }
+        }
+      }
+
+      if (status === 'restored') {
+        const me = queryClient.getQueryData<MeApiResponse>(ME_QUERY_KEY);
+        if (profileNeedsOnboarding(me)) {
+          resetToAuthenticatedOnboarding(router);
+          return;
+        }
+
+        // A completed guest import remains pending after any failed request.
+        // Retry it on later authenticated launches without holding the user on
+        // the splash screen; successful import invalidates the live queries.
+        void migrateGuestOnboardingAfterAuth().catch((error) => {
+          console.warn('[onboarding] launch migration remains pending', error);
+        });
+      }
+
+      router.replace('/(tabs)');
+    })();
 
     return () => {
       active = false;
     };
   }, [router]);
 
-  if (checking) {
-    return (
-      <View style={styles.loadingScreen}>
-        <StatusBar style="light" />
-        <ActivityIndicator color="#BB834F" size="small" />
-      </View>
-    );
+  const isCheckingSession = launchState === 'checking';
+
+  if (isCheckingSession) {
+    return <LaunchLoadingScreen />;
   }
 
   return (
     <ImageBackground
-      imageStyle={styles.backgroundImage}
-      resizeMode="cover"
-      source={background}
-      style={[styles.background, Platform.OS === 'web' && styles.backgroundWeb]}>
-      <StatusBar style="light" translucent />
-      <View pointerEvents="none" style={styles.overlay} />
+      imageStyle={styles.welcomeBackgroundImage}
+      resizeMode='cover'
+      source={welcomeBackground}
+      style={styles.welcomeScreen}>
+      <StatusBar style='light' />
+      <LinearGradient
+        colors={[
+          'rgba(11,11,13,0.12)',
+          'rgba(11,11,13,0.22)',
+          'rgba(11,11,13,0.97)',
+        ]}
+        locations={[0, 0.45, 1]}
+        pointerEvents='none'
+        style={StyleSheet.absoluteFill}
+      />
 
-      <SafeAreaView edges={['top', 'bottom']} style={styles.safeArea}>
-        <View style={styles.content}>
-          <View style={styles.brandBlock}>
-            <Text style={styles.heading}>Passage — Escape the Noise</Text>
-            <Text style={styles.tagline}>Focus, Sleep & Reset</Text>
-          </View>
+      <SafeAreaView edges={['top', 'bottom']} style={styles.welcomeSafeArea}>
+        <View style={styles.brandBlock}>
+       <Text style={styles.logo}>PASSAGE</Text>
+          <Text style={styles.proposition}>Soundscapes for Focus, Sleep &amp; Reset</Text>
+        </View>
 
-          <View style={styles.actions}>
-            <Pressable
-              accessibilityRole="button"
-              onPress={() => router.push('/create-account')}
-              style={({ pressed }) => [styles.button, styles.primaryButton, pressed && styles.pressed]}>
-              <Text style={styles.primaryLabel}>Get started</Text>
-            </Pressable>
-
-            <Pressable
-              accessibilityRole="button"
-              onPress={() => router.push('/login')}
-              style={({ pressed }) => [styles.button, styles.secondaryButton, pressed && styles.pressed]}>
-              <Text style={styles.secondaryLabel}>Sign in</Text>
-            </Pressable>
-          </View>
+        <View style={styles.actionBlock}>
+          <OnboardingContinueButton
+            disabled={isCheckingSession}
+            label='Get started'
+            onPress={() => router.push('/the-promise')}
+          />
+          <Pressable
+            accessibilityRole='button'
+            disabled={isCheckingSession}
+            hitSlop={10}
+            onPress={() => router.push('/login')}
+            style={({ pressed }) => [
+              styles.loginAction,
+              isCheckingSession && styles.disabledAction,
+              pressed && !isCheckingSession && styles.linkPressed,
+            ]}>
+            <Text style={styles.loginLabel}>Log in</Text>
+          </Pressable>
         </View>
       </SafeAreaView>
     </ImageBackground>
   );
 }
 
+function LaunchLoadingScreen() {
+  const pulse = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    const animation = Animated.loop(
+      Animated.sequence([
+        Animated.timing(pulse, {
+          duration: 1100,
+          toValue: 1,
+          useNativeDriver: true,
+        }),
+        Animated.timing(pulse, {
+          duration: 1100,
+          toValue: 0,
+          useNativeDriver: true,
+        }),
+      ])
+    );
+    animation.start();
+    return () => animation.stop();
+  }, [pulse]);
+
+  const scale = pulse.interpolate({ inputRange: [0, 1], outputRange: [0.96, 1.04] });
+  const opacity = pulse.interpolate({ inputRange: [0, 1], outputRange: [0.76, 1] });
+
+  return (
+    <View style={styles.loadingScreen}>
+      <StatusBar style='light' />
+      <View style={styles.loadingLine} />
+      <Animated.View style={[styles.loadingLogoGlow, { opacity, transform: [{ scale }] }]}>
+        <PassageLogo compact showWordmark={false} />
+      </Animated.View>
+      <Text style={styles.loadingText}>Opening Passage</Text>
+    </View>
+  );
+}
 const styles = StyleSheet.create({
-  actions: {
-    gap: 14,
-    marginHorizontal: '19%',
-  },
-  background: {
-    backgroundColor: '#050505',
-    flex: 1,
-    overflow: 'hidden',
+  actionBlock: {
+    paddingBottom: 18,
+    paddingHorizontal: 24,
     width: '100%',
-  },
-  backgroundImage: {
-    height: '100%',
-    width: '100%',
-  },
-  backgroundWeb: {
-    height: '100vh' as unknown as number,
-    minHeight: '100vh' as unknown as number,
   },
   brandBlock: {
     alignItems: 'center',
-    marginTop: '17%',
+    paddingHorizontal: 24,
+    paddingTop: 72,
   },
-  button: {
-    alignItems: 'center',
-    borderColor: '#28221D',
-    borderRadius: 12,
-    borderWidth: 1,
-    justifyContent: 'center',
-    minHeight: 54,
-    paddingHorizontal: 20,
-    paddingVertical: 14,
+  disabledAction: {
+    opacity: 0.64,
   },
-  content: {
-    flex: 1,
-    justifyContent: 'space-between',
-    paddingBottom: 38,
+  linkPressed: {
+    opacity: 0.64,
   },
-  heading: {
-    color: '#F1E9DD',
-    fontFamily: AppFonts.displayRegular,
-    fontSize: 35,
-    fontWeight: '500',
-    lineHeight: 42,
-    textAlign: 'center',
+  loadingLine: {
+    backgroundColor: HalcyonColors.accent,
+    height: 2,
+    opacity: 0.9,
+    position: 'absolute',
+    top: 18,
+    width: 28,
+  },
+  loadingLogoGlow: {
+    shadowColor: HalcyonColors.accent,
+    shadowOffset: { height: 0, width: 0 },
+    shadowOpacity: 0.48,
+    shadowRadius: 22,
   },
   loadingScreen: {
     alignItems: 'center',
-    backgroundColor: '#050505',
+    backgroundColor: HalcyonColors.background,
     flex: 1,
     justifyContent: 'center',
+    paddingBottom: 64,
   },
-  overlay: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0,0,0,0.10)',
+  loadingText: {
+    color: HalcyonColors.textSecondary,
+    fontFamily: AppFonts.sansRegular,
+    fontSize: 13,
+    lineHeight: 20,
+    marginTop: 30,
   },
-  pressed: {
-    opacity: 0.88,
-    transform: [{ scale: 0.99 }],
+  loginAction: {
+    alignItems: 'center',
+    alignSelf: 'center',
+    justifyContent: 'center',
+    minHeight: 44,
+    marginTop: 8,
+    paddingHorizontal: 18,
   },
-  primaryButton: {
-    backgroundColor: '#D2AE7E',
-    backgroundImage: `url("${buttonBackgroundUri}")`,
-    backgroundPosition: 'center',
-    backgroundRepeat: 'no-repeat',
-    backgroundSize: 'cover',
-  } as any,
-  primaryLabel: {
-    color: '#12100E',
+  loginLabel: {
+    color: HalcyonColors.textSecondary,
     fontFamily: AppFonts.sansMedium,
-    fontSize: 15,
-    fontWeight: '500',
-    letterSpacing: 0.2,
+    fontSize: 14,
+    lineHeight: 20,
+  
   },
-  safeArea: {
-    flex: 1,
-  },
-  secondaryButton: {
-    backgroundColor: 'rgba(5,5,5,0.58)',
-  },
-  secondaryLabel: {
-    color: '#F1E9DD',
-    fontFamily: AppFonts.sansMedium,
-    fontSize: 15,
-    fontWeight: '500',
-    letterSpacing: 0.2,
-  },
-  tagline: {
-    color: '#F1E9DD',
+  logo: {
+    color: HalcyonColors.textPrimary,
     fontFamily: AppFonts.displayRegular,
-    fontSize: 25,
-    fontWeight: '400',
-    letterSpacing: 0.6,
-    lineHeight: 34,
-    marginTop: 14,
+    fontSize: 60,
+    lineHeight: 44,
+     marginTop: 80,
+  },
+  proposition: {
+    color: HalcyonColors.textPrimary,
+    fontFamily: AppFonts.sansRegular,
+    fontSize: 15,
+    lineHeight: 22,
+    marginTop: 17,
     textAlign: 'center',
+  },
+  welcomeBackgroundImage: { opacity: 0.96 },
+  welcomeSafeArea: {
+    flex: 1,
+    justifyContent: 'space-between',
+  },
+  welcomeScreen: {
+    backgroundColor: HalcyonColors.background,
+    flex: 1,
   },
 });

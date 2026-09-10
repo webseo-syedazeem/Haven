@@ -1,206 +1,290 @@
-﻿import { Ionicons } from '@expo/vector-icons';
-import { useFocusEffect } from '@react-navigation/native';
 import { useRouter } from 'expo-router';
-import { useCallback, useState } from 'react';
-import { ActivityIndicator, BackHandler, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
+import { useEffect, useState } from 'react';
+import { BackHandler, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { AuthButton } from '@/components/AuthButton';
 import { LegalDisclaimer } from '@/components/LegalDisclaimer';
-import { ScreenWrapper } from '@/components/ScreenWrapper';
+import { OnboardingScaffold } from '@/components/onboarding/OnboardingScaffold';
+import { PassageLogo } from '@/components/onboarding/PassageLogo';
+import { HalcyonColors } from '@/constants/design';
 import { AppFonts } from '@/constants/theme';
 import { signInWithApple } from '@/lib/apple-auth';
 import { signInWithGoogle } from '@/lib/google-auth';
+import {
+  getGuestOnboardingAnswers,
+  isGuestOnboardingComplete,
+  isGuestOnboardingReady,
+  markGuestOnboardingComplete,
+  migrateGuestOnboardingAfterAuth,
+} from '@/lib/onboarding';
+import { resetToMainApp } from '@/lib/navigation';
 
-const welcomeBackground = require('@/assets/images/welcome-background.png');
-const googleIcon = require('@/assets/icons/google icon.png');
 const appleIcon = require('@/assets/icons/apple icon.png');
+const googleIcon = require('@/assets/icons/google icon.png');
 const emailIcon = require('@/assets/icons/email.png');
 
-export default function WelcomeScreen() {
+type Provider = 'apple' | 'email' | 'google' | 'guest' | null;
+
+export default function SaveYourSpaceScreen() {
   const router = useRouter();
-  const [isGoogleLoading, setIsGoogleLoading] = useState(false);
+  const [loading, setLoading] = useState<Provider>(null);
+  const [authReady, setAuthReady] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
 
-  const goBackToLanding = useCallback(() => {
-    router.replace('/');
-  }, [router]);
+  useEffect(() => {
+    if (!authReady) return;
+    const subscription = BackHandler.addEventListener('hardwareBackPress', () => true);
+    return () => subscription.remove();
+  }, [authReady]);
 
-  useFocusEffect(
-    useCallback(() => {
-      const subscription = BackHandler.addEventListener('hardwareBackPress', () => {
-        goBackToLanding();
-        return true;
-      });
-
-      return () => subscription.remove();
-    }, [goBackToLanding])
-  );
-
-  const handleGooglePress = async () => {
-    if (isGoogleLoading) {
-      return;
+  const ensureComplete = async () => {
+    const [completed, answers] = await Promise.all([
+      isGuestOnboardingComplete(),
+      getGuestOnboardingAnswers(),
+    ]);
+    if (!isGuestOnboardingReady(answers)) {
+      router.replace('/passage-help');
+      return false;
     }
+    if (!completed) await markGuestOnboardingComplete();
+    return true;
+  };
 
-    setIsGoogleLoading(true);
+  const finishAuthenticatedFlow = async () => {
+    await migrateGuestOnboardingAfterAuth();
+    resetToMainApp(router);
+  };
 
+  const handleGoogle = async () => {
+    if (loading) return;
+    let authenticated = false;
+    setErrorMessage('');
+    setLoading('google');
     try {
+      if (!(await ensureComplete())) return;
       const session = await signInWithGoogle();
-      if (session) {
-        router.replace('/(tabs)');
+      if (!session) {
+        setLoading(null);
+        return;
       }
+      authenticated = true;
+      setAuthReady(true);
+      await finishAuthenticatedFlow();
     } catch (error) {
-      console.error('Google sign in error:', error);
-    } finally {
-      setIsGoogleLoading(false);
+      setErrorMessage(
+        authenticated
+          ? 'You’re signed in, but your preferences could not be saved. Try again.'
+          : error instanceof Error
+            ? error.message
+            : 'Google sign in is unavailable right now.'
+      );
+      setLoading(null);
     }
   };
 
-  const handleApplePress = async () => {
+  const handleApple = async () => {
+    if (loading) return;
+    let authenticated = false;
+    setErrorMessage('');
+    setLoading('apple');
     try {
+      if (!(await ensureComplete())) return;
       const session = await signInWithApple();
-      if (session) {
-        router.replace('/(tabs)');
+      if (!session) {
+        setLoading(null);
+        return;
       }
+      authenticated = true;
+      setAuthReady(true);
+      await finishAuthenticatedFlow();
     } catch (error) {
-      console.error('Apple sign in error:', error);
+      setErrorMessage(
+        authenticated
+          ? 'You’re signed in, but your preferences could not be saved. Try again.'
+          : error instanceof Error
+            ? error.message
+            : 'Apple sign in is unavailable right now.'
+      );
+      setLoading(null);
     }
   };
-  const handleEmailPress = () => {
-    router.push('/login');
+
+  const handleEmail = async () => {
+    if (loading) return;
+    setErrorMessage('');
+    setLoading('email');
+    try {
+      if (!(await ensureComplete())) return;
+      router.push('/create-account?from=onboarding');
+    } catch {
+      setErrorMessage('We could not save your onboarding progress. Please try again.');
+    } finally {
+      setLoading(null);
+    }
+  };
+
+  const retryMigration = async () => {
+    setErrorMessage('');
+    try {
+      await finishAuthenticatedFlow();
+    } catch {
+      setErrorMessage('Your preferences still couldn’t be saved. Check your connection and try again.');
+    }
+  };
+
+  const continueAsGuest = async () => {
+    if (loading) return;
+    setErrorMessage('');
+    setLoading('guest');
+    try {
+      if (!(await ensureComplete())) return;
+      resetToMainApp(router);
+    } catch {
+      setErrorMessage('We could not save your onboarding progress. Please try again.');
+    } finally {
+      setLoading(null);
+    }
   };
 
   return (
-    <ScreenWrapper
-      backgroundImage={welcomeBackground}
-      topContent={
-        <Pressable
-          accessibilityLabel="Go back"
-          hitSlop={12}
-          onPress={goBackToLanding}
-          style={({ pressed }) => [styles.backButton, pressed && styles.pressed]}>
-          <Ionicons color="#000000" name="chevron-back" size={18} />
-        </Pressable>
-      }
-      topContentStyle={styles.topContent}
-      bottomContent={
-        <LegalDisclaimer
-          linkStyle={styles.footerLink}
-          style={styles.footerDisclaimer}
-          textStyle={styles.footer}
-        />
-      }
-      middleContent={
-        <View style={styles.centerContent}>
-          <Text style={styles.heading}>{`Welcome!\nTake a breath and\ncome in`}</Text>
+    <OnboardingScaffold
+      contentContainerStyle={styles.content}
+      onBack={authReady ? undefined : () => router.back()}>
+      <PassageLogo compact showWordmark={false} />
+      <Text style={styles.heading}>Save your space</Text>
+      <Text style={styles.body}>
+        Create an account to keep your preferences with you.
+      </Text>
 
-          <View style={styles.buttonGroup}>
-            <View pointerEvents={isGoogleLoading ? 'none' : 'auto'} style={styles.authButtonWrap}>
-              <AuthButton
-                iconSource={googleIcon}
-                label={isGoogleLoading ? '' : 'Continue with Google'}
-                onPress={handleGooglePress}
-                style={isGoogleLoading && styles.disabled}
-              />
-              {isGoogleLoading && (
-                <View pointerEvents="none" style={styles.loaderOverlay}>
-                  <ActivityIndicator color="#7863DC" />
-                </View>
-              )}
-            </View>
-        {(Platform.OS === 'ios' || __DEV__) && (
-              <AuthButton
-                iconSource={appleIcon}
-                label="Continue with Apple"
-                onPress={handleApplePress}
-              />
-            )}
+      <View style={styles.buttons}>
+        {authReady ? (
+          <Pressable
+            accessibilityRole="button"
+            onPress={() => void retryMigration()}
+            style={({ pressed }) => [styles.retryButton, pressed && styles.pressed]}>
+            <Text style={styles.retryLabel}>Retry saving preferences</Text>
+          </Pressable>
+        ) : (
+          <>
             <AuthButton
-              iconSource={emailIcon}
-              label="Continue with Email"
-              onPress={handleEmailPress}
+              disabled={Boolean(loading)}
+              iconSource={appleIcon}
+              iconTintColor={HalcyonColors.textPrimary}
+              label="Continue with Apple"
+              loading={loading === 'apple'}
+              onPress={() => void handleApple()}
             />
-          </View>
-        </View>
-      }
-      overlay={<View style={styles.readabilityOverlay} />}
-    />
+            <AuthButton
+              disabled={Boolean(loading)}
+              iconSource={googleIcon}
+              label="Continue with Google"
+              loading={loading === 'google'}
+              onPress={() => void handleGoogle()}
+            />
+            <AuthButton
+              disabled={Boolean(loading)}
+              iconSource={emailIcon}
+              iconTintColor={HalcyonColors.textPrimary}
+              label="Sign up with email"
+              loading={loading === 'email'}
+              onPress={() => void handleEmail()}
+            />
+          </>
+        )}
+      </View>
+
+      {errorMessage ? <Text style={styles.error}>{errorMessage}</Text> : null}
+
+      {!authReady ? (
+        <Pressable
+          accessibilityRole="button"
+          disabled={Boolean(loading)}
+          hitSlop={10}
+          onPress={() => void continueAsGuest()}
+          style={({ pressed }) => [
+            loading === 'guest' && styles.guestDisabled,
+            pressed && !loading && styles.pressed,
+          ]}>
+          <Text style={styles.guestLink}>
+            {loading === 'guest' ? 'Opening Passage…' : 'Continue as guest'}
+          </Text>
+        </Pressable>
+      ) : null}
+
+      <LegalDisclaimer
+        linkStyle={styles.legalLink}
+        style={styles.legal}
+        textStyle={styles.legalText}
+      />
+    </OnboardingScaffold>
   );
 }
 
 const styles = StyleSheet.create({
-  authButtonWrap: {
-    alignItems: 'center',
-    position: 'relative',
-    width: '100%',
-  },
-  backButton: {
-    alignItems: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.5)',
-    borderRadius: 16,
-    height: 32,
-    justifyContent: 'center',
-    width: 32,
-  },
-  buttonGroup: {
-    gap: 11,
-    marginTop: 25,
-    width: '100%',
-  },
-  centerContent: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    width: '100%',
-  },
-  footer: {
-    color: '#ffffff',
-    fontFamily: AppFonts.sansMedium,
-    fontSize: 16,
-    fontWeight: '500',
-    letterSpacing: 0,
-    lineHeight: 26,
+  body: {
+    color: HalcyonColors.textSecondary,
+    fontFamily: AppFonts.sansRegular,
+    fontSize: 13,
+    lineHeight: 20,
+    marginTop: 7,
+    maxWidth: 280,
     textAlign: 'center',
-    textShadowColor: 'rgba(0, 0, 0, 0.32)',
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 2,
   },
-  footerDisclaimer: {
-    maxWidth: 310,
-    paddingHorizontal: 24,
+  buttons: {
+    gap: 10,
+    marginTop: 26,
     width: '100%',
   },
-  footerLink: {
+  content: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingBottom: 28,
+  },
+  error: {
+    color: HalcyonColors.textPrimary,
+    fontFamily: AppFonts.sansRegular,
+    fontSize: 12,
+    lineHeight: 18,
+    marginTop: 12,
+    textAlign: 'center',
+  },
+  guestLink: {
+    color: HalcyonColors.textSecondary,
+    fontFamily: AppFonts.sansRegular,
+    fontSize: 13,
+    lineHeight: 18,
+    marginTop: 22,
     textDecorationLine: 'underline',
-    textDecorationStyle: 'solid',
   },
-  disabled: {
-    opacity: 0.72,
-  },
+  guestDisabled: { opacity: 0.5 },
   heading: {
-    color: '#173F5F',
-    fontFamily: AppFonts.displaySemiBold,
-    fontSize: 32,
-    fontWeight: '600',
-    letterSpacing: 0,
-    lineHeight: 42,
+    color: HalcyonColors.textPrimary,
+    fontFamily: AppFonts.displayRegular,
+    fontSize: 31,
+    lineHeight: 36,
+    
+  },
+  legal: { marginTop: 34, maxWidth: 300 },
+  legalLink: { color: HalcyonColors.textSecondary, textDecorationLine: 'underline' },
+  legalText: {
+    color: HalcyonColors.textSecondary,
+    fontFamily: AppFonts.sansRegular,
+    fontSize: 10,
+    lineHeight: 15,
     textAlign: 'center',
   },
-  loaderOverlay: {
-    ...StyleSheet.absoluteFillObject,
+  pressed: { opacity: 0.72 },
+  retryButton: {
     alignItems: 'center',
+    backgroundColor: HalcyonColors.accent,
+    borderRadius: 18,
     justifyContent: 'center',
+    minHeight: 52,
   },
-  pressed: {
-    opacity: 0.86,
-    transform: [{ scale: 0.99 }],
-  },
-  readabilityOverlay: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(255, 255, 255, 0.08)',
-  },
-  topContent: {
-    left: 18,
-    position: 'absolute',
-    top: 15,
-    zIndex: 3,
+  retryLabel: {
+    color: HalcyonColors.background,
+    fontFamily: AppFonts.sansSemiBold,
+    fontSize: 14,
+    fontWeight: '600',
   },
 });
-

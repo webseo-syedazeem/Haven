@@ -6,7 +6,8 @@ export type UserProfile = {
   name: string;
   email: string;
   profile_image_url?: string | null;
-  is_verified?: boolean;
+  is_verified: boolean;
+  onboarding_completed: boolean;
   last_sign_in_at?: string;
   created_at?: string;
   updated_at?: string;
@@ -35,10 +36,21 @@ export type MeData = {
   profile: UserProfile;
 };
 
-type MeApiResponse = {
+export type MeApiResponse = {
   success: boolean;
   data: MeData;
 };
+
+/**
+ * The account's stable identity — the Supabase auth id, which is what
+ * `req.user.id` is on the server and what `profiles.auth_user_id` mirrors.
+ * Used to tag anything kept per-user on the device, so the two never disagree
+ * about who something belongs to.
+ */
+export function getAuthUserId(me?: MeApiResponse | null): string | null {
+  const id = me?.data?.user?.id ?? me?.data?.profile?.auth_user_id;
+  return typeof id === 'string' && id.trim() ? id.trim() : null;
+}
 
 export function getDisplayName(me?: MeData | null): string {
   if (!me) return '';

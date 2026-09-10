@@ -1,51 +1,26 @@
 import { Ionicons } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useState } from 'react';
-import {
-  ActivityIndicator,
-  Alert,
-  KeyboardAvoidingView,
-  Platform,
-  Pressable,
-  StyleSheet,
-  Text,
-  TextInput,
-  View,
-} from 'react-native';
+import { Alert, KeyboardAvoidingView, Platform, StyleSheet, Text, View } from 'react-native';
 
-import { ScreenWrapper } from '@/components/ScreenWrapper';
+import { AuthTextField } from '@/components/auth/AuthTextField';
+import { OnboardingContinueButton } from '@/components/onboarding/OnboardingContinueButton';
+import { OnboardingScaffold } from '@/components/onboarding/OnboardingScaffold';
+import { HalcyonColors } from '@/constants/design';
 import { AppFonts } from '@/constants/theme';
 import { changePassword, resetPassword } from '@/lib/haven-api';
 
-const changePasswordBackground = require('@/assets/images/change-pass-image.png');
-const noFocusOutline = Platform.OS === 'web' ? ({ outlineStyle: 'none' } as any) : null;
-
-function InnerShadow() {
-  return (
-    <View pointerEvents="none" style={styles.innerShadow}>
-      <LinearGradient
-        colors={['rgba(255, 255, 255, 0.5)', 'rgba(255, 255, 255, 0)']}
-        end={{ x: 0, y: 1 }}
-        start={{ x: 0, y: 0 }}
-        style={styles.innerShadowTop}
-      />
-      <LinearGradient
-        colors={['rgba(255, 255, 255, 0.5)', 'rgba(255, 255, 255, 0)']}
-        end={{ x: 1, y: 0 }}
-        start={{ x: 0, y: 0 }}
-        style={styles.innerShadowLeft}
-      />
-    </View>
-  );
+function firstParam(value: string | string[] | undefined) {
+  return Array.isArray(value) ? value[0] : value;
 }
 
 export default function ChangePasswordScreen() {
   const router = useRouter();
-  const params = useLocalSearchParams<{ access_token?: string; token?: string }>();
-  const resetToken = Array.isArray(params.access_token)
-    ? params.access_token[0]
-    : params.access_token ?? (Array.isArray(params.token) ? params.token[0] : params.token);
+  const params = useLocalSearchParams<{
+    access_token?: string | string[];
+    token?: string | string[];
+  }>();
+  const resetToken = firstParam(params.access_token) ?? firstParam(params.token);
   const isResetFlow = Boolean(resetToken);
   const [confirmPassword, setConfirmPassword] = useState('');
   const [confirmVisible, setConfirmVisible] = useState(false);
@@ -57,9 +32,7 @@ export default function ChangePasswordScreen() {
   const [oldVisible, setOldVisible] = useState(false);
 
   const handleUpdatePassword = async () => {
-    if (isSubmitting) {
-      return;
-    }
+    if (isSubmitting) return;
 
     if ((!isResetFlow && !oldPassword) || !newPassword || !confirmPassword) {
       setErrorMessage(
@@ -69,12 +42,10 @@ export default function ChangePasswordScreen() {
       );
       return;
     }
-
     if (newPassword.length < 8) {
       setErrorMessage('Password must be at least 8 characters.');
       return;
     }
-
     if (newPassword !== confirmPassword) {
       setErrorMessage('Passwords do not match.');
       return;
@@ -89,277 +60,176 @@ export default function ChangePasswordScreen() {
       } else {
         await changePassword({ oldPassword, newPassword });
       }
+
       Alert.alert('Password updated', 'Your password has been updated successfully.');
       setOldPassword('');
       setNewPassword('');
       setConfirmPassword('');
+
       if (isResetFlow) {
-        router.replace('/welcome');
+        router.replace('/login');
       }
     } catch (error) {
-      setErrorMessage(error instanceof Error ? error.message : 'Unable to update password right now.');
+      setErrorMessage(
+        error instanceof Error ? error.message : 'Unable to update your password right now.'
+      );
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  return (
-    <ScreenWrapper backgroundImage={changePasswordBackground}>
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        style={styles.keyboardView}>
-        <View style={styles.content}>
-          <Pressable
-            accessibilityLabel="Go back"
-            hitSlop={12}
-            onPress={() => router.back()}
-            style={({ pressed }) => [styles.backButton, pressed && styles.pressed]}>
-            <Ionicons color="#000000" name="chevron-back" size={18} />
-          </Pressable>
+  const clearError = () => {
+    if (errorMessage) setErrorMessage('');
+  };
 
-          <Text style={styles.heading}>{isResetFlow ? 'Reset Password' : 'Change Password'}</Text>
+  return (
+    <KeyboardAvoidingView
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      style={styles.keyboardView}>
+      <OnboardingScaffold
+        contentContainerStyle={styles.scrollContent}
+        onBack={() => router.back()}>
+        <View style={styles.content}>
+          <View style={styles.iconCircle}>
+            <Ionicons color={HalcyonColors.accent} name="key-outline" size={27} />
+          </View>
+
+          <Text style={styles.heading}>
+            {isResetFlow ? 'Choose a new password' : 'Change your password'}
+          </Text>
+          <Text style={styles.description}>
+            {isResetFlow
+              ? 'Use at least 8 characters to keep your Passage account secure.'
+              : 'Confirm your current password, then choose a new one.'}
+          </Text>
 
           <View style={styles.form}>
-            {!isResetFlow && (
-              <View style={styles.inputWrap}>
-                <InnerShadow />
-                <TextInput
-                  autoCapitalize="none"
-                  onChangeText={setOldPassword}
-                  placeholder="Current password"
-                  placeholderTextColor="#8C8C8C"
-                  secureTextEntry={!oldVisible}
-                  style={[styles.input, noFocusOutline]}
-                  value={oldPassword}
-                />
-                <Pressable
-                  accessibilityLabel={oldVisible ? 'Hide password' : 'Show password'}
-                  hitSlop={10}
-                  onPress={() => setOldVisible((visible) => !visible)}
-                  style={styles.eyeButton}>
-                  <Ionicons
-                    color="#1F2937"
-                    name={oldVisible ? 'eye-off-outline' : 'eye-outline'}
-                    size={17}
-                  />
-                </Pressable>
-              </View>
-            )}
-
-            <View style={styles.inputWrap}>
-              <InnerShadow />
-              <TextInput
+            {!isResetFlow ? (
+              <AuthTextField
                 autoCapitalize="none"
-                onChangeText={setNewPassword}
-                placeholder="New password"
-                placeholderTextColor="#8C8C8C"
-                secureTextEntry={!newVisible}
-                style={[styles.input, noFocusOutline]}
-                value={newPassword}
+                autoComplete="current-password"
+                error={Boolean(errorMessage)}
+                onChangeText={(value) => {
+                  setOldPassword(value);
+                  clearError();
+                }}
+                onToggleSecureText={() => setOldVisible((visible) => !visible)}
+                placeholder="Current password"
+                returnKeyType="next"
+                secureTextEntry={!oldVisible}
+                secureTextVisible={oldVisible}
+                value={oldPassword}
               />
-              <Pressable
-                accessibilityLabel={newVisible ? 'Hide password' : 'Show password'}
-                hitSlop={10}
-                onPress={() => setNewVisible((visible) => !visible)}
-                style={styles.eyeButton}>
-                <Ionicons
-                  color="#1F2937"
-                  name={newVisible ? 'eye-off-outline' : 'eye-outline'}
-                  size={17}
-                />
-              </Pressable>
-            </View>
+            ) : null}
 
-            <View style={styles.inputWrap}>
-              <InnerShadow />
-              <TextInput
-                autoCapitalize="none"
-                onChangeText={setConfirmPassword}
-                placeholder="Confirm password"
-                placeholderTextColor="#8C8C8C"
-                secureTextEntry={!confirmVisible}
-                style={[styles.input, noFocusOutline]}
-                value={confirmPassword}
-              />
-              <Pressable
-                accessibilityLabel={confirmVisible ? 'Hide password' : 'Show password'}
-                hitSlop={10}
-                onPress={() => setConfirmVisible((visible) => !visible)}
-                style={styles.eyeButton}>
-                <Ionicons
-                  color="#1F2937"
-                  name={confirmVisible ? 'eye-off-outline' : 'eye-outline'}
-                  size={17}
-                />
-              </Pressable>
-            </View>
+            <AuthTextField
+              autoCapitalize="none"
+              autoComplete="new-password"
+              error={Boolean(errorMessage)}
+              onChangeText={(value) => {
+                setNewPassword(value);
+                clearError();
+              }}
+              onToggleSecureText={() => setNewVisible((visible) => !visible)}
+              placeholder="New password"
+              returnKeyType="next"
+              secureTextEntry={!newVisible}
+              secureTextVisible={newVisible}
+              value={newPassword}
+            />
 
-            {!!errorMessage && <Text style={styles.errorText}>{errorMessage}</Text>}
+            <AuthTextField
+              autoCapitalize="none"
+              autoComplete="new-password"
+              error={Boolean(errorMessage)}
+              onChangeText={(value) => {
+                setConfirmPassword(value);
+                clearError();
+              }}
+              onSubmitEditing={() => void handleUpdatePassword()}
+              onToggleSecureText={() => setConfirmVisible((visible) => !visible)}
+              placeholder="Confirm new password"
+              returnKeyType="done"
+              secureTextEntry={!confirmVisible}
+              secureTextVisible={confirmVisible}
+              value={confirmPassword}
+            />
 
-            <Pressable
-              accessibilityRole="button"
-              disabled={isSubmitting}
-              onPress={handleUpdatePassword}
-              style={({ pressed }) => [
-                styles.updateButton,
-                isSubmitting && styles.disabled,
-                pressed && styles.pressed,
-              ]}>
-              <LinearGradient
-                colors={['#B087E5', '#7863DC']}
-                end={{ x: 0, y: 1 }}
-                locations={[0.0379, 0.75]}
-                start={{ x: 0, y: 0 }}
-                style={styles.updateGradient}>
-                <InnerShadow />
-                {isSubmitting ? (
-                  <ActivityIndicator color="#ffffff" />
-                ) : (
-                  <Text style={styles.updateText}>Update Password</Text>
-                )}
-              </LinearGradient>
-            </Pressable>
+            {errorMessage ? (
+              <Text accessibilityLiveRegion="polite" style={styles.errorText}>
+                {errorMessage}
+              </Text>
+            ) : null}
+
+            <OnboardingContinueButton
+              label={isResetFlow ? 'Reset password' : 'Update password'}
+              loading={isSubmitting}
+              onPress={() => void handleUpdatePassword()}
+              style={styles.submitButton}
+            />
           </View>
         </View>
-      </KeyboardAvoidingView>
-    </ScreenWrapper>
+      </OnboardingScaffold>
+    </KeyboardAvoidingView>
   );
 }
 
 const styles = StyleSheet.create({
-  backButton: {
-    alignItems: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.5)',
-    borderRadius: 16,
-    height: 32,
-    justifyContent: 'center',
-    left: 18,
-    position: 'absolute',
-    top: 15,
-    width: 32,
-    zIndex: 3,
-  },
   content: {
-    alignItems: 'center',
-    flex: 1,
+    alignSelf: 'center',
     justifyContent: 'center',
-    paddingHorizontal: 18,
+    maxWidth: 440,
+    paddingBottom: 30,
     width: '100%',
   },
-  errorText: {
-    color: '#173F5F',
-    fontFamily: AppFonts.sansMedium,
-    fontSize: 12,
-    fontWeight: '500',
-    lineHeight: 18,
-    marginTop: -4,
+  description: {
+    color: HalcyonColors.textSecondary,
+    fontFamily: AppFonts.sansRegular,
+    fontSize: 14,
+    lineHeight: 21,
+    marginTop: 10,
+    maxWidth: 350,
     textAlign: 'center',
   },
-  disabled: {
-    opacity: 0.72,
-  },
-  eyeButton: {
-    alignItems: 'center',
-    bottom: 0,
-    justifyContent: 'center',
-    position: 'absolute',
-    right: 18,
-    top: 0,
-    width: 30,
+  errorText: {
+    color: '#DFA196',
+    fontFamily: AppFonts.sansRegular,
+    fontSize: 12,
+    lineHeight: 18,
+    textAlign: 'center',
   },
   form: {
-    gap: 14,
-    marginTop: 32,
+    marginTop: 30,
+    rowGap: 12,
     width: '100%',
   },
   heading: {
-    color: '#173F5F',
-    fontFamily: AppFonts.displaySemiBold,
-    fontSize: 32,
-    fontWeight: '600',
-    letterSpacing: 0,
-    lineHeight: 42,
+    color: HalcyonColors.textPrimary,
+    fontFamily: AppFonts.displayRegular,
+    fontSize: 36,
+    fontWeight: '400',
+    lineHeight: 41,
+    marginTop: 24,
     textAlign: 'center',
   },
-  innerShadow: {
-    ...StyleSheet.absoluteFillObject,
-  },
-  innerShadowLeft: {
-    bottom: 0,
-    left: 0,
-    position: 'absolute',
-    top: 4,
-    width: 16,
-  },
-  innerShadowTop: {
-    height: 16,
-    left: 4,
-    position: 'absolute',
-    right: 0,
-    top: 0,
-  },
-  input: {
-    color: '#000000',
-    flex: 1,
-    fontFamily: AppFonts.sansMedium,
-    fontSize: 16,
-    fontWeight: '500',
-    height: '100%',
-    letterSpacing: 0,
-    lineHeight: 26,
-    paddingLeft: 21,
-    paddingRight: 57,
-  },
-  inputWrap: {
+  iconCircle: {
     alignItems: 'center',
     alignSelf: 'center',
-    backgroundColor: '#ffffff',
-    borderRadius: 12,
-    borderWidth: 0,
-    elevation: 4,
-    flexDirection: 'row',
-    height: 54,
-    overflow: 'hidden',
-    shadowColor: '#ffffff',
-    shadowOffset: {
-      width: 4,
-      height: 4,
-    },
-    shadowOpacity: 0.5,
-    shadowRadius: 16,
-    width: '100%',
+    borderColor: HalcyonColors.accent,
+    borderRadius: 28,
+    borderWidth: 1,
+    height: 56,
+    justifyContent: 'center',
+    width: 56,
   },
   keyboardView: {
+    backgroundColor: HalcyonColors.background,
     flex: 1,
   },
-  pressed: {
-    opacity: 0.86,
-    transform: [{ scale: 0.99 }],
-  },
-  updateButton: {
-    alignItems: 'center',
-    alignSelf: 'center',
-    backgroundColor: '#7863dc',
-    borderRadius: 27,
-    height: 54,
-    marginTop: 0,
-    maxWidth: 310,
-    overflow: 'hidden',
-    width: '100%',
-  },
-  updateGradient: {
-    alignItems: 'center',
-    height: '100%',
+  scrollContent: {
     justifyContent: 'center',
-    width: '100%',
   },
-  updateText: {
-    color: '#ffffff',
-    fontFamily: AppFonts.sansMedium,
-    fontSize: 16,
-    fontWeight: '500',
-    letterSpacing: 0,
-    lineHeight: 26,
-    textAlign: 'center',
+  submitButton: {
+    marginTop: 5,
   },
 });

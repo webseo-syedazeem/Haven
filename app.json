@@ -4,7 +4,7 @@
     "slug": "Passage",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/images/icon.png",
+    "icon": "./assets/images/passage-brand-assets/icon.png",
     "scheme": "passage",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
@@ -15,7 +15,10 @@
         "NSAppTransportSecurity": {
           "NSAllowsArbitraryLoads": true
         },
-        "ITSAppUsesNonExemptEncryption": false
+        "ITSAppUsesNonExemptEncryption": false,
+        "UIBackgroundModes": [
+          "audio"
+        ]
       }
     },
     "android": {
@@ -24,11 +27,14 @@
         "android.permission.SCHEDULE_EXACT_ALARM",
         "android.permission.USE_EXACT_ALARM",
         "android.permission.RECEIVE_BOOT_COMPLETED",
-        "android.permission.VIBRATE"
+        "android.permission.VIBRATE",
+        "android.permission.FOREGROUND_SERVICE",
+        "android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK",
+        "android.permission.WAKE_LOCK"
       ],
       "adaptiveIcon": {
-        "foregroundImage": "./assets/images/icon.png",
-        "backgroundColor": "#16102A"
+        "foregroundImage": "./assets/images/passage-brand-assets/adaptive-icon.png",
+        "backgroundColor": "#0B0B0D"
       },
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
@@ -36,15 +42,15 @@
     },
     "web": {
       "output": "static",
-      "favicon": "./assets/images/favicon.png"
+      "favicon": "./assets/images/passage-brand-assets/favicon.png"
     },
     "plugins": [
       "expo-router",
       [
         "expo-notifications",
         {
-          "icon": "./assets/images/icon.png",
-          "color": "#16102A",
+          "icon": "./assets/images/passage-brand-assets/icon.png",
+          "color": "#0B0B0D",
           "defaultChannel": "default",
           "sounds": []
         }
@@ -66,12 +72,12 @@
       [
         "expo-splash-screen",
         {
-          "backgroundColor": "#FFFFFF",
-          "image": "./assets/images/icon.png",
+          "backgroundColor": "#0B0B0D",
+          "image": "./assets/images/passage-brand-assets/splash-icon.png",
           "imageWidth": 250,
           "dark": {
-            "backgroundColor": "#16102A",
-            "image": "./assets/images/icon.png",
+            "backgroundColor": "#0B0B0D",
+            "image": "./assets/images/passage-brand-assets/splash-icon.png",
             "imageWidth": 250
           }
         }
@@ -92,6 +98,14 @@
           "visibility": "visible"
         }
       ],
+      [
+        "expo-audio",
+        {
+          "microphonePermission": false,
+          "recordAudioAndroid": false
+        }
+      ],
+      "./plugins/with-expo-audio-stop-with-app",
       "expo-asset"
     ],
     "experiments": {
@@ -99,7 +113,7 @@
     },
     "extra": {
       "eas": {
-        "projectId": "8f3a5379-9315-4c6e-878a-5dfa7b3b50aa"
+        "projectId": "d67d8ad3-ff1a-4ea4-99d6-a10bb7079bde"
       }
     }
   }

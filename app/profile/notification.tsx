@@ -1,347 +1,232 @@
-import { Ionicons } from '@expo/vector-icons';
-import { useQueryClient } from '@tanstack/react-query';
-import { Image } from 'expo-image';
-import { useRouter } from 'expo-router';
-import { useEffect, useState } from 'react';
-import {
-  ActivityIndicator,
-  Alert,
-  ImageBackground,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Switch,
-  Text,
-  View,
-} from 'react-native';
-import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useCallback, useEffect, useState } from 'react';
+import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
 
-import { ExploreButton } from '@/components/ExploreButton';
-import { SaveSuccessModal } from '@/components/profile/SaveSuccessModal';
+import { ErrorState } from '@/components/EmptyState';
+import { RequireAuth } from '@/components/RequireAuth';
+import { SettingsGroup, SettingsRow } from '@/components/SettingsRow';
+import { SettingsScreen } from '@/components/SettingsScreen';
+import { formatTimeLabel, TimePickerSheet } from '@/components/TimePickerSheet';
+import { Toast, useToast } from '@/components/Toast';
+import { HalcyonColors } from '@/constants/design';
 import { AppFonts } from '@/constants/theme';
-import { apiClient } from '@/lib/api/client';
-import { requestNotificationPermission, scheduleNotifications } from '@/lib/notifications';
+import { useNotificationSettings, useRegisterPushDevice, useUpdateNotificationSettings } from '@/hooks/usePreferences';
+import type { NotificationSettings } from '@/lib/api/preferences';
+import {
+  getLocalSetting,
+  LOCAL_SETTING_KEYS,
+  REMINDER_TIME_DEFAULT,
+  setLocalSetting,
+} from '@/lib/local-settings';
+import {
+  cancelWindDownReminder,
+  requestNotificationPermission,
+  scheduleWindDownReminder,
+} from '@/lib/notifications';
 
-const backgroundImage = require('@/assets/images/29dd3fece0aba2a99777eeac0658bccbe2ed402a.png');
+/**
+ * R-07. Reads and writes `GET/PUT /api/preferences/notifications`.
+ *
+ * This screen previously called `/api/notifications` for both the read and the
+ * write. No such route exists — notification settings are served by the
+ * Notifications controller under the `/api/preferences` prefix, alongside sound,
+ * playback and download settings.
+ *
+ * `user_notification_settings` has no column for the reminder time, so the hour
+ * is kept on the device and drives the locally scheduled reminder. The server
+ * only needs to know whether reminders are on.
+ */
+function NotificationContent() {
+  const { notice, showToast } = useToast();
+  const { data: settings, isInitialLoading, isError, refetch } = useNotificationSettings();
+  const update = useUpdateNotificationSettings();
+  const { registerDevice } = useRegisterPushDevice();
 
-// ── Notification rows config ──────────────────────────────────────────────────
-const NOTIFICATIONS = [
-  {
-    key: 'morning_reminder',
-    timeKey: 'morning_reminder_time',
-    label: 'Morning Reminder',
-    defaultTime: '9:00 AM',
-    icon: require('@/assets/icons/dashbord-morning-icon.svg'),
-    iconColor: '#FFC43D',
-    iconBg: '#FFC1031A',
-  },
-  {
-    key: 'mood_checkin',
-    timeKey: 'mood_checkin_time',
-    label: 'Mood Check-in',
-    defaultTime: '6:00 PM',
-    icon: require('@/assets/icons/dashbord-clock-icon.svg'),
-    iconColor: '#7B61FF',
-    iconBg: '#7B61FF14',
-  },
-  {
-    key: 'checklist_reminder',
-    timeKey: 'checklist_reminder_time',
-    label: 'Checklist Reminder',
-    defaultTime: 'Daily',
-    icon: require('@/assets/icons/dashbord-speed-icon.svg'),
-    iconColor: '#3770FC',
-    iconBg: '#3770FC14',
-  },
-  {
-    key: 'evening_wind_down',
-    timeKey: 'evening_wind_down_time',
-    label: 'Evening Wind Down',
-    defaultTime: '9:00 PM',
-    icon: require('@/assets/icons/dashbord-clock-icon.svg'),
-    iconColor: '#7B61FF',
-    iconBg: '#7B61FF14',
-  },
-  {
-    key: 'soundscape_reminder',
-    timeKey: 'soundscape_reminder_time',
-    label: 'Soundscape Reminder',
-    defaultTime: 'Custom time',
-    icon: require('@/assets/icons/dashbord-breathing-icon.svg'),
-    iconColor: '#2EB668',
-    iconBg: '#28B92A14',
-  },
-] as const;
-
-type NotifKey = (typeof NOTIFICATIONS)[number]['key'];
-
-type NotifState = {
-  [K in NotifKey]: boolean;
-} & {
-  morning_reminder_time: string;
-  mood_checkin_time: string;
-  checklist_reminder_time: string;
-  evening_wind_down_time: string;
-  soundscape_reminder_time: string;
-};
-
-const DEFAULT_STATE: NotifState = {
-  morning_reminder: false,
-  morning_reminder_time: '09:00',
-  mood_checkin: false,
-  mood_checkin_time: '18:00',
-  checklist_reminder: false,
-  checklist_reminder_time: '16:00',
-  evening_wind_down: false,
-  evening_wind_down_time: '21:00',
-  soundscape_reminder: false,
-  soundscape_reminder_time: '22:00',
-};
-
-// ── API helpers ───────────────────────────────────────────────────────────────
-async function fetchNotifications(): Promise<NotifState | null> {
-  const data = await apiClient<any>('/api/notifications');
-  return data.data?.notifications ?? null;
-}
-
-async function saveNotifications(payload: Partial<NotifState>): Promise<void> {
-  try {
-    await apiClient<any>('/api/notifications', {
-      method: 'POST',
-      body: JSON.stringify(payload),
-    });
-  } catch (err: any) {
-    if (err?.message?.includes('already saved')) {
-      await apiClient<any>('/api/notifications', {
-        method: 'PUT',
-        body: JSON.stringify(payload),
-      });
-      return;
-    }
-    throw err;
-  }
-}
-
-// ── Screen ────────────────────────────────────────────────────────────────────
-export default function NotificationScreen() {
-  const router = useRouter();
-  const insets = useSafeAreaInsets();
-  const queryClient = useQueryClient();
-
-  const [state, setState] = useState<NotifState>(DEFAULT_STATE);
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const [showSavedModal, setShowSavedModal] = useState(false);
+  const [reminderTime, setReminderTime] = useState(REMINDER_TIME_DEFAULT);
+  const [timeSheetVisible, setTimeSheetVisible] = useState(false);
 
   useEffect(() => {
-    fetchNotifications()
-      .then((data) => {
-        if (data) setState({ ...DEFAULT_STATE, ...data });
-      })
-      .catch(() => {})
-      .finally(() => setLoading(false));
+    let active = true;
+
+    void getLocalSetting(LOCAL_SETTING_KEYS.reminderTime, REMINDER_TIME_DEFAULT).then((value) => {
+      if (active) setReminderTime(value);
+    });
+
+    return () => {
+      active = false;
+    };
   }, []);
 
-  function toggleNotif(key: NotifKey) {
-    setState((prev) => ({ ...prev, [key]: !prev[key] }));
-  }
+  const save = useCallback(
+    (patch: Partial<NotificationSettings>) => {
+      update.mutate(patch, {
+        onError: () => showToast('Could not save that. Try again.'),
+      });
+    },
+    [showToast, update]
+  );
 
-  async function handleSave() {
-    setSaving(true);
-    try {
-      // Request permission first
+  /**
+   * Turning anything on needs a device the server can reach, so the push token
+   * is registered at that moment rather than at launch. The preference is saved
+   * either way — a declined permission means no push, not a failed setting.
+   */
+  const enableChannel = useCallback(
+    async (patch: Partial<NotificationSettings>) => {
+      save(patch);
+
       const granted = await requestNotificationPermission();
       if (!granted) {
-        Alert.alert(
-          'Permission Required',
-          'Please allow notifications in your phone settings to receive reminders.',
-        );
-        setSaving(false);
+        showToast('Turn on notifications for Passage in your device settings.');
+        return false;
+      }
+
+      const registered = await registerDevice();
+      if (!registered) {
+        showToast('Saved. This device could not be registered for push yet.');
+      }
+
+      return true;
+    },
+    [registerDevice, save, showToast]
+  );
+
+  const handleReminders = useCallback(
+    async (value: boolean) => {
+      if (!value) {
+        save({ reminders_enabled: false });
+        await cancelWindDownReminder();
         return;
       }
 
-      await saveNotifications(state);
-      await scheduleNotifications(state);
-      queryClient.invalidateQueries({ queryKey: ['notifications'] });
-      setShowSavedModal(true);
-    } catch (err) {
-      Alert.alert('Error', err instanceof Error ? err.message : 'Something went wrong.');
-    } finally {
-      setSaving(false);
+      const granted = await enableChannel({ reminders_enabled: true });
+      if (granted) await scheduleWindDownReminder(reminderTime);
+    },
+    [enableChannel, reminderTime, save]
+  );
+
+  const handleReminderTime = useCallback(
+    async (value: string) => {
+      setReminderTime(value);
+      await setLocalSetting(LOCAL_SETTING_KEYS.reminderTime, value);
+
+      if (settings?.reminders_enabled) {
+        const scheduled = await scheduleWindDownReminder(value);
+        showToast(
+          scheduled ? `Reminder set for ${formatTimeLabel(value)}.` : 'Reminder time saved.'
+        );
+      }
+    },
+    [settings?.reminders_enabled, showToast]
+  );
+
+  const renderBody = () => {
+    if (isInitialLoading) {
+      return (
+        <View style={styles.loading}>
+          <ActivityIndicator color={HalcyonColors.accent} />
+        </View>
+      );
     }
-  }
 
-  return (
-    <ImageBackground source={backgroundImage} resizeMode="cover" style={styles.screen}>
-      <SafeAreaView edges={['top']} style={styles.safeArea}>
-        <ScrollView
-          bounces={false}
-          contentContainerStyle={[styles.scroll, { paddingBottom: insets.bottom + 100 }]}
-          showsVerticalScrollIndicator={false}>
+    if (isError || !settings) {
+      return <ErrorState onRetry={() => void refetch()} />;
+    }
 
-          {/* Back */}
-          <Pressable
-            accessibilityLabel="Go back"
-            hitSlop={12}
-            onPress={() => router.back()}
-            style={({ pressed }) => [styles.backButton, pressed && styles.pressed]}>
-            <Ionicons color="#000000" name="chevron-back" size={18} />
-          </Pressable>
+    return (
+      <>
+        <Text style={styles.explainer}>All notifications are off by default.</Text>
 
-          {/* Header */}
-          <Text style={styles.title}>Notifications</Text>
-          <Text style={styles.subtitle}>Set your daily reminder.</Text>
-
-          {loading ? (
-            <ActivityIndicator color="#7B61FF" size="large" style={{ marginTop: 40 }} />
-          ) : (
-            <View style={styles.list}>
-              {NOTIFICATIONS.map((n, index) => (
-                <View
-                  key={n.key}
-                  style={[
-                    styles.row,
-                    index < NOTIFICATIONS.length - 1 && styles.rowDivider,
-                  ]}>
-                  {/* Icon */}
-                  <View style={[styles.iconCircle, { backgroundColor: n.iconBg }]}>
-                    <Image
-                      source={n.icon}
-                      style={[styles.icon, { tintColor: n.iconColor }]}
-                      contentFit="contain"
-                    />
-                  </View>
-
-                  {/* Text */}
-                  <View style={styles.rowText}>
-                    <Text style={styles.rowTitle}>{n.label}</Text>
-                    <Text style={styles.rowTime}>{n.defaultTime}</Text>
-                  </View>
-
-                  {/* Toggle */}
-                  <Switch
-                    value={state[n.key]}
-                    onValueChange={() => toggleNotif(n.key)}
-                    trackColor={{ false: '#E5E5EA', true: '#7B61FF' }}
-                    thumbColor="#FFFFFF"
-                    ios_backgroundColor="#E5E5EA"
-                  />
-                </View>
-              ))}
-            </View>
-          )}
-
-          {/* Save button */}
-          <ExploreButton
-            accessibilityRole="button"
-            label="Save"
-            loading={saving}
-            disabled={saving}
-            onPress={handleSave}
-            style={styles.saveWrap}
+        <SettingsGroup>
+          <SettingsRow
+            description="One quiet nudge in the evening."
+            icon="moon-outline"
+            label="Wind-down reminders"
+            toggle={{
+              value: settings.reminders_enabled,
+              onValueChange: (value) => void handleReminders(value),
+            }}
           />
 
-        </ScrollView>
-        <SaveSuccessModal
-          visible={showSavedModal}
-          title="Notifications saved"
-          message="Your reminder settings have been updated successfully."
-          onClose={() => setShowSavedModal(false)}
+          {settings.reminders_enabled ? (
+            <SettingsRow
+              icon="time-outline"
+              label="Reminder time"
+              onPress={() => setTimeSheetVisible(true)}
+              value={formatTimeLabel(reminderTime)}
+            />
+          ) : null}
+
+          <SettingsRow
+            description="When a new collection is added to the catalogue."
+            icon="albums-outline"
+            label="New collection alerts"
+            toggle={{
+              value: settings.new_collection_alerts,
+              onValueChange: (value) => {
+                if (value) {
+                  void enableChannel({ new_collection_alerts: true });
+                } else {
+                  save({ new_collection_alerts: false });
+                }
+              },
+            }}
+          />
+        </SettingsGroup>
+
+        <Text style={styles.footnote}>
+          Reminders are scheduled on this device. Collection alerts are sent from Passage, so
+          this device is registered for push when you turn one on.
+        </Text>
+
+        <TimePickerSheet
+          onClose={() => setTimeSheetVisible(false)}
+          onSelect={(value) => void handleReminderTime(value)}
+          value={reminderTime}
+          visible={timeSheetVisible}
         />
-      </SafeAreaView>
-    </ImageBackground>
+      </>
+    );
+  };
+
+  return (
+    <SettingsScreen
+      overlay={<Toast bottom={72} notice={notice} />}
+      subtitle="Nothing arrives unless you ask for it."
+      title="Notifications">
+      {renderBody()}
+    </SettingsScreen>
   );
 }
 
 const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: '#C8BFEE' },
-  safeArea: { flex: 1 },
-  scroll: { paddingHorizontal: 20, paddingTop: 76 },
-
-  backButton: {
-    alignItems: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.5)',
-    borderRadius: 16,
-    height: 32,
-    justifyContent: 'center',
-    left: 18,
-    position: 'absolute',
-    top: 15,
-    width: 32,
-    zIndex: 3,
+  loading: {
+    paddingVertical: 64,
   },
-
-  title: {
-    color: '#173F5F',
-    fontFamily: AppFonts.displayBold,
-    fontSize: 34,
-    fontWeight: '700',
-    lineHeight: 42,
-    marginBottom: 6,
-  },
-  subtitle: {
-    color: '#8C8C8C',
+  explainer: {
+    color: HalcyonColors.textSecondary,
     fontFamily: AppFonts.sansRegular,
-    fontSize: 14,
-    lineHeight: 22,
-    marginBottom: 24,
+    fontSize: 13,
+    lineHeight: 19,
+    marginBottom: 18,
   },
-
-  list: {
-    backgroundColor: 'rgba(255,255,255,0.92)',
-    borderRadius: 16,
-    overflow: 'hidden',
-    paddingHorizontal: 4,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.08,
-    shadowRadius: 10,
-    elevation: 4,
-  },
-  row: {
-    alignItems: 'center',
-    flexDirection: 'row',
-    minHeight: 76,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-  },
-  rowDivider: {
-    borderBottomColor: 'rgba(23,63,95,0.07)',
-    borderBottomWidth: StyleSheet.hairlineWidth,
-  },
-  iconCircle: {
-    alignItems: 'center',
-    borderRadius: 24,
-    height: 48,
-    justifyContent: 'center',
-    marginRight: 14,
-    width: 48,
-  },
-  icon: { height: 24, width: 24 },
-  rowText: { flex: 1 },
-  rowTitle: {
-    color: '#173F5F',
-    fontFamily: AppFonts.sansSemiBold,
-    fontSize: 14,
-    fontWeight: '600',
-    lineHeight: 22,
-  },
-  rowTime: {
-    color: '#8C8C8C',
+  footnote: {
+    color: HalcyonColors.textSecondary,
     fontFamily: AppFonts.sansRegular,
     fontSize: 12,
-    lineHeight: 18,
-    marginTop: 1,
-  },
-
-  saveWrap: {
-    alignSelf: 'center',
-    marginTop: 24,
-    maxWidth: 348,
-    width: '100%',
-  },
-  pressed: {
-    opacity: 0.86,
-    transform: [{ scale: 0.99 }],
+    lineHeight: 17,
+    paddingHorizontal: 4,
   },
 });
+
+/**
+ * The gate renders NotificationContent only once there is a session, so a deep link
+ * here while signed out shows the prompt instead of firing a request that can
+ * only come back 401.
+ */
+export default function NotificationScreen() {
+  return (
+    <RequireAuth message="Notification settings are saved to your account.">
+      <NotificationContent />
+    </RequireAuth>
+  );
+}

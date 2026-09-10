@@ -2,6 +2,8 @@ import * as Linking from 'expo-linking';
 import * as WebBrowser from 'expo-web-browser';
 
 import { ME_QUERY_KEY } from '@/hooks/useUser';
+import { cacheProfile, markLoggedIn } from '@/lib/auth/offline-session';
+import { setSessionSource } from '@/lib/auth/session-state';
 import { apiClient } from './api/client';
 import { userApi } from './api/user';
 import { queryClient } from './query-client';
@@ -57,9 +59,23 @@ export const signInWithApple = async () => {
         throw new Error(sessionError.message);
       }
 
-      await apiClient('/api/auth/sync-profile', { method: 'POST' });
-      await queryClient.invalidateQueries({ queryKey: ME_QUERY_KEY });
-      await queryClient.fetchQuery({ queryKey: ME_QUERY_KEY, queryFn: userApi.get, staleTime: 0 });
+      setSessionSource('supabase', Boolean(sessionData.session?.access_token));
+      await markLoggedIn();
+
+      try {
+        await apiClient('/api/auth/sync-profile', { method: 'POST' });
+        await queryClient.invalidateQueries({ queryKey: ME_QUERY_KEY });
+        const me = await queryClient.fetchQuery({
+          queryKey: ME_QUERY_KEY,
+          queryFn: userApi.get,
+          staleTime: 0,
+        });
+        await cacheProfile(me);
+      } catch (profileError) {
+        // Authentication has completed even if the app profile projection is
+        // briefly unavailable; the onboarding import has its own retry UI.
+        console.warn('[auth] Apple profile sync remains pending', profileError);
+      }
 
       return sessionData;
     }

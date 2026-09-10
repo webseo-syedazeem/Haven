@@ -28,6 +28,15 @@ export function hasActiveSession() {
   return !restoring && (activeSources.haven || activeSources.supabase);
 }
 
+/**
+ * True until the launch time restore has settled. Distinct from "signed out":
+ * nothing is known yet either way, which is what a sign-in gate needs in order
+ * to wait rather than tell a signed-in user to log in.
+ */
+export function isSessionRestoring() {
+  return restoring;
+}
+
 export function setSessionSource(source: SessionSource, active: boolean) {
   if (activeSources[source] === active) {
     return;
@@ -47,12 +56,12 @@ export function finishSessionRestore() {
     return;
   }
 
-  const wasActive = hasActiveSession();
   restoring = false;
-
-  if (hasActiveSession() !== wasActive) {
-    notify();
-  }
+  // Always, not only when `hasActiveSession()` flips: a restore that ends in no
+  // session leaves that value unchanged, and a subscriber watching
+  // `isSessionRestoring` still has to hear that the waiting is over. Listeners
+  // that read an unchanged value re-render to the same output and cost nothing.
+  notify();
 }
 
 export function subscribeToSession(listener: () => void) {

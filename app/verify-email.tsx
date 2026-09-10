@@ -1,0 +1,314 @@
+import { Ionicons } from '@expo/vector-icons';
+import type { Session } from '@supabase/supabase-js';
+import * as Linking from 'expo-linking';
+import type { Href } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { AppState, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
+
+import { OnboardingContinueButton } from '@/components/onboarding/OnboardingContinueButton';
+import { OnboardingScaffold } from '@/components/onboarding/OnboardingScaffold';
+import { HalcyonColors } from '@/constants/design';
+import { AppFonts } from '@/constants/theme';
+import {
+  completeSupabaseAuth,
+  hasEmailIdentity,
+  isEmailConfirmed,
+} from '@/lib/auth/complete-auth';
+import { supabase } from '@/lib/supabase';
+
+const RESEND_COOLDOWN_SECONDS = 30;
+const SESSION_POLL_MS = 4000;
+
+function firstParam(value: string | string[] | undefined): string {
+  return Array.isArray(value) ? value[0] ?? '' : value ?? '';
+}
+
+export default function VerifyEmailScreen() {
+  const router = useRouter();
+  const params = useLocalSearchParams<{ email?: string | string[] }>();
+  const email = firstParam(params.email).trim().toLowerCase();
+  const [cooldown, setCooldown] = useState(RESEND_COOLDOWN_SECONDS);
+  const [message, setMessage] = useState('');
+  const [openingMail, setOpeningMail] = useState(false);
+  const [resending, setResending] = useState(false);
+  const finalisingRef = useRef(false);
+
+  const acceptConfirmedSession = useCallback(
+    async (session: Session | null) => {
+      const sessionEmail = session?.user.email?.trim().toLowerCase();
+      if (
+        !session ||
+        !email ||
+        sessionEmail !== email ||
+        !hasEmailIdentity(session.user) ||
+        !isEmailConfirmed(session.user) ||
+        finalisingRef.current
+      ) {
+        return;
+      }
+
+      finalisingRef.current = true;
+      setMessage('Email confirmed. Finishing your account…');
+      try {
+        await completeSupabaseAuth(session);
+        router.replace('/verified' as Href);
+      } catch {
+        finalisingRef.current = false;
+        setMessage('Your email is confirmed, but we could not finish signing you in. Please try again.');
+      }
+    },
+    [email, router]
+  );
+
+  const checkSession = useCallback(async () => {
+    const { data, error } = await supabase.auth.getSession();
+    if (error) {
+      setMessage(error.message);
+      return;
+    }
+    await acceptConfirmedSession(data.session);
+  }, [acceptConfirmedSession]);
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCooldown((current) => Math.max(0, current - 1));
+    }, 1000);
+    return () => clearInterval(timer);
+  }, []);
+
+  useEffect(() => {
+    void checkSession();
+    const poll = setInterval(() => void checkSession(), SESSION_POLL_MS);
+    const appStateSubscription = AppState.addEventListener('change', (state) => {
+      if (state === 'active') void checkSession();
+    });
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (session && isEmailConfirmed(session.user)) {
+        setTimeout(() => void acceptConfirmedSession(session), 0);
+      }
+    });
+
+    return () => {
+      clearInterval(poll);
+      appStateSubscription.remove();
+      subscription.unsubscribe();
+    };
+  }, [acceptConfirmedSession, checkSession]);
+
+  const openMailApp = async () => {
+    if (openingMail) return;
+    setOpeningMail(true);
+    setMessage('');
+    try {
+      const candidates = Platform.OS === 'ios' ? ['message://', 'mailto:'] : ['mailto:'];
+      let opened = false;
+      for (const url of candidates) {
+        if (await Linking.canOpenURL(url)) {
+          await Linking.openURL(url);
+          opened = true;
+          break;
+        }
+      }
+      if (!opened) {
+        setMessage('No email app is available on this device.');
+      }
+    } catch {
+      setMessage('We could not open your email app. Please open it manually.');
+    } finally {
+      setOpeningMail(false);
+    }
+  };
+
+  const resendEmail = async () => {
+    if (!email || cooldown > 0 || resending) return;
+    setResending(true);
+    setMessage('');
+    try {
+      const { error } = await supabase.auth.resend({
+        type: 'signup',
+        email,
+        options: {
+          emailRedirectTo: Linking.createURL('auth/callback', {
+            queryParams: { flow: 'signup' },
+          }),
+        },
+      });
+      if (error) throw error;
+      setCooldown(RESEND_COOLDOWN_SECONDS);
+      setMessage('A new verification email is on its way.');
+    } catch (error) {
+      setMessage(
+        error instanceof Error
+          ? error.message
+          : 'We could not resend the verification email.'
+      );
+    } finally {
+      setResending(false);
+    }
+  };
+
+  const changeEmail = () => {
+    router.replace({
+      pathname: '/create-account',
+      params: email ? { email } : {},
+    } as never);
+  };
+
+  const resendLabel = resending
+    ? 'Resending…'
+    : cooldown > 0
+      ? 'Resend email (' + cooldown + 's)'
+      : 'Resend email';
+
+  return (
+    <OnboardingScaffold contentContainerStyle={styles.content}>
+      <View style={styles.iconCircle}>
+        <Ionicons color={HalcyonColors.accent} name="mail-outline" size={30} />
+      </View>
+
+      <Text style={styles.heading}>Check your inbox</Text>
+      <Text style={styles.body}>
+        We&apos;ve sent a verification link to{' '}
+        <Text style={styles.email}>{email || 'your email address'}</Text>. Tap it to confirm your
+        account.
+      </Text>
+
+      <OnboardingContinueButton
+        label="Open email app"
+        loading={openingMail}
+        onPress={() => void openMailApp()}
+        style={styles.primaryButton}
+      />
+
+      <Pressable
+        accessibilityRole="button"
+        disabled={!email || cooldown > 0 || resending}
+        hitSlop={8}
+        onPress={() => void resendEmail()}
+        style={({ pressed }) => [
+          styles.linkButton,
+          (!email || cooldown > 0 || resending) && styles.linkDisabled,
+          pressed && styles.pressed,
+        ]}>
+        <Text style={styles.linkText}>{resendLabel}</Text>
+      </Pressable>
+
+      <Pressable
+        accessibilityRole="button"
+        hitSlop={8}
+        onPress={changeEmail}
+        style={({ pressed }) => [styles.changeButton, pressed && styles.pressed]}>
+        <Text style={styles.changeText}>
+          Wrong email? <Text style={styles.changeLink}>Change it</Text>
+        </Text>
+      </Pressable>
+
+      {message ? (
+        <Text accessibilityLiveRegion="polite" style={styles.message}>
+          {message}
+        </Text>
+      ) : null}
+      <Text style={styles.automatic}>
+        Passage will continue automatically when the confirmed link returns to the app.
+      </Text>
+    </OnboardingScaffold>
+  );
+}
+
+const styles = StyleSheet.create({
+  automatic: {
+    color: HalcyonColors.textSecondary,
+    fontFamily: AppFonts.sansRegular,
+    fontSize: 10,
+    lineHeight: 16,
+    marginTop: 24,
+    maxWidth: 300,
+    textAlign: 'center',
+  },
+  body: {
+    color: HalcyonColors.textSecondary,
+    fontFamily: AppFonts.sansRegular,
+    fontSize: 13,
+    lineHeight: 20,
+    marginTop: 10,
+    maxWidth: 310,
+    textAlign: 'center',
+  },
+  changeButton: {
+    marginTop: 18,
+    paddingHorizontal: 12,
+    paddingVertical: 5,
+  },
+  changeLink: {
+    color: HalcyonColors.textPrimary,
+    textDecorationLine: 'underline',
+  },
+  changeText: {
+    color: HalcyonColors.textSecondary,
+    fontFamily: AppFonts.sansRegular,
+    fontSize: 11,
+    lineHeight: 17,
+  },
+  content: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingBottom: 46,
+  },
+  email: {
+    color: HalcyonColors.textPrimary,
+    fontFamily: AppFonts.sansMedium,
+    fontWeight: '500',
+  },
+  heading: {
+    color: HalcyonColors.textPrimary,
+    fontFamily: AppFonts.displayRegular,
+    fontSize: 33,
+    fontWeight: '400',
+    lineHeight: 38,
+    marginTop: 25,
+    textAlign: 'center',
+  },
+  iconCircle: {
+    alignItems: 'center',
+    borderColor: HalcyonColors.accent,
+    borderRadius: 32,
+    borderWidth: 1,
+    height: 64,
+    justifyContent: 'center',
+    shadowColor: HalcyonColors.accent,
+    shadowOffset: { height: 0, width: 0 },
+    shadowOpacity: 0.22,
+    shadowRadius: 15,
+    width: 64,
+  },
+  linkButton: {
+    marginTop: 17,
+    paddingHorizontal: 12,
+    paddingVertical: 5,
+  },
+  linkDisabled: { opacity: 0.58 },
+  linkText: {
+    color: HalcyonColors.textSecondary,
+    fontFamily: AppFonts.sansRegular,
+    fontSize: 12,
+    lineHeight: 18,
+    textDecorationLine: 'underline',
+  },
+  message: {
+    color: HalcyonColors.accent,
+    fontFamily: AppFonts.sansRegular,
+    fontSize: 11,
+    lineHeight: 17,
+    marginTop: 16,
+    maxWidth: 310,
+    textAlign: 'center',
+  },
+  pressed: { opacity: 0.66 },
+  primaryButton: {
+    marginTop: 30,
+    maxWidth: 390,
+  },
+});

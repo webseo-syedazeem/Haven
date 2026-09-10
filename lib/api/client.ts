@@ -1,3 +1,4 @@
+import { ApiError, NetworkError } from '@/lib/api/errors';
 import { supabase } from '@/lib/supabase';
 import * as SecureStore from 'expo-secure-store';
 import { setSessionSource } from '@/lib/auth/session-state';
@@ -79,18 +80,50 @@ export async function apiClient<T>(
   const { body, headers: optionHeaders, ...fetchOptions } = options;
   const hasBody = body !== undefined && body !== null;
 
-  const res = await fetch(`${API_BASE_URL}${path}`, {
-    ...fetchOptions,
-    ...(hasBody ? { body } : {}),
-    headers: {
-      ...(hasBody ? { 'Content-Type': 'application/json' } : {}),
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-      ...((optionHeaders as Record<string, string>) ?? {}),
-    },
-  });
-  const data = await res.json();
-  if (!data.success) throw new Error(data.error ?? 'Request failed');
-  return data;
+  let res: Response;
+
+  try {
+    res = await fetch(`${API_BASE_URL}${path}`, {
+      ...fetchOptions,
+      ...(hasBody ? { body } : {}),
+      headers: {
+        ...(hasBody ? { 'Content-Type': 'application/json' } : {}),
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        ...((optionHeaders as Record<string, string>) ?? {}),
+      },
+    });
+  } catch (error) {
+    // Nobody answered. This says nothing about the session, so it is raised as
+    // a distinct type the launch path can tell apart from a rejection.
+    throw new NetworkError('Could not reach the server.', { cause: error });
+  }
+
+  return readEnvelope<T>(res);
+}
+
+/**
+ * Every failure carries the HTTP status, so callers can tell "your token is no
+ * longer valid" (401) from "the request was refused" (anything else).
+ */
+async function readEnvelope<T>(res: Response): Promise<T> {
+  let data: { success?: boolean; error?: string } | null = null;
+
+  try {
+    data = await res.json();
+  } catch {
+    // A gateway error page is not JSON; the status below still describes it.
+    data = null;
+  }
+
+  if (!res.ok) {
+    throw new ApiError(data?.error ?? `Request failed with status ${res.status}`, res.status, data);
+  }
+
+  if (!data?.success) {
+    throw new ApiError(data?.error ?? 'Request failed', res.status, data);
+  }
+
+  return data as T;
 }
 
 export async function apiClientFormData<T>(
@@ -112,15 +145,19 @@ export async function apiClientFormData<T>(
     }
   }
 
-  const res = await fetch(`${API_BASE_URL}${path}`, {
-    method,
-    headers: {
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-    },
-    body: formData,
-  });
+  let res: Response;
 
-  const data = await res.json();
-  if (!data.success) throw new Error(data.error ?? 'Request failed');
-  return data;
+  try {
+    res = await fetch(`${API_BASE_URL}${path}`, {
+      method,
+      headers: {
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+      body: formData,
+    });
+  } catch (error) {
+    throw new NetworkError('Could not reach the server.', { cause: error });
+  }
+
+  return readEnvelope<T>(res);
 }

@@ -36,6 +36,7 @@ export function ProfileAvatar({
       {hasImage ? (
         <Image
           contentFit="cover"
+          cachePolicy="memory-disk"
           source={{ uri: imageUrl! }}
           style={{ width: size, height: size, borderRadius: radius }}
         />

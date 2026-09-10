@@ -1,161 +1,106 @@
 import { LinearGradient } from 'expo-linear-gradient';
-import { Pressable, StyleSheet, Text, type StyleProp, type TextStyle, View } from 'react-native';
+import {
+  ActivityIndicator,
+  Pressable,
+  StyleSheet,
+  Text,
+  View,
+  type StyleProp,
+  type ViewStyle,
+} from 'react-native';
 
+import { HalcyonColors, HalcyonRadius } from '@/constants/design';
 import { AppFonts } from '@/constants/theme';
 
-type ButtonVariant = 'default' | 'dayFeel';
+const BUTTON_GRAIN = [
+  { left: '7%', opacity: 0.16, top: '24%' },
+  { left: '14%', opacity: 0.1, top: '70%' },
+  { left: '22%', opacity: 0.13, top: '42%' },
+  { left: '31%', opacity: 0.08, top: '18%' },
+  { left: '39%', opacity: 0.12, top: '76%' },
+  { left: '48%', opacity: 0.09, top: '34%' },
+  { left: '57%', opacity: 0.15, top: '62%' },
+  { left: '66%', opacity: 0.1, top: '22%' },
+  { left: '74%', opacity: 0.13, top: '48%' },
+  { left: '83%', opacity: 0.08, top: '74%' },
+  { left: '91%', opacity: 0.12, top: '30%' },
+] as const;
 
 type OnboardingContinueButtonProps = {
+  disabled?: boolean;
   label?: string;
+  loading?: boolean;
   onPress?: () => void;
-  textStyle?: StyleProp<TextStyle>;
-  variant?: ButtonVariant;
-};
-
-const gradientConfig = {
-  default: {
-    colors: ['#6C9FF3', '#7F86E9', '#B985D8'] as const,
-    locations: [0, 0.4962, 1] as const,
-  },
-  dayFeel: {
-    colors: ['#6339FB', '#3770FC', '#6AAFE9'] as const,
-    locations: [0.0247, 0.5499, 1] as const,
-  },
+  style?: StyleProp<ViewStyle>;
+  variant?: 'primary' | 'secondary';
 };
 
 export function OnboardingContinueButton({
+  disabled = false,
   label = 'Continue',
+  loading = false,
   onPress,
-  textStyle,
-  variant = 'default',
+  style,
+  variant = 'primary',
 }: OnboardingContinueButtonProps) {
-  const gradient = gradientConfig[variant];
+  const unavailable = disabled || loading;
 
   return (
     <Pressable
-      accessibilityRole="button"
       accessibilityLabel={label}
+      accessibilityRole="button"
+      accessibilityState={{ disabled: unavailable, busy: loading }}
+      disabled={unavailable}
       onPress={onPress}
-      style={[
-        styles.buttonShadow,
-        variant === 'dayFeel' && styles.dayFeelButtonShadow,
+      style={({ pressed }) => [
+        styles.button,
+        variant === 'secondary' && styles.secondary,
+        unavailable && styles.disabled,
+        pressed && !unavailable && styles.pressed,
+        style,
       ]}>
-      <LinearGradient
-        colors={gradient.colors}
-        locations={gradient.locations}
-        start={{ x: 0, y: 0.5 }}
-        end={{ x: 1, y: 0.5 }}
-        style={styles.button}>
-        {variant === 'dayFeel' ? (
-          <>
-            <LinearGradient
-              pointerEvents="none"
-              colors={['rgba(255, 255, 255, 0.58)', 'rgba(255, 255, 255, 0.16)', 'rgba(255, 255, 255, 0)']}
-              locations={[0, 0.5, 1]}
-              start={{ x: 0.5, y: 0 }}
-              end={{ x: 0.5, y: 1 }}
-              style={styles.dayFeelGloss}
-            />
-            <LinearGradient
-              pointerEvents="none"
-              colors={['rgba(255, 255, 255, 0.32)', 'rgba(255, 255, 255, 0)']}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-              style={styles.dayFeelReflection}
-            />
-          </>
-        ) : (
-          <LinearGradient
-            pointerEvents="none"
-            colors={['rgba(255, 255, 255, 0.46)', 'rgba(255, 255, 255, 0.12)', 'rgba(255, 255, 255, 0)']}
-            locations={[0, 0.48, 1]}
-            start={{ x: 0.5, y: 0 }}
-            end={{ x: 0.5, y: 1 }}
-            style={styles.defaultGloss}
-          />
-        )}
-        <View pointerEvents="none" style={styles.innerShadow}>
-          <LinearGradient
-            colors={['rgba(255, 255, 255, 0.5)', 'rgba(255, 255, 255, 0)']}
-            end={{ x: 1, y: 1 }}
-            start={{ x: 0, y: 0 }}
-            style={styles.innerShadowGradient}
-          />
-        </View>
-        <Text style={[styles.buttonText, textStyle]}>{label}</Text>
-      </LinearGradient>
+      {loading ? (
+        <ActivityIndicator
+          color={variant === 'primary' ? HalcyonColors.background : HalcyonColors.accent}
+          size="small"
+        />
+      ) : (
+        <Text style={[styles.label, variant === 'secondary' && styles.secondaryLabel]}>{label}</Text>
+      )}
     </Pressable>
   );
 }
 
 const styles = StyleSheet.create({
-  buttonShadow: {
-    width: '100%',
-    height: 58,
-    borderRadius: 29,
-    shadowColor: '#7F86E9',
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.22,
-    shadowRadius: 18,
-    elevation: 7,
-    marginBottom: 18,
-  },
-  dayFeelButtonShadow: {
-    shadowColor: '#6339FB',
-    shadowOffset: { width: 0, height: 12 },
-    shadowOpacity: 0.32,
-    shadowRadius: 22,
-    elevation: 10,
-  },
   button: {
-    flex: 1,
     alignItems: 'center',
+    backgroundColor: HalcyonColors.accent,
+    borderRadius: HalcyonRadius.card,
     justifyContent: 'center',
-    borderRadius: 29,
-    overflow: 'hidden',
-  },
-  dayFeelGloss: {
-    borderTopLeftRadius: 29,
-    borderTopRightRadius: 29,
-    height: '58%',
-    left: 0,
-    opacity: 0.78,
-    position: 'absolute',
-    right: 0,
-    top: 0,
-  },
-  dayFeelReflection: {
-    height: '100%',
-    left: 0,
-    opacity: 0.5,
-    position: 'absolute',
-    top: 0,
-    width: '46%',
-  },
-  defaultGloss: {
-    borderTopLeftRadius: 29,
-    borderTopRightRadius: 29,
-    height: '54%',
-    left: 0,
-    opacity: 0.62,
-    position: 'absolute',
-    right: 0,
-    top: 0,
-  },
-  innerShadow: {
-    ...StyleSheet.absoluteFillObject,
-  },
-  innerShadowGradient: {
-    height: '100%',
+    minHeight: 54,
+    paddingHorizontal: 20,
     width: '100%',
   },
-  buttonText: {
-    color: '#FFFFFF',
-    fontFamily: AppFonts.sansBold,
-    fontSize: 18,
-    fontWeight: '700',
-    letterSpacing: 0,
-    lineHeight: 26,
-    textAlign: 'center',
+  disabled: {
+    opacity: 0.42,
+  },
+  label: {
+    color: HalcyonColors.background,
+    fontFamily: AppFonts.sansSemiBold,
+    fontSize: 15,
+    fontWeight: '600',
+    lineHeight: 20,
+  },
+  pressed: {
+    backgroundColor: HalcyonColors.accentPressed,
+    transform: [{ scale: 0.995 }],
+  },
+  secondary: {
+    backgroundColor: HalcyonColors.surface,
+    borderColor: HalcyonColors.border,
+    borderWidth: 1,
+  },
+  secondaryLabel: {
+    color: HalcyonColors.textPrimary,
   },
 });

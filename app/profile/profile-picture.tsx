@@ -1,15 +1,15 @@
-import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
-import { useRouter } from 'expo-router';
-import { useState } from 'react';
-import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { useCallback, useState } from 'react';
+import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
 
-import { ExploreButton } from '@/components/ExploreButton';
-import { ConfirmActionModal } from '@/components/profile/ConfirmActionModal';
+import { ConfirmDialog } from '@/components/ConfirmDialog';
+import { OptionSheet, type SheetOption } from '@/components/OptionSheet';
+import { RequireAuth } from '@/components/RequireAuth';
 import { ProfileAvatar } from '@/components/profile/ProfileAvatar';
-import { ProfileImageSourceSheet } from '@/components/profile/ProfileImageSourceSheet';
-import { SaveSuccessModal } from '@/components/profile/SaveSuccessModal';
+import { SettingsGroup, SettingsRow } from '@/components/SettingsRow';
+import { SettingsPrimaryButton, SettingsScreen } from '@/components/SettingsScreen';
+import { Toast, useToast } from '@/components/Toast';
+import { HalcyonColors } from '@/constants/design';
 import { AppFonts } from '@/constants/theme';
 import { useRemoveProfileImage, useUploadProfileImage, useUser } from '@/hooks/useUser';
 import { getDisplayName } from '@/lib/api/user';
@@ -21,248 +21,187 @@ const pickerOptions: ImagePicker.ImagePickerOptions = {
   quality: 0.85,
 };
 
-export default function ProfilePictureScreen() {
-  const router = useRouter();
+type PickerSource = 'camera' | 'library';
+
+const SOURCE_OPTIONS: readonly SheetOption<PickerSource>[] = [
+  { value: 'camera', label: 'Take a photo' },
+  { value: 'library', label: 'Choose from your library' },
+];
+
+/** `POST /api/upload-profile-image` and `DELETE /api/remove-profile-image`. */
+function ProfilePictureContent() {
+  const { notice, showToast } = useToast();
   const { data: me } = useUser();
   const uploadImage = useUploadProfileImage();
   const removeImage = useRemoveProfileImage();
-  const [showSourceSheet, setShowSourceSheet] = useState(false);
-  const [showRemoveModal, setShowRemoveModal] = useState(false);
-  const [showSavedModal, setShowSavedModal] = useState(false);
-  const [savedModalCopy, setSavedModalCopy] = useState({
-    title: 'Profile updated',
-    message: 'Your profile picture has been updated successfully.',
-  });
 
-  const profileImageUrl = me?.profile?.profile_image_url;
+  const [sourceSheetVisible, setSourceSheetVisible] = useState(false);
+  const [removeVisible, setRemoveVisible] = useState(false);
+
+  const profileImageUrl = me?.profile?.profile_image_url ?? '';
   const hasImage = !!profileImageUrl;
   const displayName = getDisplayName(me);
+  const busy = uploadImage.isPending || removeImage.isPending;
 
-  async function uploadFromResult(result: ImagePicker.ImagePickerResult) {
-    if (result.canceled || !result.assets[0]) return;
+  const uploadFromResult = useCallback(
+    async (result: ImagePicker.ImagePickerResult) => {
+      if (result.canceled || !result.assets[0]) return;
 
-    const asset = result.assets[0];
-    const uri = asset.uri;
-    const name = asset.fileName ?? `profile-${Date.now()}.jpg`;
-    const type = asset.mimeType ?? 'image/jpeg';
+      const asset = result.assets[0];
 
-    try {
-      await uploadImage.mutateAsync({ uri, name, type });
-      setSavedModalCopy({
-        title: 'Profile updated',
-        message: 'Your profile picture has been updated successfully.',
-      });
-      setShowSavedModal(true);
-    } catch (err: any) {
-      Alert.alert('Error', err?.message ?? 'Failed to upload profile picture.');
-    }
-  }
+      try {
+        await uploadImage.mutateAsync({
+          uri: asset.uri,
+          name: asset.fileName ?? `profile-${Date.now()}.jpg`,
+          type: asset.mimeType ?? 'image/jpeg',
+        });
+        showToast('Profile picture updated.');
+      } catch (error) {
+        showToast(
+          error instanceof Error ? error.message : 'Could not upload that picture. Try again.'
+        );
+      }
+    },
+    [showToast, uploadImage]
+  );
 
-  async function handlePickCamera() {
-    setShowSourceSheet(false);
-    const permission = await ImagePicker.requestCameraPermissionsAsync();
-    if (!permission.granted) {
-      Alert.alert('Permission needed', 'Please allow camera access to take a profile picture.');
-      return;
-    }
+  const handlePick = useCallback(
+    async (source: PickerSource) => {
+      const permission =
+        source === 'camera'
+          ? await ImagePicker.requestCameraPermissionsAsync()
+          : await ImagePicker.requestMediaLibraryPermissionsAsync();
 
-    const result = await ImagePicker.launchCameraAsync(pickerOptions);
-    await uploadFromResult(result);
-  }
+      if (!permission.granted) {
+        showToast(
+          source === 'camera'
+            ? 'Allow camera access to take a picture.'
+            : 'Allow photo access to choose a picture.'
+        );
+        return;
+      }
 
-  async function handlePickFiles() {
-    setShowSourceSheet(false);
-    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (!permission.granted) {
-      Alert.alert('Permission needed', 'Please allow file access to choose a profile picture.');
-      return;
-    }
+      const result =
+        source === 'camera'
+          ? await ImagePicker.launchCameraAsync(pickerOptions)
+          : await ImagePicker.launchImageLibraryAsync(pickerOptions);
 
-    const result = await ImagePicker.launchImageLibraryAsync(pickerOptions);
-    await uploadFromResult(result);
-  }
+      await uploadFromResult(result);
+    },
+    [showToast, uploadFromResult]
+  );
 
-  function handleRemovePress() {
-    setShowRemoveModal(true);
-  }
-
-  async function handleRemoveImage() {
+  const handleRemove = useCallback(async () => {
     try {
       await removeImage.mutateAsync();
-      setShowRemoveModal(false);
-      setSavedModalCopy({
-        title: 'Image removed',
-        message: 'Your profile picture has been removed successfully.',
-      });
-      setShowSavedModal(true);
-    } catch (err: any) {
-      Alert.alert('Error', err?.message ?? 'Failed to remove profile picture.');
+      setRemoveVisible(false);
+      showToast('Profile picture removed.');
+    } catch (error) {
+      setRemoveVisible(false);
+      showToast(
+        error instanceof Error ? error.message : 'Could not remove that picture. Try again.'
+      );
     }
-  }
+  }, [removeImage, showToast]);
 
   return (
-    <SafeAreaView edges={['top']} style={styles.safeArea}>
-      <ScrollView
-        bounces={false}
-        contentContainerStyle={styles.scroll}
-        showsVerticalScrollIndicator={false}>
-        <Pressable
-          accessibilityLabel="Go back"
-          hitSlop={12}
-          onPress={() => router.back()}
-          style={({ pressed }) => [styles.backButton, pressed && styles.pressed]}>
-          <Ionicons color="#000000" name="chevron-back" size={18} />
-        </Pressable>
-
-        <Text style={styles.title}>Profile Picture</Text>
-        <Text style={styles.subtitle}>Update how you appear across Halcyon</Text>
-
-        <View style={styles.avatarSection}>
-          <ProfileAvatar imageUrl={profileImageUrl} size={138} style={styles.avatarRing} />
-          {!!displayName && <Text style={styles.nameLabel}>{displayName}</Text>}
-        </View>
-
-        <ExploreButton
-          disabled={uploadImage.isPending || removeImage.isPending}
-          label="Change Picture"
-          loading={uploadImage.isPending}
-          onPress={() => setShowSourceSheet(true)}
-          style={styles.actionButton}
+    <SettingsScreen
+      overlay={
+        <>
+          <ConfirmDialog
+            confirmLabel="Remove"
+            destructive
+            icon="trash-outline"
+            loading={removeImage.isPending}
+            message="Your profile will fall back to the default avatar."
+            onCancel={() => setRemoveVisible(false)}
+            onConfirm={() => void handleRemove()}
+            title="Remove your picture?"
+            visible={removeVisible}
+          />
+          <Toast bottom={72} notice={notice} />
+        </>
+      }
+      subtitle="How you appear across Passage."
+      title="Profile Picture">
+      <View style={styles.avatarBlock}>
+        <ProfileAvatar
+          iconColor={HalcyonColors.textSecondary}
+          imageUrl={profileImageUrl}
+          placeholderBackgroundColor={HalcyonColors.surfaceRaised}
+          size={140}
+          style={styles.avatar}
         />
+        {!!displayName && <Text style={styles.name}>{displayName}</Text>}
+      </View>
 
-        {hasImage ? (
-          <Pressable
-            accessibilityRole="button"
-            disabled={uploadImage.isPending || removeImage.isPending}
-            onPress={handleRemovePress}
-            style={({ pressed }) => [
-              styles.removeButton,
-              pressed && styles.pressed,
-              (uploadImage.isPending || removeImage.isPending) && styles.disabledButton,
-            ]}>
-            <Ionicons color="#FF0059" name="trash-outline" size={18} />
-            <Text style={styles.removeButtonText}>Remove Picture</Text>
-          </Pressable>
-        ) : null}
-      </ScrollView>
+      <SettingsPrimaryButton
+        disabled={busy}
+        label={hasImage ? 'Change picture' : 'Add a picture'}
+        onPress={() => setSourceSheetVisible(true)}>
+        {uploadImage.isPending ? (
+          <ActivityIndicator color={HalcyonColors.background} />
+        ) : undefined}
+      </SettingsPrimaryButton>
 
-      <ProfileImageSourceSheet
-        visible={showSourceSheet}
-        onClose={() => setShowSourceSheet(false)}
-        onPickCamera={handlePickCamera}
-        onPickFiles={handlePickFiles}
+      {hasImage && (
+        <View style={styles.removeGroup}>
+          <SettingsGroup>
+            <SettingsRow
+              busy={removeImage.isPending}
+              destructive
+              icon="trash-outline"
+              label="Remove picture"
+              onPress={() => setRemoveVisible(true)}
+              showChevron={false}
+            />
+          </SettingsGroup>
+        </View>
+      )}
+
+      <OptionSheet
+        onClose={() => setSourceSheetVisible(false)}
+        onSelect={(source) => void handlePick(source)}
+        options={SOURCE_OPTIONS}
+        title="Profile picture"
+        value={null}
+        visible={sourceSheetVisible}
       />
-
-      <ConfirmActionModal
-        confirmLabel="Remove"
-        icon="trash-outline"
-        loading={removeImage.isPending}
-        message="Are you sure you want to delete your profile picture?"
-        title="Remove image?"
-        visible={showRemoveModal}
-        onCancel={() => setShowRemoveModal(false)}
-        onConfirm={handleRemoveImage}
-      />
-
-      <SaveSuccessModal
-        message={savedModalCopy.message}
-        title={savedModalCopy.title}
-        visible={showSavedModal}
-        onClose={() => setShowSavedModal(false)}
-      />
-    </SafeAreaView>
+    </SettingsScreen>
   );
 }
 
 const styles = StyleSheet.create({
-  safeArea: {
-    backgroundColor: '#F0EEF8',
-    flex: 1,
-  },
-  scroll: {
-    paddingBottom: 32,
-    paddingHorizontal: 20,
-    paddingTop: 76,
-  },
-  backButton: {
+  avatarBlock: {
     alignItems: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.5)',
-    borderRadius: 16,
-    height: 32,
-    justifyContent: 'center',
-    left: 18,
-    position: 'absolute',
-    top: 15,
-    width: 32,
-    zIndex: 3,
+    marginBottom: 28,
   },
-  pressed: {
-    opacity: 0.86,
-    transform: [{ scale: 0.99 }],
+  avatar: {
+    borderColor: HalcyonColors.border,
+    borderWidth: 1,
   },
-  title: {
-    color: '#173F5F',
-    fontFamily: AppFonts.displayBold,
-    fontSize: 32,
-    fontWeight: '700',
-    lineHeight: 40,
-    marginBottom: 6,
-  },
-  subtitle: {
-    color: '#8C8C8C',
-    fontFamily: AppFonts.sansRegular,
-    fontSize: 14,
-    lineHeight: 22,
-    marginBottom: 32,
-  },
-  avatarSection: {
-    alignItems: 'center',
-    marginBottom: 32,
-  },
-  avatarRing: {
-    borderColor: '#FFFFFF',
-    borderRadius: 72,
-    borderWidth: 3,
-    marginBottom: 12,
-  },
-  nameLabel: {
-    color: '#173F5F',
+  name: {
+    color: HalcyonColors.textPrimary,
     fontFamily: AppFonts.displaySemiBold,
     fontSize: 20,
-    lineHeight: 28,
+    fontWeight: '600',
+    lineHeight: 27,
+    marginTop: 16,
   },
-  actionButton: {
-    alignSelf: 'center',
-    maxWidth: 348,
-    width: '100%',
-  },
-  disabledButton: {
-    opacity: 0.6,
-  },
-  removeButton: {
-    alignItems: 'center',
-    alignSelf: 'center',
-    backgroundColor: '#FFFFFF',
-    borderColor: 'rgba(255,0,89,0.18)',
-    borderRadius: 28,
-    borderWidth: 1,
-    flexDirection: 'row',
-    gap: 8,
-    height: 54,
-    justifyContent: 'center',
-    marginTop: 14,
-    maxWidth: 348,
-    shadowColor: '#FF0059',
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.08,
-    shadowRadius: 14,
-    width: '100%',
-    elevation: 3,
-  },
-  removeButtonText: {
-    color: '#FF0059',
-    fontFamily: AppFonts.sansSemiBold,
-    fontSize: 15,
-    lineHeight: 22,
+  removeGroup: {
+    marginTop: 22,
   },
 });
+
+/**
+ * The gate renders ProfilePictureContent only once there is a session, so a deep link
+ * here while signed out shows the prompt instead of firing a request that can
+ * only come back 401.
+ */
+export default function ProfilePictureScreen() {
+  return (
+    <RequireAuth message="Your profile picture is part of your account.">
+      <ProfilePictureContent />
+    </RequireAuth>
+  );
+}

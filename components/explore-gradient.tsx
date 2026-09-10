@@ -1,7 +1,7 @@
 import { LinearGradient } from 'expo-linear-gradient';
 import type { LinearGradientProps } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
-import { StyleSheet, Text, View, type StyleProp, type ViewStyle } from 'react-native';
+import { StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
 
 import { AppFonts } from '@/constants/theme';
 

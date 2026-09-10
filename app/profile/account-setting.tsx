@@ -1,250 +1,243 @@
-import { Ionicons } from '@expo/vector-icons';
 import { useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
-import {
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  View,
-} from 'react-native';
-import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 
-import { LegalDisclaimer } from '@/components/LegalDisclaimer';
-import { ConfirmActionModal } from '@/components/profile/ConfirmActionModal';
+import { ConfirmDialog } from '@/components/ConfirmDialog';
+import { RequireAuth } from '@/components/RequireAuth';
+import { ProfileAvatar } from '@/components/profile/ProfileAvatar';
+import { SettingsGroup, SettingsRow, SettingsStatus } from '@/components/SettingsRow';
+import { SettingsScreen } from '@/components/SettingsScreen';
+import { Toast, useToast } from '@/components/Toast';
+import { HalcyonColors } from '@/constants/design';
 import { AppFonts } from '@/constants/theme';
+import { useHasSession } from '@/hooks/useSession';
+import { useUser } from '@/hooks/useUser';
+import { getDisplayName, getProfileEmail } from '@/lib/api/user';
 import { clearUserSession } from '@/lib/auth/clearSession';
+import { deleteAccount } from '@/lib/haven-api';
 
-const SETTINGS_ROWS = [
-  {
-    key: 'name',
-    label: 'Name',
-    icon: 'person-outline' as const,
-  },
-  {
-    key: 'email',
-    label: 'Email address',
-    icon: 'mail-outline' as const,
-  },
-  {
-    key: 'profile-picture',
-    label: 'Profile picture',
-    icon: 'image-outline' as const,
-  },
-  {
-    key: 'password',
-    label: 'Password',
-    icon: 'lock-closed-outline' as const,
-  },
-];
-
-export default function AccountSettingScreen() {
+/**
+ * R-02. The account's own details, plus the two irreversible actions — signing
+ * out and deleting the account. Delete used to live inside the change-email
+ * screen, which is not where anyone would look for it.
+ */
+function AccountSettingContent() {
   const router = useRouter();
-  const insets = useSafeAreaInsets();
   const queryClient = useQueryClient();
-  const [showLogoutModal, setShowLogoutModal] = useState(false);
-  const [loggingOut, setLoggingOut] = useState(false);
+  const hasSession = useHasSession();
+  const { notice, showToast } = useToast();
 
-  async function confirmLogout() {
-    setLoggingOut(true);
+  const { data: me, isInitialLoading, isError, refetch } = useUser();
+  const [signOutVisible, setSignOutVisible] = useState(false);
+  const [deleteVisible, setDeleteVisible] = useState(false);
+  const [busy, setBusy] = useState(false);
+
+  const displayName = getDisplayName(me);
+  const email = getProfileEmail(me);
+  const profileImageUrl = me?.profile?.profile_image_url ?? '';
+
+  const detail = (value: string) => {
+    if (value) return value;
+    if (isInitialLoading) return 'Loading…';
+    if (isError) return 'Unavailable';
+    return 'Not set';
+  };
+
+  async function confirmSignOut() {
+    setBusy(true);
     try {
       await clearUserSession(queryClient);
-      setShowLogoutModal(false);
+      setSignOutVisible(false);
       router.dismissAll();
       router.replace('/login');
+    } catch {
+      showToast('Could not sign out. Try again.');
     } finally {
-      setLoggingOut(false);
+      setBusy(false);
     }
   }
 
-  function handleRowPress(key: string) {
-    if (key === 'profile-picture') router.push('/profile/profile-picture');
-    else if (key === 'name') router.push('/profile/edit-name');
-    else if (key === 'email') router.push('/profile/change-email');
-    else if (key === 'password') router.push('/profile/update-password');
+  async function confirmDeleteAccount() {
+    setBusy(true);
+    try {
+      await deleteAccount();
+      await clearUserSession(queryClient);
+      setDeleteVisible(false);
+      router.dismissAll();
+      router.replace('/login');
+    } catch (error) {
+      setDeleteVisible(false);
+      showToast(
+        error instanceof Error ? error.message : 'Could not delete your account. Try again.'
+      );
+    } finally {
+      setBusy(false);
+    }
   }
 
   return (
-    <SafeAreaView edges={['top']} style={styles.safeArea}>
-      <ScrollView
-        bounces={false}
-        contentContainerStyle={[styles.scroll, { paddingBottom: insets.bottom + 40 }]}
-        showsVerticalScrollIndicator={false}>
+    <SettingsScreen
+      overlay={
+        <>
+          <ConfirmDialog
+            confirmLabel="Sign out"
+            icon="log-out-outline"
+            loading={busy}
+            message="You can sign back in at any time. Downloads stay on this device."
+            onCancel={() => setSignOutVisible(false)}
+            onConfirm={() => void confirmSignOut()}
+            title="Sign out?"
+            visible={signOutVisible}
+          />
+          <ConfirmDialog
+            confirmLabel="Delete account"
+            destructive
+            icon="trash-outline"
+            loading={busy}
+            message="This permanently removes your account, your saved soundscapes, playlists and listening history. It cannot be undone."
+            onCancel={() => setDeleteVisible(false)}
+            onConfirm={() => void confirmDeleteAccount()}
+            title="Delete your account?"
+            visible={deleteVisible}
+          />
+          <Toast bottom={72} notice={notice} />
+        </>
+      }
+      subtitle="Your details, and how they are stored."
+      title="Account">
+      <View style={styles.avatarBlock}>
+        <ProfileAvatar
+          iconColor={HalcyonColors.textSecondary}
+          imageUrl={profileImageUrl}
+          placeholderBackgroundColor={HalcyonColors.surfaceRaised}
+          size={88}
+          style={styles.avatar}
+        />
         <Pressable
-          accessibilityLabel="Go back"
-          hitSlop={12}
-          onPress={() => router.back()}
-          style={({ pressed }) => [styles.backButton, pressed && styles.pressed]}>
-          <Ionicons name="chevron-back" size={18} color="#000000" />
+          accessibilityLabel="Edit profile picture"
+          accessibilityRole="button"
+          onPress={() => router.push('/profile/profile-picture')}
+          style={({ pressed }) => [styles.editButton, pressed && styles.pressed]}>
+          <Text style={styles.editLabel}>Edit</Text>
         </Pressable>
+      </View>
 
-        <Text style={styles.title}>Account Settings</Text>
-        <Text style={styles.subtitle}>Manage your account details</Text>
+      {isError && (
+        <Pressable
+          accessibilityLabel="Retry loading your account"
+          accessibilityRole="button"
+          onPress={() => void refetch()}
+          style={({ pressed }) => [styles.retry, pressed && styles.pressed]}>
+          <Text style={styles.retryLabel}>Couldn&apos;t load your details. Try again.</Text>
+        </Pressable>
+      )}
 
-        <View style={styles.card}>
-          {SETTINGS_ROWS.map((row, index) => (
-            <Pressable
-              key={row.key}
-              onPress={() => handleRowPress(row.key)}
-              style={({ pressed }) => [
-                styles.row,
-                index < SETTINGS_ROWS.length - 1 && styles.rowDivider,
-                pressed && styles.rowPressed,
-              ]}>
-              <View style={styles.iconCircle}>
-                <Ionicons name={row.icon} size={20} color="#6339FB" />
-              </View>
-              <Text style={styles.rowLabel}>{row.label}</Text>
-              <Ionicons name="chevron-forward" size={16} color="#8C8C8C" />
-            </Pressable>
-          ))}
-        </View>
+      <SettingsGroup>
+        <SettingsRow
+          icon="person-outline"
+          label="Name"
+          onPress={() => router.push('/profile/edit-name')}
+          value={detail(displayName)}
+        />
+        <SettingsRow
+          icon="mail-outline"
+          label="Email"
+          onPress={() => router.push('/profile/change-email')}
+          value={detail(email)}
+        />
+        <SettingsRow
+          icon="lock-closed-outline"
+          label="Change Password"
+          onPress={() => router.push('/profile/update-password')}
+        />
+      </SettingsGroup>
 
-        <Text style={styles.sectionLabel}>Account Actions</Text>
-        <View style={styles.card}>
-          <Pressable
-            onPress={() => setShowLogoutModal(true)}
-            style={({ pressed }) => [styles.row, pressed && styles.rowPressed]}>
-            <View style={[styles.iconCircle, styles.logoutIconCircle]}>
-              <Ionicons name="log-out-outline" size={20} color="#FF0059" />
-            </View>
-            <Text style={styles.logoutLabel}>Logout</Text>
-          </Pressable>
-        </View>
+      <SettingsGroup
+        footnote={
+          hasSession
+            ? 'Your favourites, playlists, preferences and listening history are stored on your Passage account, so they follow you to a new device.'
+            : 'Sign in to back your library up to your Passage account.'
+        }>
+        <SettingsRow
+          accessory={
+            hasSession ? (
+              <SettingsStatus label="Synced" />
+            ) : (
+              <SettingsStatus icon="cloud-offline-outline" label="Offline" />
+            )
+          }
+          icon="cloud-outline"
+          label="Sync"
+        />
+      </SettingsGroup>
 
-      </ScrollView>
-
-      <LegalDisclaimer
-        linkStyle={styles.legalLink}
-        prefix="By using Halcyon, you agree to our"
-        style={{ paddingBottom: insets.bottom + 16, paddingHorizontal: 24, paddingTop: 12 }}
-        textStyle={styles.legalText}
-      />
-
-      <ConfirmActionModal
-        confirmLabel="Logout"
-        icon="log-out-outline"
-        loading={loggingOut}
-        message="Are you sure you want to logout from your account?"
-        title="Logout"
-        visible={showLogoutModal}
-        onCancel={() => setShowLogoutModal(false)}
-        onConfirm={confirmLogout}
-      />
-    </SafeAreaView>
+      <SettingsGroup>
+        <SettingsRow
+          icon="log-out-outline"
+          label="Sign out"
+          onPress={() => setSignOutVisible(true)}
+          showChevron={false}
+        />
+        <SettingsRow
+          destructive
+          icon="trash-outline"
+          label="Delete Account"
+          onPress={() => setDeleteVisible(true)}
+          showChevron={false}
+        />
+      </SettingsGroup>
+    </SettingsScreen>
   );
 }
 
 const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-    backgroundColor: '#F0EEF8',
-  },
-  scroll: {
-    paddingHorizontal: 20,
-    paddingTop: 76,
-  },
-  backButton: {
+  avatarBlock: {
     alignItems: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.5)',
-    borderRadius: 16,
-    height: 32,
-    justifyContent: 'center',
-    left: 18,
-    position: 'absolute',
-    top: 15,
-    width: 32,
-    zIndex: 3,
+    marginBottom: 26,
   },
-  pressed: { opacity: 0.86, transform: [{ scale: 0.99 }] },
-  title: {
-    color: '#173F5F',
-    fontFamily: AppFonts.displayBold,
-    fontSize: 32,
-    fontWeight: '700',
-    lineHeight: 40,
-    marginBottom: 6,
+  avatar: {
+    borderColor: HalcyonColors.border,
+    borderWidth: 1,
   },
-  subtitle: {
-    color: '#8C8C8C',
-    fontFamily: AppFonts.sansRegular,
-    fontSize: 14,
-    lineHeight: 22,
-    marginBottom: 24,
+  editButton: {
+    borderColor: HalcyonColors.border,
+    borderRadius: 999,
+    borderWidth: 1,
+    marginTop: 14,
+    paddingHorizontal: 22,
+    paddingVertical: 8,
   },
-  card: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 16,
-    marginBottom: 20,
-    overflow: 'hidden',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 2,
-  },
-  row: {
-    alignItems: 'center',
-    flexDirection: 'row',
-    minHeight: 70,
-    paddingHorizontal: 16,
-  },
-  rowDivider: {
-    borderBottomColor: 'rgba(23,63,95,0.07)',
-    borderBottomWidth: StyleSheet.hairlineWidth,
-  },
-  rowPressed: {
-    backgroundColor: 'rgba(99,57,251,0.04)',
-  },
-  iconCircle: {
-    alignItems: 'center',
-    backgroundColor: '#7B61FF14',
-    borderRadius: 20,
-    height: 40,
-    justifyContent: 'center',
-    marginRight: 14,
-    width: 40,
-  },
-  logoutIconCircle: {
-    backgroundColor: '#FF005914',
-  },
-  rowLabel: {
-    color: '#173F5F',
-    flex: 1,
-    fontFamily: AppFonts.sansSemiBold,
-    fontSize: 15,
-    fontWeight: '600',
-    lineHeight: 22,
-  },
-  logoutLabel: {
-    color: '#FF0059',
-    flex: 1,
-    fontFamily: AppFonts.sansSemiBold,
-    fontSize: 15,
-    fontWeight: '600',
-    lineHeight: 22,
-  },
-  sectionLabel: {
-    color: '#6339FB',
-    fontFamily: AppFonts.sansSemiBold,
-    fontSize: 13,
-    fontWeight: '600',
-    letterSpacing: 0.3,
-    marginBottom: 8,
-    paddingHorizontal: 2,
-  },
-  legalText: {
-    color: '#173F5F',
+  editLabel: {
+    color: HalcyonColors.accent,
     fontFamily: AppFonts.sansMedium,
     fontSize: 13,
     fontWeight: '500',
-    lineHeight: 20,
-    opacity: 0.7,
-    textAlign: 'center',
+    lineHeight: 18,
   },
-  legalLink: {
-    textDecorationLine: 'underline',
-    textDecorationStyle: 'solid',
+  pressed: {
+    opacity: 0.75,
+  },
+  retry: {
+    marginBottom: 16,
+  },
+  retryLabel: {
+    color: HalcyonColors.accent,
+    fontFamily: AppFonts.sansRegular,
+    fontSize: 13,
+    lineHeight: 18,
   },
 });
+
+/**
+ * The gate renders AccountSettingContent only once there is a session, so a deep link
+ * here while signed out shows the prompt instead of firing a request that can
+ * only come back 401.
+ */
+export default function AccountSettingScreen() {
+  return (
+    <RequireAuth message="There is no account to manage until you log in.">
+      <AccountSettingContent />
+    </RequireAuth>
+  );
+}

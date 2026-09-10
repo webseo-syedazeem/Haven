@@ -2,8 +2,17 @@ import * as SecureStore from 'expo-secure-store';
 import { Platform } from 'react-native';
 
 import { ME_QUERY_KEY } from '@/hooks/useUser';
-import { userApi } from '@/lib/api/user';
+import { isNetworkError } from '@/lib/api/errors';
+import { getAuthUserId, userApi } from '@/lib/api/user';
+import {
+  cacheProfile,
+  markLoggedIn,
+  markLoggedOut,
+  readCachedProfile,
+  wasLoggedIn,
+} from '@/lib/auth/offline-session';
 import { finishSessionRestore } from '@/lib/auth/session-state';
+import { setActiveDownloadUser } from '@/lib/local-downloads';
 import { clearAuthTokens, refreshSession, setAccessToken, setAuthTokens } from '@/lib/haven-api';
 import { queryClient } from '@/lib/query-client';
 
@@ -38,28 +47,65 @@ async function deleteStoredItem(key: string) {
   await SecureStore.deleteItemAsync(key);
 }
 
-let restorePromise: Promise<boolean> | null = null;
+/**
+ * How the launch time restore ended.
+ *
+ * `offline` is the one that matters: the stored session could not be checked
+ * because nothing answered, so it is treated as still valid. Only `signed-out`
+ * sends the user to the sign-in screen.
+ */
+export type SessionRestoreStatus = 'restored' | 'offline' | 'signed-out';
+
+let restorePromise: Promise<SessionRestoreStatus> | null = null;
 
 /**
  * Reads the tokens kept in secure storage once per launch and validates them.
- * Resolves to `true` when a usable session was restored, meaning the app can go
- * straight to the tabs. Until it settles no authenticated query runs, so a fresh
- * install never calls `/api/me` and a stale token is refreshed quietly instead
- * of surfacing an auth error.
+ *
+ * The rule the whole offline launch rests on: a session is only ever dropped
+ * when a *reachable* server rejects it. A failed request with no HTTP response
+ * behind it - airplane mode, no signal, a timeout - leaves the tokens, the
+ * cached profile and the durable flag exactly where they are, and the app opens
+ * as normal. Until this settles no authenticated query runs, so a fresh install
+ * never calls `/api/me` and a stale token is refreshed quietly.
  */
 export function restoreSession() {
   restorePromise ??= runRestore();
   return restorePromise;
 }
 
-async function runRestore(): Promise<boolean> {
+/**
+ * Nothing answered, so nothing can be concluded about the session. The tokens
+ * stay put and the user goes into the app if this device was ever signed in.
+ *
+ * `wasLoggedIn()` returns `null` on an install that predates the flag; the
+ * stored access token that got us here is evidence enough, so unknown is
+ * treated as signed in rather than tipping an existing user out.
+ */
+async function offlineOutcome(): Promise<SessionRestoreStatus> {
+  return (await wasLoggedIn()) === false ? 'signed-out' : 'offline';
+}
+
+async function runRestore(): Promise<SessionRestoreStatus> {
   try {
     const accessToken =
       (await getStoredItem(ACCESS_TOKEN_KEY)) ?? (await getStoredItem(LEGACY_ACCESS_TOKEN_KEY));
     const refreshToken = await getStoredItem(REFRESH_TOKEN_KEY);
 
+    // Seed the cache before anything is validated, so an offline launch has a
+    // name and an avatar to draw the moment the tabs mount.
+    const cached = await readCachedProfile();
+    if (cached) {
+      queryClient.setQueryData(ME_QUERY_KEY, cached);
+      // The only sign-in path that never reaches `cacheProfile`: an offline
+      // launch has no `/api/me` to cache, so the pointer is re-asserted from
+      // the copy on disk. The manifest already carries it across launches;
+      // this covers an install whose manifest predates ownership.
+      await setActiveDownloadUser(getAuthUserId(cached));
+    }
+
     if (!accessToken) {
-      return false;
+      await markLoggedOut();
+      return 'signed-out';
     }
 
     setAccessToken(accessToken);
@@ -69,9 +115,13 @@ async function runRestore(): Promise<boolean> {
 
     try {
       // Primes the cache so the `useUser` query does not refetch straight after.
-      queryClient.setQueryData(ME_QUERY_KEY, await userApi.get());
-      return true;
-    } catch {
+      const me = await userApi.get();
+      queryClient.setQueryData(ME_QUERY_KEY, me);
+      await cacheProfile(me);
+      await markLoggedIn();
+      return 'restored';
+    } catch (error) {
+      if (isNetworkError(error)) return offlineOutcome();
       // Stored access token is no longer accepted, try the refresh token below.
     }
 
@@ -88,24 +138,35 @@ async function runRestore(): Promise<boolean> {
             await setStoredItem(REFRESH_TOKEN_KEY, nextRefreshToken);
           }
           setAccessToken(nextAccessToken);
-          return true;
+          const me = await userApi.get();
+          queryClient.setQueryData(ME_QUERY_KEY, me);
+          await cacheProfile(me);
+          await markLoggedIn();
+          return 'restored';
         }
-      } catch {
-        // Refresh failed, fall through and drop the session.
+      } catch (error) {
+        if (isNetworkError(error)) return offlineOutcome();
+        // Refresh was refused by a server that answered, so the session is
+        // genuinely over. Fall through and drop it.
       }
     }
 
     clearAuthTokens();
     queryClient.removeQueries({ queryKey: ME_QUERY_KEY });
+    // A reachable server refused the credentials, so this is a sign out in
+    // everything but name — `markLoggedOut` drops the downloads pointer too.
+    await markLoggedOut();
     await Promise.all([
       deleteStoredItem(ACCESS_TOKEN_KEY),
       deleteStoredItem(LEGACY_ACCESS_TOKEN_KEY),
       deleteStoredItem(REFRESH_TOKEN_KEY),
     ]);
 
-    return false;
+    return 'signed-out';
   } catch {
-    return false;
+    // Reading storage itself failed. Nothing was rejected, so an install that
+    // was signed in stays signed in.
+    return offlineOutcome();
   } finally {
     finishSessionRestore();
   }

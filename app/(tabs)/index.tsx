@@ -1,203 +1,335 @@
-﻿import { Ionicons } from '@expo/vector-icons';
 import { useRouter, type Href } from 'expo-router';
-import { useState } from 'react';
-import {
-  ImageBackground,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
-} from 'react-native';
+import { useCallback, useState } from 'react';
+import { RefreshControl, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { SwipeTabsWrapper } from '@/components/navigation/SwipeTabsWrapper';
-import { AppFonts } from '@/constants/theme';
-import { AvatarPreview } from '@/components/profile/AvatarPreview';
+import { CollectionCard, COLLECTION_CARD_WIDTH } from '@/components/CollectionCard';
+import { ContinueCard, ContinueCardSkeleton } from '@/components/ContinueCard';
+import { MINI_PLAYER_HEIGHT } from '@/components/MiniPlayer';
+import { ModeCard, ModeCardSkeleton } from '@/components/ModeCard';
 import { ProfileAvatar } from '@/components/profile/ProfileAvatar';
+import { SectionRail } from '@/components/SectionRail';
+import { SoundscapeCard } from '@/components/SoundscapeCard';
+import { HALCYON_TAB_BAR_HEIGHT, HalcyonColors, HalcyonSpacing } from '@/constants/design';
+import { MODES, type ModeConfig } from '@/constants/modes';
+import { AppFonts } from '@/constants/theme';
+import {
+  useContinueListening,
+  useFavouriteSoundscapes,
+  useNewToHalcyon,
+  usePopularCollections,
+  useRecentlyPlayed,
+  useRecommended,
+  useShortSessions,
+} from '@/hooks/useHome';
 import { useUser } from '@/hooks/useUser';
-import { getDisplayName } from '@/lib/api/user';
-import { getUkGreeting } from '@/lib/utils/greeting';
+import type { Collection, Soundscape } from '@/lib/api/home';
+import { usePlayerActions, usePlayerState } from '@/lib/player/PlayerProvider';
+import { getFirstName } from '@/lib/api/user';
+import { getTimeOfDay } from '@/lib/utils/greeting';
 
-const backgroundImage = require('@/assets/images/4a78c0b5bcbe750563b0d0e3ecbe9951c1d0f0cc.png');
-
-const settingRows = [
-  { title: 'Notification', subtitle: 'Daily Reminders', icon: 'notifications-outline', route: '/profile/notification' },
-  { title: 'Account Setting', subtitle: 'Your Data is private', icon: 'settings-outline', route: '/profile/account-setting' },
-] as const;
-
-type ProfileRow = (typeof settingRows)[number];
-
-function SectionCard({ label, rows }: { label: string; rows: readonly ProfileRow[] }) {
+export default function HomeScreen() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
+  const [refreshing, setRefreshing] = useState(false);
+  const { playSoundscape, resume } = usePlayerActions();
+  const { soundscape: currentTrack, resumable } = usePlayerState();
+
+  const userQuery = useUser();
+  const me = userQuery.data;
+  const firstName = getFirstName(me);
+  const profileImageUrl = me?.profile?.profile_image_url ?? '';
+
+  const continueListening = useContinueListening();
+  const recommended = useRecommended();
+  const recentlyPlayed = useRecentlyPlayed();
+  const favourites = useFavouriteSoundscapes();
+  const newToHalcyon = useNewToHalcyon();
+  const shortSessions = useShortSessions();
+  const popularCollections = usePopularCollections();
+
+  const openSoundscape = useCallback(
+    (soundscape: Soundscape) => router.push(`/soundscape/${soundscape.id}` as Href),
+    [router]
+  );
+
+  const openMode = useCallback(
+    (mode: ModeConfig) => router.push(`/mode/${mode.id}` as Href),
+    [router]
+  );
+
+
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    try {
+      await Promise.allSettled([
+        userQuery.refetch(),
+        continueListening.refetch(),
+        recommended.refetch(),
+        recentlyPlayed.refetch(),
+        favourites.refetch(),
+        newToHalcyon.refetch(),
+        shortSessions.refetch(),
+        popularCollections.refetch(),
+      ]);
+    } finally {
+      setRefreshing(false);
+    }
+  }, [
+    continueListening,
+    favourites,
+    newToHalcyon,
+    popularCollections,
+    recentlyPlayed,
+    recommended,
+    shortSessions,
+    userQuery,
+  ]);
+
+  const apiContinueItem = continueListening.data;
+  const isBootstrapping = userQuery.isInitialLoading;
+
+  // Saved player state wins over the history rail: it is the position this
+  // device actually stopped at.
+  const continueEntry = resumable
+    ? {
+        soundscape: resumable.soundscape,
+        positionSeconds: resumable.positionSeconds,
+        durationSeconds: resumable.durationSeconds,
+        // `resume` also restores the timer that was running when it was saved.
+        play: resume,
+      }
+    : apiContinueItem?.soundscape
+      ? {
+          soundscape: apiContinueItem.soundscape,
+          positionSeconds: apiContinueItem.position_seconds,
+          durationSeconds: apiContinueItem.duration_seconds,
+          play: () =>
+            playSoundscape(apiContinueItem.soundscape!, {
+              startAt: apiContinueItem.position_seconds,
+            }),
+        }
+      : null;
+
+  /** Cards play in the context of their own rail, so next/previous stay useful. */
+  const renderCard = useCallback(
+    (soundscape: Soundscape, queue: Soundscape[]) => (
+      <SoundscapeCard
+        onPlay={(picked) => void playSoundscape(picked, { queue })}
+        onPress={openSoundscape}
+        soundscape={soundscape}
+      />
+    ),
+    [openSoundscape, playSoundscape]
+  );
+  const soundscapeKey = useCallback((item: Soundscape, index: number) => item.id ?? `${index}`, []);
+  const bottomInset =
+    insets.bottom + HALCYON_TAB_BAR_HEIGHT + (currentTrack ? MINI_PLAYER_HEIGHT : 0) + 36;
+
   return (
-    <View style={styles.section}>
-      <Text style={styles.sectionLabel}>{label}</Text>
-      <View style={styles.card}>
-        {rows.map((row, index) => (
-          <TouchableOpacity
-            key={row.title}
-            activeOpacity={0.75}
-            onPress={() => router.push(row.route as Href)}
-            style={[styles.row, index < rows.length - 1 && styles.rowDivider]}>
-            <View style={styles.iconCircle}>
-              <Ionicons name={row.icon as keyof typeof Ionicons.glyphMap} size={20} color="#6339FB" />
+    <View style={styles.screen}>
+      <SafeAreaView edges={['top']} style={styles.safeArea}>
+        <ScrollView
+          contentContainerStyle={[styles.content, { paddingBottom: bottomInset }]}
+          refreshControl={
+            <RefreshControl
+              colors={[HalcyonColors.accent]}
+              onRefresh={onRefresh}
+              refreshing={refreshing}
+              tintColor={HalcyonColors.accent}
+            />
+          }
+          showsVerticalScrollIndicator={false}>
+          {/* Greeting */}
+          <View style={styles.block}>
+            <View style={styles.headerRow}>
+              <View style={styles.greetingBlock}>
+                <Text style={styles.greetingLine}>{`Good ${getTimeOfDay()},`}</Text>
+                {isBootstrapping ? (
+                  <View style={styles.greetingNameSkeleton} />
+                ) : (
+                  <Text numberOfLines={1} style={styles.greetingName}>
+                    {firstName || 'there'}
+                  </Text>
+                )}
+                <Text style={styles.subtitle}>Where would you like to go?</Text>
+              </View>
+              <TouchableOpacity
+                accessibilityLabel="Open profile"
+                accessibilityRole="button"
+                activeOpacity={0.86}
+                onPress={() => router.push('/(tabs)/profile' as Href)}>
+                <ProfileAvatar
+                  iconColor={HalcyonColors.textSecondary}
+                  imageUrl={profileImageUrl}
+                  placeholderBackgroundColor={HalcyonColors.surface}
+                  size={46}
+                />
+              </TouchableOpacity>
             </View>
-            <View style={styles.rowCopy}>
-              <Text style={styles.rowTitle}>{row.title}</Text>
-              <Text style={styles.rowSubtitle}>{row.subtitle}</Text>
+          </View>
+
+          {/* Continue Listening — the whole section drops when there is nothing to resume */}
+          {continueListening.isInitialLoading ? (
+            <View style={[styles.block, styles.section]}>
+              <Text style={styles.sectionTitle}>Continue Listening</Text>
+              <ContinueCardSkeleton />
             </View>
-            <Ionicons name="chevron-forward" size={16} color="#AAAAAA" />
-          </TouchableOpacity>
-        ))}
-      </View>
+          ) : continueEntry ? (
+            <View style={[styles.block, styles.section]}>
+              <Text style={styles.sectionTitle}>Continue Listening</Text>
+              <ContinueCard
+                durationSeconds={continueEntry.durationSeconds}
+                onPlay={() => {
+                  void continueEntry.play().then(() => router.push('/player'));
+                }}
+                onPress={openSoundscape}
+                positionSeconds={continueEntry.positionSeconds}
+                soundscape={continueEntry.soundscape}
+              />
+            </View>
+          ) : null}
+
+          {/* Choose your mode — always present, even on a brand new account */}
+          <View style={[styles.block, styles.section]}>
+            <Text style={styles.sectionTitle}>Choose your mode</Text>
+            <View style={styles.modeStack}>
+              {isBootstrapping
+                ? MODES.map((mode) => <ModeCardSkeleton key={mode.id} />)
+                : MODES.map((mode) => <ModeCard key={mode.id} mode={mode} onPress={openMode} />)}
+            </View>
+          </View>
+
+          <SectionRail
+            data={recommended.data}
+            isError={recommended.isError}
+            isLoading={recommended.isInitialLoading}
+            keyExtractor={soundscapeKey}
+            onSeeAll={() => router.push('/(tabs)/explore' as Href)}
+            renderItem={(soundscape) => renderCard(soundscape, recommended.data ?? [])}
+            title="Recommended Now"
+          />
+
+          <SectionRail
+            data={recentlyPlayed.data}
+            isError={recentlyPlayed.isError}
+            isLoading={recentlyPlayed.isInitialLoading}
+            keyExtractor={soundscapeKey}
+            onSeeAll={() => router.push('/(tabs)/saved' as Href)}
+            renderItem={(soundscape) => renderCard(soundscape, recentlyPlayed.data ?? [])}
+            title="Recently Played"
+          />
+
+          <SectionRail
+            data={favourites.soundscapes}
+            isError={favourites.isError}
+            isLoading={favourites.isInitialLoading}
+            keyExtractor={soundscapeKey}
+            onSeeAll={() => router.push('/(tabs)/saved' as Href)}
+            renderItem={(soundscape) => renderCard(soundscape, favourites.soundscapes)}
+            title="Your Favourites"
+          />
+
+          <SectionRail
+            data={newToHalcyon.data}
+            isError={newToHalcyon.isError}
+            isLoading={newToHalcyon.isInitialLoading}
+            keyExtractor={soundscapeKey}
+            onSeeAll={() => router.push('/(tabs)/library' as Href)}
+            renderItem={(soundscape) => renderCard(soundscape, newToHalcyon.data ?? [])}
+            title="New to Passage"
+          />
+
+          <SectionRail
+            data={shortSessions.data}
+            isError={shortSessions.isError}
+            isLoading={shortSessions.isInitialLoading}
+            keyExtractor={soundscapeKey}
+            onSeeAll={() => router.push('/(tabs)/library' as Href)}
+            renderItem={(soundscape) => renderCard(soundscape, shortSessions.data ?? [])}
+            title="Short Sessions"
+          />
+
+          <SectionRail<Collection>
+            data={popularCollections.data}
+            isError={popularCollections.isError}
+            isLoading={popularCollections.isInitialLoading}
+            itemHeight={124}
+            itemWidth={COLLECTION_CARD_WIDTH}
+            keyExtractor={(collection, index) => collection.id ?? `${index}`}
+            onSeeAll={() => router.push('/(tabs)/explore' as Href)}
+            renderItem={(collection) => <CollectionCard collection={collection} />}
+            title="Popular Collections"
+            withCaptionSkeleton={false}
+          />
+        </ScrollView>
+      </SafeAreaView>
     </View>
   );
 }
 
-export default function ProfileScreen() {
-  const insets = useSafeAreaInsets();
-  const { data: me } = useUser();
-  const [avatarPreviewVisible, setAvatarPreviewVisible] = useState(false);
-  const greeting = getUkGreeting();
-  const displayName = getDisplayName(me) || 'there';
-  const profileImageUrl = me?.profile?.profile_image_url ?? '';
-
-  return (
-    <SwipeTabsWrapper>
-      <ImageBackground source={backgroundImage} resizeMode="cover" style={styles.screen}>
-        <SafeAreaView edges={['top']} style={styles.safeArea}>
-          <ScrollView
-            bounces
-            contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 112 }]}
-            overScrollMode="always"
-            showsVerticalScrollIndicator={false}
-            style={styles.scrollView}>
-          <View style={styles.headerRow}>
-            <View style={styles.greetingBlock}>
-              <Text style={styles.greetingLine}>{`${greeting},`}</Text>
-              <Text style={styles.greetingName}>{displayName}</Text>
-            </View>
-            <TouchableOpacity
-              activeOpacity={0.86}
-              disabled={!profileImageUrl}
-              onPress={() => {
-                if (profileImageUrl) {
-                  setAvatarPreviewVisible(true);
-                }
-              }}>
-              <ProfileAvatar
-                imageUrl={profileImageUrl}
-                size={56}
-                style={styles.avatarRing}
-              />
-            </TouchableOpacity>
-          </View>
-          <SectionCard label="Setting" rows={settingRows} />
-          </ScrollView>
-        </SafeAreaView>
-        <AvatarPreview
-          visible={avatarPreviewVisible}
-          imageUrl={profileImageUrl}
-          onClose={() => setAvatarPreviewVisible(false)}
-        />
-      </ImageBackground>
-    </SwipeTabsWrapper>
-  );
-}
-
 const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: '#C8BFEE' },
-  safeArea: { flex: 1 },
+  screen: {
+    backgroundColor: HalcyonColors.background,
+    flex: 1,
+  },
+  safeArea: {
+    flex: 1,
+  },
   content: {
     flexGrow: 1,
-    paddingHorizontal: 16,
-    paddingTop: 60,
+    paddingTop: 18,
+  },
+  block: {
+    paddingHorizontal: HalcyonSpacing.screenX,
+  },
+  section: {
+    marginTop: HalcyonSpacing.section,
   },
   headerRow: {
-    alignItems: 'center',
+    alignItems: 'flex-start',
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: 28,
   },
   greetingBlock: {
     flex: 1,
-    paddingRight: 12,
+    paddingRight: 16,
   },
   greetingLine: {
-    color: '#173F5F',
-    fontFamily: AppFonts.sansMedium,
-    fontSize: 18,
-    fontWeight: '500',
-    lineHeight: 26,
-    opacity: 0.85,
+    color: HalcyonColors.textPrimary,
+    fontFamily: AppFonts.displayRegular,
+    fontSize: 34,
+    lineHeight: 42,
   },
   greetingName: {
-    color: '#173F5F',
-    fontFamily: AppFonts.displayBold,
-    fontSize: 28,
-    fontWeight: '700',
-    lineHeight: 36,
-    marginTop: 2,
+    color: HalcyonColors.accent,
+    fontFamily: AppFonts.displayRegular,
+    fontSize: 34,
+    lineHeight: 42,
   },
-  avatarRing: {},
-  section: { marginBottom: 20 },
-  sectionLabel: {
-   
-    fontFamily: AppFonts.sansMedium,
-    fontSize: 13,
-    fontWeight: '500',
-    letterSpacing: 0.2,
-    lineHeight: 20,
-    marginBottom: 8,
-    paddingHorizontal: 2,
+  greetingNameSkeleton: {
+    backgroundColor: HalcyonColors.skeleton,
+    borderRadius: 6,
+    height: 26,
+    marginTop: 8,
+    maxWidth: 180,
   },
-  card: {
-    backgroundColor: 'rgba(255,255,255,0.90)',
-    borderRadius: 14,
-    overflow: 'hidden',
-    paddingHorizontal: 4,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.08,
-    shadowRadius: 10,
-    elevation: 4,
-  },
-  row: {
-    alignItems: 'center',
-    flexDirection: 'row',
-    minHeight: 72,
-    paddingHorizontal: 12,
-  },
-  rowDivider: {
-    borderBottomColor: 'rgba(23,63,95,0.07)',
-    borderBottomWidth: StyleSheet.hairlineWidth,
-  },
-  iconCircle: {
-    alignItems: 'center',
-    backgroundColor: 'rgba(123,97,255,0.10)',
-    borderRadius: 22,
-    height: 44,
-    justifyContent: 'center',
-    marginRight: 14,
-    width: 44,
-  },
-  rowCopy: { flex: 1 },
-  rowTitle: {
-    color: '#1A1A1A',
-    fontFamily: AppFonts.sansSemiBold,
-    fontSize: 15,
-    fontWeight: '500',
-    lineHeight: 22,
-  },
-  rowSubtitle: {
-    color: '#9A9A9A',
+  subtitle: {
+    color: HalcyonColors.textSecondary,
     fontFamily: AppFonts.sansRegular,
-    fontSize: 12,
-    lineHeight: 18,
-    marginTop: 1,
+    fontSize: 14,
+    lineHeight: 20,
+    marginTop: 10,
   },
-  scrollView: {
-    flex: 1,
+  sectionTitle: {
+    color: HalcyonColors.textPrimary,
+    fontFamily: AppFonts.displaySemiBold,
+    fontSize: 21,
+    fontWeight: '600',
+    lineHeight: 28,
+    marginBottom: 14,
+  },
+  modeStack: {
+    rowGap: 14,
   },
 });

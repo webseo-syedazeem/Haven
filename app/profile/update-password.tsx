@@ -1,247 +1,129 @@
-import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
-import {
-  KeyboardAvoidingView,
-  Platform,
-  Pressable,
-  StyleSheet,
-  Text,
-  TextInput,
-  View,
-} from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { ActivityIndicator, KeyboardAvoidingView, Platform } from 'react-native';
 
-import { ExploreButton } from '@/components/ExploreButton';
-import { SaveSuccessModal } from '@/components/profile/SaveSuccessModal';
-import { AppFonts } from '@/constants/theme';
+import { RequireAuth } from '@/components/RequireAuth';
+import { FieldError, RevealToggle, SettingsField } from '@/components/SettingsField';
+import { SettingsPrimaryButton, SettingsScreen } from '@/components/SettingsScreen';
+import { Toast, useToast } from '@/components/Toast';
+import { HalcyonColors } from '@/constants/design';
 import { useChangePassword } from '@/hooks/useUser';
 
-const noFocusOutline = Platform.OS === 'web' ? ({ outlineStyle: 'none' } as any) : null;
+const MIN_LENGTH = 8;
 
-export default function UpdatePasswordScreen() {
+/** `POST /api/change-password` takes the old password and the new one. */
+function UpdatePasswordContent() {
   const router = useRouter();
+  const { notice, showToast } = useToast();
   const changePassword = useChangePassword();
+
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showCurrent, setShowCurrent] = useState(false);
   const [showNew, setShowNew] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
-  const [error, setError] = useState('');
-  const [showSavedModal, setShowSavedModal] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  async function handleUpdate() {
+  const handleUpdate = () => {
     if (!currentPassword || !newPassword || !confirmPassword) {
-      setError('Please fill in all fields.');
+      setError('Fill in all three fields.');
       return;
     }
-    if (newPassword.length < 8) {
-      setError('New password must be at least 8 characters.');
+
+    if (newPassword.length < MIN_LENGTH) {
+      setError(`Your new password needs at least ${MIN_LENGTH} characters.`);
       return;
     }
+
     if (newPassword !== confirmPassword) {
-      setError('New passwords do not match.');
+      setError('The new passwords do not match.');
       return;
     }
-    setError('');
-    try {
-      await changePassword.mutateAsync({
-        oldPassword: currentPassword,
-        newPassword,
-      });
-      setShowSavedModal(true);
-    } catch (err: any) {
-      setError(err?.message ?? 'Something went wrong.');
-    }
-  }
+
+    setError(null);
+
+    changePassword.mutate(
+      { oldPassword: currentPassword, newPassword },
+      {
+        onSuccess: () => {
+          showToast('Password updated.');
+          router.back();
+        },
+        onError: (saveError) =>
+          setError(
+            saveError instanceof Error
+              ? saveError.message
+              : 'Could not change your password. Try again.'
+          ),
+      }
+    );
+  };
 
   return (
-    <SafeAreaView edges={['top']} style={styles.safeArea}>
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        style={styles.flex}>
-        <View style={styles.content}>
-
-          {/* Back */}
-          <Pressable
-            accessibilityLabel="Go back"
-            hitSlop={12}
-            onPress={() => router.back()}
-            style={({ pressed }) => [styles.backButton, pressed && styles.pressed]}>
-            <Ionicons name="chevron-back" size={18} color="#000000" />
-          </Pressable>
-
-          {/* Header */}
-          <Text style={styles.title}>Change Password</Text>
-
-          {/* Form */}
-          <View style={styles.form}>
-
-            {/* Current Password */}
-            <View style={styles.inputCard}>
-              <Text style={styles.inputLabel}>Current Password</Text>
-              <View style={styles.inputRow}>
-                <TextInput
-                  autoCapitalize="none"
-                  onChangeText={setCurrentPassword}
-                  placeholder="••••••••••"
-                  placeholderTextColor="#C0C0C0"
-                  secureTextEntry={!showCurrent}
-                  style={[styles.input, noFocusOutline]}
-                  value={currentPassword}
-                />
-                <Pressable hitSlop={10} onPress={() => setShowCurrent(v => !v)}>
-                  <Ionicons
-                    color="#8C8C8C"
-                    name={showCurrent ? 'eye-off-outline' : 'eye-outline'}
-                    size={18}
-                  />
-                </Pressable>
-              </View>
-            </View>
-
-            {/* New Password */}
-            <View style={styles.inputCard}>
-              <Text style={styles.inputLabel}>New Password</Text>
-              <View style={styles.inputRow}>
-                <TextInput
-                  autoCapitalize="none"
-                  onChangeText={setNewPassword}
-                  placeholder="••••••••••••"
-                  placeholderTextColor="#C0C0C0"
-                  secureTextEntry={!showNew}
-                  style={[styles.input, noFocusOutline]}
-                  value={newPassword}
-                />
-                <Pressable hitSlop={10} onPress={() => setShowNew(v => !v)}>
-                  <Ionicons
-                    color="#8C8C8C"
-                    name={showNew ? 'eye-off-outline' : 'eye-outline'}
-                    size={18}
-                  />
-                </Pressable>
-              </View>
-            </View>
-
-            {/* Confirm Password */}
-            <View style={styles.inputCard}>
-              <Text style={styles.inputLabel}>Confirm Password</Text>
-              <View style={styles.inputRow}>
-                <TextInput
-                  autoCapitalize="none"
-                  onChangeText={setConfirmPassword}
-                  placeholder="••••••••••••••"
-                  placeholderTextColor="#C0C0C0"
-                  secureTextEntry={!showConfirm}
-                  style={[styles.input, noFocusOutline]}
-                  value={confirmPassword}
-                />
-                <Pressable hitSlop={10} onPress={() => setShowConfirm(v => !v)}>
-                  <Ionicons
-                    color="#8C8C8C"
-                    name={showConfirm ? 'eye-off-outline' : 'eye-outline'}
-                    size={18}
-                  />
-                </Pressable>
-              </View>
-            </View>
-
-            {!!error && <Text style={styles.errorText}>{error}</Text>}
-
-            {/* Update button */}
-            <ExploreButton
-              label="Update Password"
-              loading={changePassword.isPending}
-              disabled={changePassword.isPending}
-              onPress={handleUpdate}
-              style={styles.updateBtn}
-            />
-
-          </View>
-        </View>
-        <SaveSuccessModal
-          visible={showSavedModal}
-          title="Password updated"
-          message="Your password has been changed successfully."
-          onClose={() => setShowSavedModal(false)}
+    <SettingsScreen
+      overlay={<Toast bottom={72} notice={notice} />}
+      subtitle="Choose something only you would know."
+      title="Change Password">
+      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+        <SettingsField
+          accessory={<RevealToggle onPress={() => setShowCurrent((v) => !v)} shown={showCurrent} />}
+          autoCapitalize="none"
+          autoCorrect={false}
+          label="Current password"
+          onChangeText={setCurrentPassword}
+          placeholder="••••••••"
+          secureTextEntry={!showCurrent}
+          value={currentPassword}
         />
+
+        <SettingsField
+          accessory={<RevealToggle onPress={() => setShowNew((v) => !v)} shown={showNew} />}
+          autoCapitalize="none"
+          autoCorrect={false}
+          hint={`At least ${MIN_LENGTH} characters.`}
+          label="New password"
+          onChangeText={setNewPassword}
+          placeholder="••••••••"
+          secureTextEntry={!showNew}
+          value={newPassword}
+        />
+
+        <SettingsField
+          accessory={<RevealToggle onPress={() => setShowConfirm((v) => !v)} shown={showConfirm} />}
+          autoCapitalize="none"
+          autoCorrect={false}
+          label="Confirm new password"
+          onChangeText={setConfirmPassword}
+          placeholder="••••••••"
+          secureTextEntry={!showConfirm}
+          value={confirmPassword}
+        />
+
+        <FieldError message={error} />
+
+        <SettingsPrimaryButton
+          disabled={changePassword.isPending}
+          label="Update password"
+          onPress={handleUpdate}>
+          {changePassword.isPending ? (
+            <ActivityIndicator color={HalcyonColors.background} />
+          ) : undefined}
+        </SettingsPrimaryButton>
       </KeyboardAvoidingView>
-    </SafeAreaView>
+    </SettingsScreen>
   );
 }
 
-const styles = StyleSheet.create({
-  safeArea: { flex: 1, backgroundColor: '#F0EEF8' },
-  flex: { flex: 1 },
-  content: {
-    flex: 1,
-    paddingHorizontal: 20,
-    paddingTop: 76,
-  },
-  backButton: {
-    alignItems: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.5)',
-    borderRadius: 16,
-    height: 32,
-    justifyContent: 'center',
-    left: 18,
-    position: 'absolute',
-    top: 15,
-    width: 32,
-    zIndex: 3,
-  },
-  title: {
-    color: '#173F5F',
-    fontFamily: AppFonts.displayBold,
-    fontSize: 32,
-    fontWeight: '700',
-    lineHeight: 40,
-    marginBottom: 32,
-  },
-  form: { gap: 16 },
-  inputCard: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 14,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 6,
-    elevation: 2,
-  },
-  inputLabel: {
-    color: '#8C8C8C',
-    fontFamily: AppFonts.sansRegular,
-    fontSize: 12,
-    lineHeight: 18,
-    marginBottom: 4,
-  },
-  inputRow: {
-    alignItems: 'center',
-    flexDirection: 'row',
-  },
-  input: {
-    color: '#173F5F',
-    flex: 1,
-    fontFamily: AppFonts.sansSemiBold,
-    fontSize: 16,
-    fontWeight: '600',
-    lineHeight: 24,
-    padding: 0,
-  },
-  errorText: {
-    color: '#FF0059',
-    fontFamily: AppFonts.sansRegular,
-    fontSize: 13,
-    textAlign: 'center',
-  },
-  updateBtn: {
-    alignSelf: 'center',
-    marginTop: 24,
-    maxWidth: 348,
-    width: '100%',
-  },
-  pressed: { opacity: 0.86, transform: [{ scale: 0.99 }] },
-});
+/**
+ * The gate renders UpdatePasswordContent only once there is a session, so a deep link
+ * here while signed out shows the prompt instead of firing a request that can
+ * only come back 401.
+ */
+export default function UpdatePasswordScreen() {
+  return (
+    <RequireAuth message="Your password is part of your account.">
+      <UpdatePasswordContent />
+    </RequireAuth>
+  );
+}

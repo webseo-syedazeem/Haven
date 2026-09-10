@@ -1,5 +1,5 @@
 import { BlurView } from 'expo-blur';
-import { Dimensions, Image, Modal, Platform, Pressable, StyleSheet, View } from 'react-native';
+import { Dimensions, Image, Modal, Pressable, StyleSheet, View } from 'react-native';
 
 type AvatarPreviewProps = {
   visible: boolean;

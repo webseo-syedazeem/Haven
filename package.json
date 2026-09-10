@@ -1,6 +1,6 @@
 {
   "name": "haven",
-  "main": "expo-router/entry",
+  "main": "index.js",
   "version": "1.0.0",
   "scripts": {
     "prestart": "node scripts/check-node-version.js",
@@ -16,7 +16,8 @@
     "ios": "expo start --ios --clear",
     "web": "expo start --web --clear",
     "check:deps": "node scripts/check-expo-deps.js",
-    "lint": "expo lint"
+    "lint": "expo lint",
+    "test": "node --test scripts/*.test.cjs"
   },
   "dependencies": {
     "@expo-google-fonts/inter": "^0.4.2",
@@ -28,11 +29,13 @@
     "@react-navigation/elements": "^2.6.3",
     "@react-navigation/native": "^7.1.8",
     "@supabase/supabase-js": "^2.107.0",
+    "@tanstack/query-async-storage-persister": "^4.44.0",
     "@tanstack/react-query": "^4.44.0",
+    "@tanstack/react-query-persist-client": "^4.44.0",
     "expo": "~54.0.35",
     "expo-asset": "~12.0.13",
+    "expo-audio": "~1.1.1",
     "expo-auth-session": "~7.0.11",
-    "expo-av": "~16.0.8",
     "expo-blur": "~15.0.8",
     "expo-build-properties": "~1.0.10",
     "expo-constants": "~18.0.13",
@@ -46,6 +49,7 @@
     "expo-linear-gradient": "~15.0.8",
     "expo-linking": "~8.0.11",
     "expo-navigation-bar": "~5.0.10",
+    "expo-network": "~8.0.8",
     "expo-notifications": "~0.32.17",
     "expo-print": "~15.0.8",
     "expo-router": "~6.0.24",

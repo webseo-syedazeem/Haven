@@ -1,109 +1,120 @@
 import { Platform } from 'react-native';
 
+/**
+ * Local notification plumbing for the wind-down reminder.
+ *
+ * `expo-notifications` is required lazily so the module never loads on web and
+ * never brings the app down in a client where the native module is missing.
+ * Every function here fails quietly: a device that will not schedule simply
+ * receives no reminder, and the preference the user set is still saved.
+ */
+
+const REMINDER_CHANNEL_ID = 'halcyon-reminders';
+
+const REMINDER_CONTENT = {
+  title: 'Time to wind down',
+  body: 'A few quiet minutes before bed.',
+};
+
+function loadNotifications(): any | null {
+  if (Platform.OS === 'web') return null;
+
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    return require('expo-notifications');
+  } catch {
+    return null;
+  }
+}
+
 export async function requestNotificationPermission(): Promise<boolean> {
-  if (__DEV__ || Platform.OS === 'web') return false;
-  const Notifications = require('expo-notifications');
-  const { status: existing } = await Notifications.getPermissionsAsync();
-  if (existing === 'granted') return true;
-  const { status } = await Notifications.requestPermissionsAsync();
-  return status === 'granted';
+  const Notifications = loadNotifications();
+  if (!Notifications) return false;
+
+  try {
+    const existing = await Notifications.getPermissionsAsync();
+    if (existing.status === 'granted') return true;
+
+    const requested = await Notifications.requestPermissionsAsync();
+    return requested.status === 'granted';
+  } catch {
+    return false;
+  }
 }
 
 async function ensureAndroidChannel(Notifications: any): Promise<void> {
   if (Platform.OS !== 'android') return;
-  await Notifications.setNotificationChannelAsync('Halcyon-reminders', {
-    name: 'Halcyon Reminders',
-    importance: Notifications.AndroidImportance.HIGH,
+
+  await Notifications.setNotificationChannelAsync(REMINDER_CHANNEL_ID, {
+    name: 'Passage Reminders',
+    importance: Notifications.AndroidImportance.DEFAULT,
     sound: 'default',
-    vibrationPattern: [0, 250, 250, 250],
-    enableVibrate: true,
     lockscreenVisibility: Notifications.AndroidNotificationVisibility.PUBLIC,
-    bypassDnd: false,
   });
 }
 
-// Returns the next Date at which hour:minute occurs (today if not yet passed, else tomorrow)
-function nextOccurrence(hour: number, minute: number): Date {
-  const now = new Date();
-  const d = new Date();
-  d.setHours(hour, minute, 0, 0);
-  if (d.getTime() <= now.getTime()) {
-    d.setDate(d.getDate() + 1);
-  }
-  return d;
-}
+/** Parses "HH:MM" into numbers, falling back to a sensible evening slot. */
+function parseTime(value: string): { hour: number; minute: number } {
+  const [rawHour, rawMinute] = (value ?? '').split(':');
+  const hour = Number.parseInt(rawHour ?? '', 10);
+  const minute = Number.parseInt(rawMinute ?? '', 10);
 
-export async function scheduleNotifications(notifState: Record<string, any>): Promise<void> {
-  if (__DEV__) return;
-  const Notifications = require('expo-notifications');
-  Notifications.setNotificationHandler({
-    handleNotification: async () => ({
-      shouldShowAlert: true,
-      shouldPlaySound: true,
-      shouldSetBadge: false,
-    }),
-  });
-
-  await ensureAndroidChannel(Notifications);
-  await Notifications.cancelAllScheduledNotificationsAsync();
-
-  const NOTIFICATION_CONFIG: Record<string, { title: string; body: string }> = {
-    morning_reminder: { title: '🌅 Good Morning!', body: 'Start your day with a calming moment.' },
-    mood_checkin: { title: '💜 Mood Check-in', body: 'How are you feeling right now?' },
-    checklist_reminder: { title: '✅ Daily Checklist', body: 'Complete your daily wellness checklist.' },
-    evening_wind_down: { title: '🌙 Wind Down Time', body: 'Time to relax and prepare for rest.' },
-    soundscape_reminder: { title: '🎵 Soundscape Time', body: 'Listen to calming sounds and unwind.' },
+  return {
+    hour: Number.isFinite(hour) && hour >= 0 && hour <= 23 ? hour : 21,
+    minute: Number.isFinite(minute) && minute >= 0 && minute <= 59 ? minute : 30,
   };
+}
 
-  const keys = ['morning_reminder', 'mood_checkin', 'checklist_reminder', 'evening_wind_down', 'soundscape_reminder'];
+export async function cancelWindDownReminder(): Promise<void> {
+  const Notifications = loadNotifications();
+  if (!Notifications) return;
 
-  for (const key of keys) {
-    if (!notifState[key]) continue;
-    const config = NOTIFICATION_CONFIG[key];
-    if (!config) continue;
-    const timeStr = notifState[`${key}_time`] ?? '09:00';
-    const [hStr, mStr] = timeStr.split(':');
-    const hour = parseInt(hStr, 10) || 9;
-    const minute = parseInt(mStr, 10) || 0;
+  try {
+    await Notifications.cancelAllScheduledNotificationsAsync();
+  } catch {
+    // Nothing scheduled, or the module is unavailable in this client.
+  }
+}
 
-    if (Platform.OS === 'android') {
-      // Use individual DATE triggers (backed by setExactAndAllowWhileIdle) instead of DAILY.
-      // setExactAndAllowWhileIdle fires at the exact millisecond even when the device is in
-      // Doze mode — the root cause of the 2-minute delay with setExact-based DAILY triggers.
-      // Schedule 30 days so notifications continue without requiring daily app opens.
-      const first = nextOccurrence(hour, minute);
-      for (let day = 0; day < 30; day++) {
-        const date = new Date(first);
-        date.setDate(date.getDate() + day);
-        await Notifications.scheduleNotificationAsync({
-          content: {
-            title: config.title,
-            body: config.body,
-            sound: 'default',
-            channelId: 'Halcyon-reminders',
-            priority: Notifications.AndroidNotificationPriority?.HIGH ?? 'high',
-          },
-          trigger: {
-            type: Notifications.SchedulableTriggerInputTypes.DATE,
-            date,
-            channelId: 'Halcyon-reminders',
-          },
-        });
-      }
-    } else {
-      // iOS handles DAILY triggers precisely without Doze-mode concerns
-      await Notifications.scheduleNotificationAsync({
-        content: {
-          title: config.title,
-          body: config.body,
-          sound: 'default',
-        },
-        trigger: {
-          type: Notifications.SchedulableTriggerInputTypes.DAILY,
-          hour,
-          minute,
-        },
-      });
-    }
+/**
+ * Schedules one repeating daily reminder at `time` ("HH:MM"), replacing any
+ * previously scheduled one. The wind-down reminder is the only notification the
+ * app schedules locally, so cancelling everything first is safe.
+ */
+export async function scheduleWindDownReminder(time: string): Promise<boolean> {
+  const Notifications = loadNotifications();
+  if (!Notifications) return false;
+
+  try {
+    Notifications.setNotificationHandler({
+      handleNotification: async () => ({
+        shouldShowAlert: true,
+        shouldPlaySound: false,
+        shouldSetBadge: false,
+      }),
+    });
+
+    await ensureAndroidChannel(Notifications);
+    await Notifications.cancelAllScheduledNotificationsAsync();
+
+    const { hour, minute } = parseTime(time);
+
+    await Notifications.scheduleNotificationAsync({
+      content: {
+        ...REMINDER_CONTENT,
+        sound: 'default',
+        ...(Platform.OS === 'android' ? { channelId: REMINDER_CHANNEL_ID } : {}),
+      },
+      trigger: {
+        type: Notifications.SchedulableTriggerInputTypes.DAILY,
+        hour,
+        minute,
+        ...(Platform.OS === 'android' ? { channelId: REMINDER_CHANNEL_ID } : {}),
+      },
+    });
+
+    return true;
+  } catch {
+    return false;
   }
 }

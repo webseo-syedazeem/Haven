@@ -1,7 +1,10 @@
 import * as SecureStore from 'expo-secure-store';
 import { Platform } from 'react-native';
 
+import { ApiError, NetworkError } from '@/lib/api/errors';
+import { markLoggedIn, markLoggedOut } from '@/lib/auth/offline-session';
 import { setSessionSource } from '@/lib/auth/session-state';
+import { supabase } from '@/lib/supabase';
 
 const REMOTE_API_BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL ?? 'https://thehappyapp.co.uk';
 const API_BASE_URL = Platform.OS === 'web' ? '/api-proxy' : REMOTE_API_BASE_URL;
@@ -15,6 +18,11 @@ export type AuthUser = {
   username?: string;
   createdAt?: string;
   [key: string]: unknown;
+};
+
+export type AuthProfile = AuthUser & {
+  is_verified?: boolean;
+  onboarding_completed?: boolean;
 };
 
 export type AuthResponse = {
@@ -197,19 +205,24 @@ async function apiRequest<T>(path: string, options: RequestInit = {}) {
     });
   } catch (error) {
     const details = error instanceof Error && error.message ? ` (${error.message})` : '';
-    throw new Error(`Unable to reach the API server. Please check the backend URL or deployment.${details}`);
+    // Unreachable is not unauthorised: raised as a `NetworkError` so the launch
+    // path keeps the session instead of signing the user out.
+    throw new NetworkError(
+      `Unable to reach the API server. Please check the backend URL or deployment.${details}`,
+      { cause: error }
+    );
   }
 
   const data = await parseResponse(response);
 
   if (!response.ok) {
-    throw new Error(getErrorMessage(response.status, data));
+    throw new ApiError(getErrorMessage(response.status, data), response.status, data);
   }
 
   return data as T;
 }
 
-async function rememberToken(response: AuthResponse) {
+async function rememberToken(response: AuthResponse, requireAccessToken = true) {
   const session = response.data?.session;
   const authSession = response.data?.auth?.session;
   const accessTokenCandidate = pickAccessToken([
@@ -248,7 +261,11 @@ async function rememberToken(response: AuthResponse) {
   );
 
   if (!nextAccessToken) {
-    throw new Error('Login succeeded but no access token was returned.');
+    if (requireAccessToken) {
+      throw new Error('Login succeeded but no access token was returned.');
+    }
+
+    return false;
   }
 
   await clearStoredAccessTokens();
@@ -258,6 +275,10 @@ async function rememberToken(response: AuthResponse) {
     refreshToken;
 
   await persistTokens();
+  // The one place every email/password sign in, sign up and token refresh ends
+  // up, so the durable flag is set here rather than in each screen.
+  await markLoggedIn();
+  return true;
 }
 
 export function getAccessToken() {
@@ -313,7 +334,32 @@ export async function signUp(payload: { email: string; password: string; usernam
     method: 'POST',
   });
 
-  await rememberToken(response);
+  // Supabase returns session: null when email confirmation is enabled. That
+  // is a successful registration, not a failed login, so only require a token
+  // for sign-in/refresh. If confirmation is disabled and a real session is
+  // returned, keep the existing Haven tokens and hydrate the Supabase client
+  // so the verification screen can inspect the authoritative user state.
+  const rememberedSession = await rememberToken(response, false);
+
+  if (
+    rememberedSession &&
+    looksLikeJwt(accessToken ?? undefined) &&
+    accessToken &&
+    refreshToken
+  ) {
+    const { error } = await supabase.auth.setSession({
+      access_token: accessToken,
+      refresh_token: refreshToken,
+    });
+
+    if (error) {
+      // The API session is still valid and persisted. Do not turn a completed
+      // registration into an error solely because local Supabase hydration
+      // failed; A3 will continue waiting for a real confirmation callback.
+      console.warn('[auth] could not hydrate the sign-up session', error.message);
+    }
+  }
+
   return response;
 }
 
@@ -361,7 +407,7 @@ export function getCurrentUser() {
 }
 
 export function checkSession() {
-  return apiRequest<ApiResponse<{ valid?: boolean; user?: AuthUser; profile?: unknown }>>('/api/check-session');
+  return apiRequest<ApiResponse<{ valid?: boolean; user?: AuthUser; profile?: AuthProfile }>>('/api/check-session');
 }
 
 export function updateName(payload: { first_name: string; last_name: string }) {
@@ -387,6 +433,7 @@ export async function logout() {
   });
 
   clearAuthTokens();
+  await markLoggedOut();
   return response;
 }
 
@@ -396,5 +443,6 @@ export async function deleteAccount() {
   });
 
   clearAuthTokens();
+  await markLoggedOut();
   return response;
 }
