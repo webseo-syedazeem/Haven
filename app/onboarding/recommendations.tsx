@@ -16,13 +16,10 @@ import {
   getOnboardingRecommendations,
   getOnboardingRecommendationsQueryKey,
 } from '@/lib/onboarding';
-import { resetToMainApp, resetToMainPlayer } from '@/lib/navigation';
-import { usePlayerActions } from '@/lib/player/PlayerProvider';
 import { formatDuration } from '@/lib/utils/duration';
 
 export default function FirstRecommendationsScreen() {
   const router = useRouter();
-  const { playSoundscape } = usePlayerActions();
   const [starting, setStarting] = useState(false);
   const [notice, setNotice] = useState('');
   const query = useQuery({
@@ -32,33 +29,18 @@ export default function FirstRecommendationsScreen() {
   });
   const best = query.data?.best_match ?? null;
   const alternatives = query.data?.alternatives ?? [];
-  const queue = best ? [best, ...alternatives] : [];
 
-  const enterWithoutTrack = async () => {
+  // Neither button marks onboarding complete here: guest mode is only ever
+  // entered from the explicit "Continue as guest" tap on /welcome, so the
+  // picked track (if any) is just passed along for that screen to play.
+  const enterWithoutTrack = () => {
     if (starting) return;
-    setNotice('');
-    setStarting(true);
-    try {
-      await finishOnboardingForAppEntry();
-      resetToMainApp(router);
-    } catch {
-      setNotice('We could not save your onboarding progress. Please try again.');
-      setStarting(false);
-    }
+    router.push('/welcome' as Href);
   };
 
-  const startListening = async () => {
+  const startListening = () => {
     if (!best || starting) return;
-    setNotice('');
-    setStarting(true);
-    try {
-      await finishOnboardingForAppEntry();
-      await playSoundscape(best, { queue });
-      resetToMainPlayer(router);
-    } catch {
-      setNotice('We could not finish setting up Passage. Please try again.');
-      setStarting(false);
-    }
+    router.push('/welcome?startTrack=1' as Href);
   };
 
   const saveSpace = async () => {

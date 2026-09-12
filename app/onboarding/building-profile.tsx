@@ -1,8 +1,8 @@
+import { useQueryClient } from '@tanstack/react-query';
 import type { Href } from 'expo-router';
 import { useRouter } from 'expo-router';
 import { useEffect, useRef } from 'react';
 import { Animated, StyleSheet, Text, View } from 'react-native';
-import { useQueryClient } from '@tanstack/react-query';
 
 import { OnboardingScaffold } from '@/components/onboarding/OnboardingScaffold';
 import { PassageLogo } from '@/components/onboarding/PassageLogo';

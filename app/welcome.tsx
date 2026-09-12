@@ -1,41 +1,68 @@
-import { useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useQuery } from '@tanstack/react-query';
 import { useEffect, useState } from 'react';
-import { BackHandler, Pressable, StyleSheet, Text, View } from 'react-native';
+import { BackHandler, Image, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { AuthButton } from '@/components/AuthButton';
 import { LegalDisclaimer } from '@/components/LegalDisclaimer';
 import { OnboardingScaffold } from '@/components/onboarding/OnboardingScaffold';
-import { PassageLogo } from '@/components/onboarding/PassageLogo';
 import { HalcyonColors } from '@/constants/design';
 import { AppFonts } from '@/constants/theme';
 import { signInWithApple } from '@/lib/apple-auth';
 import { signInWithGoogle } from '@/lib/google-auth';
 import {
   getGuestOnboardingAnswers,
+  getOnboardingRecommendations,
+  getOnboardingRecommendationsQueryKey,
   isGuestOnboardingComplete,
   isGuestOnboardingReady,
   markGuestOnboardingComplete,
   migrateGuestOnboardingAfterAuth,
 } from '@/lib/onboarding';
-import { resetToMainApp } from '@/lib/navigation';
+import { resetToMainApp, resetToMainPlayer } from '@/lib/navigation';
+import { usePlayerActions } from '@/lib/player/PlayerProvider';
 
 const appleIcon = require('@/assets/icons/apple icon.png');
 const googleIcon = require('@/assets/icons/google icon.png');
 const emailIcon = require('@/assets/icons/email.png');
+const appLogo = require('@/assets/images/passage-brand-assets/icon.png');
 
 type Provider = 'apple' | 'email' | 'google' | 'guest' | null;
 
 export default function SaveYourSpaceScreen() {
   const router = useRouter();
+  const { startTrack } = useLocalSearchParams<{ startTrack?: string }>();
+  const wantsTrack = startTrack === '1';
+  const { playSoundscape } = usePlayerActions();
   const [loading, setLoading] = useState<Provider>(null);
   const [authReady, setAuthReady] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
+
+  // Reuses the cached pick from the recommendations screen (same query key,
+  // still within its staleTime) rather than re-fetching it here.
+  const recommendationsQuery = useQuery({
+    queryKey: getOnboardingRecommendationsQueryKey(),
+    queryFn: () => getOnboardingRecommendations(4),
+    staleTime: 5 * 60 * 1000,
+    enabled: wantsTrack,
+  });
+  const best = recommendationsQuery.data?.best_match ?? null;
+  const alternatives = recommendationsQuery.data?.alternatives ?? [];
 
   useEffect(() => {
     if (!authReady) return;
     const subscription = BackHandler.addEventListener('hardwareBackPress', () => true);
     return () => subscription.remove();
   }, [authReady]);
+
+  const enterMainApp = async () => {
+    if (wantsTrack && best) {
+      await playSoundscape(best, { queue: [best, ...alternatives] });
+      resetToMainPlayer(router);
+      return;
+    }
+    resetToMainApp(router);
+  };
 
   const ensureComplete = async () => {
     const [completed, answers] = await Promise.all([
@@ -52,7 +79,7 @@ export default function SaveYourSpaceScreen() {
 
   const finishAuthenticatedFlow = async () => {
     await migrateGuestOnboardingAfterAuth();
-    resetToMainApp(router);
+    await enterMainApp();
   };
 
   const handleGoogle = async () => {
@@ -138,7 +165,7 @@ export default function SaveYourSpaceScreen() {
     setLoading('guest');
     try {
       if (!(await ensureComplete())) return;
-      resetToMainApp(router);
+      await enterMainApp();
     } catch {
       setErrorMessage('We could not save your onboarding progress. Please try again.');
     } finally {
@@ -150,7 +177,7 @@ export default function SaveYourSpaceScreen() {
     <OnboardingScaffold
       contentContainerStyle={styles.content}
       onBack={authReady ? undefined : () => router.back()}>
-      <PassageLogo compact showWordmark={false} />
+      <Image source={appLogo} style={styles.appIcon} />
       <Text style={styles.heading}>Save your space</Text>
       <Text style={styles.body}>
         Create an account to keep your preferences with you.
@@ -221,6 +248,11 @@ export default function SaveYourSpaceScreen() {
 }
 
 const styles = StyleSheet.create({
+  appIcon: {
+    borderRadius: 20,
+    height: 72,
+    width: 72,
+  },
   body: {
     color: HalcyonColors.textSecondary,
     fontFamily: AppFonts.sansRegular,

@@ -1,12 +1,11 @@
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { useEffect, useRef, useState } from 'react';
-import { Animated, ImageBackground, Pressable, StyleSheet, Text, View } from 'react-native';
+import { useEffect, useState } from 'react';
+import { ActivityIndicator, ImageBackground, Pressable, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { OnboardingContinueButton } from '@/components/onboarding/OnboardingContinueButton';
-import { PassageLogo } from '@/components/onboarding/PassageLogo';
 import { HalcyonColors } from '@/constants/design';
 import { AppFonts } from '@/constants/theme';
 import { ME_QUERY_KEY } from '@/hooks/useUser';
@@ -144,38 +143,10 @@ export default function FirstPageScreen() {
 }
 
 function LaunchLoadingScreen() {
-  const pulse = useRef(new Animated.Value(0)).current;
-
-  useEffect(() => {
-    const animation = Animated.loop(
-      Animated.sequence([
-        Animated.timing(pulse, {
-          duration: 1100,
-          toValue: 1,
-          useNativeDriver: true,
-        }),
-        Animated.timing(pulse, {
-          duration: 1100,
-          toValue: 0,
-          useNativeDriver: true,
-        }),
-      ])
-    );
-    animation.start();
-    return () => animation.stop();
-  }, [pulse]);
-
-  const scale = pulse.interpolate({ inputRange: [0, 1], outputRange: [0.96, 1.04] });
-  const opacity = pulse.interpolate({ inputRange: [0, 1], outputRange: [0.76, 1] });
-
   return (
     <View style={styles.loadingScreen}>
       <StatusBar style='light' />
-      <View style={styles.loadingLine} />
-      <Animated.View style={[styles.loadingLogoGlow, { opacity, transform: [{ scale }] }]}>
-        <PassageLogo compact showWordmark={false} />
-      </Animated.View>
-      <Text style={styles.loadingText}>Opening Passage</Text>
+      <ActivityIndicator color={HalcyonColors.accent} size='large' />
     </View>
   );
 }
@@ -196,33 +167,11 @@ const styles = StyleSheet.create({
   linkPressed: {
     opacity: 0.64,
   },
-  loadingLine: {
-    backgroundColor: HalcyonColors.accent,
-    height: 2,
-    opacity: 0.9,
-    position: 'absolute',
-    top: 18,
-    width: 28,
-  },
-  loadingLogoGlow: {
-    shadowColor: HalcyonColors.accent,
-    shadowOffset: { height: 0, width: 0 },
-    shadowOpacity: 0.48,
-    shadowRadius: 22,
-  },
   loadingScreen: {
     alignItems: 'center',
     backgroundColor: HalcyonColors.background,
     flex: 1,
     justifyContent: 'center',
-    paddingBottom: 64,
-  },
-  loadingText: {
-    color: HalcyonColors.textSecondary,
-    fontFamily: AppFonts.sansRegular,
-    fontSize: 13,
-    lineHeight: 20,
-    marginTop: 30,
   },
   loginAction: {
     alignItems: 'center',

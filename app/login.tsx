@@ -1,5 +1,5 @@
 import { useFocusEffect } from '@react-navigation/native';
-import { useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useState } from 'react';
 import {
   BackHandler,
@@ -27,6 +27,10 @@ const googleIcon = require('@/assets/icons/google icon.png');
 
 export default function LoginScreen() {
   const router = useRouter();
+  const { signedOut } = useLocalSearchParams<{ signedOut?: string }>();
+  // A user who just signed out has to sign back in or sign up — there is
+  // nothing behind this screen worth going back to.
+  const canGoBack = signedOut !== '1';
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [passwordVisible, setPasswordVisible] = useState(false);
@@ -37,12 +41,12 @@ export default function LoginScreen() {
 
   useFocusEffect(useCallback(() => {
     const subscription = BackHandler.addEventListener('hardwareBackPress', () => {
-      if (authenticated) return true;
+      if (authenticated || !canGoBack) return true;
       goToWelcome();
       return true;
     });
     return () => subscription.remove();
-  }, [authenticated, goToWelcome]));
+  }, [authenticated, canGoBack, goToWelcome]));
 
   const finishAuthentication = async () => {
     await routeAfterSignIn(router);
@@ -145,7 +149,7 @@ export default function LoginScreen() {
       style={styles.keyboardView}>
       <OnboardingScaffold
         contentContainerStyle={styles.scrollContent}
-        onBack={authenticated ? undefined : goToWelcome}>
+        onBack={authenticated || !canGoBack ? undefined : goToWelcome}>
         <View style={styles.content}>
         <Text style={styles.heading}>Welcome back</Text>
         <Text style={styles.subtitle}>Sign in to continue your journey.</Text>

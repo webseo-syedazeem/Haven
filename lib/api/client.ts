@@ -1,8 +1,9 @@
-import { ApiError, NetworkError } from '@/lib/api/errors';
+import { ApiError, NetworkError, isNetworkError } from '@/lib/api/errors';
 import { supabase } from '@/lib/supabase';
 import * as SecureStore from 'expo-secure-store';
 import { setSessionSource } from '@/lib/auth/session-state';
-import { getAccessToken } from '@/lib/haven-api';
+import { markLoggedOut } from '@/lib/auth/offline-session';
+import { clearAuthTokens, getAccessToken, getRefreshToken, refreshSession } from '@/lib/haven-api';
 import { Platform } from 'react-native';
 
 const API_BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL ?? 'https://thehappyapp.co.uk';
@@ -58,6 +59,92 @@ export async function clearStoredAccessToken() {
   ]);
 }
 
+let signOutInFlight: Promise<void> | null = null;
+
+/**
+ * Drops both session sources at once (see lib/auth/session-state.ts): the
+ * Haven tokens and the Supabase session that Google/Apple/email-confirm
+ * sign-ins also mark active. Clearing only one used to leave
+ * `hasActiveSession()` stuck true forever with no token anywhere left to
+ * send — every gated query kept firing and kept 401ing.
+ */
+async function forceSignOutStaleSession(): Promise<void> {
+  signOutInFlight ??= (async () => {
+    clearAuthTokens();
+    await markLoggedOut();
+    try {
+      await supabase.auth.signOut();
+    } catch {
+      // Best effort — the Haven-side clear above is what actually matters.
+    }
+  })();
+
+  try {
+    await signOutInFlight;
+  } finally {
+    signOutInFlight = null;
+  }
+}
+
+let refreshInFlight: Promise<string | null> | null = null;
+
+/**
+ * The access token is only ever refreshed at launch (`restoreSession`)
+ * otherwise, so a token that expires mid-session used to fail forever. A 401
+ * on a request that actually carried a token now runs this once — concurrent
+ * 401s share the one attempt — and callers retry with the result.
+ *
+ * Returns the new token, or null if there is nothing to retry with (no
+ * refresh token, offline, or the server has genuinely refused the session —
+ * that last case also drops the session, see `forceSignOutStaleSession`).
+ */
+async function refreshAccessToken(): Promise<string | null> {
+  refreshInFlight ??= (async () => {
+    const refreshToken = getRefreshToken();
+    if (!refreshToken) {
+      await forceSignOutStaleSession();
+      return null;
+    }
+
+    try {
+      await refreshSession(refreshToken);
+      return getAccessToken();
+    } catch (error) {
+      if (isNetworkError(error)) return null;
+      // A reachable server refused the refresh token: the session is over.
+      await forceSignOutStaleSession();
+      return null;
+    }
+  })();
+
+  try {
+    return await refreshInFlight;
+  } finally {
+    refreshInFlight = null;
+  }
+}
+
+async function send(path: string, options: RequestInit, token: string | null): Promise<Response> {
+  const { body, headers: optionHeaders, ...fetchOptions } = options;
+  const hasBody = body !== undefined && body !== null;
+
+  try {
+    return await fetch(`${API_BASE_URL}${path}`, {
+      ...fetchOptions,
+      ...(hasBody ? { body } : {}),
+      headers: {
+        ...(hasBody ? { 'Content-Type': 'application/json' } : {}),
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        ...((optionHeaders as Record<string, string>) ?? {}),
+      },
+    });
+  } catch (error) {
+    // Nobody answered. This says nothing about the session, so it is raised as
+    // a distinct type the launch path can tell apart from a rejection.
+    throw new NetworkError('Could not reach the server.', { cause: error });
+  }
+}
+
 export async function apiClient<T>(
   path: string,
   options: RequestInit = {}
@@ -77,28 +164,28 @@ export async function apiClient<T>(
       await setStoredItem(LEGACY_AUTH_TOKEN_KEY, token);
     }
   }
-  const { body, headers: optionHeaders, ...fetchOptions } = options;
-  const hasBody = body !== undefined && body !== null;
 
-  let res: Response;
+  const res = await send(path, options, token);
 
   try {
-    res = await fetch(`${API_BASE_URL}${path}`, {
-      ...fetchOptions,
-      ...(hasBody ? { body } : {}),
-      headers: {
-        ...(hasBody ? { 'Content-Type': 'application/json' } : {}),
-        ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        ...((optionHeaders as Record<string, string>) ?? {}),
-      },
-    });
+    return await readEnvelope<T>(res);
   } catch (error) {
-    // Nobody answered. This says nothing about the session, so it is raised as
-    // a distinct type the launch path can tell apart from a rejection.
-    throw new NetworkError('Could not reach the server.', { cause: error });
+    if (error instanceof ApiError && error.status === 401) {
+      if (token) {
+        const freshToken = await refreshAccessToken();
+        if (freshToken) {
+          return readEnvelope<T>(await send(path, options, freshToken));
+        }
+      } else {
+        // Nothing was even sent, yet this call only fires when the app
+        // believes it has a session (`hasActiveSession()`) — the session-
+        // source flags are desynced from reality. Correct them so the next
+        // render stops treating this as signed in.
+        await forceSignOutStaleSession();
+      }
+    }
+    throw error;
   }
-
-  return readEnvelope<T>(res);
 }
 
 /**
@@ -145,19 +232,35 @@ export async function apiClientFormData<T>(
     }
   }
 
-  let res: Response;
+  const sendForm = async (bearer: string | null): Promise<Response> => {
+    try {
+      return await fetch(`${API_BASE_URL}${path}`, {
+        method,
+        headers: {
+          ...(bearer ? { Authorization: `Bearer ${bearer}` } : {}),
+        },
+        body: formData,
+      });
+    } catch (error) {
+      throw new NetworkError('Could not reach the server.', { cause: error });
+    }
+  };
+
+  const res = await sendForm(token);
 
   try {
-    res = await fetch(`${API_BASE_URL}${path}`, {
-      method,
-      headers: {
-        ...(token ? { Authorization: `Bearer ${token}` } : {}),
-      },
-      body: formData,
-    });
+    return await readEnvelope<T>(res);
   } catch (error) {
-    throw new NetworkError('Could not reach the server.', { cause: error });
+    if (error instanceof ApiError && error.status === 401) {
+      if (token) {
+        const freshToken = await refreshAccessToken();
+        if (freshToken) {
+          return readEnvelope<T>(await sendForm(freshToken));
+        }
+      } else {
+        await forceSignOutStaleSession();
+      }
+    }
+    throw error;
   }
-
-  return readEnvelope<T>(res);
 }

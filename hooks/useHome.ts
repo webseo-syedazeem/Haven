@@ -43,10 +43,18 @@ export function useContinueListening() {
   });
 }
 
+/**
+ * Personalised to the signed-in profile's history and preferences — a guest
+ * has none of that yet, so this waits for a real account rather than showing
+ * a generic "recommended" rail that isn't actually recommended for anyone.
+ */
 export function useRecommended() {
+  const hasSession = useHasSession();
+
   return useQuery({
     queryKey: HOME_QUERY_KEYS.recommended,
     queryFn: homeApi.recommended,
+    enabled: hasSession,
   });
 }
 

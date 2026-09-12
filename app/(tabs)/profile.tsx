@@ -65,7 +65,7 @@ export default function ProfileScreen() {
     try {
       await clearUserSession(queryClient);
       setSignOutVisible(false);
-      router.replace('/login');
+      router.replace('/login?signedOut=1' as Href);
     } catch {
       showToast('Could not sign out. Try again.');
     } finally {

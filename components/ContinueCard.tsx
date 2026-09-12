@@ -82,7 +82,17 @@ export function ContinueCard({
 }
 
 export function ContinueCardSkeleton() {
-  return <View style={[styles.card, styles.skeleton]} />;
+  return (
+    <View style={styles.card}>
+      <View style={[styles.artworkFrame, styles.skeletonBlock]} />
+      <View style={styles.copy}>
+        <View style={[styles.skeletonLine, styles.skeletonTitle]} />
+        <View style={[styles.skeletonLine, styles.skeletonMeta]} />
+        <View style={[styles.skeletonLine, styles.skeletonProgress]} />
+      </View>
+      <View style={[styles.playButton, styles.skeletonBlock]} />
+    </View>
+  );
 }
 
 const styles = StyleSheet.create({
@@ -99,9 +109,25 @@ const styles = StyleSheet.create({
   cardPressed: {
     opacity: 0.9,
   },
-  skeleton: {
+  skeletonBlock: {
     backgroundColor: HalcyonColors.skeleton,
-    borderColor: 'transparent',
+  },
+  skeletonLine: {
+    backgroundColor: HalcyonColors.skeleton,
+    borderRadius: 4,
+    height: 11,
+  },
+  skeletonTitle: {
+    width: '58%',
+  },
+  skeletonMeta: {
+    marginTop: 8,
+    width: '34%',
+  },
+  skeletonProgress: {
+    height: 3,
+    marginTop: 11,
+    width: '100%',
   },
   artworkFrame: {
     backgroundColor: HalcyonColors.surfaceRaised,
