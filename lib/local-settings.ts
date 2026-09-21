@@ -83,7 +83,11 @@ export const LOCAL_SETTING_KEYS = {
   analyticsEnabled: 'analytics_enabled',
   /** 24h "HH:MM" for the wind-down reminder. */
   reminderTime: 'reminder_time',
+  /** `true` from "Continue as guest" until the next confirmed sign in. */
+  guestModeActive: 'guest_mode_active',
 } as const;
+
+export const GUEST_MODE_ACTIVE_DEFAULT = false;
 
 /** Analytics is opt-in: nothing is sent until the user turns it on. */
 export const ANALYTICS_ENABLED_DEFAULT = false;

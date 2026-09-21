@@ -11,7 +11,7 @@ import {
   readCachedProfile,
   wasLoggedIn,
 } from '@/lib/auth/offline-session';
-import { finishSessionRestore } from '@/lib/auth/session-state';
+import { finishSessionRestore, hydrateGuestMode } from '@/lib/auth/session-state';
 import { setActiveDownloadUser } from '@/lib/local-downloads';
 import { clearAuthTokens, refreshSession, setAccessToken, setAuthTokens } from '@/lib/haven-api';
 import { queryClient } from '@/lib/query-client';
@@ -87,6 +87,11 @@ async function offlineOutcome(): Promise<SessionRestoreStatus> {
 
 async function runRestore(): Promise<SessionRestoreStatus> {
   try {
+    // Before anything else: a device that left off in guest mode must stay
+    // gated from authenticated queries for this launch too, not just for the
+    // session that set the flag.
+    await hydrateGuestMode();
+
     const accessToken =
       (await getStoredItem(ACCESS_TOKEN_KEY)) ?? (await getStoredItem(LEGACY_ACCESS_TOKEN_KEY));
     const refreshToken = await getStoredItem(REFRESH_TOKEN_KEY);

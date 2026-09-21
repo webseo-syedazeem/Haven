@@ -1,3 +1,4 @@
+import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import {
   ActivityIndicator,
@@ -31,8 +32,10 @@ type OnboardingContinueButtonProps = {
   label?: string;
   loading?: boolean;
   onPress?: () => void;
+  /** Pill shape, uppercase label and a trailing arrow — off by default so existing screens are unaffected. */
+  showArrow?: boolean;
   style?: StyleProp<ViewStyle>;
-  variant?: 'primary' | 'secondary';
+  variant?: 'primary' | 'secondary' | 'amber';
 };
 
 export function OnboardingContinueButton({
@@ -40,10 +43,18 @@ export function OnboardingContinueButton({
   label = 'Continue',
   loading = false,
   onPress,
+  showArrow = false,
   style,
   variant = 'primary',
 }: OnboardingContinueButtonProps) {
   const unavailable = disabled || loading;
+  const isAmber = variant === 'amber' || showArrow;
+  const labelColor =
+    variant === 'secondary'
+      ? HalcyonColors.textPrimary
+      : isAmber
+        ? '#0B0B0D'
+        : HalcyonColors.background;
 
   return (
     <Pressable
@@ -54,9 +65,11 @@ export function OnboardingContinueButton({
       onPress={onPress}
       style={({ pressed }) => [
         styles.button,
+        showArrow && styles.pill,
         variant === 'secondary' && styles.secondary,
+        isAmber && styles.amber,
         unavailable && styles.disabled,
-        pressed && !unavailable && styles.pressed,
+        pressed && !unavailable && (isAmber ? styles.amberPressed : styles.pressed),
         style,
       ]}>
       {loading ? (
@@ -65,13 +78,28 @@ export function OnboardingContinueButton({
           size="small"
         />
       ) : (
-        <Text style={[styles.label, variant === 'secondary' && styles.secondaryLabel]}>{label}</Text>
+        <View style={styles.labelRow}>
+          <Text
+            style={[
+              styles.label,
+              variant === 'secondary' && styles.secondaryLabel,
+              showArrow && styles.labelUppercase,
+            ]}>
+            {label}
+          </Text>
+          {showArrow ? (
+            <Ionicons color={labelColor} name="arrow-forward" size={16} style={styles.arrow} />
+          ) : null}
+        </View>
       )}
     </Pressable>
   );
 }
 
 const styles = StyleSheet.create({
+  arrow: {
+    marginLeft: 8,
+  },
   button: {
     alignItems: 'center',
     backgroundColor: HalcyonColors.accent,
@@ -91,6 +119,19 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     lineHeight: 20,
   },
+  labelRow: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    justifyContent: 'center',
+  },
+  labelUppercase: {
+    letterSpacing: 0.8,
+    textTransform: 'uppercase',
+  },
+  pill: {
+    borderRadius: HalcyonRadius.pill,
+    minHeight: 56,
+  },
   pressed: {
     backgroundColor: HalcyonColors.accentPressed,
     transform: [{ scale: 0.995 }],
@@ -99,6 +140,13 @@ const styles = StyleSheet.create({
     backgroundColor: HalcyonColors.surface,
     borderColor: HalcyonColors.border,
     borderWidth: 1,
+  },
+  amber: {
+    backgroundColor: '#F4B34C',
+  },
+  amberPressed: {
+    backgroundColor: '#DF9E37',
+    transform: [{ scale: 0.995 }],
   },
   secondaryLabel: {
     color: HalcyonColors.textPrimary,

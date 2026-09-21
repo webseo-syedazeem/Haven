@@ -70,7 +70,7 @@ export default function GoalsScreen() {
     setSaveError(null);
     try {
       await saveOnboardingAnswers({ goals: selected });
-      router.push('/environment');
+      router.push('/onboarding/situation');
     } catch {
       setSaveError('We could not save that just yet. Please try again.');
     } finally {

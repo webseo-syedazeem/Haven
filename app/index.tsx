@@ -1,5 +1,5 @@
 import { LinearGradient } from 'expo-linear-gradient';
-import { useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, ImageBackground, Pressable, StyleSheet, Text, View } from 'react-native';
@@ -20,6 +20,7 @@ import { hasPlayableDownloads, hydrateLocalDownloads } from '@/lib/local-downloa
 import {
   isGuestOnboardingComplete,
   migrateGuestOnboardingAfterAuth,
+  resetGuestOnboardingState,
 } from '@/lib/onboarding';
 import { queryClient } from '@/lib/query-client';
 
@@ -29,12 +30,20 @@ type LaunchState = 'checking' | 'welcome';
 
 export default function FirstPageScreen() {
   const router = useRouter();
+  const { reset } = useLocalSearchParams<{ reset?: string }>();
   const [launchState, setLaunchState] = useState<LaunchState>('checking');
 
   useEffect(() => {
     let active = true;
 
     void (async () => {
+      if (reset === '1') {
+        await resetGuestOnboardingState();
+        if (!active) return;
+        setLaunchState('welcome');
+        return;
+      }
+
       const [status, guestOnboardingComplete] = await Promise.all([
         restoreSession(),
         isGuestOnboardingComplete(),

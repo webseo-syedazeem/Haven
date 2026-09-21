@@ -9,6 +9,7 @@ import { OnboardingScaffold } from '@/components/onboarding/OnboardingScaffold';
 import { HalcyonColors } from '@/constants/design';
 import { AppFonts } from '@/constants/theme';
 import { signInWithApple } from '@/lib/apple-auth';
+import { setGuestModeActive } from '@/lib/auth/session-state';
 import { signInWithGoogle } from '@/lib/google-auth';
 import {
   getGuestOnboardingAnswers,
@@ -165,6 +166,10 @@ export default function SaveYourSpaceScreen() {
     setLoading('guest');
     try {
       if (!(await ensureComplete())) return;
+      // Gates /api/me, /api/favourites, /api/home/continue-listening and
+      // /api/play-history until a real sign in clears it (see
+      // lib/auth/session-state.ts) — there is no bearer token to send yet.
+      setGuestModeActive(true);
       await enterMainApp();
     } catch {
       setErrorMessage('We could not save your onboarding progress. Please try again.');

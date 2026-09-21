@@ -1,3 +1,4 @@
+import { Ionicons } from '@expo/vector-icons';
 import {
   ActivityIndicator,
   Pressable,
@@ -17,6 +18,8 @@ type OnboardingContinueButtonProps = {
   label?: string;
   loading?: boolean;
   onPress?: () => void;
+  /** Trailing arrow, off by default so existing screens are unaffected. */
+  showArrow?: boolean;
   style?: StyleProp<ViewStyle>;
 };
 
@@ -26,6 +29,7 @@ export function OnboardingContinueButtonBlack({
   label = 'Continue',
   loading = false,
   onPress,
+  showArrow = false,
   style,
 }: OnboardingContinueButtonProps) {
 
@@ -54,9 +58,14 @@ export function OnboardingContinueButtonBlack({
           size="small"
         />
       ) : (
-        <Text style={styles.label}>
-          {label}
-        </Text>
+        <View style={styles.labelRow}>
+          <Text style={[styles.label, showArrow && styles.labelUppercase]}>
+            {label}
+          </Text>
+          {showArrow ? (
+            <Ionicons color="#E8E1D8" name="arrow-forward" size={16} style={styles.arrow} />
+          ) : null}
+        </View>
       )}
 
     </Pressable>
@@ -65,6 +74,16 @@ export function OnboardingContinueButtonBlack({
 
 
 const styles = StyleSheet.create({
+
+  arrow: {
+    marginLeft: 8,
+  },
+
+  labelRow: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    justifyContent: 'center',
+  },
 
   button: {
     alignItems: 'center',
@@ -104,6 +123,11 @@ const styles = StyleSheet.create({
     lineHeight: 22,
 
     letterSpacing: 0.2,
+  },
+
+  labelUppercase: {
+    letterSpacing: 0.6,
+    textTransform: 'uppercase',
   },
 
 

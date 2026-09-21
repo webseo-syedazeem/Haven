@@ -27,6 +27,8 @@ export default function RootLayout() {
   const [fontsLoaded] = useFonts({
     [AppFonts.sansRegular]: require('../assets/fonts/Inter-VariableFont_opsz,wght.ttf'),
     [AppFonts.displayRegular]: require('../assets/fonts/CormorantGaramond-VariableFont_wght.ttf'),
+    [AppFonts.playfairRegular]: require('../assets/fonts/PlayfairDisplay-Regular.ttf'),
+    [AppFonts.playfairMedium]: require('../assets/fonts/PlayfairDisplay-Medium.ttf'),
   });
 
   useEffect(() => {
@@ -62,6 +64,8 @@ export default function RootLayout() {
                 <Stack.Screen name="index" options={{ headerShown: false }} />
                 <Stack.Screen name="create-account" options={{ headerShown: false }} />
                 <Stack.Screen name="environment" options={{ headerShown: false }} />
+                <Stack.Screen name="stress-intro-1" options={{ headerShown: false }} />
+                <Stack.Screen name="stress-intro-2" options={{ headerShown: false }} />
                 <Stack.Screen name="how-it-works" options={{ headerShown: false }} />
                 <Stack.Screen name="trusted" options={{ headerShown: false }} />
                 <Stack.Screen name="backed-by-science" options={{ headerShown: false }} />
@@ -78,10 +82,15 @@ export default function RootLayout() {
                 <Stack.Screen name="reset-password" options={{ headerShown: false }} />
                 <Stack.Screen name="change-password" options={{ headerShown: false }} />
                 <Stack.Screen name="onboarding/situation" options={{ headerShown: false }} />
+                <Stack.Screen name="onboarding/personalise" options={{ headerShown: false }} />
                 <Stack.Screen name="onboarding/environments" options={{ headerShown: false }} />
                 <Stack.Screen name="onboarding/sounds-to-avoid" options={{ headerShown: false }} />
                 <Stack.Screen name="onboarding/detail-preference" options={{ headerShown: false }} />
                 <Stack.Screen name="onboarding/session-length" options={{ headerShown: false }} />
+                <Stack.Screen name="onboarding/the-ritual" options={{ headerShown: false }} />
+                <Stack.Screen name="onboarding/your-fit" options={{ headerShown: false }} />
+                <Stack.Screen name="onboarding/trust" options={{ headerShown: false }} />
+                <Stack.Screen name="onboarding/try-passage" options={{ headerShown: false }} />
                 <Stack.Screen name="onboarding/building-profile" options={{ headerShown: false }} />
                 <Stack.Screen name="onboarding/recommendations" options={{ headerShown: false }} />
                 <Stack.Screen name="(tabs)" options={{ headerShown: false }} />

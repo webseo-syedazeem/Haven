@@ -60,7 +60,9 @@ export default function StartingModeScreen() {
     setSaveError(null);
     try {
       await saveOnboardingAnswers({ startingMode: selected });
-      router.push('/onboarding/situation' as Href);
+      // Relax alone carries the two extra "stress" framing screens before
+      // Goal; Sleep and Focus go straight there, matching the reference flows.
+      router.push((selected === 'relax' ? '/stress-intro-1' : '/passage-help') as Href);
     } catch {
       setSaveError('We could not save that just yet. Please try again.');
     } finally {

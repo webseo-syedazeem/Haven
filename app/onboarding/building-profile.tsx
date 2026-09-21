@@ -55,7 +55,7 @@ export default function BuildingProfileScreen() {
     });
 
     void Promise.all([delay, Promise.race([prefetch, maximumWait])]).then(() => {
-      if (active) router.replace('/onboarding/recommendations' as Href);
+      if (active) router.replace('/onboarding/try-passage' as Href);
     });
 
     return () => {

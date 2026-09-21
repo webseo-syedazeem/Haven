@@ -1,88 +1,78 @@
+import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import type { Href } from 'expo-router';
 import { useRouter } from 'expo-router';
-import { useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
-import { ChoiceRow } from '@/components/onboarding/OnboardingChoices';
+import { useEffect, useState } from 'react';
+import {
+  Image,
+  ImageBackground,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+
 import { OnboardingContinueButton } from '@/components/onboarding/OnboardingContinueButton';
-import { OnboardingScaffold } from '@/components/onboarding/OnboardingScaffold';
 import { HalcyonColors } from '@/constants/design';
-import { getModeLabel, type ModeId } from '@/constants/modes';
 import { AppFonts } from '@/constants/theme';
 import {
   getOnboardingAnswers,
   saveOnboardingAnswers,
 } from '@/lib/onboarding';
-import { OnboardingContinueButtonBlack } from '@/components/onboarding/OnboardingcontinueButtonBlack';
 
-const SITUATIONS: Record<ModeId, readonly string[]> = {
-  sleep: [
-    'My mind will not slow down',
-    'I wake in the night',
-    'Noise around me',
-    'My schedule changes',
-    'I struggle to get comfortable',
-  ],
-  relax: [
-    'After a busy day',
-    'When I feel overstimulated',
-    'During a quiet break',
-    'Before bed',
-    'When I need some space',
-  ],
-  focus: [
-    'Deep work',
-    'Reading or studying',
-    'Writing',
-    'Noisy surroundings',
-    'Creative work',
-  ],
-};
+const brandIcon = require('@/assets/images/passage-brand-assets/screens-icon.webp');
+const mountainBg = require('@/assets/images/understand-bg.jpg');
+
+const FOCUS_DISTRACTIONS = [
+  'Background noise',
+  'Racing thoughts',
+  'Phone distractions',
+  'Low energy',
+  'Getting started',
+] as const;
 
 export default function SituationScreen() {
   const router = useRouter();
-  const [mode, setMode] = useState<ModeId | null>(null);
-  const [selected, setSelected] = useState<string[]>([]);
-  const [hydrating, setHydrating] = useState(true);
+  const [selected, setSelected] = useState<string[]>([
+    'Background noise',
+    'Racing thoughts',
+  ]);
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
-  const options = useMemo(() => (mode ? SITUATIONS[mode] : []), [mode]);
 
   useEffect(() => {
     let active = true;
     const hydrate = async () => {
       const answers = await getOnboardingAnswers();
       if (!active) return;
-      if (!answers.startingMode) {
-        router.replace('/environment');
-        return;
+      if (answers.situation && answers.situation.length > 0) {
+        setSelected(answers.situation);
       }
-      const modeOptions = SITUATIONS[answers.startingMode];
-      setMode(answers.startingMode);
-      setSelected(answers.situation.filter((item) => modeOptions.includes(item)));
-      setHydrating(false);
     };
     void hydrate();
     return () => {
       active = false;
     };
-  }, [router]);
+  }, []);
 
-  const toggleSituation = (situation: string) => {
+  const toggleOption = (option: string) => {
     setSaveError(null);
-    setSelected((current) =>
-      current.includes(situation)
-        ? current.filter((item) => item !== situation)
-        : [...current, situation]
+    setSelected((prev) =>
+      prev.includes(option)
+        ? prev.filter((item) => item !== option)
+        : [...prev, option]
     );
   };
 
-  const continueOnboarding = async () => {
-    if (!mode || selected.length === 0) return;
+  const handleContinue = async () => {
+    if (selected.length === 0 || saving) return;
     setSaving(true);
     setSaveError(null);
     try {
       await saveOnboardingAnswers({ situation: selected });
-      router.push('/onboarding/environments' as Href);
+      router.push('/onboarding/personalise' as Href);
     } catch {
       setSaveError('We could not save that just yet. Please try again.');
     } finally {
@@ -91,97 +81,231 @@ export default function SituationScreen() {
   };
 
   return (
-    <OnboardingScaffold
-      contentContainerStyle={styles.content}
-      footer={
-        <View style={styles.footerContent}>
-          {saveError ? <Text style={styles.error}>{saveError}</Text> : null}
-          <OnboardingContinueButtonBlack
-            disabled={hydrating || !mode || selected.length === 0}
-            loading={saving}
-            onPress={() => void continueOnboarding()}
-          />
-        </View>
-      }
-      onBack={() => router.back()}
-  >
-      {hydrating || !mode ? (
-        <View style={styles.loading}>
-          <ActivityIndicator color={HalcyonColors.accent} />
-        </View>
-      ) : (
-        <>
-          <View style={styles.headingGroup}>
-           
-            <Text style={styles.heading}>What usually gets in the way?</Text>
-            <Text style={styles.description}>
-              Select all that apply. We will shape your {getModeLabel(mode).toLowerCase()} picks
-              around them.
-            </Text>
+    <View style={styles.screen}>
+      <ImageBackground
+        resizeMode="cover"
+        source={mountainBg}
+        style={styles.backgroundImage}>
+        <LinearGradient
+          colors={[
+            'rgba(10, 11, 13, 0.2)',
+            'rgba(10, 11, 13, 0.65)',
+            '#0A0B0D',
+            '#0A0B0D',
+          ]}
+          locations={[0, 0.35, 0.62, 1]}
+          style={StyleSheet.absoluteFill}
+        />
+
+        <SafeAreaView edges={['top', 'bottom']} style={styles.safeArea}>
+          {/* Header with back button and centered brand */}
+          <View style={styles.header}>
+            <Pressable
+              accessibilityLabel="Go back"
+              hitSlop={12}
+              onPress={() => router.back()}
+              style={({ pressed }) => [styles.backButton, pressed && styles.pressed]}>
+              <Ionicons color="#FFFFFF" name="chevron-back" size={22} />
+            </Pressable>
+
+            <View style={styles.brandCenter}>
+              <Image source={brandIcon} style={styles.brandIcon} />
+              <Text style={styles.brandText}>Passage</Text>
+            </View>
+
+            <View style={styles.headerSpacer} />
           </View>
-         <View style={styles.options}>
-  {options.map((option) => (
-    <ChoiceRow
-      key={option}
-      label={option}
-      onPress={() => toggleSituation(option)}
-      selected={selected.includes(option)}
-    />
-  ))}
-</View>
-        </>
-      )}
-    </OnboardingScaffold>
+
+          <ScrollView
+            contentContainerStyle={styles.scrollContent}
+            keyboardShouldPersistTaps="handled"
+            showsVerticalScrollIndicator={false}>
+            <View style={styles.titleContainer}>
+              <Text style={styles.title}>What breaks{'\n'}your focus?</Text>
+              <Text style={styles.subtitle}>
+                Choose what gets in the way, so we can tailor your experience.
+              </Text>
+            </View>
+
+            <View style={styles.optionsList}>
+              {FOCUS_DISTRACTIONS.map((option) => {
+                const isSelected = selected.includes(option);
+                return (
+                  <Pressable
+                    accessibilityRole="checkbox"
+                    accessibilityState={{ checked: isSelected }}
+                    key={option}
+                    onPress={() => toggleOption(option)}
+                    style={({ pressed }) => [
+                      styles.optionCard,
+                      isSelected ? styles.optionCardSelected : styles.optionCardUnselected,
+                      pressed && styles.pressedCard,
+                    ]}>
+                    <Text style={[styles.optionText, isSelected && styles.optionTextSelected]}>
+                      {option}
+                    </Text>
+                    <View
+                      style={[
+                        styles.checkCircle,
+                        isSelected ? styles.checkCircleSelected : styles.checkCircleUnselected,
+                      ]}>
+                      {isSelected ? (
+                        <Ionicons color="#0B0B0D" name="checkmark" size={15} />
+                      ) : null}
+                    </View>
+                  </Pressable>
+                );
+              })}
+            </View>
+          </ScrollView>
+
+          <View style={styles.footer}>
+            {saveError ? <Text style={styles.errorText}>{saveError}</Text> : null}
+            <OnboardingContinueButton
+              disabled={selected.length === 0}
+              label="CONTINUE"
+              loading={saving}
+              onPress={() => void handleContinue()}
+              showArrow
+            />
+          </View>
+        </SafeAreaView>
+      </ImageBackground>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
- options: {
-  gap: 10,
-},
-  content: {
-    paddingTop: 24,
+  backButton: {
+    alignItems: 'center',
+    height: 40,
+    justifyContent: 'center',
+    width: 40,
   },
-  description: {
-    color: HalcyonColors.textSecondary,
-    fontFamily: AppFonts.sansRegular,
-    fontSize: 14,
-    lineHeight: 21,
-    marginTop: 10,
-    maxWidth: 350,
+  backgroundImage: {
+    flex: 1,
   },
-  error: {
+  brandCenter: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: 8,
+  },
+  brandIcon: {
+    height: 22,
+    resizeMode: 'contain',
+    width: 32,
+  },
+  brandText: {
+    color: '#FFFFFF',
+    fontFamily: AppFonts.sansBold,
+    fontSize: 19,
+    fontWeight: '700',
+    letterSpacing: -0.3,
+  },
+  checkCircle: {
+    alignItems: 'center',
+    borderRadius: 12,
+    height: 24,
+    justifyContent: 'center',
+    width: 24,
+  },
+  checkCircleSelected: {
+    backgroundColor: '#F4B34C',
+  },
+  checkCircleUnselected: {
+    borderColor: '#3E414A',
+    borderWidth: 1.5,
+  },
+  errorText: {
     color: '#D9A39B',
     fontFamily: AppFonts.sansRegular,
     fontSize: 12,
     lineHeight: 17,
+    marginBottom: 8,
     textAlign: 'center',
   },
-  eyebrow: {
-    color: HalcyonColors.accent,
-    fontFamily: AppFonts.sansSemiBold,
-    fontSize: 11,
-    fontWeight: '600',
-    letterSpacing: 1.5,
-    marginBottom: 10,
+  footer: {
+    paddingBottom: 14,
+    paddingHorizontal: 22,
+    paddingTop: 10,
   },
-  footerContent: {
-    gap: 8,
-  },
-  heading: {
-    color: HalcyonColors.textPrimary,
-    fontFamily: AppFonts.displayRegular,
-    fontSize: 34,
-    fontWeight: '500',
-    lineHeight: 39,
-    maxWidth: 330,
-  },
-  headingGroup: {
-    marginBottom: 30,
-  },
-  loading: {
+  header: {
     alignItems: 'center',
+    flexDirection: 'row',
+    height: 52,
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+  },
+  headerSpacer: {
+    height: 40,
+    width: 40,
+  },
+  optionCard: {
+    alignItems: 'center',
+    borderRadius: 14,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    minHeight: 58,
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+  },
+  optionCardSelected: {
+    backgroundColor: 'rgba(26, 27, 32, 0.85)',
+    borderColor: '#F4B34C',
+    borderWidth: 1.5,
+  },
+  optionCardUnselected: {
+    backgroundColor: 'rgba(18, 19, 23, 0.72)',
+    borderColor: '#26282E',
+    borderWidth: 1,
+  },
+  optionText: {
+    color: '#D4D2CD',
+    fontFamily: AppFonts.sansRegular,
+    fontSize: 16,
+    letterSpacing: 0.1,
+  },
+  optionTextSelected: {
+    color: '#FFFFFF',
+    fontFamily: AppFonts.sansSemiBold,
+  },
+  optionsList: {
+    gap: 12,
+    marginTop: 26,
+  },
+  pressed: {
+    opacity: 0.7,
+  },
+  pressedCard: {
+    opacity: 0.9,
+  },
+  safeArea: {
     flex: 1,
-    justifyContent: 'center',
+  },
+  screen: {
+    backgroundColor: '#0A0B0D',
+    flex: 1,
+  },
+  scrollContent: {
+    paddingBottom: 24,
+    paddingHorizontal: 22,
+    paddingTop: 16,
+  },
+  subtitle: {
+    color: '#9E9A92',
+    fontFamily: AppFonts.sansRegular,
+    fontSize: 14,
+    lineHeight: 21,
+    marginTop: 8,
+  },
+  title: {
+    color: '#FFFFFF',
+    fontFamily: AppFonts.playfairRegular,
+    fontSize: 34,
+    letterSpacing: -0.3,
+    lineHeight: 40,
+  },
+  titleContainer: {
+    marginTop: 8,
   },
 });

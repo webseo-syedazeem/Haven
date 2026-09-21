@@ -34,7 +34,7 @@ export default function HowItWorksScreen() {
       contentContainerStyle={styles.content}
       footer={
         <OnboardingContinueButtonBlack
-          onPress={() => router.push('/backed-by-science')}
+          onPress={() => router.push('/environment')}
         />
       }
       onBack={() => router.back()}>

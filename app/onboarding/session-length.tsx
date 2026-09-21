@@ -34,7 +34,7 @@ export default function SessionLengthScreen() {
     try {
       await saveOnboardingAnswers({ sessionLength: selected });
       await completeOnboardingAnswers();
-      router.push('/onboarding/building-profile' as Href);
+      router.push('/onboarding/the-ritual' as Href);
     } catch {
       setSaveError('We could not save that choice. Please try again.');
     } finally {
