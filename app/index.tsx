@@ -5,7 +5,8 @@ import { useEffect, useState } from 'react';
 import { ActivityIndicator, ImageBackground, Pressable, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { OnboardingContinueButton } from '@/components/onboarding/OnboardingContinueButton';
+import { OnboardingPillButton } from '@/components/onboarding/OnboardingPillButton';
+import { OnboardingStepHeader } from '@/components/onboarding/OnboardingStepHeader';
 import { HalcyonColors } from '@/constants/design';
 import { AppFonts } from '@/constants/theme';
 import { ME_QUERY_KEY } from '@/hooks/useUser';
@@ -24,7 +25,7 @@ import {
 } from '@/lib/onboarding';
 import { queryClient } from '@/lib/query-client';
 
-const welcomeBackground = require('@/assets/images/welcome-bg.png');
+const welcomeBackground = require('@/assets/images/understand-bg.jpg');
 
 type LaunchState = 'checking' | 'welcome';
 
@@ -106,45 +107,58 @@ export default function FirstPageScreen() {
   return (
     <ImageBackground
       imageStyle={styles.welcomeBackgroundImage}
-      resizeMode='cover'
+      resizeMode="cover"
       source={welcomeBackground}
-      style={styles.welcomeScreen}>
-      <StatusBar style='light' />
+      style={styles.welcomeScreen}
+    >
+      <StatusBar style="light" />
       <LinearGradient
         colors={[
-          'rgba(11,11,13,0.12)',
-          'rgba(11,11,13,0.22)',
-          'rgba(11,11,13,0.97)',
+          'rgba(11,11,13,0.3)',
+          'rgba(11,11,13,0.1)',
+          'rgba(11,11,13,0.5)',
+          'rgba(11,11,13,0.95)',
         ]}
-        locations={[0, 0.45, 1]}
-        pointerEvents='none'
+        locations={[0, 0.25, 0.65, 1]}
+        pointerEvents="none"
         style={StyleSheet.absoluteFill}
       />
 
       <SafeAreaView edges={['top', 'bottom']} style={styles.welcomeSafeArea}>
-        <View style={styles.brandBlock}>
-       <Text style={styles.logo}>PASSAGE</Text>
-          <Text style={styles.proposition}>Soundscapes for Focus, Sleep &amp; Reset</Text>
-        </View>
+        {/* Step 1 Header with Logo & 4-Segment Progress Bar */}
+        <OnboardingStepHeader currentStep={1} totalSteps={4} />
 
-        <View style={styles.actionBlock}>
-          <OnboardingContinueButton
-            disabled={isCheckingSession}
-            label='Get started'
-            onPress={() => router.push('/the-promise')}
-          />
-          <Pressable
-            accessibilityRole='button'
-            disabled={isCheckingSession}
-            hitSlop={10}
-            onPress={() => router.push('/login')}
-            style={({ pressed }) => [
-              styles.loginAction,
-              isCheckingSession && styles.disabledAction,
-              pressed && !isCheckingSession && styles.linkPressed,
-            ]}>
-            <Text style={styles.loginLabel}>Log in</Text>
-          </Pressable>
+        <View style={styles.bottomBlock}>
+          <Text style={styles.heading}>
+            Go somewhere.{'\n'}
+            Without going{'\n'}
+            anywhere.
+          </Text>
+
+          <Text style={styles.subtitle}>
+            Immersive soundscapes{'\n'}for focus, calm and sleep.
+          </Text>
+
+          <View style={styles.actionBlock}>
+            <OnboardingPillButton
+              disabled={isCheckingSession}
+              label="Get started"
+              onPress={() => router.push('/why-passage' as any)}
+            />
+
+            <Pressable
+              accessibilityRole="button"
+              disabled={isCheckingSession}
+              hitSlop={10}
+              onPress={() => router.push('/login')}
+              style={({ pressed }) => [
+                styles.loginAction,
+                pressed && styles.linkPressed,
+              ]}
+            >
+              <Text style={styles.loginLabel}>I already have an account</Text>
+            </Pressable>
+          </View>
         </View>
       </SafeAreaView>
     </ImageBackground>
@@ -154,24 +168,28 @@ export default function FirstPageScreen() {
 function LaunchLoadingScreen() {
   return (
     <View style={styles.loadingScreen}>
-      <StatusBar style='light' />
-      <ActivityIndicator color={HalcyonColors.accent} size='large' />
+      <StatusBar style="light" />
+      <ActivityIndicator color={HalcyonColors.accent} size="large" />
     </View>
   );
 }
+
 const styles = StyleSheet.create({
   actionBlock: {
-    paddingBottom: 18,
+    paddingTop: 28,
+    width: '100%',
+  },
+  bottomBlock: {
+    paddingBottom: 24,
     paddingHorizontal: 24,
     width: '100%',
   },
-  brandBlock: {
-    alignItems: 'center',
-    paddingHorizontal: 24,
-    paddingTop: 72,
-  },
-  disabledAction: {
-    opacity: 0.64,
+  heading: {
+    color: '#FFFFFF',
+    fontFamily: AppFonts.playfairRegular,
+    fontSize: 44,
+    lineHeight: 48,
+    letterSpacing: -0.5,
   },
   linkPressed: {
     opacity: 0.64,
@@ -187,38 +205,32 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
     justifyContent: 'center',
     minHeight: 44,
-    marginTop: 8,
+    marginTop: 12,
     paddingHorizontal: 18,
   },
   loginLabel: {
-    color: HalcyonColors.textSecondary,
-    fontFamily: AppFonts.sansMedium,
+    color: '#FFFFFF',
+    fontFamily: AppFonts.sansRegular,
     fontSize: 14,
     lineHeight: 20,
-  
+    textDecorationLine: 'underline',
   },
-  logo: {
-    color: HalcyonColors.textPrimary,
-    fontFamily: AppFonts.displayRegular,
-    fontSize: 60,
-    lineHeight: 44,
-     marginTop: 80,
-  },
-  proposition: {
-    color: HalcyonColors.textPrimary,
+  subtitle: {
+    color: 'rgba(255, 255, 255, 0.8)',
     fontFamily: AppFonts.sansRegular,
     fontSize: 15,
     lineHeight: 22,
-    marginTop: 17,
-    textAlign: 'center',
+    marginTop: 14,
   },
-  welcomeBackgroundImage: { opacity: 0.96 },
+  welcomeBackgroundImage: {
+    opacity: 1,
+  },
   welcomeSafeArea: {
     flex: 1,
     justifyContent: 'space-between',
   },
   welcomeScreen: {
-    backgroundColor: HalcyonColors.background,
+    backgroundColor: '#0B0B0D',
     flex: 1,
   },
 });

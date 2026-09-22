@@ -29,6 +29,7 @@ export default function RootLayout() {
     [AppFonts.displayRegular]: require('../assets/fonts/CormorantGaramond-VariableFont_wght.ttf'),
     [AppFonts.playfairRegular]: require('../assets/fonts/PlayfairDisplay-Regular.ttf'),
     [AppFonts.playfairMedium]: require('../assets/fonts/PlayfairDisplay-Medium.ttf'),
+    [AppFonts.playfairItalic]: require('../assets/fonts/PlayfairDisplay-Italic.ttf'),
   });
 
   useEffect(() => {
@@ -60,8 +61,11 @@ export default function RootLayout() {
               rather than on empty states. */}
           <PersistQueryClientProvider client={queryClient} persistOptions={persistOptions}>
             <PlayerProvider>
-              <Stack screenOptions={{ contentStyle: { backgroundColor: 'transparent' } }}>
+              <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: 'transparent' } }}>
                 <Stack.Screen name="index" options={{ headerShown: false }} />
+                <Stack.Screen name="why-passage" options={{ headerShown: false }} />
+                <Stack.Screen name="what-it-does" options={{ headerShown: false }} />
+                <Stack.Screen name="select-focus" options={{ headerShown: false }} />
                 <Stack.Screen name="create-account" options={{ headerShown: false }} />
                 <Stack.Screen name="environment" options={{ headerShown: false }} />
                 <Stack.Screen name="stress-intro-1" options={{ headerShown: false }} />

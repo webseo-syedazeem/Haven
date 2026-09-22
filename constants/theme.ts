@@ -17,6 +17,7 @@ export const AppFonts = {
   displayBold: 'CormorantGaramond',
   playfairRegular: 'PlayfairDisplay',
   playfairMedium: 'PlayfairDisplay-Medium',
+  playfairItalic: 'PlayfairDisplay-Italic',
 };
 
 export const Colors = {
