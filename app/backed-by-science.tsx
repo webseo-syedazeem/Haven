@@ -55,12 +55,12 @@ export default function BackedByScienceScreen() {
         style={styles.backgroundImage}>
         <LinearGradient
           colors={[
-            'rgba(10, 11, 13, 0.25)',
-            'rgba(10, 11, 13, 0.7)',
-            '#0A0B0D',
+            'rgba(10, 11, 15, 0.45)',
+            'rgba(10, 11, 15, 0.15)',
+            'rgba(10, 11, 15, 0.65)',
             '#0A0B0D',
           ]}
-          locations={[0, 0.38, 0.65, 1]}
+          locations={[0, 0.25, 0.72, 1]}
           style={StyleSheet.absoluteFill}
         />
 
@@ -89,7 +89,9 @@ export default function BackedByScienceScreen() {
             keyboardShouldPersistTaps="handled"
             showsVerticalScrollIndicator={false}>
             <View style={styles.titleContainer}>
-              <Text style={styles.title}>Why sound can help.</Text>
+              <Text adjustsFontSizeToFit numberOfLines={1} style={styles.title}>
+                Why sound can help.
+              </Text>
             </View>
 
             {/* Waveform Comparison Graphic */}
@@ -103,13 +105,24 @@ export default function BackedByScienceScreen() {
                     <Stop offset="100%" stopColor="#EDE6DD" />
                   </SvgLinearGradient>
                 </Defs>
+                {/* Glow layer */}
+                <Path
+                  d="M 6 55 L 18 55 L 26 42 L 32 68 L 38 24 L 45 86 L 52 10 L 60 98 L 68 18 L 76 90 L 84 28 L 92 80 L 100 36 L 108 72 L 116 42 L 124 66 L 132 47 L 140 61 L 148 55 C 160 32, 175 32, 187 55 C 199 78, 214 78, 226 55 C 238 32, 253 32, 265 55 C 277 78, 292 78, 304 55 L 324 55"
+                  fill="none"
+                  opacity={0.35}
+                  stroke={spikeColor}
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={7}
+                />
+                {/* Main sharp stroke */}
                 <Path
                   d="M 6 55 L 18 55 L 26 42 L 32 68 L 38 24 L 45 86 L 52 10 L 60 98 L 68 18 L 76 90 L 84 28 L 92 80 L 100 36 L 108 72 L 116 42 L 124 66 L 132 47 L 140 61 L 148 55 C 160 32, 175 32, 187 55 C 199 78, 214 78, 226 55 C 238 32, 253 32, 265 55 C 277 78, 292 78, 304 55 L 324 55"
                   fill="none"
                   stroke="url(#waveGrad)"
                   strokeLinecap="round"
                   strokeLinejoin="round"
-                  strokeWidth={2.4}
+                  strokeWidth={2.8}
                 />
               </Svg>
 
@@ -190,9 +203,9 @@ const styles = StyleSheet.create({
   disruptionsTitle: {
     color: '#F4B34C',
     fontFamily: AppFonts.sansSemiBold,
-    fontSize: 16,
+    fontSize: 17,
     fontWeight: '600',
-    marginBottom: 6,
+    marginBottom: 8,
     textAlign: 'center',
   },
   footer: {
@@ -219,17 +232,17 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   labelDesc: {
-    color: '#9E9A92',
+    color: '#D4CFCA',
     fontFamily: AppFonts.sansRegular,
-    fontSize: 13,
-    lineHeight: 18,
+    fontSize: 13.5,
+    lineHeight: 19,
     textAlign: 'center',
   },
   labelsRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginTop: 18,
-    paddingHorizontal: 6,
+    marginTop: 22,
+    paddingHorizontal: 4,
   },
   pressed: {
     opacity: 0.7,
@@ -243,32 +256,33 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     flexGrow: 1,
-    justifyContent: 'center',
     paddingBottom: 30,
     paddingHorizontal: 22,
+    paddingTop: 10,
   },
   steadierTitle: {
     color: '#EDE6DD',
     fontFamily: AppFonts.sansSemiBold,
-    fontSize: 16,
+    fontSize: 17,
     fontWeight: '600',
-    marginBottom: 6,
+    marginBottom: 8,
     textAlign: 'center',
   },
   title: {
     color: '#FFFFFF',
     fontFamily: AppFonts.playfairRegular,
-    fontSize: 34,
-    letterSpacing: -0.3,
-    lineHeight: 40,
+    fontSize: 40,
+    letterSpacing: -0.5,
+    lineHeight: 46,
   },
   titleContainer: {
-    marginBottom: 40,
+    marginBottom: 44,
+    marginTop: 6,
   },
   waveformContainer: {
     alignItems: 'center',
     justifyContent: 'center',
-    marginVertical: 20,
+    marginVertical: 18,
     width: '100%',
   },
 });
