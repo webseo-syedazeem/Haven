@@ -2,6 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import type { Href } from 'expo-router';
 import { useRouter } from 'expo-router';
+import { useEffect, useState } from 'react';
 import {
   Image,
   ImageBackground,
@@ -15,13 +16,32 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import Svg, { Defs, LinearGradient as SvgLinearGradient, Path, Stop } from 'react-native-svg';
 
 import { OnboardingContinueButton } from '@/components/onboarding/OnboardingContinueButton';
+import type { ModeId } from '@/constants/modes';
 import { AppFonts } from '@/constants/theme';
+import { getOnboardingAnswers } from '@/lib/onboarding';
 
 const brandIcon = require('@/assets/images/passage-brand-assets/screens-icon.webp');
-const duskMountains = require('@/assets/images/science-dusk.jpg');
+const duskMountains = require('@/assets/images/science-dusk.webp');
 
 export default function BackedByScienceScreen() {
   const router = useRouter();
+  const [mode, setMode] = useState<ModeId>('focus');
+
+  useEffect(() => {
+    let active = true;
+    void getOnboardingAnswers().then((answers) => {
+      if (!active) return;
+      if (answers.startingMode) {
+        setMode(answers.startingMode);
+      }
+    });
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  const isSleep = mode === 'sleep';
+  const spikeColor = isSleep ? '#9FAEFD' : '#F4B34C';
 
   const handleContinue = () => {
     router.push('/onboarding/the-ritual' as Href);
@@ -47,6 +67,12 @@ export default function BackedByScienceScreen() {
         <SafeAreaView edges={['top', 'bottom']} style={styles.safeArea}>
           {/* Header with back button and centered brand */}
           <View style={styles.header}>
+            {/* Absolute centered Brand - locked to horizontal center */}
+            <View pointerEvents="none" style={styles.brandCenterAbsolute}>
+              <Image source={brandIcon} style={styles.brandIcon} />
+              <Text style={styles.brandText}>Passage</Text>
+            </View>
+
             <Pressable
               accessibilityLabel="Go back"
               hitSlop={12}
@@ -54,11 +80,6 @@ export default function BackedByScienceScreen() {
               style={({ pressed }) => [styles.backButton, pressed && styles.pressed]}>
               <Ionicons color="#FFFFFF" name="chevron-back" size={22} />
             </Pressable>
-
-            <View style={styles.brandCenter}>
-              <Image source={brandIcon} style={styles.brandIcon} />
-              <Text style={styles.brandText}>Passage</Text>
-            </View>
 
             <View style={styles.headerSpacer} />
           </View>
@@ -76,8 +97,8 @@ export default function BackedByScienceScreen() {
               <Svg height="110" viewBox="0 0 330 110" width="100%">
                 <Defs>
                   <SvgLinearGradient id="waveGrad" x1="0" x2="1" y1="0" y2="0">
-                    <Stop offset="0%" stopColor="#F4B34C" />
-                    <Stop offset="46%" stopColor="#F4B34C" />
+                    <Stop offset="0%" stopColor={spikeColor} />
+                    <Stop offset="46%" stopColor={spikeColor} />
                     <Stop offset="54%" stopColor="#EDE6DD" />
                     <Stop offset="100%" stopColor="#EDE6DD" />
                   </SvgLinearGradient>
@@ -95,13 +116,23 @@ export default function BackedByScienceScreen() {
               {/* Labels under waveform */}
               <View style={styles.labelsRow}>
                 <View style={styles.labelCol}>
-                  <Text style={styles.disruptionsTitle}>Disruptions</Text>
-                  <Text style={styles.labelDesc}>Attention reacts to{'\n'}sudden change.</Text>
+                  <Text style={[styles.disruptionsTitle, { color: spikeColor }]}>
+                    {isSleep ? 'Sudden sound' : 'Disruptions'}
+                  </Text>
+                  <Text style={styles.labelDesc}>
+                    {isSleep
+                      ? 'The sleeping brain still\nnotices sudden change.'
+                      : 'Attention reacts to\nsudden change.'}
+                  </Text>
                 </View>
 
                 <View style={styles.labelCol}>
                   <Text style={styles.steadierTitle}>A steadier sound field</Text>
-                  <Text style={styles.labelDesc}>Layered sound can{'\n'}soften that contrast.</Text>
+                  <Text style={styles.labelDesc}>
+                    {isSleep
+                      ? 'Steady sound can\nsoften the contrast.'
+                      : 'Layered sound can\nsoften that contrast.'}
+                  </Text>
                 </View>
               </View>
             </View>
@@ -112,6 +143,7 @@ export default function BackedByScienceScreen() {
               label="SEE HOW PASSAGE WORKS"
               onPress={handleContinue}
               showArrow
+              variant={isSleep ? 'lavender' : 'amber'}
             />
           </View>
         </SafeAreaView>
@@ -126,26 +158,34 @@ const styles = StyleSheet.create({
     height: 40,
     justifyContent: 'center',
     width: 40,
+    zIndex: 1,
   },
   backgroundImage: {
     flex: 1,
   },
-  brandCenter: {
+  brandCenterAbsolute: {
     alignItems: 'center',
+    bottom: 0,
     flexDirection: 'row',
-    gap: 8,
+    justifyContent: 'center',
+    left: 0,
+    position: 'absolute',
+    right: 0,
+    top: 0,
+    zIndex: 0,
   },
   brandIcon: {
     height: 22,
     resizeMode: 'contain',
-    width: 32,
+    width: 38,
   },
   brandText: {
     color: '#FFFFFF',
     fontFamily: AppFonts.sansBold,
-    fontSize: 19,
+    fontSize: 20,
     fontWeight: '700',
     letterSpacing: -0.3,
+    marginLeft: 9,
   },
   disruptionsTitle: {
     color: '#F4B34C',
@@ -166,10 +206,13 @@ const styles = StyleSheet.create({
     height: 52,
     justifyContent: 'space-between',
     paddingHorizontal: 16,
+    position: 'relative',
+    width: '100%',
   },
   headerSpacer: {
     height: 40,
     width: 40,
+    zIndex: 1,
   },
   labelCol: {
     alignItems: 'center',

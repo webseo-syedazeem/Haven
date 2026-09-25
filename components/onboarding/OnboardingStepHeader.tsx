@@ -11,20 +11,29 @@ type OnboardingStepHeaderProps = {
   totalSteps?: number; // default 4
   onBack?: () => void;
   showBack?: boolean;
+  activeColor?: string;
 };
 
 export const PASSAGE_GOLD = '#EAA850';
+export const PASSAGE_SLEEP = '#9FAEFD';
 
 export function OnboardingStepHeader({
   currentStep,
   totalSteps = 4,
   onBack,
   showBack = false,
+  activeColor = PASSAGE_GOLD,
 }: OnboardingStepHeaderProps) {
   return (
     <View style={styles.container}>
       <View style={styles.topRow}>
-        <View style={styles.brandGroup}>
+        {/* Absolute centered Brand - locked to horizontal center */}
+        <View pointerEvents="none" style={styles.brandCenterAbsolute}>
+          <Image resizeMode="contain" source={appIcon} style={styles.iconMark} />
+          <Text style={styles.brandTitle}>Passage</Text>
+        </View>
+
+        <View style={styles.sideSlot}>
           {showBack && onBack ? (
             <Pressable
               accessibilityLabel="Go back"
@@ -32,12 +41,12 @@ export function OnboardingStepHeader({
               onPress={onBack}
               style={({ pressed }) => [styles.backButton, pressed && styles.backButtonPressed]}
             >
-              <Ionicons color="#FFFFFF" name="chevron-back" size={20} />
+              <Ionicons color="#FFFFFF" name="chevron-back" size={22} />
             </Pressable>
           ) : null}
-          <Image resizeMode="contain" source={appIcon} style={styles.iconMark} />
-          <Text style={styles.brandTitle}>Passage</Text>
         </View>
+
+        <View style={styles.sideSlot} />
       </View>
 
       {/* 4-Segment Progress Bar */}
@@ -51,7 +60,9 @@ export function OnboardingStepHeader({
               key={`step-${stepNumber}`}
               style={[
                 styles.segment,
-                isActive ? styles.activeSegment : styles.inactiveSegment,
+                isActive
+                  ? [styles.activeSegment, { backgroundColor: activeColor, shadowColor: activeColor }]
+                  : styles.inactiveSegment,
               ]}
             />
           );
@@ -71,24 +82,38 @@ const styles = StyleSheet.create({
   },
   backButton: {
     alignItems: 'center',
+    height: 40,
     justifyContent: 'center',
-    marginRight: 6,
-    padding: 2,
+    width: 40,
   },
   backButtonPressed: {
     opacity: 0.6,
   },
-  brandGroup: {
+  brandCenterAbsolute: {
     alignItems: 'center',
+    bottom: 0,
     flexDirection: 'row',
+    justifyContent: 'center',
+    left: 0,
+    position: 'absolute',
+    right: 0,
+    top: 0,
+    zIndex: 0,
+  },
+  sideSlot: {
+    alignItems: 'flex-start',
+    height: 40,
+    justifyContent: 'center',
+    width: 40,
+    zIndex: 1,
   },
   brandTitle: {
     color: '#FFFFFF',
-    fontFamily: AppFonts.sansMedium,
-    fontSize: 18,
-    fontWeight: '600',
-    letterSpacing: 0.2,
-    marginLeft: 8,
+    fontFamily: AppFonts.sansBold,
+    fontSize: 20,
+    fontWeight: '700',
+    letterSpacing: -0.3,
+    marginLeft: 9,
   },
   container: {
     paddingHorizontal: 24,
@@ -97,9 +122,9 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   iconMark: {
-    borderRadius: 5,
-    height: 24,
-    width: 24,
+    height: 22,
+    resizeMode: 'contain',
+    width: 38,
   },
   inactiveSegment: {
     backgroundColor: 'rgba(255, 255, 255, 0.22)',
@@ -118,7 +143,9 @@ const styles = StyleSheet.create({
   topRow: {
     alignItems: 'center',
     flexDirection: 'row',
+    height: 40,
     justifyContent: 'space-between',
+    position: 'relative',
     width: '100%',
   },
 });

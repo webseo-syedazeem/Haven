@@ -8,7 +8,7 @@ import { OnboardingPillButton } from '@/components/onboarding/OnboardingPillButt
 import { OnboardingStepHeader } from '@/components/onboarding/OnboardingStepHeader';
 import { AppFonts } from '@/constants/theme';
 
-const heroImage = require('@/assets/images/preview-tokyo-rain.jpg');
+const heroImage = require('@/assets/images/preview-tokyo-rain.webp');
 
 const FEATURES = [
   'Specific places, not generic loops',

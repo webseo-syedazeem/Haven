@@ -25,7 +25,7 @@ import {
 } from '@/lib/onboarding';
 import { queryClient } from '@/lib/query-client';
 
-const welcomeBackground = require('@/assets/images/understand-bg.jpg');
+const welcomeBackground = require('@/assets/images/understand-bg.webp');
 
 type LaunchState = 'checking' | 'welcome';
 

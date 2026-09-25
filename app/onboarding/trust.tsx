@@ -19,7 +19,7 @@ import { AppFonts } from '@/constants/theme';
 import { getOnboardingAnswers } from '@/lib/onboarding';
 
 const brandIcon = require('@/assets/images/passage-brand-assets/screens-icon.webp');
-const trustHeroDesk = require('@/assets/images/trust-hero-desk.jpg');
+const trustHeroDesk = require('@/assets/images/trust-hero-desk.webp');
 const mayaAvatar = require('@/assets/images/rating-person-3.webp');
 const danielAvatar = require('@/assets/images/rating-person-2.webp');
 const sophieAvatar = require('@/assets/images/rating-person-4.webp');
@@ -112,6 +112,9 @@ export default function TrustScreen() {
 
   const copy = mode ? TRUST_COPY[mode] : TRUST_COPY.focus;
 
+  const isSleep = mode === 'sleep';
+  const themeColor = isSleep ? '#9FAEFD' : '#F4B34C';
+
   const customHeader = (
     <View style={styles.headerCentered}>
       <View style={styles.brandRow}>
@@ -122,7 +125,12 @@ export default function TrustScreen() {
         {Array.from({ length: 7 }).map((_, index) => (
           <View
             key={index}
-            style={[styles.dash, index === 6 ? styles.dashActive : styles.dashInactive]}
+            style={[
+              styles.dash,
+              index === 6
+                ? [styles.dashActive, { backgroundColor: themeColor }]
+                : styles.dashInactive,
+            ]}
           />
         ))}
       </View>
@@ -139,6 +147,7 @@ export default function TrustScreen() {
             label="Preview the soundscapes"
             onPress={() => router.push('/onboarding/try-passage' as Href)}
             showArrow
+            variant={isSleep ? 'lavender' : 'amber'}
           />
           <Text style={styles.footerCommitment}>Three one-minute previews. No commitment.</Text>
         </View>
@@ -176,7 +185,7 @@ export default function TrustScreen() {
             <View style={styles.cardContent}>
               <View style={styles.cardStars}>
                 {Array.from({ length: 5 }).map((_, index) => (
-                  <Ionicons color="#F4B34C" key={index} name="star" size={14} />
+                  <Ionicons color={themeColor} key={index} name="star" size={14} />
                 ))}
               </View>
               <Text style={styles.cardQuote}>“{testimonial.quote}”</Text>

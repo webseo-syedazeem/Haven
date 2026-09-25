@@ -11,7 +11,7 @@ import type { ModeId } from '@/constants/modes';
 import { AppFonts } from '@/constants/theme';
 import { getOnboardingAnswers, type GuestOnboardingAnswers } from '@/lib/onboarding';
 
-const fitBanner = require('@/assets/images/your-fit-banner.jpg');
+const fitBanner = require('@/assets/images/your-fit-banner.webp');
 
 type FitQuote = {
   quote: string;
@@ -103,6 +103,7 @@ export default function YourFitScreen() {
           label="Preview my passages"
           onPress={() => router.push('/onboarding/trust' as Href)}
           showArrow
+          variant={mode === 'sleep' ? 'lavender' : 'amber'}
         />
       }>
       <Text style={styles.heading}>{mode ? FIT_HEADING[mode] : 'Built around how you work.'}</Text>

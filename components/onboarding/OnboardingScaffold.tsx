@@ -43,22 +43,27 @@ export function OnboardingScaffold({
 }: Props) {
   const defaultHeader = (
     <View style={styles.header}>
-      {onBack ? (
-        <Pressable
-          accessibilityLabel="Go back"
-          hitSlop={12}
-          onPress={onBack}
-          style={({ pressed }) => [styles.backButton, pressed && styles.pressed]}>
-          <Ionicons color={HalcyonColors.textPrimary} name="chevron-back" size={19} />
-        </Pressable>
-      ) : null}
-
-      <View style={[styles.brand, !onBack && styles.brandNoBack]}>
+      {/* Absolute centered Brand - locked to horizontal center */}
+      <View pointerEvents="none" style={styles.brandCenterAbsolute}>
         <Image source={brandIcon} style={styles.brandIcon} />
         <Text style={styles.brandText}>Passage</Text>
       </View>
 
-      {headerRight ? <View style={styles.headerRight}>{headerRight}</View> : null}
+      <View style={styles.headerSideSlot}>
+        {onBack ? (
+          <Pressable
+            accessibilityLabel="Go back"
+            hitSlop={12}
+            onPress={onBack}
+            style={({ pressed }) => [styles.backButton, pressed && styles.pressed]}>
+            <Ionicons color={HalcyonColors.textPrimary} name="chevron-back" size={22} />
+          </Pressable>
+        ) : null}
+      </View>
+
+      <View style={styles.headerSideSlot}>
+        {headerRight ? <View style={styles.headerRight}>{headerRight}</View> : null}
+      </View>
     </View>
   );
   const headerNode = header !== undefined ? header : defaultHeader;
@@ -103,17 +108,26 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     height: 36,
     justifyContent: 'center',
-    marginTop: 6,
     width: 36,
   },
   background: { flex: 1 },
-  brand: {
+  brandCenterAbsolute: {
     alignItems: 'center',
+    bottom: 0,
     flexDirection: 'row',
-    marginLeft: 10,
+    justifyContent: 'center',
+    left: 0,
+    position: 'absolute',
+    right: 0,
+    top: 0,
+    zIndex: 0,
   },
-  brandNoBack: {
-    marginLeft: 0,
+  headerSideSlot: {
+    alignItems: 'flex-start',
+    height: 40,
+    justifyContent: 'center',
+    width: 40,
+    zIndex: 1,
   },
   brandIcon: {
     height: 22,
@@ -144,6 +158,8 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     minHeight: 52,
     paddingHorizontal: 20,
+    position: 'relative',
+    width: '100%',
   },
   headerRight: {
     alignItems: 'center',

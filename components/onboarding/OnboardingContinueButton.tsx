@@ -35,7 +35,7 @@ type OnboardingContinueButtonProps = {
   /** Pill shape, uppercase label and a trailing arrow — off by default so existing screens are unaffected. */
   showArrow?: boolean;
   style?: StyleProp<ViewStyle>;
-  variant?: 'primary' | 'secondary' | 'amber';
+  variant?: 'primary' | 'secondary' | 'amber' | 'lavender';
 };
 
 export function OnboardingContinueButton({
@@ -48,11 +48,12 @@ export function OnboardingContinueButton({
   variant = 'primary',
 }: OnboardingContinueButtonProps) {
   const unavailable = disabled || loading;
-  const isAmber = variant === 'amber' || showArrow;
+  const isLavender = variant === 'lavender';
+  const isAmber = (variant === 'amber' || showArrow) && !isLavender;
   const labelColor =
     variant === 'secondary'
       ? HalcyonColors.textPrimary
-      : isAmber
+      : isAmber || isLavender
         ? '#0B0B0D'
         : HalcyonColors.background;
 
@@ -68,8 +69,15 @@ export function OnboardingContinueButton({
         showArrow && styles.pill,
         variant === 'secondary' && styles.secondary,
         isAmber && styles.amber,
+        isLavender && styles.lavender,
         unavailable && styles.disabled,
-        pressed && !unavailable && (isAmber ? styles.amberPressed : styles.pressed),
+        pressed &&
+          !unavailable &&
+          (isLavender
+            ? styles.lavenderPressed
+            : isAmber
+              ? styles.amberPressed
+              : styles.pressed),
         style,
       ]}>
       {loading ? (
@@ -146,6 +154,13 @@ const styles = StyleSheet.create({
   },
   amberPressed: {
     backgroundColor: '#DF9E37',
+    transform: [{ scale: 0.995 }],
+  },
+  lavender: {
+    backgroundColor: '#9FAEFD',
+  },
+  lavenderPressed: {
+    backgroundColor: '#8B9DFC',
     transform: [{ scale: 0.995 }],
   },
   secondaryLabel: {

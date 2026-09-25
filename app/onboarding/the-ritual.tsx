@@ -59,6 +59,9 @@ export default function TheRitualScreen() {
 
   const copy = mode ? RITUAL_COPY[mode] : null;
 
+  const isSleep = mode === 'sleep';
+  const themeColor = isSleep ? '#9FAEFD' : AMBER;
+
   return (
     <OnboardingScaffold
       contentContainerStyle={styles.content}
@@ -70,7 +73,7 @@ export default function TheRitualScreen() {
             label="Continue"
             onPress={() => router.push('/onboarding/your-fit' as Href)}
             showArrow
-            variant="amber"
+            variant={isSleep ? 'lavender' : 'amber'}
           />
         </View>
       }
@@ -82,9 +85,9 @@ export default function TheRitualScreen() {
           <View style={styles.stepsRow}>
             {copy.steps.map((step, index) => (
               <View key={step} style={styles.stepItem}>
-                <Text style={styles.stepLabel}>{step}</Text>
+                <Text style={[styles.stepLabel, { color: themeColor }]}>{step}</Text>
                 {index < copy.steps.length - 1 ? (
-                  <View style={styles.stepDash} />
+                  <View style={[styles.stepDash, { backgroundColor: themeColor }]} />
                 ) : null}
               </View>
             ))}

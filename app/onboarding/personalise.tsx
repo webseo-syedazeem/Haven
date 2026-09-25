@@ -15,6 +15,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { OnboardingContinueButton } from '@/components/onboarding/OnboardingContinueButton';
+import type { ModeId } from '@/constants/modes';
 import { AppFonts } from '@/constants/theme';
 import {
   getOnboardingAnswers,
@@ -23,33 +24,58 @@ import {
 
 const brandIcon = require('@/assets/images/passage-brand-assets/screens-icon.webp');
 
-const CONTEXTS = [
+const FOCUS_CONTEXTS = [
   {
     id: 'desk',
     label: 'At a desk',
-    image: require('@/assets/images/personalise-desk.jpg'),
+    image: require('@/assets/images/personalise-desk.webp'),
   },
   {
     id: 'studying',
     label: 'Studying',
-    image: require('@/assets/images/personalise-study.jpg'),
+    image: require('@/assets/images/personalise-study.webp'),
   },
   {
     id: 'creative',
     label: 'Creative work',
-    image: require('@/assets/images/personalise-creative.jpg'),
+    image: require('@/assets/images/personalise-creative.webp'),
   },
   {
     id: 'move',
     label: 'On the move',
-    image: require('@/assets/images/personalise-move.jpg'),
+    image: require('@/assets/images/personalise-move.webp'),
   },
 ] as const;
 
-const DURATIONS = ['25 min', '45 min', '90+ min'] as const;
+const SLEEP_CONTEXTS = [
+  {
+    id: 'falling-asleep',
+    label: 'Falling asleep',
+    image: require('@/assets/images/personalise-falling-asleep.webp'),
+  },
+  {
+    id: 'after-late-work',
+    label: 'After late work',
+    image: require('@/assets/images/personalise-late-work.webp'),
+  },
+  {
+    id: 'during-travel',
+    label: 'During travel',
+    image: require('@/assets/images/personalise-travel.webp'),
+  },
+  {
+    id: 'after-waking',
+    label: 'After waking',
+    image: require('@/assets/images/personalise-waking.webp'),
+  },
+] as const;
+
+const FOCUS_DURATIONS = ['25 min', '45 min', '90+ min'] as const;
+const SLEEP_DURATIONS = ['20 min', '45 min', '90+ min'] as const;
 
 export default function PersonaliseScreen() {
   const router = useRouter();
+  const [mode, setMode] = useState<ModeId>('focus');
   const [selectedContext, setSelectedContext] = useState<string>('desk');
   const [selectedDuration, setSelectedDuration] = useState<string>('45 min');
   const [saving, setSaving] = useState(false);
@@ -60,11 +86,20 @@ export default function PersonaliseScreen() {
     const hydrate = async () => {
       const answers = await getOnboardingAnswers();
       if (!active) return;
+      if (answers.startingMode) {
+        setMode(answers.startingMode);
+      }
       if (answers.environments && answers.environments.length > 0) {
         setSelectedContext(answers.environments[0]);
+      } else if (answers.startingMode === 'sleep') {
+        setSelectedContext('falling-asleep');
+      } else {
+        setSelectedContext('desk');
       }
       if (answers.sessionLength) {
         setSelectedDuration(answers.sessionLength);
+      } else {
+        setSelectedDuration('45 min');
       }
     };
     void hydrate();
@@ -72,6 +107,11 @@ export default function PersonaliseScreen() {
       active = false;
     };
   }, []);
+
+  const isSleep = mode === 'sleep';
+  const themeColor = isSleep ? '#9FAEFD' : '#F4B34C';
+  const contexts = isSleep ? SLEEP_CONTEXTS : FOCUS_CONTEXTS;
+  const durations = isSleep ? SLEEP_DURATIONS : FOCUS_DURATIONS;
 
   const handleContinue = async () => {
     if (!selectedContext || !selectedDuration || saving) return;
@@ -96,6 +136,12 @@ export default function PersonaliseScreen() {
       <SafeAreaView edges={['top', 'bottom']} style={styles.safeArea}>
         {/* Header with back button and centered brand */}
         <View style={styles.header}>
+          {/* Absolute centered Brand - locked to horizontal center */}
+          <View pointerEvents="none" style={styles.brandCenterAbsolute}>
+            <Image source={brandIcon} style={styles.brandIcon} />
+            <Text style={styles.brandText}>Passage</Text>
+          </View>
+
           <Pressable
             accessibilityLabel="Go back"
             hitSlop={12}
@@ -103,11 +149,6 @@ export default function PersonaliseScreen() {
             style={({ pressed }) => [styles.backButton, pressed && styles.pressed]}>
             <Ionicons color="#FFFFFF" name="chevron-back" size={22} />
           </Pressable>
-
-          <View style={styles.brandCenter}>
-            <Image source={brandIcon} style={styles.brandIcon} />
-            <Text style={styles.brandText}>Passage</Text>
-          </View>
 
           <View style={styles.headerSpacer} />
         </View>
@@ -117,15 +158,19 @@ export default function PersonaliseScreen() {
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}>
           <View style={styles.titleContainer}>
-            <Text style={styles.title}>Where do you{'\n'}need it most?</Text>
+            <Text style={styles.title}>
+              {isSleep ? 'When do you\nneed help sleeping?' : 'Where do you\nneed it most?'}
+            </Text>
             <Text style={styles.subtitle}>
-              Choose your main context, then how long you usually focus for.
+              {isSleep
+                ? 'Choose your main moment, then how long you usually need.'
+                : 'Choose your main context, then how long you usually focus for.'}
             </Text>
           </View>
 
           {/* 2x2 Grid */}
           <View style={styles.grid}>
-            {CONTEXTS.map((item) => {
+            {contexts.map((item) => {
               const isSelected = selectedContext === item.id;
               return (
                 <Pressable
@@ -135,7 +180,9 @@ export default function PersonaliseScreen() {
                   onPress={() => setSelectedContext(item.id)}
                   style={({ pressed }) => [
                     styles.card,
-                    isSelected ? styles.cardSelected : styles.cardUnselected,
+                    isSelected
+                      ? [styles.cardSelected, { borderColor: themeColor }]
+                      : styles.cardUnselected,
                     pressed && styles.pressedCard,
                   ]}>
                   <ImageBackground
@@ -153,7 +200,9 @@ export default function PersonaliseScreen() {
                   <View
                     style={[
                       styles.cardCheck,
-                      isSelected ? styles.cardCheckSelected : styles.cardCheckUnselected,
+                      isSelected
+                        ? [styles.cardCheckSelected, { backgroundColor: themeColor }]
+                        : styles.cardCheckUnselected,
                     ]}>
                     {isSelected ? (
                       <Ionicons color="#0B0B0D" name="checkmark" size={14} />
@@ -170,13 +219,15 @@ export default function PersonaliseScreen() {
           {/* Divider with centered label */}
           <View style={styles.dividerContainer}>
             <View style={styles.dividerLine} />
-            <Text style={styles.dividerText}>HOW LONG DO YOU USUALLY FOCUS?</Text>
+            <Text style={styles.dividerText}>
+              {isSleep ? 'HOW LONG DO YOU USUALLY NEED?' : 'HOW LONG DO YOU USUALLY FOCUS?'}
+            </Text>
             <View style={styles.dividerLine} />
           </View>
 
           {/* Duration Pills */}
           <View style={styles.durationRow}>
-            {DURATIONS.map((dur) => {
+            {durations.map((dur) => {
               const isSelected = selectedDuration === dur;
               return (
                 <Pressable
@@ -186,7 +237,9 @@ export default function PersonaliseScreen() {
                   onPress={() => setSelectedDuration(dur)}
                   style={({ pressed }) => [
                     styles.durationPill,
-                    isSelected ? styles.durationPillSelected : styles.durationPillUnselected,
+                    isSelected
+                      ? [styles.durationPillSelected, { backgroundColor: themeColor }]
+                      : styles.durationPillUnselected,
                     pressed && styles.pressedPill,
                   ]}>
                   <Text
@@ -210,6 +263,7 @@ export default function PersonaliseScreen() {
             loading={saving}
             onPress={() => void handleContinue()}
             showArrow
+            variant={isSleep ? 'lavender' : 'amber'}
           />
         </View>
       </SafeAreaView>
@@ -223,23 +277,31 @@ const styles = StyleSheet.create({
     height: 40,
     justifyContent: 'center',
     width: 40,
+    zIndex: 1,
   },
-  brandCenter: {
+  brandCenterAbsolute: {
     alignItems: 'center',
+    bottom: 0,
     flexDirection: 'row',
-    gap: 8,
+    justifyContent: 'center',
+    left: 0,
+    position: 'absolute',
+    right: 0,
+    top: 0,
+    zIndex: 0,
   },
   brandIcon: {
     height: 22,
     resizeMode: 'contain',
-    width: 32,
+    width: 38,
   },
   brandText: {
     color: '#FFFFFF',
     fontFamily: AppFonts.sansBold,
-    fontSize: 19,
+    fontSize: 20,
     fontWeight: '700',
     letterSpacing: -0.3,
+    marginLeft: 9,
   },
   card: {
     borderRadius: 14,
@@ -353,10 +415,13 @@ const styles = StyleSheet.create({
     height: 52,
     justifyContent: 'space-between',
     paddingHorizontal: 16,
+    position: 'relative',
+    width: '100%',
   },
   headerSpacer: {
     height: 40,
     width: 40,
+    zIndex: 1,
   },
   pressed: {
     opacity: 0.7,

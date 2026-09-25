@@ -6,13 +6,13 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 
 import { OnboardingPillButton } from '@/components/onboarding/OnboardingPillButton';
-import { OnboardingStepHeader, PASSAGE_GOLD } from '@/components/onboarding/OnboardingStepHeader';
+import { OnboardingStepHeader, PASSAGE_GOLD, PASSAGE_SLEEP } from '@/components/onboarding/OnboardingStepHeader';
 import { AppFonts } from '@/constants/theme';
-import { saveOnboardingAnswers } from '@/lib/onboarding';
+import { getOnboardingAnswers, saveOnboardingAnswers } from '@/lib/onboarding';
 
-const focusImage = require('@/assets/images/preview-library-dusk.jpg');
-const stressImage = require('@/assets/images/preview-zen-garden.jpg');
-const sleepImage = require('@/assets/images/preview-night-train.jpg');
+const focusImage = require('@/assets/images/preview-library-dusk.webp');
+const stressImage = require('@/assets/images/preview-zen-garden.webp');
+const sleepImage = require('@/assets/images/preview-night-train.webp');
 
 type FocusOption = {
   id: 'focus' | 'stress' | 'sleep';
@@ -45,7 +45,7 @@ const OPTIONS: readonly FocusOption[] = [
     mode: 'sleep',
     image: sleepImage,
     label: 'Sleep',
-    description: 'Drift off gently with layered ambient soundscapes.',
+    description: 'Create the conditions to wind down and rest more easily.',
     buttonLabel: 'CONTINUE WITH SLEEP',
   },
 ] as const;
@@ -55,17 +55,36 @@ export default function SelectFocusScreen() {
   const [selectedId, setSelectedId] = useState<'focus' | 'stress' | 'sleep'>('focus');
   const [saving, setSaving] = useState(false);
 
+  React.useEffect(() => {
+    let active = true;
+    void getOnboardingAnswers().then((answers) => {
+      if (!active) return;
+      if (answers.startingMode === 'relax') {
+        setSelectedId('stress');
+      } else if (answers.startingMode === 'sleep') {
+        setSelectedId('sleep');
+      } else if (answers.startingMode === 'focus') {
+        setSelectedId('focus');
+      }
+    });
+    return () => {
+      active = false;
+    };
+  }, []);
+
   const selectedOption = OPTIONS.find((item) => item.id === selectedId) ?? OPTIONS[0];
+  const isSleep = selectedId === 'sleep';
+  const themeColor = isSleep ? PASSAGE_SLEEP : PASSAGE_GOLD;
 
   const handleContinue = async () => {
     if (saving) return;
     setSaving(true);
     try {
       await saveOnboardingAnswers({ startingMode: selectedOption.mode });
-      router.push('/backed-by-science');
+      router.push('/onboarding/situation' as any);
     } catch (error) {
       console.warn('[select-focus] error saving starting mode:', error);
-      router.push('/backed-by-science');
+      router.push('/onboarding/situation' as any);
     } finally {
       setSaving(false);
     }
@@ -76,8 +95,9 @@ export default function SelectFocusScreen() {
       <Stack.Screen options={{ headerShown: false }} />
       <StatusBar style="light" />
 
-      {/* Header with Step 4 Active */}
+      {/* Header with Step 4 Active & dynamic theme color */}
       <OnboardingStepHeader
+        activeColor={themeColor}
         currentStep={4}
         onBack={() => router.back()}
         showBack
@@ -108,7 +128,9 @@ export default function SelectFocusScreen() {
                 <View
                   style={[
                     styles.imageCard,
-                    isSelected ? styles.imageCardSelected : styles.imageCardUnselected,
+                    isSelected
+                      ? [styles.imageCardSelected, { borderColor: themeColor }]
+                      : styles.imageCardUnselected,
                   ]}
                 >
                   <Image
@@ -119,7 +141,7 @@ export default function SelectFocusScreen() {
 
                   {/* Selected checkmark badge in top-right */}
                   {isSelected ? (
-                    <View style={styles.checkBadge}>
+                    <View style={[styles.checkBadge, { backgroundColor: themeColor }]}>
                       <Ionicons color="#0B0B0D" name="checkmark" size={14} />
                     </View>
                   ) : null}
@@ -146,13 +168,13 @@ export default function SelectFocusScreen() {
         </View>
       </View>
 
-      {/* Dynamic Gold Action Button */}
+      {/* Dynamic Gold/Sleep Action Button */}
       <View style={styles.footer}>
         <OnboardingPillButton
           disabled={saving}
           label={selectedOption.buttonLabel}
           onPress={handleContinue}
-          variant="gold"
+          variant={isSleep ? 'sleep' : 'gold'}
         />
       </View>
     </SafeAreaView>
@@ -237,7 +259,7 @@ const styles = StyleSheet.create({
   },
   imageCard: {
     borderRadius: 14,
-    height: 230,
+    height: 360,
     overflow: 'hidden',
     position: 'relative',
     width: '100%',

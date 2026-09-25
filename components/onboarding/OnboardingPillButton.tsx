@@ -5,7 +5,7 @@ import { Pressable, StyleSheet, Text, View, type StyleProp, type ViewStyle } fro
 
 type OnboardingPillButtonProps = {
   label: string;
-  variant?: 'white' | 'gold';
+  variant?: 'white' | 'gold' | 'sleep' | 'lavender';
   onPress: () => void;
   disabled?: boolean;
   style?: StyleProp<ViewStyle>;
@@ -19,6 +19,7 @@ export function OnboardingPillButton({
   style,
 }: OnboardingPillButtonProps) {
   const isGold = variant === 'gold';
+  const isSleep = variant === 'sleep' || variant === 'lavender';
 
   return (
     <Pressable
@@ -27,7 +28,7 @@ export function OnboardingPillButton({
       onPress={onPress}
       style={({ pressed }) => [
         styles.button,
-        isGold ? styles.goldButton : styles.whiteButton,
+        isSleep ? styles.sleepButton : isGold ? styles.goldButton : styles.whiteButton,
         pressed && styles.pressed,
         disabled && styles.disabled,
         style,
@@ -60,6 +61,9 @@ const styles = StyleSheet.create({
   },
   goldButton: {
     backgroundColor: '#EAA850',
+  },
+  sleepButton: {
+    backgroundColor: '#9FAEFD',
   },
   icon: {
     marginLeft: 10,

@@ -16,6 +16,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { OnboardingContinueButton } from '@/components/onboarding/OnboardingContinueButton';
 import { HalcyonColors } from '@/constants/design';
+import type { ModeId } from '@/constants/modes';
 import { AppFonts } from '@/constants/theme';
 import {
   getOnboardingAnswers,
@@ -23,7 +24,7 @@ import {
 } from '@/lib/onboarding';
 
 const brandIcon = require('@/assets/images/passage-brand-assets/screens-icon.webp');
-const mountainBg = require('@/assets/images/understand-bg.jpg');
+const mountainBg = require('@/assets/images/understand-bg.webp');
 
 const FOCUS_DISTRACTIONS = [
   'Background noise',
@@ -33,8 +34,17 @@ const FOCUS_DISTRACTIONS = [
   'Getting started',
 ] as const;
 
+const SLEEP_DISTRACTIONS = [
+  'Racing thoughts',
+  'Outside noise',
+  'Restlessness',
+  'An inconsistent routine',
+  'Waking in the night',
+] as const;
+
 export default function SituationScreen() {
   const router = useRouter();
+  const [mode, setMode] = useState<ModeId>('focus');
   const [selected, setSelected] = useState<string[]>([
     'Background noise',
     'Racing thoughts',
@@ -47,8 +57,13 @@ export default function SituationScreen() {
     const hydrate = async () => {
       const answers = await getOnboardingAnswers();
       if (!active) return;
+      if (answers.startingMode) {
+        setMode(answers.startingMode);
+      }
       if (answers.situation && answers.situation.length > 0) {
         setSelected(answers.situation);
+      } else if (answers.startingMode === 'sleep') {
+        setSelected(['Racing thoughts', 'Outside noise']);
       }
     };
     void hydrate();
@@ -56,6 +71,10 @@ export default function SituationScreen() {
       active = false;
     };
   }, []);
+
+  const isSleep = mode === 'sleep';
+  const themeColor = isSleep ? '#9FAEFD' : '#F4B34C';
+  const options = isSleep ? SLEEP_DISTRACTIONS : FOCUS_DISTRACTIONS;
 
   const toggleOption = (option: string) => {
     setSaveError(null);
@@ -100,6 +119,12 @@ export default function SituationScreen() {
         <SafeAreaView edges={['top', 'bottom']} style={styles.safeArea}>
           {/* Header with back button and centered brand */}
           <View style={styles.header}>
+            {/* Absolute centered Brand - locked to horizontal center */}
+            <View pointerEvents="none" style={styles.brandCenterAbsolute}>
+              <Image source={brandIcon} style={styles.brandIcon} />
+              <Text style={styles.brandText}>Passage</Text>
+            </View>
+
             <Pressable
               accessibilityLabel="Go back"
               hitSlop={12}
@@ -107,11 +132,6 @@ export default function SituationScreen() {
               style={({ pressed }) => [styles.backButton, pressed && styles.pressed]}>
               <Ionicons color="#FFFFFF" name="chevron-back" size={22} />
             </Pressable>
-
-            <View style={styles.brandCenter}>
-              <Image source={brandIcon} style={styles.brandIcon} />
-              <Text style={styles.brandText}>Passage</Text>
-            </View>
 
             <View style={styles.headerSpacer} />
           </View>
@@ -121,14 +141,18 @@ export default function SituationScreen() {
             keyboardShouldPersistTaps="handled"
             showsVerticalScrollIndicator={false}>
             <View style={styles.titleContainer}>
-              <Text style={styles.title}>What breaks{'\n'}your focus?</Text>
+              <Text style={styles.title}>
+                {isSleep ? 'What gets in the\nway of sleep?' : 'What breaks\nyour focus?'}
+              </Text>
               <Text style={styles.subtitle}>
-                Choose what gets in the way, so we can tailor your experience.
+                {isSleep
+                  ? 'Choose what keeps you awake, so we can tailor your experience.'
+                  : 'Choose what gets in the way, so we can tailor your experience.'}
               </Text>
             </View>
 
             <View style={styles.optionsList}>
-              {FOCUS_DISTRACTIONS.map((option) => {
+              {options.map((option) => {
                 const isSelected = selected.includes(option);
                 return (
                   <Pressable
@@ -138,7 +162,9 @@ export default function SituationScreen() {
                     onPress={() => toggleOption(option)}
                     style={({ pressed }) => [
                       styles.optionCard,
-                      isSelected ? styles.optionCardSelected : styles.optionCardUnselected,
+                      isSelected
+                        ? [styles.optionCardSelected, { borderColor: themeColor }]
+                        : styles.optionCardUnselected,
                       pressed && styles.pressedCard,
                     ]}>
                     <Text style={[styles.optionText, isSelected && styles.optionTextSelected]}>
@@ -147,7 +173,9 @@ export default function SituationScreen() {
                     <View
                       style={[
                         styles.checkCircle,
-                        isSelected ? styles.checkCircleSelected : styles.checkCircleUnselected,
+                        isSelected
+                          ? [styles.checkCircleSelected, { backgroundColor: themeColor }]
+                          : styles.checkCircleUnselected,
                       ]}>
                       {isSelected ? (
                         <Ionicons color="#0B0B0D" name="checkmark" size={15} />
@@ -167,6 +195,7 @@ export default function SituationScreen() {
               loading={saving}
               onPress={() => void handleContinue()}
               showArrow
+              variant={isSleep ? 'lavender' : 'amber'}
             />
           </View>
         </SafeAreaView>
@@ -181,26 +210,34 @@ const styles = StyleSheet.create({
     height: 40,
     justifyContent: 'center',
     width: 40,
+    zIndex: 1,
   },
   backgroundImage: {
     flex: 1,
   },
-  brandCenter: {
+  brandCenterAbsolute: {
     alignItems: 'center',
+    bottom: 0,
     flexDirection: 'row',
-    gap: 8,
+    justifyContent: 'center',
+    left: 0,
+    position: 'absolute',
+    right: 0,
+    top: 0,
+    zIndex: 0,
   },
   brandIcon: {
     height: 22,
     resizeMode: 'contain',
-    width: 32,
+    width: 38,
   },
   brandText: {
     color: '#FFFFFF',
     fontFamily: AppFonts.sansBold,
-    fontSize: 19,
+    fontSize: 20,
     fontWeight: '700',
     letterSpacing: -0.3,
+    marginLeft: 9,
   },
   checkCircle: {
     alignItems: 'center',
@@ -235,10 +272,13 @@ const styles = StyleSheet.create({
     height: 52,
     justifyContent: 'space-between',
     paddingHorizontal: 16,
+    position: 'relative',
+    width: '100%',
   },
   headerSpacer: {
     height: 40,
     width: 40,
+    zIndex: 1,
   },
   optionCard: {
     alignItems: 'center',

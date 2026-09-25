@@ -19,9 +19,11 @@ import { AppFonts } from '@/constants/theme';
 import { getOnboardingAnswers } from '@/lib/onboarding';
 
 const brandIcon = require('@/assets/images/passage-brand-assets/screens-icon.webp');
-const tokyoRainImg = require('@/assets/images/preview-tokyo-rain.jpg');
-const libraryDuskImg = require('@/assets/images/preview-library-dusk.jpg');
-const nightTrainImg = require('@/assets/images/preview-night-train.jpg');
+const tokyoRainImg = require('@/assets/images/preview-tokyo-rain.webp');
+const libraryDuskImg = require('@/assets/images/preview-library-dusk.webp');
+const nightTrainImg = require('@/assets/images/preview-night-train.webp');
+const cabinImg = require('@/assets/images/environment_images_pack/cabin.webp');
+const oceanImg = require('@/assets/images/environment_images_pack/ocean.webp');
 
 type SoundscapePreview = {
   id: string;
@@ -31,7 +33,7 @@ type SoundscapePreview = {
   duration: string;
 };
 
-const PREVIEWS: SoundscapePreview[] = [
+const FOCUS_PREVIEWS: SoundscapePreview[] = [
   {
     id: 'tokyo-rain',
     title: 'Tokyo Rain',
@@ -55,11 +57,43 @@ const PREVIEWS: SoundscapePreview[] = [
   },
 ];
 
+const SLEEP_PREVIEWS: SoundscapePreview[] = [
+  {
+    id: 'nordic-cabin',
+    title: 'Nordic Cabin',
+    tags: 'Soft fire, snow, distant wind',
+    image: cabinImg,
+    duration: '1:00',
+  },
+  {
+    id: 'night-train',
+    title: 'Night Train',
+    tags: 'Carriage rhythm, soft rain',
+    image: nightTrainImg,
+    duration: '1:00',
+  },
+  {
+    id: 'ocean-midnight',
+    title: 'Ocean at Midnight',
+    tags: 'Slow surf, distant night air',
+    image: oceanImg,
+    duration: '1:00',
+  },
+];
+
 const WAVE_BAR_HEIGHTS = [
   4, 8, 14, 10, 18, 22, 16, 8, 12, 19, 24, 15, 9, 14, 20, 17, 11, 7, 13, 18, 12, 6, 10, 15, 8, 4,
 ];
 
-function Waveform({ active, progress = 0.4 }: { active: boolean; progress?: number }) {
+function Waveform({
+  active,
+  color = '#F4B34C',
+  progress = 0.4,
+}: {
+  active: boolean;
+  color?: string;
+  progress?: number;
+}) {
   const total = WAVE_BAR_HEIGHTS.length;
   const filledCount = Math.floor(total * progress);
 
@@ -73,7 +107,7 @@ function Waveform({ active, progress = 0.4 }: { active: boolean; progress?: numb
             style={[
               styles.waveBar,
               { height },
-              isFilled ? styles.waveBarFilled : styles.waveBarDim,
+              isFilled ? { backgroundColor: color } : styles.waveBarDim,
             ]}
           />
         );
@@ -92,12 +126,22 @@ export default function TryPassageScreen() {
     let active = true;
     void getOnboardingAnswers().then((answers) => {
       if (!active) return;
-      setMode(answers.startingMode || 'focus');
+      const initialMode = answers.startingMode || 'focus';
+      setMode(initialMode);
+      if (initialMode === 'sleep') {
+        setActiveTrackId('nordic-cabin');
+      } else {
+        setActiveTrackId('tokyo-rain');
+      }
     });
     return () => {
       active = false;
     };
   }, []);
+
+  const isSleep = mode === 'sleep';
+  const themeColor = isSleep ? '#9FAEFD' : '#F4B34C';
+  const previews = isSleep ? SLEEP_PREVIEWS : FOCUS_PREVIEWS;
 
   const toggleTrack = (id: string) => {
     if (activeTrackId === id) {
@@ -107,8 +151,6 @@ export default function TryPassageScreen() {
       setIsPlaying(true);
     }
   };
-
-  const planLabel = `CONTINUE TO MY ${mode.toUpperCase()} PLAN`;
 
   const customHeader = (
     <View style={styles.headerCentered}>
@@ -123,11 +165,11 @@ export default function TryPassageScreen() {
       footer={
         <View style={styles.footerContainer}>
           <OnboardingContinueButton
-            label={planLabel}
+            label="EXPLORE ALL SOUNDSCAPES"
             onPress={() => router.push('/welcome' as Href)}
             showArrow
+            variant={isSleep ? 'lavender' : 'amber'}
           />
-          <Text style={styles.footerSubtext}>Your subscription options are shown next.</Text>
         </View>
       }
       header={customHeader}>
@@ -135,7 +177,7 @@ export default function TryPassageScreen() {
       <Text style={styles.subheading}>Preview three one-minute soundscapes.</Text>
 
       <View style={styles.list}>
-        {PREVIEWS.map((item) => {
+        {previews.map((item) => {
           const isActive = activeTrackId === item.id;
           const playing = isActive && isPlaying;
 
@@ -143,7 +185,10 @@ export default function TryPassageScreen() {
             <Pressable
               key={item.id}
               onPress={() => toggleTrack(item.id)}
-              style={[styles.card, isActive && styles.cardActive]}>
+              style={[
+                styles.card,
+                isActive && [styles.cardActive, { borderColor: themeColor }],
+              ]}>
               <Image source={item.image} style={styles.cardImage} />
 
               <View style={styles.cardRight}>
@@ -151,7 +196,11 @@ export default function TryPassageScreen() {
                 <Text style={styles.cardTags}>{item.tags}</Text>
 
                 <View style={styles.playerRow}>
-                  <View style={[styles.playButton, isActive && styles.playButtonActive]}>
+                  <View
+                    style={[
+                      styles.playButton,
+                      isActive && [styles.playButtonActive, { backgroundColor: themeColor }],
+                    ]}>
                     <Ionicons
                       color={isActive ? '#0B0B0D' : '#FFFFFF'}
                       name={playing ? 'pause' : 'play'}
@@ -160,7 +209,11 @@ export default function TryPassageScreen() {
                     />
                   </View>
 
-                  <Waveform active={isActive} progress={playing ? 0.42 : 0} />
+                  <Waveform
+                    active={isActive}
+                    color={themeColor}
+                    progress={playing ? 0.42 : 0}
+                  />
 
                   <Text style={styles.timeText}>
                     {isActive ? (playing ? '0:24 / 1:00' : '0:24 / 1:00') : item.duration}
@@ -231,14 +284,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     width: '100%',
   },
-  footerSubtext: {
-    color: '#8A8A8E',
-    fontFamily: AppFonts.sansRegular,
-    fontSize: 12,
-    lineHeight: 16,
-    marginTop: 10,
-    textAlign: 'center',
-  },
   headerCentered: {
     alignItems: 'center',
     flexDirection: 'row',
@@ -286,6 +331,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
     lineHeight: 20,
     marginTop: 8,
+    textAlign: 'left',
   },
   timeText: {
     color: '#8A8A8E',
