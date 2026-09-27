@@ -6,8 +6,10 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { MiniPlayer } from '@/components/MiniPlayer';
+import { useAccountRequiredPrompt } from '@/components/auth/AccountRequiredPrompt';
 import { HALCYON_TAB_BAR_HEIGHT, HalcyonColors } from '@/constants/design';
 import { AppFonts } from '@/constants/theme';
+import { useGuestModeActive } from '@/hooks/useSession';
 
 const menuIcons: Record<string, keyof typeof Ionicons.glyphMap> = {
   index: 'home-outline',
@@ -27,6 +29,8 @@ const activeMenuIcons: Record<string, keyof typeof Ionicons.glyphMap> = {
 
 function FloatingTabBar({ state, descriptors, navigation }: BottomTabBarProps) {
   const insets = useSafeAreaInsets();
+  const isGuest = useGuestModeActive();
+  const { showAccountRequiredPrompt } = useAccountRequiredPrompt();
 
   return (
     <View style={styles.dock}>
@@ -61,6 +65,23 @@ function FloatingTabBar({ state, descriptors, navigation }: BottomTabBarProps) {
               accessibilityState={isFocused ? { selected: true } : {}}
               key={route.key}
               onPress={() => {
+                if (route.name === 'saved' && isGuest) {
+                  showAccountRequiredPrompt({
+                    title: 'Please log in',
+                    message:
+                      'Log in to see your favourites, playlists, and recently played soundscapes.',
+                  });
+                  return;
+                }
+
+                if (route.name === 'profile' && isGuest) {
+                  showAccountRequiredPrompt({
+                    title: 'Please log in',
+                    message: 'Log in to manage your account, preferences, and settings.',
+                  });
+                  return;
+                }
+
                 const event = navigation.emit({
                   type: 'tabPress',
                   target: route.key,

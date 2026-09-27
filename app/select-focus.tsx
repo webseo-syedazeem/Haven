@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Stack, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
@@ -7,15 +7,19 @@ import { Ionicons } from '@expo/vector-icons';
 
 import { OnboardingPillButton } from '@/components/onboarding/OnboardingPillButton';
 import { OnboardingStepHeader, PASSAGE_GOLD, PASSAGE_SLEEP } from '@/components/onboarding/OnboardingStepHeader';
+import { RELAX_ACCENT } from '@/constants/design';
 import { AppFonts } from '@/constants/theme';
-import { getOnboardingAnswers, saveOnboardingAnswers } from '@/lib/onboarding';
+import {
+  getOnboardingAnswers,
+  saveOnboardingAnswers,
+} from '@/lib/onboarding';
 
-const focusImage = require('@/assets/images/preview-library-dusk.webp');
-const stressImage = require('@/assets/images/preview-zen-garden.webp');
-const sleepImage = require('@/assets/images/preview-night-train.webp');
+const focusImage = require('@/assets/images/focus-mode.webp');
+const relaxImage = require('@/assets/images/relax-mode.webp');
+const sleepImage = require('@/assets/images/sleep-mode.webp');
 
 type FocusOption = {
-  id: 'focus' | 'stress' | 'sleep';
+  id: 'focus' | 'relax' | 'sleep';
   mode: 'focus' | 'relax' | 'sleep';
   image: any;
   label: string;
@@ -33,12 +37,12 @@ const OPTIONS: readonly FocusOption[] = [
     buttonLabel: 'CONTINUE WITH FOCUS',
   },
   {
-    id: 'stress',
+    id: 'relax',
     mode: 'relax',
-    image: stressImage,
-    label: 'Stress',
+    image: relaxImage,
+    label: 'Relax',
     description: 'Release tension and find calm through natural spaces.',
-    buttonLabel: 'CONTINUE WITH STRESS',
+    buttonLabel: 'CONTINUE WITH RELAX',
   },
   {
     id: 'sleep',
@@ -52,39 +56,59 @@ const OPTIONS: readonly FocusOption[] = [
 
 export default function SelectFocusScreen() {
   const router = useRouter();
-  const [selectedId, setSelectedId] = useState<'focus' | 'stress' | 'sleep'>('focus');
+  const [selectedId, setSelectedId] = useState<FocusOption['id'] | null>(null);
+  const [hydrating, setHydrating] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState('');
 
-  React.useEffect(() => {
+  useEffect(() => {
     let active = true;
-    void getOnboardingAnswers().then((answers) => {
-      if (!active) return;
-      if (answers.startingMode === 'relax') {
-        setSelectedId('stress');
-      } else if (answers.startingMode === 'sleep') {
-        setSelectedId('sleep');
-      } else if (answers.startingMode === 'focus') {
-        setSelectedId('focus');
-      }
-    });
+    void getOnboardingAnswers()
+      .then((answers) => {
+        if (active) setSelectedId(answers.mode);
+      })
+      .catch(() => {
+        if (active) setSaveError('We could not load your saved choice.');
+      })
+      .finally(() => {
+        if (active) setHydrating(false);
+      });
     return () => {
       active = false;
     };
   }, []);
 
-  const selectedOption = OPTIONS.find((item) => item.id === selectedId) ?? OPTIONS[0];
-  const isSleep = selectedId === 'sleep';
-  const themeColor = isSleep ? PASSAGE_SLEEP : PASSAGE_GOLD;
+  const selectedOption = OPTIONS.find((item) => item.id === selectedId);
+  const selectedAccent =
+    selectedOption?.mode === 'relax'
+      ? RELAX_ACCENT
+      : selectedOption?.mode === 'sleep'
+        ? PASSAGE_SLEEP
+        : selectedOption?.mode === 'focus'
+          ? PASSAGE_GOLD
+          : '#FFFFFF';
+
+  const handleOptionSelect = (option: FocusOption) => {
+    setSaveError('');
+    setSelectedId(option.id);
+  };
 
   const handleContinue = async () => {
-    if (saving) return;
+    if (hydrating || saving || !selectedOption) return;
     setSaving(true);
+    setSaveError('');
     try {
-      await saveOnboardingAnswers({ startingMode: selectedOption.mode });
-      router.push('/onboarding/situation' as any);
+      await saveOnboardingAnswers({
+        mode: selectedOption.mode,
+      });
+      router.push(
+        selectedOption.mode === 'relax'
+          ? '/stress-intro-1'
+          : '/onboarding/situation'
+      );
     } catch (error) {
       console.warn('[select-focus] error saving starting mode:', error);
-      router.push('/onboarding/situation' as any);
+      setSaveError('We could not save that choice. Please try again.');
     } finally {
       setSaving(false);
     }
@@ -97,7 +121,7 @@ export default function SelectFocusScreen() {
 
       {/* Header with Step 4 Active & dynamic theme color */}
       <OnboardingStepHeader
-        activeColor={themeColor}
+        activeColor={selectedAccent}
         currentStep={4}
         onBack={() => router.back()}
         showBack
@@ -122,14 +146,21 @@ export default function SelectFocusScreen() {
                 key={option.id}
                 accessibilityRole="radio"
                 accessibilityState={{ selected: isSelected }}
-                onPress={() => setSelectedId(option.id)}
+                disabled={hydrating}
+                onPress={() => handleOptionSelect(option)}
                 style={styles.cardColumn}
               >
                 <View
                   style={[
                     styles.imageCard,
                     isSelected
-                      ? [styles.imageCardSelected, { borderColor: themeColor }]
+                      ? [
+                          styles.imageCardSelected,
+                          {
+                            borderColor: selectedAccent,
+                            shadowColor: selectedAccent,
+                          },
+                        ]
                       : styles.imageCardUnselected,
                   ]}
                 >
@@ -141,20 +172,17 @@ export default function SelectFocusScreen() {
 
                   {/* Selected checkmark badge in top-right */}
                   {isSelected ? (
-                    <View style={[styles.checkBadge, { backgroundColor: themeColor }]}>
+                    <View
+                      style={[
+                        styles.checkBadge,
+                        { backgroundColor: selectedAccent },
+                      ]}>
                       <Ionicons color="#0B0B0D" name="checkmark" size={14} />
                     </View>
                   ) : null}
                 </View>
 
-                <Text
-                  style={[
-                    styles.cardLabel,
-                    isSelected && styles.cardLabelSelected,
-                  ]}
-                >
-                  {option.label}
-                </Text>
+                <Text style={styles.cardLabel}>{option.label}</Text>
               </Pressable>
             );
           })}
@@ -163,18 +191,31 @@ export default function SelectFocusScreen() {
         {/* Dynamic Descriptive Text */}
         <View style={styles.copyBlock}>
           <Text style={styles.descriptionText}>
-            {selectedOption.description}
+            {selectedOption?.description ?? 'Select one option to continue.'}
           </Text>
         </View>
       </View>
 
-      {/* Dynamic Gold/Sleep Action Button */}
+      {/* Dynamic mode action button */}
       <View style={styles.footer}>
+        {saveError ? <Text style={styles.errorText}>{saveError}</Text> : null}
         <OnboardingPillButton
-          disabled={saving}
-          label={selectedOption.buttonLabel}
+          arrowAtEnd
+          disabled={hydrating || saving || !selectedOption}
+          label={selectedOption?.buttonLabel ?? 'SELECT A MODE'}
           onPress={handleContinue}
-          variant={isSleep ? 'sleep' : 'gold'}
+          style={
+            selectedOption?.mode === 'relax'
+              ? { backgroundColor: RELAX_ACCENT }
+              : undefined
+          }
+          variant={
+            !selectedOption
+              ? 'white'
+              : selectedOption.mode === 'sleep'
+                ? 'sleep'
+                : 'gold'
+          }
         />
       </View>
     </SafeAreaView>
@@ -191,15 +232,12 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   cardLabel: {
-    color: 'rgba(255, 255, 255, 0.72)',
+    color: '#FFFFFF',
     fontFamily: AppFonts.sansMedium,
-    fontSize: 13.5,
+    fontSize: 14,
     fontWeight: '600',
     marginTop: 10,
     textAlign: 'center',
-  },
-  cardLabelSelected: {
-    color: '#FFFFFF',
   },
   cardsRow: {
     flexDirection: 'row',
@@ -209,7 +247,6 @@ const styles = StyleSheet.create({
   },
   checkBadge: {
     alignItems: 'center',
-    backgroundColor: PASSAGE_GOLD,
     borderRadius: 10,
     height: 20,
     justifyContent: 'center',
@@ -234,15 +271,23 @@ const styles = StyleSheet.create({
   descriptionText: {
     color: 'rgba(255, 255, 255, 0.78)',
     fontFamily: AppFonts.sansRegular,
-    fontSize: 14.5,
-    lineHeight: 22,
+    fontSize: 16,
+    lineHeight: 24,
     textAlign: 'center',
   },
   footer: {
-    paddingBottom: 24,
+    paddingBottom: 14,
     paddingHorizontal: 24,
     paddingTop: 8,
     width: '100%',
+  },
+  errorText: {
+    color: '#D9A39B',
+    fontFamily: AppFonts.sansRegular,
+    fontSize: 12,
+    lineHeight: 17,
+    marginBottom: 8,
+    textAlign: 'center',
   },
   headerBlock: {
     alignItems: 'center',
@@ -252,9 +297,9 @@ const styles = StyleSheet.create({
   heading: {
     color: '#FFFFFF',
     fontFamily: AppFonts.playfairRegular,
-    fontSize: 38,
+    fontSize: 40,
     letterSpacing: -0.5,
-    lineHeight: 44,
+    lineHeight: 46,
     textAlign: 'center',
   },
   imageCard: {
@@ -265,13 +310,15 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   imageCardSelected: {
-    borderColor: PASSAGE_GOLD,
     borderWidth: 2,
+    elevation: 6,
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.28,
+    shadowRadius: 9,
   },
   imageCardUnselected: {
     borderColor: 'rgba(255, 255, 255, 0.1)',
     borderWidth: 1,
-    opacity: 0.82,
   },
   safeArea: {
     backgroundColor: '#0B0B0D',

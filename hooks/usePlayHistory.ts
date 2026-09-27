@@ -3,23 +3,30 @@ import { useCallback } from 'react';
 
 import { useHasSession } from '@/hooks/useSession';
 import { homeApi, type Soundscape } from '@/lib/api/home';
-import { playerApi } from '@/lib/api/player';
+import { playerApi, type PlayHistoryRow } from '@/lib/api/player';
 import { getLocalDownload, soundscapeFromLocalDownload } from '@/lib/local-downloads';
 import { usePlayerActions } from '@/lib/player/PlayerProvider';
 
-export const PLAY_HISTORY_QUERY_KEY = ['play-history', 'rows'] as const;
+/** One cache entry for every play-history consumer (Home rail, Saved tab). */
+export const PLAY_HISTORY_QUERY_KEY = ['home', 'play-history'] as const;
 
 /**
- * The raw history rows, newest first, with `played_at` intact — the Home rail
- * uses the deduped soundscape list from `useHome` instead.
+ * The raw history rows, newest first, with `played_at` intact. Home's rail
+ * reads the same cache entry through `useRecentlyPlayed`, which dedupes.
  */
 export function usePlayHistory() {
+  return usePlayHistoryQuery((rows) => rows);
+}
+
+/** Shared by every consumer so the key, fetcher and session gate cannot drift. */
+export function usePlayHistoryQuery<T>(project: (rows: PlayHistoryRow[]) => T) {
   const hasSession = useHasSession();
 
   return useQuery({
     queryKey: PLAY_HISTORY_QUERY_KEY,
     queryFn: playerApi.getPlayHistory,
     enabled: hasSession,
+    select: (rows) => project(hasSession ? rows : []),
   });
 }
 

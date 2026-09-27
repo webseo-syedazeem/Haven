@@ -15,6 +15,11 @@ export type EngineListeners = {
   onProgress?: (progress: { position: number; duration: number }) => void;
   onTrackEnd?: () => void;
   /**
+   * The source stopped and automatic reloads could not revive it. The engine
+   * has already released its native player, so the next `load` starts afresh.
+   */
+  onPlaybackFailed?: () => void;
+  /**
    * Skip requests from the lock screen or notification. No engine emits these
    * today — expo-audio's media session exposes play, pause and seek only — so
    * next and previous are reachable from inside the app alone. The hooks stay
@@ -43,6 +48,25 @@ export type PlayerEngine = {
   playEndTone: () => Promise<void>;
 };
 
+export type EngineOptions = {
+  /** Show now-playing controls on the lock screen. Defaults to true. */
+  lockScreen?: boolean;
+  /**
+   * Whether this engine is the only thing that uses the lock screen. Only an
+   * owner may force the lock screen off on teardown: expo-audio has one global
+   * lock-screen slot, and deactivating through the player clears whichever
+   * player holds it (on iOS unconditionally). A scoped engine passes false so
+   * it only ever clears its own controls. Defaults to true.
+   */
+  ownsLockScreen?: boolean;
+  /**
+   * Deactivate the shared audio session when the engine is torn down. A
+   * screen-scoped engine turns this off so ending it cannot silence the app
+   * player that shares the session. Defaults to true.
+   */
+  releaseAudioSession?: boolean;
+};
+
 /** A copy of the soundscape already saved to this device. */
 export type LocalSource = { url: string; artwork?: string };
 
@@ -60,6 +84,29 @@ export function setLocalSourceResolver(
   resolver: ((soundscapeId: string) => LocalSource | null) | null
 ) {
   resolveLocalSource = resolver;
+}
+
+/** Local copies of remote covers, so the lock screen never depends on its own fetch. */
+export type ArtworkCache = {
+  /** The saved copy's URI, or null when there is none yet. Synchronous, so `load` never waits. */
+  cached: (url: string) => string | null;
+  /** Saves the cover and resolves its local URI, or null if it could not be saved. */
+  fetch: (url: string) => Promise<string | null>;
+};
+
+let artworkCache: ArtworkCache | null = null;
+
+/**
+ * Registered once by `lib/offline-audio.ts`, for the same reason as the local
+ * source resolver: the engine loads in a bare VM in tests. With none registered
+ * the lock screen is given the remote URL, exactly as before.
+ */
+export function setArtworkCache(cache: ArtworkCache | null) {
+  artworkCache = cache;
+}
+
+export function getArtworkCache(): ArtworkCache | null {
+  return artworkCache;
 }
 
 /** True when this soundscape can play with no connection. */
@@ -85,5 +132,29 @@ export function toPlayableTrack(soundscape: Soundscape): PlayableTrack | null {
     artist: 'Passage',
     artwork: local?.artwork ?? (remoteArtwork || undefined),
     duration: soundscape.duration_seconds ?? undefined,
+  };
+}
+
+/**
+ * The onboarding preview plays the short clip made for it. The full file is
+ * only a fallback for a row that has no clip yet, and a download is never
+ * used: a saved copy is the full soundscape, not the preview.
+ */
+export function toPreviewTrack(soundscape: Soundscape): PlayableTrack | null {
+  const previewUrl = soundscape.preview_url?.trim();
+  const url = previewUrl || soundscape.file_url?.trim();
+  if (!url) return null;
+
+  const artwork = soundscape.artwork_url?.trim();
+
+  return {
+    id: soundscape.id,
+    url,
+    title: soundscape.title,
+    artist: 'Passage',
+    artwork: artwork || undefined,
+    // `duration_seconds` is the full soundscape's length, so it only describes
+    // the fallback. A clip's own length comes from the player once it loads.
+    duration: previewUrl ? undefined : (soundscape.duration_seconds ?? undefined),
   };
 }

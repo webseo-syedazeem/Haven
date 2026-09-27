@@ -26,8 +26,7 @@ import {
   HalcyonCardGradientLocations,
   HalcyonColors,
   HalcyonRadius,
-  HalcyonSpacing,
-} from '@/constants/design';
+  HalcyonSpacing, Typography } from '@/constants/design';
 import { MODES, type ModeId } from '@/constants/modes';
 import { AppFonts } from '@/constants/theme';
 import { useTabContentInset } from '@/hooks/use-bottom-safe-spacing';
@@ -404,10 +403,7 @@ const styles = StyleSheet.create({
     paddingTop: 12,
   },
   heading: {
-    color: HalcyonColors.textPrimary,
-    fontFamily: AppFonts.displayRegular,
-    fontSize: 34,
-    lineHeight: 42,
+    ...Typography.screenHeading,
   },
   iconButton: {
     alignItems: 'center',
@@ -445,11 +441,7 @@ const styles = StyleSheet.create({
     marginTop: HalcyonSpacing.section,
   },
   sectionTitle: {
-    color: HalcyonColors.textPrimary,
-    fontFamily: AppFonts.displaySemiBold,
-    fontSize: 21,
-    fontWeight: '600',
-    lineHeight: 28,
+    ...Typography.sectionHeading,
     marginBottom: 14,
     paddingHorizontal: HalcyonSpacing.screenX,
   },
@@ -488,10 +480,7 @@ const styles = StyleSheet.create({
     marginTop: 6,
   },
   featuredBody: {
-    color: HalcyonColors.textSecondary,
-    fontFamily: AppFonts.sansRegular,
-    fontSize: 13,
-    lineHeight: 19,
+    ...Typography.muted,
     marginTop: 6,
   },
   featuredMeta: {

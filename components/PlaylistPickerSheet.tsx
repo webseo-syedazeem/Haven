@@ -1,5 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   Modal,
@@ -12,9 +12,11 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { PlaylistFormSheet } from '@/components/PlaylistFormSheet';
+import { useAccountRequiredPrompt } from '@/components/auth/AccountRequiredPrompt';
 import { HalcyonColors, HalcyonSpacing } from '@/constants/design';
 import { AppFonts } from '@/constants/theme';
 import { useAddToPlaylist, useCreatePlaylist, usePlaylists } from '@/hooks/usePlaylists';
+import { useHasSession } from '@/hooks/useSession';
 import type { Soundscape } from '@/lib/api/home';
 import type { PlaylistPayload } from '@/lib/api/playlists';
 
@@ -37,6 +39,8 @@ export function PlaylistPickerSheet({
   onDone,
 }: PlaylistPickerSheetProps) {
   const insets = useSafeAreaInsets();
+  const hasSession = useHasSession();
+  const { showAccountRequiredPrompt } = useAccountRequiredPrompt();
   const playlists = usePlaylists();
   const { addToPlaylist } = useAddToPlaylist();
   const { createPlaylist, isCreating } = useCreatePlaylist();
@@ -45,6 +49,15 @@ export function PlaylistPickerSheet({
   const [pendingId, setPendingId] = useState<string | null>(null);
   const [addedIds, setAddedIds] = useState<string[]>([]);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!visible || hasSession) return;
+    onClose();
+    showAccountRequiredPrompt({
+      title: 'Please log in',
+      message: 'Log in to create playlists and save soundscapes to them.',
+    });
+  }, [hasSession, onClose, showAccountRequiredPrompt, visible]);
 
   const handleAdd = async (playlistId: string, playlistName: string) => {
     if (!soundscape) return;
@@ -80,6 +93,8 @@ export function PlaylistPickerSheet({
   };
 
   const rows = playlists.data ?? [];
+
+  if (!hasSession) return null;
 
   return (
     <>

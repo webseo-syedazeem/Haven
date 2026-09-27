@@ -7,8 +7,12 @@ import {
   useIsFavourite,
   useToggleFavourite,
 } from '@/hooks/useFavourites';
-import { useHasSession } from '@/hooks/useSession';
-import { homeApi, type Collection } from '@/lib/api/home';
+import { useGuestModeActive, useHasSession } from '@/hooks/useSession';
+import { catalogueApi } from '@/lib/api/catalogue';
+import { usePlayHistoryQuery, PLAY_HISTORY_QUERY_KEY } from '@/hooks/usePlayHistory';
+import { homeApi, type Collection, type Soundscape } from '@/lib/api/home';
+import type { PlayHistoryRow } from '@/lib/api/player';
+import { getGuestOnboardingAnswers } from '@/lib/onboarding';
 
 /**
  * Favourites live in `useFavourites` so every screen shares one cache and one
@@ -20,7 +24,8 @@ export { useFavourites, useFavouriteSoundscapes, useIsFavourite, useToggleFavour
 export const HOME_QUERY_KEYS = {
   continueListening: ['home', 'continue-listening'] as const,
   recommended: ['home', 'recommended'] as const,
-  playHistory: ['home', 'play-history'] as const,
+  guestModeRecommended: ['home', 'guest-mode-recommended'] as const,
+  playHistory: PLAY_HISTORY_QUERY_KEY,
   favourites: FAVOURITES_QUERY_KEY,
   newToHalcyon: ['home', 'library', 'recently_added'] as const,
   shortSessions: ['home', 'library', 'shortest'] as const,
@@ -31,6 +36,23 @@ export const HOME_QUERY_KEYS = {
 const SHORT_SESSION_MAX_SECONDS = 600;
 const RAIL_LIMIT = 10;
 
+async function getGuestModeSoundscapes() {
+  const answers = await getGuestOnboardingAnswers();
+  if (!answers.mode) return [];
+
+  const grouped = await catalogueApi.byMode(answers.mode);
+  const seen = new Set<string>();
+
+  return Object.values(grouped.soundscapes)
+    .flat()
+    .filter((soundscape) => {
+      if (!soundscape.id || seen.has(soundscape.id)) return false;
+      seen.add(soundscape.id);
+      return true;
+    })
+    .slice(0, RAIL_LIMIT);
+}
+
 /** Signed in only — the endpoint 401s without a bearer token. */
 export function useContinueListening() {
   const hasSession = useHasSession();
@@ -39,7 +61,7 @@ export function useContinueListening() {
     queryKey: HOME_QUERY_KEYS.continueListening,
     queryFn: homeApi.continueListening,
     enabled: hasSession,
-    select: (items) => items.find((item) => item.soundscape) ?? null,
+    select: (items) => (hasSession ? items.find((item) => item.soundscape) ?? null : null),
   });
 }
 
@@ -50,22 +72,34 @@ export function useContinueListening() {
  */
 export function useRecommended() {
   const hasSession = useHasSession();
+  const guestModeActive = useGuestModeActive();
 
   return useQuery({
-    queryKey: HOME_QUERY_KEYS.recommended,
-    queryFn: homeApi.recommended,
-    enabled: hasSession,
+    queryKey: guestModeActive
+      ? HOME_QUERY_KEYS.guestModeRecommended
+      : HOME_QUERY_KEYS.recommended,
+    queryFn: guestModeActive ? getGuestModeSoundscapes : homeApi.recommended,
+    enabled: hasSession || guestModeActive,
+    select: (items) => (hasSession || guestModeActive ? items : []),
   });
 }
 
+/** Same cache entry as the Saved tab's Recently Played; this view is deduped. */
 export function useRecentlyPlayed() {
-  const hasSession = useHasSession();
+  return usePlayHistoryQuery(dedupeSoundscapes);
+}
 
-  return useQuery({
-    queryKey: HOME_QUERY_KEYS.playHistory,
-    queryFn: homeApi.playHistory,
-    enabled: hasSession,
-  });
+function dedupeSoundscapes(rows: PlayHistoryRow[]): Soundscape[] {
+  const seen = new Set<string>();
+  const result: Soundscape[] = [];
+
+  for (const { soundscape } of rows) {
+    if (!soundscape?.id || seen.has(soundscape.id)) continue;
+    seen.add(soundscape.id);
+    result.push(soundscape);
+  }
+
+  return result;
 }
 
 export function useNewToHalcyon() {

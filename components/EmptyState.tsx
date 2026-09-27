@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
-import { HalcyonColors, HalcyonRadius, HalcyonSpacing } from '@/constants/design';
+import { HalcyonColors, HalcyonRadius, HalcyonSpacing, Typography } from '@/constants/design';
 import { AppFonts } from '@/constants/theme';
 
 type EmptyStateProps = {
@@ -52,19 +52,12 @@ const styles = StyleSheet.create({
     paddingVertical: 56,
   },
   title: {
-    color: HalcyonColors.textPrimary,
-    fontFamily: AppFonts.displaySemiBold,
-    fontSize: 20,
-    fontWeight: '600',
-    lineHeight: 27,
+    ...Typography.sectionHeading,
     marginTop: 18,
     textAlign: 'center',
   },
   message: {
-    color: HalcyonColors.textSecondary,
-    fontFamily: AppFonts.sansRegular,
-    fontSize: 13,
-    lineHeight: 19,
+    ...Typography.muted,
     marginTop: 6,
     maxWidth: 280,
     textAlign: 'center',

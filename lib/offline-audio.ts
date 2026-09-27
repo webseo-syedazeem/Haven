@@ -6,7 +6,11 @@ import {
   hydrateLocalDownloads,
   isLocallyAvailable,
 } from '@/lib/local-downloads';
-import { setLocalSourceResolver } from '@/lib/player/types';
+import {
+  fetchNotificationArtwork,
+  getCachedNotificationArtwork,
+} from '@/lib/notification-artwork';
+import { setArtworkCache, setLocalSourceResolver } from '@/lib/player/types';
 
 /**
  * Wires permanent, user-initiated downloads into the player.
@@ -41,6 +45,11 @@ setLocalSourceResolver((soundscapeId) => {
   if (!download?.file_uri) return null;
 
   return { url: download.file_uri, artwork: download.artwork_uri ?? undefined };
+});
+
+setArtworkCache({
+  cached: getCachedNotificationArtwork,
+  fetch: fetchNotificationArtwork,
 });
 
 /** True when a permanent download can play without a connection. */

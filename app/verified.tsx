@@ -81,10 +81,19 @@ export default function VerifiedScreen() {
         </Text>
       ) : null}
       <OnboardingContinueButton
+        label={errorMessage ? 'Retry saving preferences' : 'Continue'}
         loading={continuing}
         onPress={() => void continueIntoApp()}
         style={styles.primaryButton}
       />
+      {errorMessage ? (
+        <OnboardingContinueButton
+          label="Continue to Home"
+          onPress={() => resetToMainApp(router)}
+          style={styles.secondaryButton}
+          variant="secondary"
+        />
+      ) : null}
     </OnboardingScaffold>
   );
 }
@@ -134,6 +143,10 @@ const styles = StyleSheet.create({
   },
   primaryButton: {
     marginTop: 34,
+    maxWidth: 390,
+  },
+  secondaryButton: {
+    marginTop: 12,
     maxWidth: 390,
   },
   topLine: {

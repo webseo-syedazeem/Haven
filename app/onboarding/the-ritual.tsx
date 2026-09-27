@@ -5,8 +5,8 @@ import { StyleSheet, Text, View } from 'react-native';
 
 import { OnboardingContinueButton } from '@/components/onboarding/OnboardingContinueButton';
 import { OnboardingScaffold } from '@/components/onboarding/OnboardingScaffold';
-import { HalcyonColors } from '@/constants/design';
 import type { ModeId } from '@/constants/modes';
+import { RELAX_ONBOARDING } from '@/constants/relax-onboarding';
 import { AppFonts } from '@/constants/theme';
 import { getOnboardingAnswers } from '@/lib/onboarding';
 
@@ -47,7 +47,7 @@ export default function TheRitualScreen() {
     void getOnboardingAnswers().then((answers) => {
       if (!active) return;
       if (!answers.startingMode) {
-        router.replace('/environment');
+        router.replace('/select-focus');
         return;
       }
       setMode(answers.startingMode);
@@ -65,36 +65,31 @@ export default function TheRitualScreen() {
   return (
     <OnboardingScaffold
       contentContainerStyle={styles.content}
-      footer={
-        <View style={styles.footerContainer}>
-          <Text style={styles.caption}>{copy?.caption ?? ''}</Text>
-          <OnboardingContinueButton
-            disabled={!copy}
-            label="Continue"
-            onPress={() => router.push('/onboarding/your-fit' as Href)}
-            showArrow
-            variant={isSleep ? 'lavender' : 'amber'}
-          />
-        </View>
-      }
+      onBack={() => router.back()}
       scroll={false}>
       <View style={styles.topSection}>
-        <Text style={styles.heading}>{copy?.heading ?? ' '}</Text>
+        <Text adjustsFontSizeToFit numberOfLines={1} style={styles.heading}>
+          {copy?.heading ?? ' '}
+        </Text>
 
         {copy ? (
-          <View style={styles.stepsRow}>
-            {copy.steps.map((step, index) => (
-              <View key={step} style={styles.stepItem}>
-                <Text style={[styles.stepLabel, { color: themeColor }]}>{step}</Text>
-                {index < copy.steps.length - 1 ? (
-                  <View style={[styles.stepDash, { backgroundColor: themeColor }]} />
-                ) : null}
-              </View>
-            ))}
-          </View>
+          <Text style={[styles.stepLine, { color: themeColor }]}>
+            {copy.steps.join(' \u2014 ')}
+          </Text>
         ) : null}
 
         <Text style={styles.body}>{copy?.body ?? ''}</Text>
+      </View>
+
+      <View style={styles.footerContainer}>
+        <Text style={styles.caption}>{copy?.caption ?? ''}</Text>
+        <OnboardingContinueButton
+          disabled={!copy}
+          label="Continue"
+          onPress={() => router.push('/onboarding/your-fit' as Href)}
+          showArrow
+          variant={isSleep ? 'lavender' : 'amber'}
+        />
       </View>
     </OnboardingScaffold>
   );
@@ -104,26 +99,27 @@ const AMBER = '#F4B34C';
 
 const styles = StyleSheet.create({
   body: {
-    color: '#ECECEC',
-    fontFamily: AppFonts.sansRegular,
-    fontSize: 16,
-    lineHeight: 25,
+    color: '#FFFFFF',
+    fontFamily: AppFonts.sansMedium,
+    fontSize: 18,
+    lineHeight: 27,
     marginTop: 36,
     maxWidth: 310,
     textAlign: 'center',
   },
   caption: {
-    color: '#8A8A8E',
+    color: 'rgba(255,255,255,0.64)',
     fontFamily: AppFonts.sansRegular,
-    fontSize: 13,
+    fontSize: 12,
     lineHeight: 18,
-    marginBottom: 18,
+    marginBottom: 16,
+    maxWidth: 330,
     textAlign: 'center',
   },
   content: {
-    flex: 1,
-    paddingHorizontal: 22,
-    paddingTop: 48,
+    paddingBottom: RELAX_ONBOARDING.content.paddingBottom,
+    paddingHorizontal: RELAX_ONBOARDING.screenPaddingHorizontal,
+    paddingTop: RELAX_ONBOARDING.content.paddingTop,
   },
   footerContainer: {
     alignItems: 'center',
@@ -132,38 +128,25 @@ const styles = StyleSheet.create({
   heading: {
     color: '#FFFFFF',
     fontFamily: AppFonts.playfairRegular,
-    fontSize: 42,
-    fontWeight: '400',
-    letterSpacing: -0.5,
-    lineHeight: 48,
+    fontSize: 44,
+    fontWeight: '600',
+    letterSpacing: -0.8,
+    lineHeight: 50,
     textAlign: 'center',
     width: '100%',
   },
-  stepDash: {
-    backgroundColor: AMBER,
-    height: 1.5,
-    marginHorizontal: 10,
-    marginTop: 3,
-    width: 26,
-  },
-  stepItem: {
-    alignItems: 'center',
-    flexDirection: 'row',
-  },
-  stepLabel: {
+  stepLine: {
     color: AMBER,
     fontFamily: AppFonts.sansMedium,
-    fontSize: 15,
-    letterSpacing: 0.2,
-  },
-  stepsRow: {
-    alignItems: 'center',
-    flexDirection: 'row',
-    justifyContent: 'center',
-    marginTop: 34,
+    fontSize: 17,
+    lineHeight: 25,
+    marginTop: 32,
+    textAlign: 'center',
   },
   topSection: {
     alignItems: 'center',
-    width: '100%',
+    flex: 1,
+    justifyContent: 'center',
+    paddingBottom: 20,
   },
 });

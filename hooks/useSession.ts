@@ -2,6 +2,7 @@ import { useSyncExternalStore } from 'react';
 
 import {
   hasActiveSession,
+  isGuestModeActive,
   isSessionRestoring,
   subscribeToSession,
 } from '@/lib/auth/session-state';
@@ -21,4 +22,9 @@ export function useHasSession() {
  */
 export function useSessionRestoring() {
   return useSyncExternalStore(subscribeToSession, isSessionRestoring, isSessionRestoring);
+}
+
+/** True only after the user explicitly chose "Continue as guest". */
+export function useGuestModeActive() {
+  return useSyncExternalStore(subscribeToSession, isGuestModeActive, isGuestModeActive);
 }

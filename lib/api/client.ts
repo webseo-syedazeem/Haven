@@ -1,7 +1,7 @@
 import { ApiError, NetworkError, isNetworkError } from '@/lib/api/errors';
 import { supabase } from '@/lib/supabase';
 import * as SecureStore from 'expo-secure-store';
-import { setSessionSource } from '@/lib/auth/session-state';
+import { isGuestModeActive, setSessionSource } from '@/lib/auth/session-state';
 import { markLoggedOut } from '@/lib/auth/offline-session';
 import { clearAuthTokens, getAccessToken, getRefreshToken, refreshSession } from '@/lib/haven-api';
 import { Platform } from 'react-native';
@@ -9,6 +9,37 @@ import { Platform } from 'react-native';
 const API_BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL ?? 'https://thehappyapp.co.uk';
 export const AUTH_TOKEN_KEY = 'haven.auth.access_token';
 const LEGACY_AUTH_TOKEN_KEY = 'access_token';
+
+const TOKEN_REQUIRED_PATH_PREFIXES = [
+  '/api/me',
+  '/api/update-name',
+  '/api/change-password',
+  '/api/upload-profile-image',
+  '/api/remove-profile-image',
+  '/api/favourites',
+  '/api/play-history',
+  '/api/home/continue-listening',
+  '/api/home/recommended',
+  '/api/player/state',
+  '/api/playlists',
+  '/api/preferences',
+  '/api/downloads',
+  '/api/account',
+  '/api/onboarding',
+  '/api/notifications',
+  '/api/support/my-requests',
+] as const;
+
+function assertGuestMayCall(path: string): void {
+  if (
+    isGuestModeActive() &&
+    TOKEN_REQUIRED_PATH_PREFIXES.some(
+      (prefix) => path === prefix || path.startsWith(`${prefix}/`) || path.startsWith(`${prefix}?`)
+    )
+  ) {
+    throw new Error('Please log in to use this account feature.');
+  }
+}
 
 function getWebStorage() {
   return typeof globalThis !== 'undefined'
@@ -149,6 +180,10 @@ export async function apiClient<T>(
   path: string,
   options: RequestInit = {}
 ): Promise<T> {
+  // Defense in depth: UI queries/actions are gated too, but an accidental
+  // manual refetch or deep link still must not put a token-only request on the
+  // wire while the explicit guest flag is active.
+  assertGuestMayCall(path);
   let token = await getStoredToken();
 
   // 2. SecureStore se try karo
@@ -189,6 +224,15 @@ export async function apiClient<T>(
 }
 
 /**
+ * For endpoints that must work before an account exists. Unlike `apiClient` it
+ * never looks up or sends a token, so a stale session cannot leak into (or
+ * sign out because of) a guest request.
+ */
+export async function publicApiClient<T>(path: string, options: RequestInit = {}): Promise<T> {
+  return readEnvelope<T>(await send(path, options, null));
+}
+
+/**
  * Every failure carries the HTTP status, so callers can tell "your token is no
  * longer valid" (401) from "the request was refused" (anything else).
  */
@@ -218,6 +262,7 @@ export async function apiClientFormData<T>(
   formData: FormData,
   method = 'POST'
 ): Promise<T> {
+  assertGuestMayCall(path);
   let token = getAccessToken();
 
   if (!token) {

@@ -21,7 +21,7 @@ import { PlaylistFormSheet } from '@/components/PlaylistFormSheet';
 import { RequireAuth, useRequireAuth } from '@/components/RequireAuth';
 import { SoundscapeRow, SoundscapeRowSkeletonList } from '@/components/SoundscapeRow';
 import { Toast, useToast } from '@/components/Toast';
-import { HalcyonColors, HalcyonRadius, HalcyonSpacing } from '@/constants/design';
+import { HalcyonColors, HalcyonRadius, HalcyonSpacing, Typography } from '@/constants/design';
 import { AppFonts } from '@/constants/theme';
 import { useTabContentInset } from '@/hooks/use-bottom-safe-spacing';
 import {
@@ -158,7 +158,7 @@ function FavouritesPanel({
     return (
       <EmptyState
         icon="heart-outline"
-        message="Tap the heart on any soundscape and it will wait for you here."
+        message="Tap the heart on any soundscape to save it here."
         title="No favourites yet"
       />
     );
@@ -236,7 +236,7 @@ function PlaylistsPanel({
         <EmptyState
           actionLabel="New playlist"
           icon="albums-outline"
-          message="Group soundscapes into a set you can come back to."
+          message="Create a playlist to group your favourite soundscapes."
           onAction={() => setFormVisible(true)}
           title="No playlists yet"
         />
@@ -343,7 +343,7 @@ function DownloadsPanel({
         icon="cloud-download-outline"
         message={
           hasSession
-            ? 'Download a soundscape and it will play without a connection.'
+            ? 'Download a soundscape to listen offline.'
             : 'Downloads are saved to your account. Log in to see yours, or to save something new.'
         }
         title={hasSession ? 'No downloads yet' : 'Nothing downloaded here'}
@@ -497,7 +497,7 @@ function RecentPanel({ bottomInset }: { bottomInset: number }) {
     return (
       <EmptyState
         icon="time-outline"
-        message="Everything you play shows up here."
+        message="The soundscapes you play will show up here."
         title="Nothing played yet"
       />
     );
@@ -571,10 +571,7 @@ const styles = StyleSheet.create({
     paddingTop: 12,
   },
   heading: {
-    color: HalcyonColors.textPrimary,
-    fontFamily: AppFonts.displayRegular,
-    fontSize: 34,
-    lineHeight: 42,
+    ...Typography.screenHeading,
   },
   chipRow: {
     alignItems: 'center',

@@ -21,7 +21,9 @@ export function useUser() {
     // Never hit `/api/me` until a session is restored from storage or created
     // by a sign in, otherwise the request fails with a missing auth header.
     enabled: hasSession,
-    select: (response) => response.data,
+    // A persisted cache may belong to an earlier signed-in session. Never
+    // expose its identity while the explicit guest flag has queries disabled.
+    select: (response) => (hasSession ? response.data : undefined),
   });
 }
 

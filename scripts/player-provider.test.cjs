@@ -15,11 +15,12 @@ const tracks = ['a', 'b', 'c'].map((id) => track(id));
 
 // Run the actual provider with deterministic hooks, audio events and time.
 // This needs no native runtime, test-renderer package, network, or real timers.
-function createPlayer({ saved = null, catalogue = tracks, hasSession = false } = {}) {
+function createPlayer({ saved = null, catalogue = tracks, hasSession = false, seekError = null } = {}) {
   const hooks = [];
   const timers = new Map();
   const listeners = new Set();
-  const calls = { loads: [], seeks: [], saves: [], history: [], volumes: [], stop: 0, reset: 0, tones: 0 };
+  const warnings = [];
+  const calls = { loads: [], seeks: [], saves: [], history: [], volumes: [], stop: 0, reset: 0, tones: 0, subscribes: 0, setups: 0 };
   let hookIndex = 0;
   let dirty = true;
   let now = 100000;
@@ -73,9 +74,9 @@ function createPlayer({ saved = null, catalogue = tracks, hasSession = false } =
   };
   const emit = (event, value) => { for (const listener of listeners) listener[event]?.(value); };
   const engine = {
-    setup: async () => true,
+    setup: async () => { calls.setups++; return true; },
     hasSource: () => sourceLoaded,
-    subscribe: (listener) => { listeners.add(listener); return () => listeners.delete(listener); },
+    subscribe: (listener) => { calls.subscribes++; listeners.add(listener); return () => listeners.delete(listener); },
     load: async (value, startAt) => {
       sourceLoaded = true;
       calls.loads.push({ track: value, startAt });
@@ -85,7 +86,11 @@ function createPlayer({ saved = null, catalogue = tracks, hasSession = false } =
     pause: async () => emit('onPlaybackChange', { isPlaying: false, isBuffering: false }),
     stop: async () => { calls.stop++; sourceLoaded = false; emit('onPlaybackChange', { isPlaying: false, isBuffering: false }); },
     reset: async () => { calls.reset++; sourceLoaded = false; emit('onPlaybackChange', { isPlaying: false, isBuffering: false }); emit('onProgress', { position: 0, duration: 0 }); },
-    seekTo: async (seconds) => { calls.seeks.push(seconds); emit('onProgress', { position: seconds, duration: 180 }); },
+    seekTo: async (seconds) => {
+      calls.seeks.push(seconds);
+      if (seekError) throw seekError;
+      emit('onProgress', { position: seconds, duration: 180 });
+    },
     setVolume: async (level) => { calls.volumes.push(level); },
     playEndTone: async () => { calls.tones++; },
   };
@@ -114,7 +119,8 @@ function createPlayer({ saved = null, catalogue = tracks, hasSession = false } =
       compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2020, jsx: ts.JsxEmit.ReactJSX },
     }).outputText;
     vm.runInNewContext(code, {
-      exports: module.exports, module, console,
+      exports: module.exports, module,
+      console: { ...console, warn: (...args) => warnings.push(args.map(String).join(' ')) },
       Date: class extends Date { static now() { return now; } },
       setTimeout: (callback, delay) => schedule(callback, delay, 0),
       clearTimeout: (id) => timers.delete(id),
@@ -158,7 +164,16 @@ function createPlayer({ saved = null, catalogue = tracks, hasSession = false } =
   render();
   return {
     calls,
+    warnings,
     settle,
+    /** The engine's give-up, in its order: the resume position, the failure, then the released player. */
+    async failPlayback(position) {
+      emit('onProgress', { position, duration: 180 });
+      emit('onPlaybackFailed');
+      sourceLoaded = false;
+      emit('onPlaybackChange', { isPlaying: false, isBuffering: false });
+      await settle();
+    },
     get state() { render(); return provider.usePlayerState(); },
     get progress() { render(); return provider.usePlayerProgress(); },
     async act(action, ...args) { await provider.usePlayerActions()[action](...args); await settle(); },
@@ -315,10 +330,81 @@ test('an active Sleep fade continues across Next and ends playback', async () =>
   assert.equal(player.state.isFadingOut, false);
 });
 
+test('the engine wiring mounts once and is never torn down by re-renders, playback ticks or user actions', async () => {
+  const player = createPlayer();
+  // Mounting subscribes to the engine and sets it up exactly once. That effect is
+  // what tears the native player down and builds it again, so it must only ever
+  // re-run when the provider itself is unmounted and mounted again.
+  assert.equal(player.calls.subscribes, 1);
+  assert.equal(player.calls.reset, 0);
+
+  await player.act('playSoundscape', tracks[0], { queue: tracks });
+  for (let second = 1; second <= 60; second++) {
+    await player.event('onProgress', { position: second, duration: 180 });
+    await player.event('onPlaybackChange', { isPlaying: second % 2 === 0, isBuffering: second % 2 === 1 });
+    await player.advance(1000);
+  }
+  await player.act('seek', 90);
+  await player.act('togglePlayPause');
+  await player.act('togglePlayPause');
+  await player.act('skipNext');
+  await player.background();
+  assert.equal(player.state.soundscape.id, 'b');
+  assert.ok(player.progress.duration > 0);
+
+  assert.equal(player.calls.subscribes, 1, 'the engine effect re-ran: the provider would rebuild the native player');
+  assert.equal(player.calls.reset, 0, 'the engine effect was cleaned up: the provider would tear the native player down');
+  await player.dispose();
+  assert.equal(player.calls.reset, 1, 'unmounting the provider still releases the native player, once');
+});
+
 test('provider unmount still resets the engine and media-session owner', async () => {
   const player = createPlayer();
   await player.act('playSoundscape', tracks[0]);
   assert.equal(player.calls.reset, 0);
   await player.dispose();
   assert.equal(player.calls.reset, 1);
+});
+
+test('a playback failure shows a retryable error, and playing again retries from where it stopped', async () => {
+  const player = createPlayer({ hasSession: true });
+  await player.settle();
+  await player.act('playSoundscape', tracks[1], { queue: tracks });
+  await player.act('seek', 90);
+  await player.failPlayback(90);
+
+  // Neither frozen as "playing" nor spinning: stopped, explained, and retryable.
+  assert.equal(player.state.isPlaying, false);
+  assert.equal(player.state.isBuffering, false);
+  assert.equal(player.state.canRetry, true);
+  assert.match(player.state.error, /try again/i);
+  assert.equal(player.progress.position, 90);
+  // Saved like a pause, so Continue Listening and a relaunch resume there too.
+  assert.equal(player.state.resumable.positionSeconds, 90);
+  assert.equal(player.calls.saves.at(-1).position_seconds, 90);
+
+  await player.act('togglePlayPause');
+  assert.equal(player.calls.loads.length, 2);
+  assert.equal(player.calls.loads.at(-1).track.id, 'b');
+  assert.equal(player.calls.loads.at(-1).startAt, 90);
+  assert.equal(player.state.isPlaying, true);
+  assert.equal(player.state.error, null);
+  assert.equal(player.state.canRetry, false);
+});
+
+test('a seek the engine rejects is contained, and the requested position stays on screen', async () => {
+  const player = createPlayer({ seekError: new Error('native seek failed') });
+  await player.act('playSoundscape', tracks[0]);
+  await player.act('seek', 42);
+  assert.deepEqual(player.calls.seeks, [42]);
+  assert.equal(player.progress.position, 42);
+  assert.match(player.warnings.join('\n'), /seek failed/);
+  assert.equal(player.state.error, null);
+});
+
+test('errors that retrying cannot fix are not offered a retry', async () => {
+  const player = createPlayer();
+  await player.act('playSoundscape', { ...tracks[0], file_url: null });
+  assert.equal(player.state.error, 'This soundscape has no audio file yet.');
+  assert.equal(player.state.canRetry, false);
 });

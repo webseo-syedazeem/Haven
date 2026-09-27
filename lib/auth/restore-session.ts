@@ -11,7 +11,11 @@ import {
   readCachedProfile,
   wasLoggedIn,
 } from '@/lib/auth/offline-session';
-import { finishSessionRestore, hydrateGuestMode } from '@/lib/auth/session-state';
+import {
+  finishSessionRestore,
+  hydrateGuestMode,
+  isGuestModeActive,
+} from '@/lib/auth/session-state';
 import { setActiveDownloadUser } from '@/lib/local-downloads';
 import { clearAuthTokens, refreshSession, setAccessToken, setAuthTokens } from '@/lib/haven-api';
 import { queryClient } from '@/lib/query-client';
@@ -91,6 +95,11 @@ async function runRestore(): Promise<SessionRestoreStatus> {
     // gated from authenticated queries for this launch too, not just for the
     // session that set the flag.
     await hydrateGuestMode();
+
+    // Guest mode is an explicit durable choice. Do not inspect, validate or
+    // refresh any account token while it is active; launch goes straight to
+    // the public app and every token-only query stays disabled.
+    if (isGuestModeActive()) return 'signed-out';
 
     const accessToken =
       (await getStoredItem(ACCESS_TOKEN_KEY)) ?? (await getStoredItem(LEGACY_ACCESS_TOKEN_KEY));

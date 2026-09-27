@@ -25,10 +25,12 @@ export function usePlaylists() {
 }
 
 export function usePlaylist(id?: string) {
+  const hasSession = useHasSession();
+
   return useQuery({
     queryKey: PLAYLIST_QUERY_KEYS.detail(id ?? ''),
     queryFn: () => playlistsApi.detail(id!),
-    enabled: !!id,
+    enabled: hasSession && !!id,
   });
 }
 

@@ -1,5 +1,5 @@
 import type { LibraryFilters, SortValue } from '@/constants/filters';
-import { apiClient } from './client';
+import { apiClient, publicApiClient } from './client';
 import type { Collection, Soundscape } from './home';
 
 type Envelope<T> = { success: boolean; data: T };
@@ -78,7 +78,7 @@ export function buildLibraryQuery(filters: LibraryFilters, sort: SortValue): str
 
 export const catalogueApi = {
   byMode: async (mode: string): Promise<SoundscapesByMode> => {
-    const res = await apiClient<Envelope<SoundscapesByMode>>(
+    const res = await publicApiClient<Envelope<SoundscapesByMode>>(
       `/api/soundscapes/mode/${encodeURIComponent(mode)}`
     );
 
@@ -86,6 +86,14 @@ export const catalogueApi = {
       mode: res.data?.mode ?? mode,
       soundscapes: res.data?.soundscapes ?? {},
     };
+  },
+
+  /** A few playable soundscapes from one mode. Guest-safe: sent with no token. */
+  preview: async (mode: string, count: number): Promise<Soundscape[]> => {
+    const res = await publicApiClient<Envelope<{ mode: string; soundscapes: Soundscape[] }>>(
+      `/api/soundscapes/mode/${encodeURIComponent(mode)}/preview?count=${count}`
+    );
+    return res.data?.soundscapes ?? [];
   },
 
   similar: async (soundscapeId: string): Promise<Soundscape[]> => {

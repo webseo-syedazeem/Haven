@@ -1,3 +1,5 @@
+import { AppFonts as ThemeFonts } from '@/constants/theme';
+
 export const AppColors = {
   background: '#0B1F3E',
   overlay: 'rgba(6, 16, 36, 0.54)',
@@ -66,6 +68,22 @@ export const HalcyonColors = {
   scrim: 'rgba(8,8,10,0.85)',
 } as const;
 
+/** Relax onboarding uses a softer, botanical accent than Focus and Sleep. */
+export const RELAX_ACCENT = '#B6E39E';
+export const RELAX_ACCENT_PRESSED = '#9FD187';
+
+export const ONBOARDING_MODE_ACCENTS = {
+  focus: '#F4B34C',
+  sleep: '#9FAEFD',
+  relax: RELAX_ACCENT,
+} as const;
+
+export const ONBOARDING_MODE_ACCENTS_PRESSED = {
+  focus: '#DF9E37',
+  sleep: '#8B9DFC',
+  relax: RELAX_ACCENT_PRESSED,
+} as const;
+
 /** Transparent → near-black, for artwork so overlaid text stays readable. */
 export const HalcyonCardGradient = ['transparent', 'rgba(8,8,10,0.55)', HalcyonColors.scrim] as const;
 export const HalcyonCardGradientLocations = [0, 0.55, 1] as const;
@@ -84,3 +102,40 @@ export const HalcyonSpacing = {
 
 /** Height of the custom bottom tab bar, excluding the safe-area inset. */
 export const HALCYON_TAB_BAR_HEIGHT = 62;
+
+/**
+ * Base text styles, taken from the approved onboarding screens. Spread into a
+ * StyleSheet entry; per-mode accent colours stay with their own screens.
+ */
+export const Typography = {
+  /** Screen heading: the onboarding title. */
+  screenHeading: {
+    color: '#FFFFFF',
+    fontFamily: ThemeFonts.playfairRegular,
+    fontSize: 40,
+    letterSpacing: -0.3,
+    lineHeight: 46,
+  },
+  /** Section / card heading: same serif and colour, scaled down. */
+  sectionHeading: {
+    color: '#FFFFFF',
+    fontFamily: ThemeFonts.playfairRegular,
+    fontSize: 21,
+    letterSpacing: -0.2,
+    lineHeight: 28,
+  },
+  /** Body / subtitle: the onboarding subtitle. */
+  body: {
+    color: '#FFFFFF',
+    fontFamily: ThemeFonts.sansRegular,
+    fontSize: 16,
+    lineHeight: 24,
+  },
+  /** Muted supporting copy at caption size. */
+  muted: {
+    color: 'rgba(255, 255, 255, 0.8)',
+    fontFamily: ThemeFonts.sansRegular,
+    fontSize: 13,
+    lineHeight: 19,
+  },
+} as const;

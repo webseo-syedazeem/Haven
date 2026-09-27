@@ -14,9 +14,10 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { OnboardingBackButton } from '@/components/onboarding/OnboardingBackButton';
 import { OnboardingContinueButton } from '@/components/onboarding/OnboardingContinueButton';
-import { HalcyonColors } from '@/constants/design';
 import type { ModeId } from '@/constants/modes';
+import { RELAX_ONBOARDING } from '@/constants/relax-onboarding';
 import { AppFonts } from '@/constants/theme';
 import {
   getOnboardingAnswers,
@@ -24,7 +25,8 @@ import {
 } from '@/lib/onboarding';
 
 const brandIcon = require('@/assets/images/passage-brand-assets/screens-icon.webp');
-const mountainBg = require('@/assets/images/understand-bg.webp');
+const focusBackground = require('@/assets/images/what-breaks-your-focus.webp');
+const sleepBackground = require('@/assets/images/what-gets-in-the-way-of-sleep.webp');
 
 const FOCUS_DISTRACTIONS = [
   'Background noise',
@@ -45,10 +47,8 @@ const SLEEP_DISTRACTIONS = [
 export default function SituationScreen() {
   const router = useRouter();
   const [mode, setMode] = useState<ModeId>('focus');
-  const [selected, setSelected] = useState<string[]>([
-    'Background noise',
-    'Racing thoughts',
-  ]);
+  const [selected, setSelected] = useState<string[]>([]);
+  const [hydrating, setHydrating] = useState(true);
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
 
@@ -58,15 +58,17 @@ export default function SituationScreen() {
       const answers = await getOnboardingAnswers();
       if (!active) return;
       if (answers.startingMode) {
-        setMode(answers.startingMode);
+        setMode(answers.mode ?? answers.startingMode);
       }
-      if (answers.situation && answers.situation.length > 0) {
-        setSelected(answers.situation);
-      } else if (answers.startingMode === 'sleep') {
-        setSelected(['Racing thoughts', 'Outside noise']);
-      }
+      setSelected(answers.mode_breakers);
     };
-    void hydrate();
+    void hydrate()
+      .catch(() => {
+        if (active) setSaveError('We could not load your saved choices.');
+      })
+      .finally(() => {
+        if (active) setHydrating(false);
+      });
     return () => {
       active = false;
     };
@@ -86,11 +88,11 @@ export default function SituationScreen() {
   };
 
   const handleContinue = async () => {
-    if (selected.length === 0 || saving) return;
+    if (hydrating || selected.length === 0 || saving) return;
     setSaving(true);
     setSaveError(null);
     try {
-      await saveOnboardingAnswers({ situation: selected });
+      await saveOnboardingAnswers({ mode_breakers: selected });
       router.push('/onboarding/personalise' as Href);
     } catch {
       setSaveError('We could not save that just yet. Please try again.');
@@ -103,7 +105,7 @@ export default function SituationScreen() {
     <View style={styles.screen}>
       <ImageBackground
         resizeMode="cover"
-        source={mountainBg}
+        source={isSleep ? sleepBackground : focusBackground}
         style={styles.backgroundImage}>
         <LinearGradient
           colors={[
@@ -125,13 +127,10 @@ export default function SituationScreen() {
               <Text style={styles.brandText}>Passage</Text>
             </View>
 
-            <Pressable
-              accessibilityLabel="Go back"
-              hitSlop={12}
+            <OnboardingBackButton
               onPress={() => router.back()}
-              style={({ pressed }) => [styles.backButton, pressed && styles.pressed]}>
-              <Ionicons color="#FFFFFF" name="chevron-back" size={22} />
-            </Pressable>
+              style={styles.backButtonLayer}
+            />
 
             <View style={styles.headerSpacer} />
           </View>
@@ -158,14 +157,14 @@ export default function SituationScreen() {
                   <Pressable
                     accessibilityRole="checkbox"
                     accessibilityState={{ checked: isSelected }}
+                    disabled={hydrating}
                     key={option}
                     onPress={() => toggleOption(option)}
-                    style={({ pressed }) => [
+                    style={() => [
                       styles.optionCard,
                       isSelected
                         ? [styles.optionCardSelected, { borderColor: themeColor }]
                         : styles.optionCardUnselected,
-                      pressed && styles.pressedCard,
                     ]}>
                     <Text style={[styles.optionText, isSelected && styles.optionTextSelected]}>
                       {option}
@@ -190,7 +189,7 @@ export default function SituationScreen() {
           <View style={styles.footer}>
             {saveError ? <Text style={styles.errorText}>{saveError}</Text> : null}
             <OnboardingContinueButton
-              disabled={selected.length === 0}
+              disabled={hydrating || selected.length === 0}
               label="CONTINUE"
               loading={saving}
               onPress={() => void handleContinue()}
@@ -205,11 +204,7 @@ export default function SituationScreen() {
 }
 
 const styles = StyleSheet.create({
-  backButton: {
-    alignItems: 'center',
-    height: 40,
-    justifyContent: 'center',
-    width: 40,
+  backButtonLayer: {
     zIndex: 1,
   },
   backgroundImage: {
@@ -241,17 +236,17 @@ const styles = StyleSheet.create({
   },
   checkCircle: {
     alignItems: 'center',
-    borderRadius: 12,
-    height: 24,
+    borderRadius: RELAX_ONBOARDING.optionRow.indicatorSize / 2,
+    height: RELAX_ONBOARDING.optionRow.indicatorSize,
     justifyContent: 'center',
-    width: 24,
+    width: RELAX_ONBOARDING.optionRow.indicatorSize,
   },
   checkCircleSelected: {
     backgroundColor: '#F4B34C',
   },
   checkCircleUnselected: {
     borderColor: '#3E414A',
-    borderWidth: 1.5,
+    borderWidth: 1,
   },
   errorText: {
     color: '#D9A39B',
@@ -282,42 +277,36 @@ const styles = StyleSheet.create({
   },
   optionCard: {
     alignItems: 'center',
-    borderRadius: 14,
+    borderRadius: RELAX_ONBOARDING.optionRow.borderRadius,
+    borderWidth: 1,
     flexDirection: 'row',
     justifyContent: 'space-between',
-    minHeight: 58,
-    paddingHorizontal: 20,
-    paddingVertical: 16,
+    minHeight: RELAX_ONBOARDING.optionRow.minHeight,
+    paddingHorizontal: RELAX_ONBOARDING.optionRow.paddingHorizontal,
+    paddingVertical: RELAX_ONBOARDING.optionRow.paddingVertical,
   },
   optionCardSelected: {
     backgroundColor: 'rgba(26, 27, 32, 0.85)',
     borderColor: '#F4B34C',
-    borderWidth: 1.5,
   },
   optionCardUnselected: {
     backgroundColor: 'rgba(18, 19, 23, 0.72)',
     borderColor: '#26282E',
-    borderWidth: 1,
   },
   optionText: {
     color: '#D4D2CD',
-    fontFamily: AppFonts.sansRegular,
-    fontSize: 16,
+    fontFamily: AppFonts.sansMedium,
+    fontSize: RELAX_ONBOARDING.optionRow.labelFontSize,
+    fontWeight: '500',
     letterSpacing: 0.1,
+    lineHeight: RELAX_ONBOARDING.optionRow.labelLineHeight,
   },
   optionTextSelected: {
     color: '#FFFFFF',
-    fontFamily: AppFonts.sansSemiBold,
   },
   optionsList: {
-    gap: 12,
+    gap: RELAX_ONBOARDING.gaps.optionRows,
     marginTop: 26,
-  },
-  pressed: {
-    opacity: 0.7,
-  },
-  pressedCard: {
-    opacity: 0.9,
   },
   safeArea: {
     flex: 1,
@@ -332,18 +321,18 @@ const styles = StyleSheet.create({
     paddingTop: 16,
   },
   subtitle: {
-    color: '#9E9A92',
+    color: '#FFFFFF',
     fontFamily: AppFonts.sansRegular,
-    fontSize: 14,
-    lineHeight: 21,
+    fontSize: 16,
+    lineHeight: 24,
     marginTop: 8,
   },
   title: {
     color: '#FFFFFF',
     fontFamily: AppFonts.playfairRegular,
-    fontSize: 34,
+    fontSize: 40,
     letterSpacing: -0.3,
-    lineHeight: 40,
+    lineHeight: 46,
   },
   titleContainer: {
     marginTop: 8,

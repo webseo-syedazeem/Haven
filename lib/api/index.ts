@@ -4,7 +4,6 @@ export type {
   ImportGuestDataPayload,
   ImportGuestDataResult,
   ImportGuestPlaylist,
-  ImportGuestSoundPreferences,
 } from './account';
 export { apiClient } from './client';
 export { helpApi } from './help';

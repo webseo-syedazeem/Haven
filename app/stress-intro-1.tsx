@@ -1,38 +1,39 @@
-import { useRouter } from 'expo-router';
 import type { Href } from 'expo-router';
+import { useRouter } from 'expo-router';
 import { StyleSheet, Text, View } from 'react-native';
 
-import { OnboardingContinueButton } from '@/components/onboarding/OnboardingContinueButton';
+import { RelaxContinueButton } from '@/components/onboarding/RelaxContinueButton';
 import { OnboardingScaffold } from '@/components/onboarding/OnboardingScaffold';
-import { HalcyonColors } from '@/constants/design';
+import { RelaxStepHeader } from '@/components/onboarding/RelaxStepHeader';
+import { RELAX_ONBOARDING } from '@/constants/relax-onboarding';
 import { AppFonts } from '@/constants/theme';
+
+const background = require('@/assets/images/relax-intro-1-bg.webp');
 
 export default function StressIntroOneScreen() {
   const router = useRouter();
 
   return (
     <OnboardingScaffold
+      backgroundImage={background}
       contentContainerStyle={styles.content}
-      footer={
-        <OnboardingContinueButton
-          onPress={() => router.push('/stress-intro-2' as Href)}
-          showArrow
-        />
-      }
-      onBack={() => router.back()}
+      header={<RelaxStepHeader currentStep={1} onBack={() => router.back()} />}
       scroll={false}>
       <View style={styles.copyBlock}>
-        <View style={styles.ornament}>
-          <View style={styles.ornamentLine} />
-          <View style={styles.ornamentDot} />
-          <View style={styles.ornamentLine} />
-        </View>
-
-        <Text style={styles.eyebrow}>Reduce stress</Text>
-        <Text style={styles.heading}>Quieter thoughts.{'\n'}Brighter days.</Text>
-        <Text style={styles.body}>
-          Calming soundscapes to help you release tension, slow down and feel more in control.
+        <Text style={styles.eyebrow}>REDUCE STRESS</Text>
+        <Text style={styles.heading}>
+          Quieter{'\n'}thoughts.{'\n'}Brighter days.
         </Text>
+        <Text style={styles.body}>
+          Calming soundscapes to help you release tension, slow down and feel
+          more in control.
+        </Text>
+      </View>
+      <View style={styles.buttonWrap}>
+        <RelaxContinueButton
+          label="Next"
+          onPress={() => router.push('/stress-intro-2' as Href)}
+        />
       </View>
     </OnboardingScaffold>
   );
@@ -40,55 +41,46 @@ export default function StressIntroOneScreen() {
 
 const styles = StyleSheet.create({
   body: {
-    color: HalcyonColors.textPrimary,
-    fontFamily: AppFonts.sansRegular,
-    fontSize: 15,
-    lineHeight: 24,
-    marginTop: 22,
-    maxWidth: 320,
+    color: '#FFFFFF',
+    fontFamily: AppFonts.sansMedium,
+    fontSize: 18,
+    lineHeight: 27,
+    marginTop: 28,
+    maxWidth: 330,
     textAlign: 'center',
   },
+  buttonWrap: {
+    marginTop: 'auto',
+    paddingTop: RELAX_ONBOARDING.button.contentGap,
+    width: '100%',
+  },
   content: {
-    justifyContent: 'center',
-    paddingBottom: 40,
+    justifyContent: 'flex-start',
+    paddingBottom: RELAX_ONBOARDING.content.paddingBottom,
+    paddingHorizontal: RELAX_ONBOARDING.screenPaddingHorizontal,
+    paddingTop: RELAX_ONBOARDING.content.paddingTop,
   },
   copyBlock: {
     alignItems: 'center',
-    marginTop: -22,
+    paddingTop: 16,
   },
   eyebrow: {
-    color: HalcyonColors.accent,
+    color: '#FFFFFF',
     fontFamily: AppFonts.sansSemiBold,
-    fontSize: 11,
-    fontWeight: '600',
-    letterSpacing: 1.6,
-    marginTop: 22,
+    fontSize: 13,
+    fontWeight: '700',
+    letterSpacing: 3.2,
     textTransform: 'uppercase',
   },
   heading: {
-    color: HalcyonColors.textPrimary,
-    fontFamily: AppFonts.displayRegular,
-    fontSize: 38,
-    fontWeight: '500',
-    letterSpacing: -0.3,
-    lineHeight: 44,
-    marginTop: 14,
+    color: '#FFFFFF',
+    fontFamily: AppFonts.playfairRegular,
+    fontSize: 44,
+    fontWeight: '600',
+    letterSpacing: -0.8,
+    lineHeight: 50,
+    marginTop: 16,
+    maxWidth: 360,
     textAlign: 'center',
-  },
-  ornament: {
-    alignItems: 'center',
-    flexDirection: 'row',
-  },
-  ornamentDot: {
-    backgroundColor: HalcyonColors.accent,
-    borderRadius: 3,
-    height: 5,
-    marginHorizontal: 8,
-    width: 5,
-  },
-  ornamentLine: {
-    backgroundColor: 'rgba(195,161,122,0.54)',
-    height: StyleSheet.hairlineWidth,
-    width: 30,
   },
 });

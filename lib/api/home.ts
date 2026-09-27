@@ -27,6 +27,8 @@ export type Soundscape = {
   best_use?: string | null;
   artwork_url?: string | null;
   file_url?: string | null;
+  /** The short clip the onboarding preview plays; `file_url` is the full soundscape. */
+  preview_url?: string | null;
   mode?: SoundscapeMode | null;
   duration_seconds?: number | null;
   play_count?: number | null;

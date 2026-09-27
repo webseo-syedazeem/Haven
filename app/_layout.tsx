@@ -1,4 +1,5 @@
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
+import { CormorantGaramond_500Medium_Italic } from '@expo-google-fonts/cormorant-garamond';
 import { useFonts } from 'expo-font';
 import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
@@ -15,6 +16,7 @@ import { hydrateOfflineAudio } from '@/lib/offline-audio';
 import { persistOptions } from '@/lib/query-persist';
 import { queryClient } from '@/lib/query-client';
 import { PlayerProvider } from '@/lib/player/PlayerProvider';
+import { AccountRequiredPromptProvider } from '@/components/auth/AccountRequiredPrompt';
 
 void SplashScreen.preventAutoHideAsync();
 
@@ -27,9 +29,9 @@ export default function RootLayout() {
   const [fontsLoaded] = useFonts({
     [AppFonts.sansRegular]: require('../assets/fonts/Inter-VariableFont_opsz,wght.ttf'),
     [AppFonts.displayRegular]: require('../assets/fonts/CormorantGaramond-VariableFont_wght.ttf'),
+    [AppFonts.displayMediumItalic]: CormorantGaramond_500Medium_Italic,
     [AppFonts.playfairRegular]: require('../assets/fonts/PlayfairDisplay-Regular.ttf'),
     [AppFonts.playfairMedium]: require('../assets/fonts/PlayfairDisplay-Medium.ttf'),
-    [AppFonts.playfairItalic]: require('../assets/fonts/PlayfairDisplay-Italic.ttf'),
   });
 
   useEffect(() => {
@@ -60,22 +62,19 @@ export default function RootLayout() {
               launch with no connection opens on the last data the app saw
               rather than on empty states. */}
           <PersistQueryClientProvider client={queryClient} persistOptions={persistOptions}>
-            <PlayerProvider>
-              <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: 'transparent' } }}>
+            <AccountRequiredPromptProvider>
+              <PlayerProvider>
+                <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: 'transparent' } }}>
                 <Stack.Screen name="index" options={{ headerShown: false }} />
                 <Stack.Screen name="why-passage" options={{ headerShown: false }} />
                 <Stack.Screen name="what-it-does" options={{ headerShown: false }} />
                 <Stack.Screen name="select-focus" options={{ headerShown: false }} />
                 <Stack.Screen name="create-account" options={{ headerShown: false }} />
-                <Stack.Screen name="environment" options={{ headerShown: false }} />
                 <Stack.Screen name="stress-intro-1" options={{ headerShown: false }} />
                 <Stack.Screen name="stress-intro-2" options={{ headerShown: false }} />
-                <Stack.Screen name="how-it-works" options={{ headerShown: false }} />
                 <Stack.Screen name="trusted" options={{ headerShown: false }} />
                 <Stack.Screen name="backed-by-science" options={{ headerShown: false }} />
-                 <Stack.Screen name="the-promise" options={{ headerShown: false }} />
                 <Stack.Screen name="unique" options={{ headerShown: false }} />
-                <Stack.Screen name="passage-help" options={{ headerShown: false }} />
                 <Stack.Screen name="welcome" options={{ headerShown: false }} />
                 <Stack.Screen name="login" options={{ headerShown: false }} />
                 <Stack.Screen name="verify-email" options={{ headerShown: false }} />
@@ -91,6 +90,13 @@ export default function RootLayout() {
                 <Stack.Screen name="onboarding/sounds-to-avoid" options={{ headerShown: false }} />
                 <Stack.Screen name="onboarding/detail-preference" options={{ headerShown: false }} />
                 <Stack.Screen name="onboarding/session-length" options={{ headerShown: false }} />
+                <Stack.Screen name="onboarding/relax-science" options={{ headerShown: false }} />
+                <Stack.Screen name="onboarding/relax-main-goal" options={{ headerShown: false }} />
+                <Stack.Screen name="onboarding/relax-causes" options={{ headerShown: false }} />
+                <Stack.Screen name="onboarding/relax-calming-moments" options={{ headerShown: false }} />
+                <Stack.Screen name="onboarding/relax-ritual" options={{ headerShown: false }} />
+                <Stack.Screen name="onboarding/relax-your-fit" options={{ headerShown: false }} />
+                <Stack.Screen name="onboarding/relax-trust" options={{ headerShown: false }} />
                 <Stack.Screen name="onboarding/the-ritual" options={{ headerShown: false }} />
                 <Stack.Screen name="onboarding/your-fit" options={{ headerShown: false }} />
                 <Stack.Screen name="onboarding/trust" options={{ headerShown: false }} />
@@ -113,10 +119,11 @@ export default function RootLayout() {
                 />
                 <Stack.Screen name="auth/callback" options={{ headerShown: false }} />
                 <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />
-              </Stack>
-              {/* `light` means light bar content, i.e. white navigation arrows. */}
-              <SystemBars style={{ navigationBar: 'light', statusBar: 'light' }} />
-            </PlayerProvider>
+                </Stack>
+                {/* `light` means light bar content, i.e. white navigation arrows. */}
+                <SystemBars style={{ navigationBar: 'light', statusBar: 'light' }} />
+              </PlayerProvider>
+            </AccountRequiredPromptProvider>
           </PersistQueryClientProvider>
         </ThemeProvider>
       </SafeAreaProvider>

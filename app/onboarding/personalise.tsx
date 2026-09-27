@@ -14,6 +14,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { OnboardingBackButton } from '@/components/onboarding/OnboardingBackButton';
 import { OnboardingContinueButton } from '@/components/onboarding/OnboardingContinueButton';
 import type { ModeId } from '@/constants/modes';
 import { AppFonts } from '@/constants/theme';
@@ -23,6 +24,8 @@ import {
 } from '@/lib/onboarding';
 
 const brandIcon = require('@/assets/images/passage-brand-assets/screens-icon.webp');
+const focusBackground = require('@/assets/images/personalise-focus-background.webp');
+const sleepBackground = require('@/assets/images/personalise-sleep-background.webp');
 
 const FOCUS_CONTEXTS = [
   {
@@ -73,11 +76,16 @@ const SLEEP_CONTEXTS = [
 const FOCUS_DURATIONS = ['25 min', '45 min', '90+ min'] as const;
 const SLEEP_DURATIONS = ['20 min', '45 min', '90+ min'] as const;
 
+function durationMinutes(value: string): number {
+  return Number.parseInt(value, 10);
+}
+
 export default function PersonaliseScreen() {
   const router = useRouter();
   const [mode, setMode] = useState<ModeId>('focus');
-  const [selectedContext, setSelectedContext] = useState<string>('desk');
-  const [selectedDuration, setSelectedDuration] = useState<string>('45 min');
+  const [selectedContexts, setSelectedContexts] = useState<string[]>([]);
+  const [selectedDuration, setSelectedDuration] = useState<number | null>(null);
+  const [hydrating, setHydrating] = useState(true);
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
 
@@ -86,23 +94,28 @@ export default function PersonaliseScreen() {
     const hydrate = async () => {
       const answers = await getOnboardingAnswers();
       if (!active) return;
-      if (answers.startingMode) {
-        setMode(answers.startingMode);
-      }
-      if (answers.environments && answers.environments.length > 0) {
-        setSelectedContext(answers.environments[0]);
-      } else if (answers.startingMode === 'sleep') {
-        setSelectedContext('falling-asleep');
-      } else {
-        setSelectedContext('desk');
-      }
-      if (answers.sessionLength) {
-        setSelectedDuration(answers.sessionLength);
-      } else {
-        setSelectedDuration('45 min');
-      }
+      const savedMode = answers.mode ?? answers.startingMode ?? 'focus';
+      const availableContexts =
+        savedMode === 'sleep' ? SLEEP_CONTEXTS : FOCUS_CONTEXTS;
+      setMode(savedMode);
+      setSelectedContexts(
+        availableContexts
+          .filter(
+            (item) =>
+              answers.mode_areas.includes(item.label) ||
+              answers.mode_areas.includes(item.id)
+          )
+          .map((item) => item.label)
+      );
+      setSelectedDuration(answers.target_minutes);
     };
-    void hydrate();
+    void hydrate()
+      .catch(() => {
+        if (active) setSaveError('We could not load your saved choices.');
+      })
+      .finally(() => {
+        if (active) setHydrating(false);
+      });
     return () => {
       active = false;
     };
@@ -113,15 +126,23 @@ export default function PersonaliseScreen() {
   const contexts = isSleep ? SLEEP_CONTEXTS : FOCUS_CONTEXTS;
   const durations = isSleep ? SLEEP_DURATIONS : FOCUS_DURATIONS;
 
+  const toggleContext = (label: string) => {
+    setSaveError(null);
+    setSelectedContexts((current) =>
+      current.includes(label)
+        ? current.filter((item) => item !== label)
+        : [...current, label]
+    );
+  };
+
   const handleContinue = async () => {
-    if (!selectedContext || !selectedDuration || saving) return;
+    if (hydrating || selectedContexts.length === 0 || !selectedDuration || saving) return;
     setSaving(true);
     setSaveError(null);
     try {
       await saveOnboardingAnswers({
-        environments: [selectedContext],
-        preferredSounds: [selectedContext],
-        sessionLength: selectedDuration,
+        mode_areas: selectedContexts,
+        target_minutes: selectedDuration,
       });
       router.push('/backed-by-science' as Href);
     } catch {
@@ -133,6 +154,12 @@ export default function PersonaliseScreen() {
 
   return (
     <View style={styles.screen}>
+      <ImageBackground
+        resizeMode="cover"
+        source={isSleep ? sleepBackground : focusBackground}
+        style={StyleSheet.absoluteFill}
+      />
+
       <SafeAreaView edges={['top', 'bottom']} style={styles.safeArea}>
         {/* Header with back button and centered brand */}
         <View style={styles.header}>
@@ -142,13 +169,10 @@ export default function PersonaliseScreen() {
             <Text style={styles.brandText}>Passage</Text>
           </View>
 
-          <Pressable
-            accessibilityLabel="Go back"
-            hitSlop={12}
+          <OnboardingBackButton
             onPress={() => router.back()}
-            style={({ pressed }) => [styles.backButton, pressed && styles.pressed]}>
-            <Ionicons color="#FFFFFF" name="chevron-back" size={22} />
-          </Pressable>
+            style={styles.backButtonLayer}
+          />
 
           <View style={styles.headerSpacer} />
         </View>
@@ -171,19 +195,19 @@ export default function PersonaliseScreen() {
           {/* 2x2 Grid */}
           <View style={styles.grid}>
             {contexts.map((item) => {
-              const isSelected = selectedContext === item.id;
+              const isSelected = selectedContexts.includes(item.label);
               return (
                 <Pressable
-                  accessibilityRole="button"
-                  accessibilityState={{ selected: isSelected }}
+                  accessibilityRole="checkbox"
+                  accessibilityState={{ checked: isSelected }}
+                  disabled={hydrating}
                   key={item.id}
-                  onPress={() => setSelectedContext(item.id)}
-                  style={({ pressed }) => [
+                  onPress={() => toggleContext(item.label)}
+                  style={[
                     styles.card,
                     isSelected
                       ? [styles.cardSelected, { borderColor: themeColor }]
                       : styles.cardUnselected,
-                    pressed && styles.pressedCard,
                   ]}>
                   <ImageBackground
                     resizeMode="cover"
@@ -228,19 +252,23 @@ export default function PersonaliseScreen() {
           {/* Duration Pills */}
           <View style={styles.durationRow}>
             {durations.map((dur) => {
-              const isSelected = selectedDuration === dur;
+              const minutes = durationMinutes(dur);
+              const isSelected = selectedDuration === minutes;
               return (
                 <Pressable
-                  accessibilityRole="button"
+                  accessibilityRole="radio"
                   accessibilityState={{ selected: isSelected }}
+                  disabled={hydrating}
                   key={dur}
-                  onPress={() => setSelectedDuration(dur)}
-                  style={({ pressed }) => [
+                  onPress={() => {
+                    setSaveError(null);
+                    setSelectedDuration(minutes);
+                  }}
+                  style={[
                     styles.durationPill,
                     isSelected
                       ? [styles.durationPillSelected, { backgroundColor: themeColor }]
                       : styles.durationPillUnselected,
-                    pressed && styles.pressedPill,
                   ]}>
                   <Text
                     style={[
@@ -258,7 +286,7 @@ export default function PersonaliseScreen() {
         <View style={styles.footer}>
           {saveError ? <Text style={styles.errorText}>{saveError}</Text> : null}
           <OnboardingContinueButton
-            disabled={!selectedContext || !selectedDuration}
+            disabled={hydrating || selectedContexts.length === 0 || !selectedDuration}
             label="CONTINUE"
             loading={saving}
             onPress={() => void handleContinue()}
@@ -272,11 +300,7 @@ export default function PersonaliseScreen() {
 }
 
 const styles = StyleSheet.create({
-  backButton: {
-    alignItems: 'center',
-    height: 40,
-    justifyContent: 'center',
-    width: 40,
+  backButtonLayer: {
     zIndex: 1,
   },
   brandCenterAbsolute: {
@@ -304,6 +328,7 @@ const styles = StyleSheet.create({
     marginLeft: 9,
   },
   card: {
+    borderWidth: 1,
     borderRadius: 14,
     height: 136,
     justifyContent: 'space-between',
@@ -314,6 +339,7 @@ const styles = StyleSheet.create({
   cardCheck: {
     alignItems: 'center',
     alignSelf: 'flex-end',
+    borderWidth: 1.5,
     borderRadius: 12,
     height: 24,
     justifyContent: 'center',
@@ -321,25 +347,24 @@ const styles = StyleSheet.create({
   },
   cardCheckSelected: {
     backgroundColor: '#F4B34C',
+    borderColor: 'transparent',
   },
   cardCheckUnselected: {
     backgroundColor: 'rgba(0, 0, 0, 0.35)',
     borderColor: 'rgba(255, 255, 255, 0.45)',
-    borderWidth: 1.5,
   },
   cardLabel: {
     color: '#FFFFFF',
     fontFamily: AppFonts.sansSemiBold,
-    fontSize: 14,
+    fontSize: 15.5,
     fontWeight: '600',
+    lineHeight: 20,
   },
   cardSelected: {
     borderColor: '#F4B34C',
-    borderWidth: 1.5,
   },
   cardUnselected: {
     borderColor: '#26282E',
-    borderWidth: 1,
   },
   dividerContainer: {
     alignItems: 'center',
@@ -354,12 +379,13 @@ const styles = StyleSheet.create({
   dividerText: {
     color: '#7E7A74',
     fontFamily: AppFonts.sansSemiBold,
-    fontSize: 10,
+    fontSize: 11,
     letterSpacing: 1.2,
     paddingHorizontal: 10,
   },
   durationPill: {
     alignItems: 'center',
+    borderWidth: 1,
     borderRadius: 12,
     flex: 1,
     height: 44,
@@ -367,27 +393,26 @@ const styles = StyleSheet.create({
   },
   durationPillSelected: {
     backgroundColor: '#F4B34C',
+    borderColor: 'transparent',
   },
   durationPillUnselected: {
     backgroundColor: '#141518',
     borderColor: '#26282E',
-    borderWidth: 1,
   },
   durationRow: {
     flexDirection: 'row',
     gap: 10,
   },
   durationText: {
-    fontSize: 14,
+    fontFamily: AppFonts.sansMedium,
+    fontSize: 16,
+    fontWeight: '500',
   },
   durationTextSelected: {
     color: '#0B0B0D',
-    fontFamily: AppFonts.sansBold,
-    fontWeight: '700',
   },
   durationTextUnselected: {
     color: '#EDE6DD',
-    fontFamily: AppFonts.sansMedium,
   },
   errorText: {
     color: '#D9A39B',
@@ -423,15 +448,6 @@ const styles = StyleSheet.create({
     width: 40,
     zIndex: 1,
   },
-  pressed: {
-    opacity: 0.7,
-  },
-  pressedCard: {
-    opacity: 0.88,
-  },
-  pressedPill: {
-    opacity: 0.8,
-  },
   safeArea: {
     flex: 1,
   },
@@ -445,18 +461,18 @@ const styles = StyleSheet.create({
     paddingTop: 12,
   },
   subtitle: {
-    color: '#9E9A92',
+    color: '#FFFFFF',
     fontFamily: AppFonts.sansRegular,
-    fontSize: 14,
-    lineHeight: 21,
+    fontSize: 16,
+    lineHeight: 24,
     marginTop: 8,
   },
   title: {
     color: '#FFFFFF',
     fontFamily: AppFonts.playfairRegular,
-    fontSize: 34,
+    fontSize: 40,
     letterSpacing: -0.3,
-    lineHeight: 40,
+    lineHeight: 46,
   },
   titleContainer: {
     marginTop: 4,

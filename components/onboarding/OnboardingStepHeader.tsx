@@ -1,13 +1,13 @@
-import React from 'react';
-import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
-import { HalcyonColors } from '@/constants/design';
 import { AppFonts } from '@/constants/theme';
+import { Image, StyleSheet, Text, View } from 'react-native';
+
+import { OnboardingBackButton } from '@/components/onboarding/OnboardingBackButton';
 
 const appIcon = require('@/assets/images/passage-brand-assets/screens-icon.webp');
 
 type OnboardingStepHeaderProps = {
-  currentStep: number; // 1 to 4
+  accentColor?: string;
+  currentStep: number;
   totalSteps?: number; // default 4
   onBack?: () => void;
   showBack?: boolean;
@@ -18,12 +18,15 @@ export const PASSAGE_GOLD = '#EAA850';
 export const PASSAGE_SLEEP = '#9FAEFD';
 
 export function OnboardingStepHeader({
+  accentColor,
   currentStep,
   totalSteps = 4,
   onBack,
   showBack = false,
-  activeColor = PASSAGE_GOLD,
+  activeColor,
 }: OnboardingStepHeaderProps) {
+  const resolvedActiveColor = accentColor ?? activeColor ?? PASSAGE_GOLD;
+
   return (
     <View style={styles.container}>
       <View style={styles.topRow}>
@@ -35,14 +38,7 @@ export function OnboardingStepHeader({
 
         <View style={styles.sideSlot}>
           {showBack && onBack ? (
-            <Pressable
-              accessibilityLabel="Go back"
-              hitSlop={12}
-              onPress={onBack}
-              style={({ pressed }) => [styles.backButton, pressed && styles.backButtonPressed]}
-            >
-              <Ionicons color="#FFFFFF" name="chevron-back" size={22} />
-            </Pressable>
+            <OnboardingBackButton onPress={onBack} />
           ) : null}
         </View>
 
@@ -61,7 +57,13 @@ export function OnboardingStepHeader({
               style={[
                 styles.segment,
                 isActive
-                  ? [styles.activeSegment, { backgroundColor: activeColor, shadowColor: activeColor }]
+                  ? [
+                      styles.activeSegment,
+                      {
+                        backgroundColor: resolvedActiveColor,
+                        shadowColor: resolvedActiveColor,
+                      },
+                    ]
                   : styles.inactiveSegment,
               ]}
             />
@@ -79,15 +81,6 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 0 },
     shadowOpacity: 0.6,
     shadowRadius: 3,
-  },
-  backButton: {
-    alignItems: 'center',
-    height: 40,
-    justifyContent: 'center',
-    width: 40,
-  },
-  backButtonPressed: {
-    opacity: 0.6,
   },
   brandCenterAbsolute: {
     alignItems: 'center',

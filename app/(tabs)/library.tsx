@@ -19,7 +19,7 @@ import { FilterChip } from '@/components/FilterChip';
 import { FilterSheet } from '@/components/FilterSheet';
 import { SortSheet } from '@/components/SortSheet';
 import { SoundscapeRow, SoundscapeRowSkeletonList } from '@/components/SoundscapeRow';
-import { HalcyonColors, HalcyonRadius, HalcyonSpacing } from '@/constants/design';
+import { HalcyonColors, HalcyonRadius, HalcyonSpacing, Typography } from '@/constants/design';
 import {
   countActiveFilters,
   EMPTY_FILTERS,
@@ -372,10 +372,7 @@ const styles = StyleSheet.create({
     paddingTop: 12,
   },
   heading: {
-    color: HalcyonColors.textPrimary,
-    fontFamily: AppFonts.displayRegular,
-    fontSize: 34,
-    lineHeight: 42,
+    ...Typography.screenHeading,
   },
   pressed: {
     opacity: 0.74,

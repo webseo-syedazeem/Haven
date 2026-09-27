@@ -13,11 +13,11 @@ export const AppFonts = {
   sansBold: 'Inter',
   displayRegular: 'CormorantGaramond',
   displayMedium: 'CormorantGaramond',
+  displayMediumItalic: 'CormorantGaramond-MediumItalic',
   displaySemiBold: 'CormorantGaramond',
   displayBold: 'CormorantGaramond',
   playfairRegular: 'PlayfairDisplay',
   playfairMedium: 'PlayfairDisplay-Medium',
-  playfairItalic: 'PlayfairDisplay-Italic',
 };
 
 export const Colors = {

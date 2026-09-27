@@ -3,7 +3,11 @@ import { Ionicons } from '@expo/vector-icons';
 import React from 'react';
 import { Pressable, StyleSheet, Text, View, type StyleProp, type ViewStyle } from 'react-native';
 
+import { HalcyonRadius } from '@/constants/design';
+import { useSinglePress } from '@/hooks/useSinglePress';
+
 type OnboardingPillButtonProps = {
+  arrowAtEnd?: boolean;
   label: string;
   variant?: 'white' | 'gold' | 'sleep' | 'lavender';
   onPress: () => void;
@@ -12,6 +16,7 @@ type OnboardingPillButtonProps = {
 };
 
 export function OnboardingPillButton({
+  arrowAtEnd = false,
   label,
   variant = 'white',
   onPress,
@@ -20,12 +25,13 @@ export function OnboardingPillButton({
 }: OnboardingPillButtonProps) {
   const isGold = variant === 'gold';
   const isSleep = variant === 'sleep' || variant === 'lavender';
+  const handlePress = useSinglePress(onPress);
 
   return (
     <Pressable
       accessibilityRole="button"
       disabled={disabled}
-      onPress={onPress}
+      onPress={handlePress}
       style={({ pressed }) => [
         styles.button,
         isSleep ? styles.sleepButton : isGold ? styles.goldButton : styles.whiteButton,
@@ -34,9 +40,14 @@ export function OnboardingPillButton({
         style,
       ]}
     >
-      <View style={styles.content}>
+      <View style={[styles.content, arrowAtEnd && styles.contentWithEndArrow]}>
         <Text style={styles.label}>{label}</Text>
-        <Ionicons color="#0B0B0D" name="arrow-forward" size={18} style={styles.icon} />
+        <Ionicons
+          color="#0B0B0D"
+          name="arrow-forward"
+          size={20}
+          style={arrowAtEnd ? styles.iconAtEnd : styles.iconInline}
+        />
       </View>
     </Pressable>
   );
@@ -45,16 +56,20 @@ export function OnboardingPillButton({
 const styles = StyleSheet.create({
   button: {
     alignItems: 'center',
-    borderRadius: 28,
-    height: 54,
+    borderRadius: HalcyonRadius.pill,
     justifyContent: 'center',
-    paddingHorizontal: 24,
+    minHeight: 60,
+    paddingHorizontal: 20,
     width: '100%',
   },
   content: {
     alignItems: 'center',
     flexDirection: 'row',
     justifyContent: 'center',
+  },
+  contentWithEndArrow: {
+    position: 'relative',
+    width: '100%',
   },
   disabled: {
     opacity: 0.5,
@@ -65,15 +80,20 @@ const styles = StyleSheet.create({
   sleepButton: {
     backgroundColor: '#9FAEFD',
   },
-  icon: {
-    marginLeft: 10,
+  iconAtEnd: {
+    position: 'absolute',
+    right: 0,
+  },
+  iconInline: {
+    marginLeft: 8,
   },
   label: {
     color: '#0B0B0D',
-    fontFamily: AppFonts.sansMedium,
-    fontSize: 14,
-    fontWeight: '700',
+    fontFamily: AppFonts.sansSemiBold,
+    fontSize: 16,
+    fontWeight: '600',
     letterSpacing: 0.8,
+    lineHeight: 22,
     textTransform: 'uppercase',
   },
   pressed: {

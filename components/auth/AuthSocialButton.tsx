@@ -63,10 +63,10 @@ const styles = StyleSheet.create({
   },
   label: {
     color: HalcyonColors.textPrimary,
-    fontFamily: AppFonts.sansMedium,
-    fontSize: 13,
-    fontWeight: '500',
-    lineHeight: 18,
+    fontFamily: AppFonts.sansSemiBold,
+    fontSize: 16,
+    fontWeight: '600',
+    lineHeight: 22,
   },
   pressed: {
     backgroundColor: HalcyonColors.surfaceRaised,

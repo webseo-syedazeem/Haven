@@ -133,7 +133,7 @@ export default function AuthCallback() {
           return;
         }
 
-        routeForOnboardingStatus(router, me);
+        await routeForOnboardingStatus(router, me);
       } catch (error) {
         if (!active) return;
         handledUrlRef.current = null;

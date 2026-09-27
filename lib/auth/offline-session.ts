@@ -121,7 +121,7 @@ export async function wasLoggedIn(): Promise<boolean | null> {
 export async function markLoggedIn(): Promise<void> {
   // A real session now exists — an earlier "Continue as guest" on this
   // device must not keep gating authenticated queries.
-  setGuestModeActive(false);
+  await setGuestModeActive(false);
   await patch({ isLogged: true });
 }
 

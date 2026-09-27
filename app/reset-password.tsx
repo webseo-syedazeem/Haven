@@ -1,12 +1,20 @@
-import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
-import { Alert, KeyboardAvoidingView, Platform, StyleSheet, Text, View } from 'react-native';
+import {
+  Alert,
+  KeyboardAvoidingView,
+  Platform,
+  Pressable,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native';
 
+import { AuthLegalFooter } from '@/components/auth/AuthLegalFooter';
 import { AuthTextField } from '@/components/auth/AuthTextField';
 import { OnboardingContinueButton } from '@/components/onboarding/OnboardingContinueButton';
 import { OnboardingScaffold } from '@/components/onboarding/OnboardingScaffold';
-import { HalcyonColors } from '@/constants/design';
+import { HalcyonColors, Typography } from '@/constants/design';
 import { AppFonts } from '@/constants/theme';
 import { forgotPassword } from '@/lib/haven-api';
 
@@ -51,14 +59,8 @@ export default function ResetPasswordScreen() {
     <KeyboardAvoidingView
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       style={styles.keyboardView}>
-      <OnboardingScaffold
-        contentContainerStyle={styles.scrollContent}
-        onBack={() => router.back()}>
+      <OnboardingScaffold contentContainerStyle={styles.scrollContent} footer={<AuthLegalFooter />}>
         <View style={styles.content}>
-          <View style={styles.iconCircle}>
-            <Ionicons color={HalcyonColors.accent} name="mail-outline" size={27} />
-          </View>
-
           <Text style={styles.heading}>Reset your password</Text>
           <Text style={styles.description}>
             Enter the email address linked to your account and we&apos;ll send you a reset link.
@@ -98,6 +100,16 @@ export default function ResetPasswordScreen() {
           <Text style={styles.helperText}>
             It can take a minute to arrive. Check your spam folder if you don&apos;t see it.
           </Text>
+
+          <Pressable
+            accessibilityRole="button"
+            hitSlop={8}
+            onPress={() => (router.canGoBack() ? router.back() : router.replace('/login'))}
+            style={styles.signInButton}>
+            <Text style={styles.signInPrompt}>
+              Remember your password? <Text style={styles.signInLink}>Sign in</Text>
+            </Text>
+          </Pressable>
         </View>
       </OnboardingScaffold>
     </KeyboardAvoidingView>
@@ -113,10 +125,8 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   description: {
-    color: HalcyonColors.textSecondary,
-    fontFamily: AppFonts.sansRegular,
-    fontSize: 14,
-    lineHeight: 21,
+    ...Typography.body,
+    color: 'rgba(255, 255, 255, 0.72)',
     marginTop: 10,
     maxWidth: 350,
     textAlign: 'center',
@@ -134,32 +144,18 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   heading: {
+    ...Typography.screenHeading,
     color: HalcyonColors.textPrimary,
-    fontFamily: AppFonts.displayRegular,
-    fontSize: 36,
-    fontWeight: '400',
-    lineHeight: 41,
-    marginTop: 24,
     textAlign: 'center',
   },
   helperText: {
-    color: HalcyonColors.textSecondary,
+    color: 'rgba(255, 255, 255, 0.56)',
     fontFamily: AppFonts.sansRegular,
-    fontSize: 11,
-    lineHeight: 17,
+    fontSize: 13,
+    lineHeight: 19,
     marginTop: 18,
     paddingHorizontal: 18,
     textAlign: 'center',
-  },
-  iconCircle: {
-    alignItems: 'center',
-    alignSelf: 'center',
-    borderColor: HalcyonColors.accent,
-    borderRadius: 28,
-    borderWidth: 1,
-    height: 56,
-    justifyContent: 'center',
-    width: 56,
   },
   keyboardView: {
     backgroundColor: HalcyonColors.background,
@@ -167,6 +163,22 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     justifyContent: 'center',
+  },
+  signInButton: {
+    alignItems: 'center',
+    marginTop: 22,
+    paddingVertical: 6,
+  },
+  signInLink: {
+    color: HalcyonColors.accent,
+    fontFamily: AppFonts.sansSemiBold,
+    fontWeight: '600',
+  },
+  signInPrompt: {
+    color: 'rgba(255, 255, 255, 0.72)',
+    fontFamily: AppFonts.sansRegular,
+    fontSize: 15,
+    lineHeight: 22,
   },
   submitButton: {
     marginTop: 5,

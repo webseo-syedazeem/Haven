@@ -10,9 +10,8 @@ import { ModeCard, ModeCardSkeleton } from '@/components/ModeCard';
 import { ProfileAvatar } from '@/components/profile/ProfileAvatar';
 import { SectionRail } from '@/components/SectionRail';
 import { SoundscapeCard } from '@/components/SoundscapeCard';
-import { HALCYON_TAB_BAR_HEIGHT, HalcyonColors, HalcyonSpacing } from '@/constants/design';
+import { HALCYON_TAB_BAR_HEIGHT, HalcyonColors, HalcyonSpacing, Typography } from '@/constants/design';
 import { MODES, type ModeConfig } from '@/constants/modes';
-import { AppFonts } from '@/constants/theme';
 import {
   useContinueListening,
   useFavouriteSoundscapes,
@@ -22,6 +21,7 @@ import {
   useRecommended,
   useShortSessions,
 } from '@/hooks/useHome';
+import { useGuestModeActive, useHasSession } from '@/hooks/useSession';
 import { useUser } from '@/hooks/useUser';
 import type { Collection, Soundscape } from '@/lib/api/home';
 import { usePlayerActions, usePlayerState } from '@/lib/player/PlayerProvider';
@@ -32,6 +32,8 @@ export default function HomeScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const [refreshing, setRefreshing] = useState(false);
+  const hasSession = useHasSession();
+  const guestModeActive = useGuestModeActive();
   const { playSoundscape, resume } = usePlayerActions();
   const { soundscape: currentTrack, resumable } = usePlayerState();
 
@@ -62,12 +64,20 @@ export default function HomeScreen() {
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
     try {
+      const accountRefreshes = hasSession
+        ? [
+            userQuery.refetch(),
+            continueListening.refetch(),
+            recentlyPlayed.refetch(),
+            favourites.refetch(),
+          ]
+        : [];
+      const recommendationRefresh =
+        hasSession || guestModeActive ? [recommended.refetch()] : [];
+
       await Promise.allSettled([
-        userQuery.refetch(),
-        continueListening.refetch(),
-        recommended.refetch(),
-        recentlyPlayed.refetch(),
-        favourites.refetch(),
+        ...accountRefreshes,
+        ...recommendationRefresh,
         newToHalcyon.refetch(),
         shortSessions.refetch(),
         popularCollections.refetch(),
@@ -78,6 +88,8 @@ export default function HomeScreen() {
   }, [
     continueListening,
     favourites,
+    guestModeActive,
+    hasSession,
     newToHalcyon,
     popularCollections,
     recentlyPlayed,
@@ -212,6 +224,12 @@ export default function HomeScreen() {
 
           <SectionRail
             data={recentlyPlayed.data}
+            emptyNote={
+              hasSession
+                ? 'The soundscapes you play will show up here.'
+                : undefined
+            }
+            emptyTitle={hasSession ? 'Nothing played yet' : undefined}
             isError={recentlyPlayed.isError}
             isLoading={recentlyPlayed.isInitialLoading}
             keyExtractor={soundscapeKey}
@@ -222,6 +240,12 @@ export default function HomeScreen() {
 
           <SectionRail
             data={favourites.soundscapes}
+            emptyNote={
+              hasSession
+                ? 'Tap the heart on any soundscape to save it here.'
+                : undefined
+            }
+            emptyTitle={hasSession ? 'No favourites yet' : undefined}
             isError={favourites.isError}
             isLoading={favourites.isInitialLoading}
             keyExtractor={soundscapeKey}
@@ -296,16 +320,11 @@ const styles = StyleSheet.create({
     paddingRight: 16,
   },
   greetingLine: {
-    color: HalcyonColors.textPrimary,
-    fontFamily: AppFonts.displayRegular,
-    fontSize: 34,
-    lineHeight: 42,
+    ...Typography.screenHeading,
   },
   greetingName: {
+    ...Typography.screenHeading,
     color: HalcyonColors.accent,
-    fontFamily: AppFonts.displayRegular,
-    fontSize: 34,
-    lineHeight: 42,
   },
   greetingNameSkeleton: {
     backgroundColor: HalcyonColors.skeleton,
@@ -315,18 +334,11 @@ const styles = StyleSheet.create({
     maxWidth: 180,
   },
   subtitle: {
-    color: HalcyonColors.textSecondary,
-    fontFamily: AppFonts.sansRegular,
-    fontSize: 14,
-    lineHeight: 20,
+    ...Typography.body,
     marginTop: 10,
   },
   sectionTitle: {
-    color: HalcyonColors.textPrimary,
-    fontFamily: AppFonts.displaySemiBold,
-    fontSize: 21,
-    fontWeight: '600',
-    lineHeight: 28,
+    ...Typography.sectionHeading,
     marginBottom: 14,
   },
   modeStack: {

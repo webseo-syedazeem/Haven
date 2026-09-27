@@ -1,5 +1,4 @@
 import { Ionicons } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
 import {
   ActivityIndicator,
   Pressable,
@@ -12,22 +11,11 @@ import {
 
 import { HalcyonColors, HalcyonRadius } from '@/constants/design';
 import { AppFonts } from '@/constants/theme';
-
-const BUTTON_GRAIN = [
-  { left: '7%', opacity: 0.16, top: '24%' },
-  { left: '14%', opacity: 0.1, top: '70%' },
-  { left: '22%', opacity: 0.13, top: '42%' },
-  { left: '31%', opacity: 0.08, top: '18%' },
-  { left: '39%', opacity: 0.12, top: '76%' },
-  { left: '48%', opacity: 0.09, top: '34%' },
-  { left: '57%', opacity: 0.15, top: '62%' },
-  { left: '66%', opacity: 0.1, top: '22%' },
-  { left: '74%', opacity: 0.13, top: '48%' },
-  { left: '83%', opacity: 0.08, top: '74%' },
-  { left: '91%', opacity: 0.12, top: '30%' },
-] as const;
+import { useSinglePress } from '@/hooks/useSinglePress';
 
 type OnboardingContinueButtonProps = {
+  accentColor?: string;
+  accentPressedColor?: string;
   disabled?: boolean;
   label?: string;
   loading?: boolean;
@@ -39,6 +27,8 @@ type OnboardingContinueButtonProps = {
 };
 
 export function OnboardingContinueButton({
+  accentColor,
+  accentPressedColor,
   disabled = false,
   label = 'Continue',
   loading = false,
@@ -48,8 +38,10 @@ export function OnboardingContinueButton({
   variant = 'primary',
 }: OnboardingContinueButtonProps) {
   const unavailable = disabled || loading;
+  const handlePress = useSinglePress(onPress);
   const isLavender = variant === 'lavender';
-  const isAmber = (variant === 'amber' || showArrow) && !isLavender;
+  const isAmber = variant === 'amber';
+  const usesCustomAccent = Boolean(accentColor);
   const labelColor =
     variant === 'secondary'
       ? HalcyonColors.textPrimary
@@ -63,28 +55,31 @@ export function OnboardingContinueButton({
       accessibilityRole="button"
       accessibilityState={{ disabled: unavailable, busy: loading }}
       disabled={unavailable}
-      onPress={onPress}
+      onPress={handlePress}
       style={({ pressed }) => [
         styles.button,
         showArrow && styles.pill,
         variant === 'secondary' && styles.secondary,
         isAmber && styles.amber,
         isLavender && styles.lavender,
+        usesCustomAccent ? { backgroundColor: accentColor } : null,
         unavailable && styles.disabled,
         pressed &&
           !unavailable &&
-          (isLavender
-            ? styles.lavenderPressed
-            : isAmber
-              ? styles.amberPressed
-              : styles.pressed),
+          (usesCustomAccent
+            ? [
+                styles.pressedScale,
+                { backgroundColor: accentPressedColor ?? accentColor },
+              ]
+            : isLavender
+              ? styles.lavenderPressed
+              : isAmber
+                ? styles.amberPressed
+                : styles.pressed),
         style,
       ]}>
       {loading ? (
-        <ActivityIndicator
-          color={variant === 'primary' ? HalcyonColors.background : HalcyonColors.accent}
-          size="small"
-        />
+        <ActivityIndicator color={labelColor} size="small" />
       ) : (
         <View style={styles.labelRow}>
           <Text
@@ -96,7 +91,7 @@ export function OnboardingContinueButton({
             {label}
           </Text>
           {showArrow ? (
-            <Ionicons color={labelColor} name="arrow-forward" size={16} style={styles.arrow} />
+            <Ionicons color={labelColor} name="arrow-forward" size={20} style={styles.arrow} />
           ) : null}
         </View>
       )}
@@ -113,7 +108,7 @@ const styles = StyleSheet.create({
     backgroundColor: HalcyonColors.accent,
     borderRadius: HalcyonRadius.card,
     justifyContent: 'center',
-    minHeight: 54,
+    minHeight: 60,
     paddingHorizontal: 20,
     width: '100%',
   },
@@ -123,9 +118,9 @@ const styles = StyleSheet.create({
   label: {
     color: HalcyonColors.background,
     fontFamily: AppFonts.sansSemiBold,
-    fontSize: 15,
+    fontSize: 16,
     fontWeight: '600',
-    lineHeight: 20,
+    lineHeight: 22,
   },
   labelRow: {
     alignItems: 'center',
@@ -138,10 +133,13 @@ const styles = StyleSheet.create({
   },
   pill: {
     borderRadius: HalcyonRadius.pill,
-    minHeight: 56,
+    minHeight: 60,
   },
   pressed: {
     backgroundColor: HalcyonColors.accentPressed,
+    transform: [{ scale: 0.995 }],
+  },
+  pressedScale: {
     transform: [{ scale: 0.995 }],
   },
   secondary: {

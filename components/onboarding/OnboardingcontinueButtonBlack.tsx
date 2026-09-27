@@ -9,8 +9,9 @@ import {
   type ViewStyle,
 } from 'react-native';
 
-import { HalcyonColors } from '@/constants/design';
+import { HalcyonColors, HalcyonRadius } from '@/constants/design';
 import { AppFonts } from '@/constants/theme';
+import { useSinglePress } from '@/hooks/useSinglePress';
 
 
 type OnboardingContinueButtonProps = {
@@ -18,7 +19,7 @@ type OnboardingContinueButtonProps = {
   label?: string;
   loading?: boolean;
   onPress?: () => void;
-  /** Trailing arrow, off by default so existing screens are unaffected. */
+  /** Onboarding CTAs use the same trailing-arrow treatment throughout. */
   showArrow?: boolean;
   style?: StyleProp<ViewStyle>;
 };
@@ -29,11 +30,12 @@ export function OnboardingContinueButtonBlack({
   label = 'Continue',
   loading = false,
   onPress,
-  showArrow = false,
+  showArrow = true,
   style,
 }: OnboardingContinueButtonProps) {
 
   const unavailable = disabled || loading;
+  const handlePress = useSinglePress(onPress);
 
   return (
     <Pressable
@@ -43,7 +45,7 @@ export function OnboardingContinueButtonBlack({
         busy: loading,
       }}
       disabled={unavailable}
-      onPress={onPress}
+      onPress={handlePress}
       style={({ pressed }) => [
         styles.button,
         unavailable && styles.disabled,
@@ -63,7 +65,7 @@ export function OnboardingContinueButtonBlack({
             {label}
           </Text>
           {showArrow ? (
-            <Ionicons color="#E8E1D8" name="arrow-forward" size={16} style={styles.arrow} />
+            <Ionicons color="#E8E1D8" name="arrow-forward" size={20} style={styles.arrow} />
           ) : null}
         </View>
       )}
@@ -89,12 +91,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
 
-    height: 56,
+    minHeight: 60,
     width: '100%',
 
     backgroundColor: '#151515',
 
-    borderRadius: 18,
+    borderRadius: HalcyonRadius.pill,
+    paddingHorizontal: 20,
 
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.14)',
@@ -121,12 +124,10 @@ const styles = StyleSheet.create({
     fontWeight: '600',
 
     lineHeight: 22,
-
-    letterSpacing: 0.2,
   },
 
   labelUppercase: {
-    letterSpacing: 0.6,
+    letterSpacing: 0.8,
     textTransform: 'uppercase',
   },
 
@@ -134,7 +135,7 @@ const styles = StyleSheet.create({
   pressed: {
     transform: [
       {
-        scale: 0.99,
+        scale: 0.995,
       },
     ],
 

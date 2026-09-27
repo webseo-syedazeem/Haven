@@ -1,4 +1,3 @@
-import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import type { Href } from 'expo-router';
 import { useRouter } from 'expo-router';
@@ -6,7 +5,6 @@ import { useEffect, useState } from 'react';
 import {
   Image,
   ImageBackground,
-  Pressable,
   ScrollView,
   StyleSheet,
   Text,
@@ -15,13 +13,15 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Svg, { Defs, LinearGradient as SvgLinearGradient, Path, Stop } from 'react-native-svg';
 
+import { OnboardingBackButton } from '@/components/onboarding/OnboardingBackButton';
 import { OnboardingContinueButton } from '@/components/onboarding/OnboardingContinueButton';
 import type { ModeId } from '@/constants/modes';
 import { AppFonts } from '@/constants/theme';
 import { getOnboardingAnswers } from '@/lib/onboarding';
 
 const brandIcon = require('@/assets/images/passage-brand-assets/screens-icon.webp');
-const duskMountains = require('@/assets/images/science-dusk.webp');
+const focusScienceBackground = require('@/assets/images/science-focus-mountain-lake-blurred.webp');
+const sleepScienceBackground = require('@/assets/images/science-mountain-lake-blurred.webp');
 
 export default function BackedByScienceScreen() {
   const router = useRouter();
@@ -51,7 +51,7 @@ export default function BackedByScienceScreen() {
     <View style={styles.screen}>
       <ImageBackground
         resizeMode="cover"
-        source={duskMountains}
+        source={isSleep ? sleepScienceBackground : focusScienceBackground}
         style={styles.backgroundImage}>
         <LinearGradient
           colors={[
@@ -73,13 +73,10 @@ export default function BackedByScienceScreen() {
               <Text style={styles.brandText}>Passage</Text>
             </View>
 
-            <Pressable
-              accessibilityLabel="Go back"
-              hitSlop={12}
+            <OnboardingBackButton
               onPress={() => router.back()}
-              style={({ pressed }) => [styles.backButton, pressed && styles.pressed]}>
-              <Ionicons color="#FFFFFF" name="chevron-back" size={22} />
-            </Pressable>
+              style={styles.backButtonLayer}
+            />
 
             <View style={styles.headerSpacer} />
           </View>
@@ -88,64 +85,66 @@ export default function BackedByScienceScreen() {
             contentContainerStyle={styles.scrollContent}
             keyboardShouldPersistTaps="handled"
             showsVerticalScrollIndicator={false}>
-            <View style={styles.titleContainer}>
-              <Text adjustsFontSizeToFit numberOfLines={1} style={styles.title}>
-                Why sound can help.
-              </Text>
-            </View>
+            <View style={styles.contentCenter}>
+              <View style={styles.titleContainer}>
+                <Text adjustsFontSizeToFit numberOfLines={1} style={styles.title}>
+                  Why sound can help.
+                </Text>
+              </View>
 
-            {/* Waveform Comparison Graphic */}
-            <View style={styles.waveformContainer}>
-              <Svg height="110" viewBox="0 0 330 110" width="100%">
-                <Defs>
-                  <SvgLinearGradient id="waveGrad" x1="0" x2="1" y1="0" y2="0">
-                    <Stop offset="0%" stopColor={spikeColor} />
-                    <Stop offset="46%" stopColor={spikeColor} />
-                    <Stop offset="54%" stopColor="#EDE6DD" />
-                    <Stop offset="100%" stopColor="#EDE6DD" />
-                  </SvgLinearGradient>
-                </Defs>
-                {/* Glow layer */}
-                <Path
-                  d="M 6 55 L 18 55 L 26 42 L 32 68 L 38 24 L 45 86 L 52 10 L 60 98 L 68 18 L 76 90 L 84 28 L 92 80 L 100 36 L 108 72 L 116 42 L 124 66 L 132 47 L 140 61 L 148 55 C 160 32, 175 32, 187 55 C 199 78, 214 78, 226 55 C 238 32, 253 32, 265 55 C 277 78, 292 78, 304 55 L 324 55"
-                  fill="none"
-                  opacity={0.35}
-                  stroke={spikeColor}
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={7}
-                />
-                {/* Main sharp stroke */}
-                <Path
-                  d="M 6 55 L 18 55 L 26 42 L 32 68 L 38 24 L 45 86 L 52 10 L 60 98 L 68 18 L 76 90 L 84 28 L 92 80 L 100 36 L 108 72 L 116 42 L 124 66 L 132 47 L 140 61 L 148 55 C 160 32, 175 32, 187 55 C 199 78, 214 78, 226 55 C 238 32, 253 32, 265 55 C 277 78, 292 78, 304 55 L 324 55"
-                  fill="none"
-                  stroke="url(#waveGrad)"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2.8}
-                />
-              </Svg>
+              {/* Waveform Comparison Graphic */}
+              <View style={styles.waveformContainer}>
+                <Svg height="110" viewBox="0 0 330 110" width="100%">
+                  <Defs>
+                    <SvgLinearGradient id="waveGrad" x1="0" x2="1" y1="0" y2="0">
+                      <Stop offset="0%" stopColor={spikeColor} />
+                      <Stop offset="46%" stopColor={spikeColor} />
+                      <Stop offset="54%" stopColor="#EDE6DD" />
+                      <Stop offset="100%" stopColor="#EDE6DD" />
+                    </SvgLinearGradient>
+                  </Defs>
+                  {/* Glow layer */}
+                  <Path
+                    d="M 6 55 L 18 55 L 26 42 L 32 68 L 38 24 L 45 86 L 52 10 L 60 98 L 68 18 L 76 90 L 84 28 L 92 80 L 100 36 L 108 72 L 116 42 L 124 66 L 132 47 L 140 61 L 148 55 C 160 32, 175 32, 187 55 C 199 78, 214 78, 226 55 C 238 32, 253 32, 265 55 C 277 78, 292 78, 304 55 L 324 55"
+                    fill="none"
+                    opacity={0.35}
+                    stroke={spikeColor}
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={7}
+                  />
+                  {/* Main sharp stroke */}
+                  <Path
+                    d="M 6 55 L 18 55 L 26 42 L 32 68 L 38 24 L 45 86 L 52 10 L 60 98 L 68 18 L 76 90 L 84 28 L 92 80 L 100 36 L 108 72 L 116 42 L 124 66 L 132 47 L 140 61 L 148 55 C 160 32, 175 32, 187 55 C 199 78, 214 78, 226 55 C 238 32, 253 32, 265 55 C 277 78, 292 78, 304 55 L 324 55"
+                    fill="none"
+                    stroke="url(#waveGrad)"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2.8}
+                  />
+                </Svg>
 
-              {/* Labels under waveform */}
-              <View style={styles.labelsRow}>
-                <View style={styles.labelCol}>
-                  <Text style={[styles.disruptionsTitle, { color: spikeColor }]}>
-                    {isSleep ? 'Sudden sound' : 'Disruptions'}
-                  </Text>
-                  <Text style={styles.labelDesc}>
-                    {isSleep
-                      ? 'The sleeping brain still\nnotices sudden change.'
-                      : 'Attention reacts to\nsudden change.'}
-                  </Text>
-                </View>
+                {/* Labels under waveform */}
+                <View style={styles.labelsRow}>
+                  <View style={styles.labelCol}>
+                    <Text style={[styles.disruptionsTitle, { color: spikeColor }]}>
+                      {isSleep ? 'Sudden sound' : 'Disruptions'}
+                    </Text>
+                    <Text style={styles.labelDesc}>
+                      {isSleep
+                        ? 'The sleeping brain still\nnotices sudden change.'
+                        : 'Attention reacts to\nsudden change.'}
+                    </Text>
+                  </View>
 
-                <View style={styles.labelCol}>
-                  <Text style={styles.steadierTitle}>A steadier sound field</Text>
-                  <Text style={styles.labelDesc}>
-                    {isSleep
-                      ? 'Steady sound can\nsoften the contrast.'
-                      : 'Layered sound can\nsoften that contrast.'}
-                  </Text>
+                  <View style={styles.labelCol}>
+                    <Text style={styles.steadierTitle}>A steadier sound field</Text>
+                    <Text style={styles.labelDesc}>
+                      {isSleep
+                        ? 'Steady sound can\nsoften the contrast.'
+                        : 'Layered sound can\nsoften that contrast.'}
+                    </Text>
+                  </View>
                 </View>
               </View>
             </View>
@@ -166,11 +165,7 @@ export default function BackedByScienceScreen() {
 }
 
 const styles = StyleSheet.create({
-  backButton: {
-    alignItems: 'center',
-    height: 40,
-    justifyContent: 'center',
-    width: 40,
+  backButtonLayer: {
     zIndex: 1,
   },
   backgroundImage: {
@@ -200,12 +195,19 @@ const styles = StyleSheet.create({
     letterSpacing: -0.3,
     marginLeft: 9,
   },
+  contentCenter: {
+    alignItems: 'center',
+    flex: 1,
+    justifyContent: 'center',
+    paddingBottom: 20,
+    width: '100%',
+  },
   disruptionsTitle: {
     color: '#F4B34C',
     fontFamily: AppFonts.sansSemiBold,
-    fontSize: 17,
+    fontSize: 18,
     fontWeight: '600',
-    marginBottom: 8,
+    marginBottom: 38,
     textAlign: 'center',
   },
   footer: {
@@ -234,18 +236,16 @@ const styles = StyleSheet.create({
   labelDesc: {
     color: '#D4CFCA',
     fontFamily: AppFonts.sansRegular,
-    fontSize: 13.5,
-    lineHeight: 19,
+    fontSize: 15,
+    lineHeight: 21,
     textAlign: 'center',
   },
   labelsRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginTop: 22,
+    marginTop: 34,
     paddingHorizontal: 4,
-  },
-  pressed: {
-    opacity: 0.7,
+    width: '100%',
   },
   safeArea: {
     flex: 1,
@@ -258,31 +258,33 @@ const styles = StyleSheet.create({
     flexGrow: 1,
     paddingBottom: 30,
     paddingHorizontal: 22,
-    paddingTop: 10,
   },
   steadierTitle: {
     color: '#EDE6DD',
     fontFamily: AppFonts.sansSemiBold,
-    fontSize: 17,
+    fontSize: 18,
     fontWeight: '600',
-    marginBottom: 8,
+    marginBottom: 38,
     textAlign: 'center',
   },
   title: {
     color: '#FFFFFF',
     fontFamily: AppFonts.playfairRegular,
-    fontSize: 40,
+    fontSize: 42,
     letterSpacing: -0.5,
-    lineHeight: 46,
+    lineHeight: 48,
+    textAlign: 'center',
   },
   titleContainer: {
-    marginBottom: 44,
-    marginTop: 6,
+    alignItems: 'center',
+    marginBottom: 52,
+    width: '100%',
   },
   waveformContainer: {
     alignItems: 'center',
+    alignSelf: 'center',
     justifyContent: 'center',
-    marginVertical: 18,
+    maxWidth: 380,
     width: '100%',
   },
 });

@@ -1,7 +1,7 @@
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import type { ReactNode } from 'react';
 
-import { HalcyonColors, HalcyonRadius, HalcyonSpacing } from '@/constants/design';
+import { HalcyonColors, HalcyonRadius, HalcyonSpacing, Typography } from '@/constants/design';
 import { AppFonts } from '@/constants/theme';
 
 const SKELETON_COUNT = 3;
@@ -25,6 +25,7 @@ type SectionRailProps<T> = {
    * Shown instead of hiding the rail when the request succeeded with no rows.
    * Left undefined, an empty rail renders nothing at all.
    */
+  emptyTitle?: string;
   emptyNote?: string;
   /** Caption under the items, e.g. what is not available without a connection. */
   note?: string;
@@ -43,6 +44,7 @@ export function SectionRail<T>({
   itemWidth = 132,
   itemHeight = 132,
   withCaptionSkeleton = true,
+  emptyTitle,
   emptyNote,
   note,
 }: SectionRailProps<T>) {
@@ -54,7 +56,7 @@ export function SectionRail<T>({
   const isEmpty = !isLoading && !hasFailed && items.length === 0;
 
   // A brand new user, or a near empty catalogue, simply drops the rail.
-  if (isEmpty && !emptyNote) return null;
+  if (isEmpty && !emptyTitle && !emptyNote) return null;
 
   return (
     <View style={styles.section}>
@@ -89,7 +91,12 @@ export function SectionRail<T>({
       ) : hasFailed ? (
         <Text style={styles.note}>Couldn&apos;t load this section. Pull to refresh.</Text>
       ) : isEmpty ? (
-        <Text style={styles.note}>{emptyNote}</Text>
+        <View>
+          {!!emptyTitle && <Text style={styles.emptyTitle}>{emptyTitle}</Text>}
+          {!!emptyNote && (
+            <Text style={[styles.note, emptyTitle && styles.emptyNote]}>{emptyNote}</Text>
+          )}
+        </View>
       ) : layout === 'grid' ? (
         <View style={styles.grid}>
           {items.map((item, index) => (
@@ -124,12 +131,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: HalcyonSpacing.screenX,
   },
   title: {
-    color: HalcyonColors.textPrimary,
+    ...Typography.sectionHeading,
     flex: 1,
-    fontFamily: AppFonts.displaySemiBold,
-    fontSize: 21,
-    fontWeight: '600',
-    lineHeight: 28,
     paddingRight: 12,
   },
   seeAll: {
@@ -181,5 +184,16 @@ const styles = StyleSheet.create({
     fontSize: 13,
     lineHeight: 18,
     paddingHorizontal: HalcyonSpacing.screenX,
+  },
+  emptyTitle: {
+    color: HalcyonColors.textPrimary,
+    fontFamily: AppFonts.sansMedium,
+    fontSize: 14,
+    fontWeight: '500',
+    lineHeight: 19,
+    paddingHorizontal: HalcyonSpacing.screenX,
+  },
+  emptyNote: {
+    marginTop: 3,
   },
 });

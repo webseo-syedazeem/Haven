@@ -9,11 +9,11 @@ import {
   View,
 } from 'react-native';
 
+import { AuthLegalFooter } from '@/components/auth/AuthLegalFooter';
 import { AuthTextField } from '@/components/auth/AuthTextField';
-import { LegalDisclaimer } from '@/components/LegalDisclaimer';
 import { OnboardingContinueButton } from '@/components/onboarding/OnboardingContinueButton';
 import { OnboardingScaffold } from '@/components/onboarding/OnboardingScaffold';
-import { HalcyonColors } from '@/constants/design';
+import { HalcyonColors, Typography } from '@/constants/design';
 import { AppFonts } from '@/constants/theme';
 import { signUp } from '@/lib/haven-api';
 
@@ -71,7 +71,10 @@ export default function CreateAccountScreen() {
     <KeyboardAvoidingView
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       style={styles.keyboardView}>
-      <OnboardingScaffold contentContainerStyle={styles.scrollContent} onBack={() => router.back()}>
+      <OnboardingScaffold
+        contentContainerStyle={styles.scrollContent}
+        footer={<AuthLegalFooter />}
+        onBack={() => router.back()}>
         <View style={styles.content}>
         <Text style={styles.heading}>Create your account</Text>
         <Text style={styles.subtitle}>Join Passage today.</Text>
@@ -85,8 +88,6 @@ export default function CreateAccountScreen() {
           ) : null}
           <OnboardingContinueButton label={'Create account'} loading={isSubmitting} onPress={() => void handleCreateAccount()} style={styles.primaryButton} />
         </View>
-
-        <LegalDisclaimer linkStyle={styles.legalLink} style={styles.legal} textStyle={styles.legalText} />
 
         <Pressable accessibilityRole={'button'} hitSlop={8} onPress={() => router.replace('/login')} style={styles.signInButton}>
           <Text style={styles.signInPrompt}>Already have an account? <Text style={styles.signInLink}>Sign in</Text></Text>
@@ -117,30 +118,13 @@ const styles = StyleSheet.create({
     rowGap: 12,
   },
   heading: {
+    ...Typography.screenHeading,
     color: HalcyonColors.textPrimary,
-    fontFamily: AppFonts.displayRegular,
-    fontSize: 36,
-    fontWeight: '400',
-    lineHeight: 41,
+    textAlign: 'center',
   },
   keyboardView: {
     backgroundColor: HalcyonColors.background,
     flex: 1,
-  },
-  legal: {
-    marginTop: 24,
-    paddingHorizontal: 8,
-  },
-  legalLink: {
-    color: HalcyonColors.textPrimary,
-    textDecorationLine: 'underline',
-  },
-  legalText: {
-    color: HalcyonColors.textSecondary,
-    fontFamily: AppFonts.sansRegular,
-    fontSize: 10,
-    lineHeight: 16,
-    textAlign: 'center',
   },
   primaryButton: { marginTop: 7 },
   scrollContent: { justifyContent: 'center' },
@@ -151,20 +135,19 @@ const styles = StyleSheet.create({
   },
   signInLink: {
     color: HalcyonColors.accent,
-    fontFamily: AppFonts.sansMedium,
-    fontWeight: '500',
+    fontFamily: AppFonts.sansSemiBold,
+    fontWeight: '600',
   },
   signInPrompt: {
-    color: HalcyonColors.textSecondary,
+    color: 'rgba(255, 255, 255, 0.72)',
     fontFamily: AppFonts.sansRegular,
-    fontSize: 12,
-    lineHeight: 18,
+    fontSize: 15,
+    lineHeight: 22,
   },
   subtitle: {
+    ...Typography.body,
     color: HalcyonColors.textSecondary,
-    fontFamily: AppFonts.sansRegular,
-    fontSize: 13,
-    lineHeight: 20,
-    marginTop: 7,
+    marginTop: 8,
+    textAlign: 'center',
   },
 });

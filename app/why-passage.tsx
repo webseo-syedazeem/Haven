@@ -1,5 +1,5 @@
-import React from 'react';
-import { Image, StyleSheet, Text, View } from 'react-native';
+import React, { useState } from 'react';
+import { Image, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Stack, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -8,16 +8,41 @@ import { OnboardingPillButton } from '@/components/onboarding/OnboardingPillButt
 import { OnboardingStepHeader } from '@/components/onboarding/OnboardingStepHeader';
 import { AppFonts } from '@/constants/theme';
 
-const heroImage = require('@/assets/images/preview-tokyo-rain.webp');
+const heroImage = require('@/assets/images/why-passage-moonlit-window.webp');
 
 const FEATURES = [
   'Specific places, not generic loops',
   'Layered sound you can shape',
-  'Sessions built around an intention',
+  'Sessions built around an intention'
 ];
+
+const CONTENT_TOP_PADDING = 8;
+const FEATURE_LIST_VERTICAL_MARGIN = 12;
+const HERO_MAX_HEIGHT = 270;
+const HERO_MIN_HEIGHT = 120;
+const HERO_VERTICAL_MARGIN = 14;
+const LAYOUT_ROUNDING_BUFFER = 2;
 
 export default function WhyPassageScreen() {
   const router = useRouter();
+  const [viewportHeight, setViewportHeight] = useState(0);
+  const [headerHeight, setHeaderHeight] = useState(0);
+  const [featuresHeight, setFeaturesHeight] = useState(0);
+
+  const measuredHeroHeight =
+    viewportHeight > 0 && headerHeight > 0 && featuresHeight > 0
+      ? viewportHeight -
+        CONTENT_TOP_PADDING -
+        headerHeight -
+        featuresHeight -
+        FEATURE_LIST_VERTICAL_MARGIN * 2 -
+        HERO_VERTICAL_MARGIN * 2 -
+        LAYOUT_ROUNDING_BUFFER
+      : HERO_MAX_HEIGHT;
+  const heroHeight = Math.min(
+    HERO_MAX_HEIGHT,
+    Math.max(HERO_MIN_HEIGHT, measuredHeroHeight)
+  );
 
   return (
     <SafeAreaView edges={['top', 'bottom']} style={styles.safeArea}>
@@ -26,27 +51,36 @@ export default function WhyPassageScreen() {
 
       {/* Header with Step 2 Active */}
       <OnboardingStepHeader
+        activeColor="#FFFFFF"
         currentStep={2}
         onBack={() => router.back()}
         showBack
         totalSteps={4}
       />
 
-      <View style={styles.content}>
+      <ScrollView
+        contentContainerStyle={styles.content}
+        onLayout={(event) => setViewportHeight(event.nativeEvent.layout.height)}
+        showsVerticalScrollIndicator={false}
+        style={styles.scroll}>
         {/* Heading */}
-        <View style={styles.headerBlock}>
+        <View
+          onLayout={(event) => setHeaderHeight(event.nativeEvent.layout.height)}
+          style={styles.headerBlock}>
           <Text style={styles.heading}>
             More than{'\n'}background noise.
           </Text>
         </View>
 
         {/* Hero Visual Card */}
-        <View style={styles.imageCardWrapper}>
+        <View style={[styles.imageCardWrapper, { height: heroHeight }]}>
           <Image resizeMode="cover" source={heroImage} style={styles.heroImage} />
         </View>
 
         {/* 3 Horizontal Separator Feature Items */}
-        <View style={styles.featuresList}>
+        <View
+          onLayout={(event) => setFeaturesHeight(event.nativeEvent.layout.height)}
+          style={styles.featuresList}>
           {FEATURES.map((item, index) => (
             <View
               key={item}
@@ -59,11 +93,12 @@ export default function WhyPassageScreen() {
             </View>
           ))}
         </View>
-      </View>
+      </ScrollView>
 
       {/* Footer Continue Button */}
       <View style={styles.footer}>
         <OnboardingPillButton
+          arrowAtEnd
           label="CONTINUE"
           onPress={() => router.push('/what-it-does' as any)}
           variant="white"
@@ -75,10 +110,10 @@ export default function WhyPassageScreen() {
 
 const styles = StyleSheet.create({
   content: {
-    flex: 1,
+    flexGrow: 1,
     justifyContent: 'space-between',
     paddingHorizontal: 24,
-    paddingTop: 8,
+    paddingTop: CONTENT_TOP_PADDING,
   },
   featureRow: {
     alignItems: 'center',
@@ -89,21 +124,22 @@ const styles = StyleSheet.create({
   },
   featureRowFirst: {
     borderTopColor: 'rgba(255, 255, 255, 0.12)',
-    borderTopWidth: StyleSheet.hairlineWidth,
   },
   featureText: {
     color: '#FFFFFF',
     fontFamily: AppFonts.sansRegular,
-    fontSize: 15,
+    fontSize: 16,
     letterSpacing: 0.1,
+    lineHeight: 22,
     textAlign: 'center',
   },
   featuresList: {
-    marginVertical: 12,
+    marginBottom: FEATURE_LIST_VERTICAL_MARGIN * 2,
+    marginTop: 0,
     width: '100%',
   },
   footer: {
-    paddingBottom: 24,
+    paddingBottom: 14,
     paddingHorizontal: 24,
     paddingTop: 12,
     width: '100%',
@@ -116,9 +152,9 @@ const styles = StyleSheet.create({
   heading: {
     color: '#FFFFFF',
     fontFamily: AppFonts.playfairRegular,
-    fontSize: 38,
+    fontSize: 42,
     letterSpacing: -0.5,
-    lineHeight: 44,
+    lineHeight: 48,
     textAlign: 'center',
   },
   heroImage: {
@@ -129,13 +165,15 @@ const styles = StyleSheet.create({
     borderRadius: 18,
     borderWidth: 1,
     borderColor: 'rgba(255, 255, 255, 0.08)',
-    height: 195,
-    marginVertical: 14,
+    marginVertical: HERO_VERTICAL_MARGIN,
     overflow: 'hidden',
     width: '100%',
   },
   safeArea: {
     backgroundColor: '#0B0B0D',
+    flex: 1,
+  },
+  scroll: {
     flex: 1,
   },
 });

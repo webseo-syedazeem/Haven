@@ -3,8 +3,7 @@ import type { ImportGuestDataPayload, ImportGuestDataResult } from '@/lib/api/ac
 import { apiClient } from '@/lib/api/client';
 import { accountApi } from '@/lib/api/account';
 import type { Soundscape } from '@/lib/api/home';
-import type { DetailPreference, SoundPreferences } from '@/lib/api/preferences';
-import { preferencesApi } from '@/lib/api/preferences';
+import type { DetailPreference } from '@/lib/api/preferences';
 import {
   DEFAULT_RECOMMENDATION_ALTERNATIVES,
   MAX_RECOMMENDATION_ALTERNATIVES,
@@ -19,16 +18,33 @@ import { hasActiveSession } from '@/lib/auth/session-state';
 import { queryClient } from '@/lib/query-client';
 
 /**
- * Device-local answers collected before an account exists.
- *
- * Situation remains an array locally because O7 is multi-select. The current
- * backend schema has one nullable text column, so migration joins the selected
- * labels into one human-readable string.
+ * Durable, device-local onboarding answers. The snake_case fields are the
+ * canonical values and intentionally match POST /api/onboarding. The legacy
+ * camelCase aliases remain temporarily so older, non-current onboarding
+ * screens and guest recommendation code can read previously stored progress.
  */
 export type GuestOnboardingAnswers = {
+  mode: ModeId | null;
+  user_goals: string | null;
+  mode_breakers: string[];
+  mode_areas: string[];
+  target_minutes: number | null;
+  main_goal: string | null;
+  relax_causes: string[];
+  calming_moments: string | null;
+  /** @deprecated Compatibility alias for user_goals. */
   goals: string[];
+  /** @deprecated Compatibility alias for mode. */
   startingMode: ModeId | null;
+  /** @deprecated Compatibility alias for main_goal. */
+  mainGoal: string | null;
+  /** @deprecated Compatibility alias for relax_causes. */
+  relaxCauses: string[];
+  /** @deprecated Compatibility alias for calming_moments. */
+  calmingMoments: string | null;
+  /** @deprecated Compatibility alias for mode_breakers. */
   situation: string[];
+  /** @deprecated Compatibility alias for mode_areas. */
   environments: string[];
   preferredSounds: string[];
   excludedSounds: string[];
@@ -39,15 +55,69 @@ export type GuestOnboardingAnswers = {
 
 export type GuestOnboardingAnswersPatch = Partial<GuestOnboardingAnswers>;
 
+export type OnboardingAnswersPayload = Pick<
+  GuestOnboardingAnswers,
+  | 'mode'
+  | 'user_goals'
+  | 'mode_breakers'
+  | 'mode_areas'
+  | 'target_minutes'
+  | 'main_goal'
+  | 'relax_causes'
+  | 'calming_moments'
+>;
+
+export type ModeScopedOnboardingPayload =
+  | {
+      mode: 'focus' | 'sleep';
+      user_goals: string;
+      mode_breakers: string[];
+      mode_areas: string[];
+      target_minutes: number;
+    }
+  | {
+      mode: 'relax';
+      user_goals: string;
+      main_goal: string;
+      relax_causes: string[];
+      calming_moments: string;
+    };
+
 export type GuestOnboardingStatus = {
   completed: boolean;
   pendingAuth: boolean;
   migrated: boolean;
 };
 
+export type IncompleteOnboardingRoute =
+  | '/what-it-does'
+  | '/select-focus'
+  | '/onboarding/situation'
+  | '/onboarding/personalise'
+  | '/onboarding/relax-main-goal'
+  | '/onboarding/relax-causes'
+  | '/onboarding/relax-calming-moments';
+
+export type OnboardingResumeRoute =
+  | '/why-passage'
+  | IncompleteOnboardingRoute
+  | '/backed-by-science'
+  | '/onboarding/relax-ritual';
+
 export const DEFAULT_GUEST_ONBOARDING_ANSWERS: GuestOnboardingAnswers = {
+  mode: null,
+  user_goals: null,
+  mode_breakers: [],
+  mode_areas: [],
+  target_minutes: null,
+  main_goal: null,
+  relax_causes: [],
+  calming_moments: null,
   goals: [],
   startingMode: null,
+  mainGoal: null,
+  relaxCauses: [],
+  calmingMoments: null,
   situation: [],
   environments: [],
   preferredSounds: [],
@@ -75,45 +145,76 @@ function definedPatch(patch: GuestOnboardingAnswersPatch): GuestOnboardingAnswer
   ) as GuestOnboardingAnswersPatch;
 }
 
-function toSoundPreferencePatch(
-  patch: GuestOnboardingAnswersPatch,
-  next: GuestOnboardingAnswers
-): Partial<SoundPreferences> {
-  const soundPatch: Partial<SoundPreferences> = {};
+function canonicalPatch(
+  patch: GuestOnboardingAnswersPatch
+): GuestOnboardingAnswersPatch {
+  const next = definedPatch(patch);
 
-  if (patch.environments !== undefined) {
-    soundPatch.preferred_environments = next.environments;
+  if (next.mode === undefined && next.startingMode !== undefined) {
+    next.mode = next.startingMode;
   }
-  if (patch.preferredSounds !== undefined) {
-    soundPatch.preferred_sounds = next.preferredSounds;
+  if (next.user_goals === undefined && next.goals !== undefined) {
+    next.user_goals = next.goals[0] ?? null;
   }
-  if (patch.excludedSounds !== undefined) {
-    soundPatch.excluded_sounds = next.excludedSounds;
+  if (next.mode_breakers === undefined && next.situation !== undefined) {
+    next.mode_breakers = next.situation;
   }
-  if (patch.detailPreference !== undefined) {
-    soundPatch.detail_preference = next.detailPreference;
+  if (next.mode_areas === undefined && next.environments !== undefined) {
+    next.mode_areas = next.environments;
   }
-  if (patch.sessionLength !== undefined) {
-    soundPatch.typical_duration = next.sessionLength;
+  if (next.target_minutes === undefined && next.sessionLength !== undefined) {
+    next.target_minutes = cleanPositiveInteger(next.sessionLength);
+  }
+  if (next.main_goal === undefined && next.mainGoal !== undefined) {
+    next.main_goal = next.mainGoal;
+  }
+  if (next.relax_causes === undefined && next.relaxCauses !== undefined) {
+    next.relax_causes = next.relaxCauses;
+  }
+  if (next.calming_moments === undefined && next.calmingMoments !== undefined) {
+    next.calming_moments = next.calmingMoments;
   }
 
-  return soundPatch;
+  return next;
 }
 
-function toOnboardingSavePayload(answers: GuestOnboardingAnswers) {
-  if (!answers.startingMode) {
-    throw new Error('Onboarding requires a starting mode before saving.');
+function toStoredAnswers(answers: GuestOnboardingAnswers): OnboardingAnswersPayload {
+  return {
+    mode: answers.mode,
+    user_goals: answers.user_goals,
+    mode_breakers: answers.mode_breakers,
+    mode_areas: answers.mode_areas,
+    target_minutes: answers.target_minutes,
+    main_goal: answers.main_goal,
+    relax_causes: answers.relax_causes,
+    calming_moments: answers.calming_moments,
+  };
+}
+
+export function toModeScopedOnboardingPayload(
+  answers: GuestOnboardingAnswers
+): ModeScopedOnboardingPayload {
+  const value = normaliseAnswers(answers);
+  if (!isGuestOnboardingReady(value) || !value.mode || !value.user_goals) {
+    throw new Error('Complete each personalisation step before finishing onboarding.');
+  }
+
+  if (value.mode === 'relax') {
+    return {
+      mode: value.mode,
+      user_goals: value.user_goals,
+      main_goal: value.main_goal!,
+      relax_causes: value.relax_causes,
+      calming_moments: value.calming_moments!,
+    };
   }
 
   return {
-    goals: answers.goals,
-    starting_mode: answers.startingMode,
-    situation: answers.situation.length ? answers.situation.join('; ') : null,
-    preferred_environments: answers.environments,
-    preferred_sounds: answers.preferredSounds,
-    excluded_sounds: answers.excludedSounds,
-    ...(answers.detailPreference ? { detail_preference: answers.detailPreference } : {}),
-    typical_duration: answers.sessionLength,
+    mode: value.mode,
+    user_goals: value.user_goals,
+    mode_breakers: value.mode_breakers,
+    mode_areas: value.mode_areas,
+    target_minutes: value.target_minutes!,
   };
 }
 
@@ -156,11 +257,48 @@ function cleanOptionalString(value: unknown): string | null {
   return value.trim() || null;
 }
 
+function cleanPositiveInteger(value: unknown): number | null {
+  const parsed =
+    typeof value === 'number'
+      ? value
+      : typeof value === 'string'
+        ? Number.parseInt(value, 10)
+        : Number.NaN;
+  return Number.isInteger(parsed) && parsed > 0 ? parsed : null;
+}
+
+function hasOwn(row: Record<string, unknown>, key: string): boolean {
+  return Object.prototype.hasOwnProperty.call(row, key);
+}
+
 function normaliseAnswers(value: unknown): GuestOnboardingAnswers {
   const row = isRecord(value) ? value : {};
-  const startingMode = MODES.includes(row.startingMode as ModeId)
-    ? (row.startingMode as ModeId)
+  const rawMode = hasOwn(row, 'mode') ? row.mode : row.startingMode;
+  const mode = MODES.includes(rawMode as ModeId)
+    ? (rawMode as ModeId)
     : null;
+  const legacyGoals = cleanStringList(row.goals).slice(0, MAX_GOALS);
+  const userGoals = hasOwn(row, 'user_goals')
+    ? cleanOptionalString(row.user_goals)
+    : legacyGoals[0] ?? null;
+  const modeBreakers = hasOwn(row, 'mode_breakers')
+    ? cleanStringList(row.mode_breakers)
+    : cleanStringList(row.situation);
+  const modeAreas = hasOwn(row, 'mode_areas')
+    ? cleanStringList(row.mode_areas)
+    : cleanStringList(row.environments);
+  const targetMinutes = hasOwn(row, 'target_minutes')
+    ? cleanPositiveInteger(row.target_minutes)
+    : cleanPositiveInteger(row.sessionLength);
+  const mainGoal = hasOwn(row, 'main_goal')
+    ? cleanOptionalString(row.main_goal)
+    : cleanOptionalString(row.mainGoal);
+  const relaxCauses = hasOwn(row, 'relax_causes')
+    ? cleanStringList(row.relax_causes)
+    : cleanStringList(row.relaxCauses);
+  const calmingMoments = hasOwn(row, 'calming_moments')
+    ? cleanOptionalString(row.calming_moments)
+    : cleanOptionalString(row.calmingMoments);
   const detailPreference = DETAIL_PREFERENCES.includes(
     row.detailPreference as DetailPreference
   )
@@ -168,16 +306,29 @@ function normaliseAnswers(value: unknown): GuestOnboardingAnswers {
     : null;
 
   return {
-    goals: cleanStringList(row.goals).slice(0, MAX_GOALS),
-    startingMode,
-    situation: cleanStringList(row.situation),
-    environments: cleanStringList(row.environments),
-    preferredSounds: cleanStringList(row.preferredSounds),
+    mode,
+    user_goals: userGoals,
+    mode_breakers: modeBreakers,
+    mode_areas: modeAreas,
+    target_minutes: targetMinutes,
+    main_goal: mainGoal,
+    relax_causes: relaxCauses,
+    calming_moments: calmingMoments,
+    goals: userGoals ? [userGoals] : [],
+    startingMode: mode,
+    mainGoal,
+    relaxCauses,
+    calmingMoments,
+    situation: modeBreakers,
+    environments: modeAreas,
+    preferredSounds: cleanStringList(row.preferredSounds).length
+      ? cleanStringList(row.preferredSounds)
+      : modeAreas,
     excludedSounds: cleanStringList(row.excludedSounds).filter(
       (item) => item.toLowerCase() !== 'none'
     ),
     detailPreference,
-    sessionLength: cleanOptionalString(row.sessionLength),
+    sessionLength: targetMinutes === null ? null : String(targetMinutes),
   };
 }
 
@@ -193,16 +344,71 @@ export async function getGuestOnboardingAnswers(): Promise<GuestOnboardingAnswer
 export function isGuestOnboardingReady(
   answers: GuestOnboardingAnswers
 ): boolean {
-  return (
-    answers.goals.length >= 1 &&
-    answers.goals.length <= MAX_GOALS &&
-    answers.startingMode !== null &&
-    answers.situation.length >= 1 &&
-    answers.environments.length >= 1 &&
-    answers.preferredSounds.length >= 1 &&
-    answers.detailPreference !== null &&
-    answers.sessionLength !== null
+  return getIncompleteOnboardingRoute(answers) === null;
+}
+
+/** True when this device has at least one persisted data-collection answer. */
+export function hasOnboardingProgress(answers: GuestOnboardingAnswers): boolean {
+  const value = normaliseAnswers(answers);
+  return Boolean(
+    value.user_goals ||
+      value.mode ||
+      value.mode_breakers.length ||
+      value.mode_areas.length ||
+      value.target_minutes !== null ||
+      value.main_goal ||
+      value.relax_causes.length ||
+      value.calming_moments
   );
+}
+
+/**
+ * Returns the next screen in the real data-collection order. The first two
+ * answers are goal then mode; after that each mode follows its own branch.
+ * Informational screens are not persisted, so a complete answer set resumes
+ * at the first screen immediately after that branch's final question.
+ */
+export function getOnboardingResumeRoute(
+  answers: GuestOnboardingAnswers
+): OnboardingResumeRoute {
+  const value = normaliseAnswers(answers);
+
+  if (!hasOnboardingProgress(value)) return '/why-passage';
+  if (!value.user_goals) return '/what-it-does';
+  if (!value.mode) return '/select-focus';
+
+  if (value.mode === 'relax') {
+    if (!value.main_goal) return '/onboarding/relax-main-goal';
+    if (value.relax_causes.length === 0) return '/onboarding/relax-causes';
+    if (!value.calming_moments) return '/onboarding/relax-calming-moments';
+    return '/onboarding/relax-ritual';
+  }
+
+  if (value.mode_breakers.length === 0) return '/onboarding/situation';
+  if (value.mode_areas.length === 0 || value.target_minutes === null) {
+    return '/onboarding/personalise';
+  }
+  return '/backed-by-science';
+}
+
+export function getIncompleteOnboardingRoute(
+  answers: GuestOnboardingAnswers
+): IncompleteOnboardingRoute | null {
+  if (!answers.user_goals) return '/what-it-does';
+  if (!answers.mode) return '/select-focus';
+
+  if (answers.mode === 'relax') {
+    if (!answers.main_goal) return '/onboarding/relax-main-goal';
+    if (answers.relax_causes.length === 0) return '/onboarding/relax-causes';
+    if (!answers.calming_moments) return '/onboarding/relax-calming-moments';
+    return null;
+  }
+
+  if (answers.mode_breakers.length === 0) return '/onboarding/situation';
+  if (answers.mode_areas.length === 0 || answers.target_minutes === null) {
+    return '/onboarding/personalise';
+  }
+  return null;
 }
 
 /**
@@ -214,34 +420,43 @@ export async function saveGuestOnboardingAnswers(
 ): Promise<GuestOnboardingAnswers> {
   const current = await getGuestOnboardingAnswers();
   const merged: Record<string, unknown> = { ...current };
+  const cleanPatch = canonicalPatch(patch);
 
-  for (const [key, value] of Object.entries(patch)) {
+  if (
+    cleanPatch.mode &&
+    current.mode &&
+    cleanPatch.mode !== current.mode
+  ) {
+    if (current.mode === 'relax') {
+      merged.main_goal = null;
+      merged.relax_causes = [];
+      merged.calming_moments = null;
+    } else {
+      merged.mode_breakers = [];
+      merged.mode_areas = [];
+      merged.target_minutes = null;
+    }
+  }
+
+  for (const [key, value] of Object.entries(cleanPatch)) {
     if (value !== undefined) merged[key] = value;
   }
 
   const next = normaliseAnswers(merged);
-  await setLocalSetting(GUEST_ONBOARDING_STORAGE_KEYS.answers, next);
+  await setLocalSetting(GUEST_ONBOARDING_STORAGE_KEYS.answers, toStoredAnswers(next));
   return next;
 }
 
 export async function getOnboardingAnswers(): Promise<GuestOnboardingAnswers> {
-  if (!hasActiveSession()) return getGuestOnboardingAnswers();
-  return authenticatedOnboardingAnswers;
+  const stored = await getGuestOnboardingAnswers();
+  authenticatedOnboardingAnswers = stored;
+  return stored;
 }
 
 export async function saveOnboardingAnswers(
   patch: GuestOnboardingAnswersPatch
 ): Promise<GuestOnboardingAnswers> {
-  if (!hasActiveSession()) return saveGuestOnboardingAnswers(patch);
-
-  const cleanPatch = definedPatch(patch);
-  const next = normaliseAnswers({ ...authenticatedOnboardingAnswers, ...cleanPatch });
-  const soundPatch = toSoundPreferencePatch(cleanPatch, next);
-
-  if (Object.keys(soundPatch).length > 0) {
-    await preferencesApi.updateSound(soundPatch);
-  }
-
+  const next = await saveGuestOnboardingAnswers(definedPatch(patch));
   authenticatedOnboardingAnswers = next;
   authenticatedOnboardingCompletedThisSession = false;
   return next;
@@ -253,16 +468,19 @@ export async function completeOnboardingAnswers(): Promise<void> {
     return;
   }
 
-  const answers = authenticatedOnboardingAnswers;
+  const answers = await getOnboardingAnswers();
   if (!isGuestOnboardingReady(answers)) {
+    console.warn('[onboarding] refusing to submit incomplete local answers');
     throw new Error('Complete each personalisation step before finishing onboarding.');
   }
 
   await apiClient<{ success: boolean; data: OnboardingSaveResponse }>('/api/onboarding', {
     method: 'POST',
-    body: JSON.stringify(toOnboardingSavePayload(answers)),
+    body: JSON.stringify(toModeScopedOnboardingPayload(answers)),
   });
   authenticatedOnboardingCompletedThisSession = true;
+
+  await clearLocalOnboardingAnswersAfterSubmit();
 
   await Promise.all([
     queryClient.invalidateQueries({ queryKey: ['me'], refetchType: 'none' }),
@@ -343,12 +561,25 @@ export async function resetGuestOnboardingState(): Promise<void> {
   await Promise.all([
     setLocalSetting(
       GUEST_ONBOARDING_STORAGE_KEYS.answers,
-      DEFAULT_GUEST_ONBOARDING_ANSWERS
+      toStoredAnswers(DEFAULT_GUEST_ONBOARDING_ANSWERS)
     ),
     setGuestOnboardingComplete(false),
     setGuestOnboardingPendingAuth(false),
     setLocalSetting(GUEST_ONBOARDING_STORAGE_KEYS.migrated, false),
   ]);
+}
+
+async function clearLocalOnboardingAnswersAfterSubmit(): Promise<void> {
+  await Promise.all([
+    setLocalSetting(
+      GUEST_ONBOARDING_STORAGE_KEYS.answers,
+      toStoredAnswers(DEFAULT_GUEST_ONBOARDING_ANSWERS)
+    ),
+    setGuestOnboardingComplete(false),
+    setGuestOnboardingPendingAuth(false),
+    setLocalSetting(GUEST_ONBOARDING_STORAGE_KEYS.migrated, true),
+  ]);
+  authenticatedOnboardingAnswers = DEFAULT_GUEST_ONBOARDING_ANSWERS;
 }
 
 function lower(value: string): string {
@@ -589,33 +820,11 @@ export async function getOnboardingRecommendations(
   return getGuestRecommendations(undefined, alternativesCount);
 }
 
-/** Maps camelCase local answers to only fields accepted by the import controller. */
+/** Builds the same mode-scoped fields accepted by the guest import controller. */
 export function toImportGuestDataPayload(
   answers: GuestOnboardingAnswers
 ): ImportGuestDataPayload {
-  const value = normaliseAnswers(answers);
-
-  if (value.goals.length < 1 || value.goals.length > MAX_GOALS) {
-    throw new Error('Onboarding requires between one and five goals before migration.');
-  }
-  if (!value.startingMode) {
-    throw new Error('Onboarding requires a starting mode before migration.');
-  }
-
-  return {
-    goals: value.goals,
-    starting_mode: value.startingMode,
-    situation: value.situation.length ? value.situation.join('; ') : null,
-    sound_preferences: {
-      preferred_environments: value.environments,
-      preferred_sounds: value.preferredSounds,
-      excluded_sounds: value.excludedSounds,
-      ...(value.detailPreference
-        ? { detail_preference: value.detailPreference }
-        : {}),
-      typical_duration: value.sessionLength,
-    },
-  };
+  return toModeScopedOnboardingPayload(answers);
 }
 
 let migrationInFlight: Promise<ImportGuestDataResult | null> | null = null;
@@ -629,15 +838,18 @@ async function performGuestOnboardingMigration(): Promise<ImportGuestDataResult 
   const result = await accountApi.importGuestData(
     toImportGuestDataPayload(answers)
   );
+  if (!result.onboarding_applied) {
+    throw new Error(
+      result.onboarding_note || 'The account did not accept the onboarding answers.'
+    );
+  }
 
-  // Keep both flags untouched if the authenticated request throws. Once the
-  // server accepts it, the account is authoritative even if this device can no
-  // longer update its local bookkeeping.
+  // The request above is the commit point. A thrown request leaves every local
+  // answer untouched; after success, the account becomes the source of truth.
   try {
-    await setLocalSetting(GUEST_ONBOARDING_STORAGE_KEYS.migrated, true);
-    await setGuestOnboardingPendingAuth(false);
+    await clearLocalOnboardingAnswersAfterSubmit();
   } catch (error) {
-    console.warn('[onboarding] imported, but local migration status was not saved', error);
+    console.warn('[onboarding] imported, but local answers could not be cleared', error);
   }
   await Promise.all([
     queryClient.invalidateQueries({

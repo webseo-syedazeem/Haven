@@ -5,6 +5,7 @@ import { Alert, FlatList, Modal, Pressable, StyleSheet, Text, View } from 'react
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { EmptyState, ErrorState } from '@/components/EmptyState';
+import { RequireAuth } from '@/components/RequireAuth';
 import { PlaylistFormSheet } from '@/components/PlaylistFormSheet';
 import { SoundscapeRow, SoundscapeRowSkeletonList } from '@/components/SoundscapeRow';
 import { Toast, useToast } from '@/components/Toast';
@@ -23,6 +24,14 @@ import type { PlaylistItem, PlaylistPayload } from '@/lib/api/playlists';
 import { usePlayerActions } from '@/lib/player/PlayerProvider';
 
 export default function PlaylistScreen() {
+  return (
+    <RequireAuth message="Log in to open and manage your playlists.">
+      <PlaylistScreenContent />
+    </RequireAuth>
+  );
+}
+
+function PlaylistScreenContent() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const bottomInset = useBottomSafeSpacing();

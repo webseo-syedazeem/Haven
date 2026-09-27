@@ -2,6 +2,7 @@ import { useMutation, useQueryClient, type QueryClient } from '@tanstack/react-q
 import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
 
 import { PREFERENCES_QUERY_KEYS } from '@/hooks/usePreferences';
+import { useHasSession } from '@/hooks/useSession';
 import type { Soundscape } from '@/lib/api/home';
 import { playerApi } from '@/lib/api/player';
 import {
@@ -204,9 +205,11 @@ async function resolveAllowedDownloadSettings(queryClient: QueryClient): Promise
  */
 export function useDownloadSoundscape() {
   const queryClient = useQueryClient();
+  const hasSession = useHasSession();
 
   const mutation = useMutation({
     mutationFn: async (soundscape: Soundscape) => {
+      if (!hasSession) throw new DownloadRequiresAccountError();
       const settings = await resolveAllowedDownloadSettings(queryClient);
 
       // Best effort, but awaited: when there is a connection the row wants to
@@ -254,8 +257,10 @@ export function useDownloadSoundscape() {
 // ── Removing ─────────────────────────────────────────────────────────────────
 
 export function useRemoveDownload() {
+  const hasSession = useHasSession();
   const mutation = useMutation({
     mutationFn: async (soundscapeId: string) => {
+      if (!hasSession) throw new DownloadRequiresAccountError();
       // Local first: the file and the entry go whether or not the server can be
       // reached, because the user asked for the space back now.
       await removeLocalDownload(soundscapeId);
@@ -273,8 +278,10 @@ export function useRemoveDownload() {
 }
 
 export function useRemoveAllDownloads() {
+  const hasSession = useHasSession();
   const mutation = useMutation({
     mutationFn: async () => {
+      if (!hasSession) throw new DownloadRequiresAccountError();
       await clearLocalDownloads();
       await sync(() => playerApi.deleteAllDownloads());
     },

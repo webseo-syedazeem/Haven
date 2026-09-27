@@ -5,13 +5,17 @@ import { Image, StyleSheet, Text, View } from 'react-native';
 
 import { OnboardingContinueButton } from '@/components/onboarding/OnboardingContinueButton';
 import { OnboardingScaffold } from '@/components/onboarding/OnboardingScaffold';
-import { HalcyonColors, HalcyonRadius } from '@/constants/design';
 import { getTypicalDurationLabel } from '@/constants/filters';
 import type { ModeId } from '@/constants/modes';
+import { RELAX_ONBOARDING } from '@/constants/relax-onboarding';
 import { AppFonts } from '@/constants/theme';
 import { getOnboardingAnswers, type GuestOnboardingAnswers } from '@/lib/onboarding';
 
-const fitBanner = require('@/assets/images/your-fit-banner.webp');
+const FIT_BANNER = {
+  focus: require('@/assets/images/your-fit-focus.webp'),
+  relax: require('@/assets/images/your-fit-banner.webp'),
+  sleep: require('@/assets/images/your-fit-sleep.webp'),
+} as const;
 
 type FitQuote = {
   quote: string;
@@ -19,14 +23,14 @@ type FitQuote = {
 };
 
 const FIT_HEADING: Record<ModeId, string> = {
-  sleep: 'Built around how you rest.',
-  focus: 'Built around how you work.',
-  relax: 'Built around how you feel.',
+  sleep: 'Built around\nhow you rest.',
+  focus: 'Built around\nhow you work.',
+  relax: 'Built around\nhow you feel.',
 };
 
 const FIT_QUOTE: Record<ModeId, FitQuote> = {
   sleep: {
-    quote: 'The room fades away before I notice I’m drifting.',
+    quote: 'The room fades away before I notice I\u2019m drifting.',
     attribution: 'Alex, writer',
   },
   focus: {
@@ -39,15 +43,24 @@ const FIT_QUOTE: Record<ModeId, FitQuote> = {
   },
 };
 
+const BANNER_MARGIN_TOP = 8;
+const BANNER_MAX_HEIGHT = 240;
+const BANNER_MIN_HEIGHT = 140;
+const CONTENT_BOTTOM_PADDING = 24;
+const CONTENT_TOP_PADDING = RELAX_ONBOARDING.content.paddingTop;
+const LAYOUT_ROUNDING_BUFFER = 2;
+const QUOTE_MARGIN_TOP = 16;
+const SUMMARY_MARGIN_TOP = -1;
+
 const DEFAULT_SETTING: Record<ModeId, string> = {
   focus: 'At a desk',
-  sleep: 'In bed',
+  sleep: 'Falling asleep',
   relax: 'At home',
 };
 
 const DEFAULT_CHALLENGE: Record<ModeId, string> = {
   focus: 'Noise + racing thoughts',
-  sleep: 'Racing mind',
+  sleep: 'Racing thoughts + outside noise',
   relax: 'Overthinking & tension',
 };
 
@@ -68,7 +81,7 @@ function buildFitRows(answers: GuestOnboardingAnswers, mode: ModeId) {
       : '45 minutes';
 
   return [
-    { label: 'Your setting', value: settingValue },
+    { label: mode === 'sleep' ? 'Your moment' : 'Your setting', value: settingValue },
     { label: 'Your challenge', value: challengeValue },
     { label: 'Your rhythm', value: rhythmValue },
   ];
@@ -78,6 +91,10 @@ export default function YourFitScreen() {
   const router = useRouter();
   const [mode, setMode] = useState<ModeId | null>(null);
   const [rows, setRows] = useState<{ label: string; value: string }[]>([]);
+  const [viewportHeight, setViewportHeight] = useState(0);
+  const [headingHeight, setHeadingHeight] = useState(0);
+  const [summaryHeight, setSummaryHeight] = useState(0);
+  const [quoteHeight, setQuoteHeight] = useState(0);
 
   useEffect(() => {
     let active = true;
@@ -93,6 +110,26 @@ export default function YourFitScreen() {
   }, [router]);
 
   const quote = mode ? FIT_QUOTE[mode] : FIT_QUOTE.focus;
+  const measuredBannerHeight =
+    viewportHeight > 0 &&
+    headingHeight > 0 &&
+    summaryHeight > 0 &&
+    quoteHeight > 0
+      ? viewportHeight -
+        CONTENT_TOP_PADDING -
+        CONTENT_BOTTOM_PADDING -
+        headingHeight -
+        BANNER_MARGIN_TOP -
+        summaryHeight -
+        SUMMARY_MARGIN_TOP -
+        quoteHeight -
+        QUOTE_MARGIN_TOP -
+        LAYOUT_ROUNDING_BUFFER
+      : BANNER_MAX_HEIGHT;
+  const bannerHeight = Math.min(
+    BANNER_MAX_HEIGHT,
+    Math.max(BANNER_MIN_HEIGHT, measuredBannerHeight)
+  );
 
   return (
     <OnboardingScaffold
@@ -105,14 +142,27 @@ export default function YourFitScreen() {
           showArrow
           variant={mode === 'sleep' ? 'lavender' : 'amber'}
         />
-      }>
-      <Text style={styles.heading}>{mode ? FIT_HEADING[mode] : 'Built around how you work.'}</Text>
+      }
+      onViewportLayout={(event) =>
+        setViewportHeight(event.nativeEvent.layout.height)
+      }
+      onBack={() => router.back()}>
+      <Text
+        onLayout={(event) => setHeadingHeight(event.nativeEvent.layout.height)}
+        style={styles.heading}>
+        {mode ? FIT_HEADING[mode] : FIT_HEADING.focus}
+      </Text>
 
-      <View style={styles.bannerContainer}>
-        <Image source={fitBanner} style={styles.bannerImage} />
+      <View style={[styles.bannerContainer, { height: bannerHeight }]}>
+        <Image
+          source={mode ? FIT_BANNER[mode] : FIT_BANNER.focus}
+          style={styles.bannerImage}
+        />
       </View>
 
-      <View style={styles.summary}>
+      <View
+        onLayout={(event) => setSummaryHeight(event.nativeEvent.layout.height)}
+        style={styles.summary}>
         {rows.map((row, index) => (
           <View
             key={row.label}
@@ -126,9 +176,13 @@ export default function YourFitScreen() {
       </View>
 
       {quote ? (
-        <View style={styles.quoteCard}>
-          <Text style={styles.quoteText}>“{quote.quote}”</Text>
-          <Text style={styles.quoteAttribution}>— {quote.attribution}</Text>
+        <View
+          onLayout={(event) => setQuoteHeight(event.nativeEvent.layout.height)}
+          style={styles.quoteCard}>
+          <Text style={styles.quoteText}>&ldquo;{quote.quote}&rdquo;</Text>
+          <Text style={styles.quoteAttribution}>
+            {'\u2014'} {quote.attribution}
+          </Text>
         </View>
       ) : null}
     </OnboardingScaffold>
@@ -140,8 +194,7 @@ const styles = StyleSheet.create({
     borderColor: '#242428',
     borderRadius: 16,
     borderWidth: 1,
-    height: 136,
-    marginTop: 18,
+    marginTop: BANNER_MARGIN_TOP,
     overflow: 'hidden',
     width: '100%',
   },
@@ -151,65 +204,71 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   content: {
-    paddingBottom: 24,
-    paddingTop: 16,
+    paddingBottom: CONTENT_BOTTOM_PADDING,
+    paddingHorizontal: RELAX_ONBOARDING.screenPaddingHorizontal,
+    paddingTop: CONTENT_TOP_PADDING,
   },
   heading: {
     color: '#FFFFFF',
     fontFamily: AppFonts.playfairRegular,
-    fontSize: 34,
-    fontWeight: '400',
-    letterSpacing: -0.3,
-    lineHeight: 42,
+    fontSize: RELAX_ONBOARDING.heading.fontSize,
+    fontWeight: '600',
+    letterSpacing: RELAX_ONBOARDING.heading.letterSpacing,
+    lineHeight: RELAX_ONBOARDING.heading.lineHeight,
     textAlign: 'left',
   },
   quoteAttribution: {
-    color: '#8A8A8E',
+    color: 'rgba(255,255,255,0.78)',
     fontFamily: AppFonts.sansRegular,
-    fontSize: 12,
-    lineHeight: 18,
-    marginTop: 8,
+    fontSize: 16,
+    lineHeight: 23,
+    marginTop: 12,
   },
   quoteCard: {
-    backgroundColor: '#121215',
-    borderColor: '#242428',
-    borderRadius: 16,
+    backgroundColor: '#1C2A2D',
+    borderColor: 'rgba(255,255,255,0.06)',
+    borderRadius: 18,
     borderWidth: 1,
-    marginTop: 22,
-    padding: 18,
+    marginTop: QUOTE_MARGIN_TOP,
+    paddingHorizontal: 20,
+    paddingVertical: 18,
   },
   quoteText: {
-    color: '#F4F4F6',
-    fontFamily: AppFonts.displayRegular,
-    fontSize: 18,
-    fontStyle: 'italic',
-    lineHeight: 26,
+    color: '#F4F1EC',
+    fontFamily: AppFonts.displayMediumItalic,
+    fontSize: 23,
+    lineHeight: 30,
   },
   summary: {
-    marginTop: 18,
+    marginTop: SUMMARY_MARGIN_TOP,
+    paddingHorizontal: 16,
+    width: '100%',
+    zIndex: 1,
   },
   summaryLabel: {
-    color: '#8A8A8E',
-    flex: 1,
+    color: 'rgba(255,255,255,0.7)',
+    flex: 0.9,
     fontFamily: AppFonts.sansRegular,
-    fontSize: 13,
-    lineHeight: 18,
+    fontSize: 15,
+    lineHeight: 22,
   },
   summaryRow: {
-    borderBottomColor: '#242428',
+    alignItems: 'center',
+    borderBottomColor: 'rgba(255,255,255,0.17)',
     borderBottomWidth: StyleSheet.hairlineWidth,
     flexDirection: 'row',
-    paddingVertical: 13,
+    minHeight: 46,
+    paddingVertical: 10,
   },
   summaryRowLast: {
     borderBottomWidth: 0,
   },
   summaryValue: {
     color: '#FFFFFF',
-    flex: 1,
+    flex: 1.1,
     fontFamily: AppFonts.sansMedium,
-    fontSize: 13,
-    lineHeight: 18,
+    fontSize: 15,
+    lineHeight: 22,
     textAlign: 'right',
   },
 });

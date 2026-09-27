@@ -1,12 +1,17 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import type { ReactNode } from 'react';
+import { type ReactNode, useEffect } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { HalcyonColors, HalcyonRadius, HalcyonSpacing } from '@/constants/design';
 import { AppFonts } from '@/constants/theme';
-import { useHasSession, useSessionRestoring } from '@/hooks/useSession';
+import {
+  useGuestModeActive,
+  useHasSession,
+  useSessionRestoring,
+} from '@/hooks/useSession';
+import { useAccountRequiredPrompt } from '@/components/auth/AccountRequiredPrompt';
 
 /**
  * The gate in front of the screens that only mean something for a signed-in
@@ -44,6 +49,7 @@ export function RequireAuth({
   waiting?: ReactNode;
 }) {
   const hasSession = useHasSession();
+  const isGuest = useGuestModeActive();
   const isRestoring = useSessionRestoring();
 
   if (hasSession) return <>{children}</>;
@@ -53,6 +59,31 @@ export function RequireAuth({
   // back, is worse than a spinner — and this branch renders neither the
   // children nor a request, so nothing fires either way.
   if (isRestoring) return <>{waiting ?? <GateSpinner />}</>;
+
+  if (isGuest) {
+    return <GuestAuthGate message={message} showBack={showBack} title={title} />;
+  }
+
+  return <SignInPrompt message={message} showBack={showBack} title={title} />;
+}
+
+function GuestAuthGate({
+  message,
+  showBack,
+  title,
+}: {
+  message?: string;
+  showBack: boolean;
+  title: string;
+}) {
+  const { showAccountRequiredPrompt } = useAccountRequiredPrompt();
+
+  useEffect(() => {
+    showAccountRequiredPrompt({
+      title: 'Please log in',
+      message: message ?? 'Log in to use this account feature.',
+    });
+  }, [message, showAccountRequiredPrompt]);
 
   return <SignInPrompt message={message} showBack={showBack} title={title} />;
 }
@@ -74,9 +105,9 @@ function GateSpinner() {
 }
 
 /**
- * The prompt itself. Two ways out on purpose: the gold pill for the users who
- * came here to sign in, and the chevron for the ones who arrived by accident
- * and want their last screen back. A gate with no exit is a trap.
+ * The prompt itself. Two ways out on purpose: the gold pill opens the shared
+ * account-choice screen, while the chevron lets accidental visitors return.
+ * A gate with no exit is a trap.
  */
 export function SignInPrompt({
   message = 'This is part of your account. Log in and it will be here.',
@@ -117,7 +148,7 @@ export function SignInPrompt({
           <Pressable
             accessibilityLabel="Log in"
             accessibilityRole="button"
-            onPress={() => router.push('/login')}
+            onPress={() => router.push('/welcome')}
             style={({ pressed }) => [styles.primaryButton, pressed && styles.primaryPressed]}>
             <Text style={styles.primaryLabel}>Log in</Text>
           </Pressable>

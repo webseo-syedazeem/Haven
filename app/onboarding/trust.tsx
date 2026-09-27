@@ -1,4 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
+import { BlurView } from 'expo-blur';
 import { LinearGradient } from 'expo-linear-gradient';
 import type { Href } from 'expo-router';
 import { useRouter } from 'expo-router';
@@ -7,10 +8,12 @@ import {
   Image,
   StyleSheet,
   Text,
+  useWindowDimensions,
   View,
   type ImageSourcePropType,
 } from 'react-native';
 
+import { OnboardingBackButton } from '@/components/onboarding/OnboardingBackButton';
 import { OnboardingContinueButton } from '@/components/onboarding/OnboardingContinueButton';
 import { OnboardingScaffold } from '@/components/onboarding/OnboardingScaffold';
 import { HalcyonColors } from '@/constants/design';
@@ -20,6 +23,7 @@ import { getOnboardingAnswers } from '@/lib/onboarding';
 
 const brandIcon = require('@/assets/images/passage-brand-assets/screens-icon.webp');
 const trustHeroDesk = require('@/assets/images/trust-hero-desk.webp');
+const trustFocusFullBackground = require('@/assets/images/trust-focus-full-background.webp');
 const mayaAvatar = require('@/assets/images/rating-person-3.webp');
 const danielAvatar = require('@/assets/images/rating-person-2.webp');
 const sophieAvatar = require('@/assets/images/rating-person-4.webp');
@@ -98,6 +102,15 @@ const TRUST_COPY: Record<ModeId, TrustCopy> = {
 export default function TrustScreen() {
   const router = useRouter();
   const [mode, setMode] = useState<ModeId | null>(null);
+  const { height: screenHeight, width: screenWidth } = useWindowDimensions();
+
+  // Scale this screen's vertical measurements on shorter devices so the whole
+  // client composition remains inside the safe-area viewport without scrolling.
+  const layoutScale = Math.min(1, Math.max(0.66, (screenHeight - 50) / 850));
+  const scale = (value: number) => Math.round(value * layoutScale);
+  const isVeryCompact = screenHeight < 620;
+  const isNarrow = screenWidth < 360;
+  const cardHeight = isVeryCompact ? 84 : Math.max(92, scale(112));
 
   useEffect(() => {
     let active = true;
@@ -114,14 +127,48 @@ export default function TrustScreen() {
 
   const isSleep = mode === 'sleep';
   const themeColor = isSleep ? '#9FAEFD' : '#F4B34C';
+  const usesFullScreenBackground = mode === 'focus';
 
   const customHeader = (
-    <View style={styles.headerCentered}>
-      <View style={styles.brandRow}>
-        <Image source={brandIcon} style={styles.brandIcon} />
-        <Text style={styles.brandText}>Passage</Text>
+    <View
+      style={[
+        styles.headerCentered,
+        {
+          paddingBottom: Math.max(5, scale(12)),
+          paddingTop: Math.max(4, scale(8)),
+        },
+      ]}>
+      <OnboardingBackButton
+        onPress={() => router.back()}
+        style={[styles.headerBackButton, { top: Math.max(4, scale(10)) }]}
+      />
+      <View style={[styles.brandRow, { height: Math.max(30, scale(40)) }]}>
+        <Image
+          source={brandIcon}
+          style={[
+            styles.brandIcon,
+            { height: Math.max(18, scale(22)), width: Math.max(31, scale(38)) },
+          ]}
+        />
+        <Text
+          style={[
+            styles.brandText,
+            {
+              fontSize: Math.max(17, scale(20)),
+              marginLeft: Math.max(7, scale(9)),
+            },
+          ]}>
+          Passage
+        </Text>
       </View>
-      <View style={styles.dashRow}>
+      <View
+        style={[
+          styles.dashRow,
+          {
+            gap: Math.max(4, scale(6)),
+            marginTop: Math.max(7, scale(14)),
+          },
+        ]}>
         {Array.from({ length: 7 }).map((_, index) => (
           <View
             key={index}
@@ -139,7 +186,14 @@ export default function TrustScreen() {
 
   return (
     <OnboardingScaffold
-      contentContainerStyle={styles.content}
+      backgroundImage={usesFullScreenBackground ? trustFocusFullBackground : undefined}
+      backgroundOverlayColor={
+        usesFullScreenBackground ? 'rgba(11,11,13,0.08)' : undefined
+      }
+      contentContainerStyle={[
+        styles.content,
+        { paddingBottom: Math.max(2, scale(12)) },
+      ]}
       footer={
         <View style={styles.footerContainer}>
           <OnboardingContinueButton
@@ -147,49 +201,174 @@ export default function TrustScreen() {
             label="Preview the soundscapes"
             onPress={() => router.push('/onboarding/try-passage' as Href)}
             showArrow
+            style={{ minHeight: Math.max(44, scale(60)) }}
             variant={isSleep ? 'lavender' : 'amber'}
           />
-          <Text style={styles.footerCommitment}>Three one-minute previews. No commitment.</Text>
+          <Text
+            numberOfLines={1}
+            style={[
+              styles.footerCommitment,
+              {
+                fontSize: Math.max(10, scale(13)),
+                lineHeight: Math.max(12, scale(18)),
+                marginTop: Math.max(4, scale(10)),
+              },
+            ]}>
+            Three one-minute previews. No commitment.
+          </Text>
         </View>
       }
-      header={customHeader}>
-      <View style={styles.heroContainer}>
-        <Image source={trustHeroDesk} style={styles.heroImage} />
-        <LinearGradient
-          colors={['rgba(11,11,13,0.85)', 'rgba(11,11,13,0.25)', 'transparent']}
-          locations={[0, 0.5, 1]}
-          style={StyleSheet.absoluteFill}
-        />
-        <Text style={styles.heroHeading}>{copy.heading}</Text>
+      header={customHeader}
+      scroll={false}>
+      <View
+        style={[
+          styles.heroContainer,
+          {
+            height: scale(370),
+            marginTop: -scale(96),
+          },
+        ]}>
+        {!usesFullScreenBackground ? (
+          <>
+            <Image source={trustHeroDesk} style={styles.heroImage} />
+            <BlurView
+              experimentalBlurMethod="dimezisBlurView"
+              intensity={12}
+              style={styles.heroOutsideBlur}
+              tint="default"
+            />
+            <LinearGradient
+              colors={[
+                '#0B0B0D',
+                'rgba(11,11,13,0.7)',
+                'rgba(11,11,13,0.06)',
+                'rgba(11,11,13,0.12)',
+                '#0B0B0D',
+              ]}
+              locations={[0, 0.12, 0.32, 0.7, 1]}
+              style={StyleSheet.absoluteFill}
+            />
+          </>
+        ) : null}
+        <Text
+          style={[
+            styles.heroHeading,
+            {
+              fontSize: Math.max(29, scale(38)),
+              left: isNarrow ? 24 : 30,
+              lineHeight: Math.max(34, scale(44)),
+              top: scale(128),
+            },
+          ]}>
+          {copy.heading}
+        </Text>
       </View>
 
-      <View style={styles.featuredSection}>
+      <View style={[styles.featuredSection, { marginTop: Math.max(0, scale(4)) }]}>
         <View style={styles.featuredDivider}>
           <View style={styles.featuredLine} />
-          <Text style={styles.featuredLabel}>FEATURED IN</Text>
+          <Text
+            style={[
+              styles.featuredLabel,
+              {
+                fontSize: Math.max(8, scale(10)),
+                paddingHorizontal: Math.max(8, scale(12)),
+              },
+            ]}>
+            FEATURED IN
+          </Text>
           <View style={styles.featuredLine} />
         </View>
-        <View style={styles.featuredBrands}>
+        <View
+          style={[
+            styles.featuredBrands,
+            { marginTop: Math.max(6, scale(10)), paddingHorizontal: isNarrow ? 0 : 4 },
+          ]}>
           {copy.featuredIn.map((name) => (
-            <Text key={name} style={styles.featuredBrand}>
+            <Text
+              key={name}
+              style={[
+                styles.featuredBrand,
+                {
+                  fontSize: Math.max(10, scale(14)),
+                  letterSpacing: Math.max(0.7, 1.4 * layoutScale),
+                },
+              ]}>
               {name.toUpperCase()}
             </Text>
           ))}
         </View>
       </View>
 
-      <View style={styles.cards}>
+      <View
+        style={[
+          styles.cards,
+          {
+            gap: Math.max(8, scale(14)),
+            marginTop: Math.max(8, scale(18)),
+          },
+        ]}>
         {copy.testimonials.map((testimonial) => (
-          <View key={testimonial.name} style={styles.card}>
-            <Image source={testimonial.avatar} style={styles.avatar} />
-            <View style={styles.cardContent}>
+          <View
+            key={testimonial.name}
+            style={[
+              styles.card,
+              {
+                borderRadius: Math.max(13, scale(18)),
+                height: cardHeight,
+                minHeight: 0,
+                padding: Math.max(9, scale(16)),
+              },
+            ]}>
+            <Image
+              source={testimonial.avatar}
+              style={[
+                styles.avatar,
+                {
+                  borderRadius: Math.max(24, scale(34)),
+                  height: Math.max(48, scale(68)),
+                  width: Math.max(48, scale(68)),
+                },
+              ]}
+            />
+            <View
+              style={[
+                styles.cardContent,
+                { marginLeft: Math.max(10, scale(16)) },
+              ]}>
               <View style={styles.cardStars}>
                 {Array.from({ length: 5 }).map((_, index) => (
-                  <Ionicons color={themeColor} key={index} name="star" size={14} />
+                  <Ionicons
+                    color={themeColor}
+                    key={index}
+                    name="star"
+                    size={Math.max(12, scale(16))}
+                  />
                 ))}
               </View>
-              <Text style={styles.cardQuote}>“{testimonial.quote}”</Text>
-              <Text style={styles.cardAttribution}>
+              <Text
+                numberOfLines={2}
+                style={[
+                  styles.cardQuote,
+                  {
+                    fontSize: Math.max(12, 15.5 * layoutScale),
+                    lineHeight: Math.max(16, scale(22)),
+                    marginTop: Math.max(3, scale(6)),
+                  },
+                ]}>
+                “{testimonial.quote}”
+              </Text>
+              <Text
+                adjustsFontSizeToFit
+                numberOfLines={1}
+                style={[
+                  styles.cardAttribution,
+                  {
+                    fontSize: Math.max(10, scale(13)),
+                    lineHeight: Math.max(13, scale(18)),
+                    marginTop: Math.max(3, scale(6)),
+                  },
+                ]}>
                 {testimonial.name} — {testimonial.role}
               </Text>
             </View>
@@ -202,10 +381,10 @@ export default function TrustScreen() {
 
 const styles = StyleSheet.create({
   avatar: {
-    borderRadius: 29,
-    height: 58,
+    borderRadius: 34,
+    height: 68,
     resizeMode: 'cover',
-    width: 58,
+    width: 68,
   },
   brandIcon: {
     height: 22,
@@ -215,6 +394,7 @@ const styles = StyleSheet.create({
   brandRow: {
     alignItems: 'center',
     flexDirection: 'row',
+    height: 40,
     justifyContent: 'center',
   },
   brandText: {
@@ -229,40 +409,41 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: '#0F1317',
     borderColor: '#1E2328',
-    borderRadius: 16,
+    borderRadius: 18,
     borderWidth: 1,
     flexDirection: 'row',
-    padding: 14,
+    minHeight: 112,
+    padding: 16,
   },
   cardAttribution: {
     color: '#8A8A8E',
     fontFamily: AppFonts.sansRegular,
-    fontSize: 11,
-    lineHeight: 16,
-    marginTop: 4,
+    fontSize: 13,
+    lineHeight: 18,
+    marginTop: 6,
   },
   cardContent: {
     flex: 1,
-    marginLeft: 14,
+    marginLeft: 16,
   },
   cardQuote: {
     color: '#E5E5EA',
     fontFamily: AppFonts.sansRegular,
-    fontSize: 13,
-    lineHeight: 18,
-    marginTop: 4,
+    fontSize: 15.5,
+    lineHeight: 22,
+    marginTop: 6,
   },
   cardStars: {
     flexDirection: 'row',
     gap: 3,
   },
   cards: {
-    gap: 12,
+    gap: 14,
     marginTop: 18,
   },
   content: {
     paddingBottom: 24,
-    paddingTop: 12,
+    paddingTop: 0,
   },
   dash: {
     borderRadius: 1,
@@ -288,7 +469,7 @@ const styles = StyleSheet.create({
   featuredBrand: {
     color: '#9E9EA3',
     fontFamily: AppFonts.displayRegular,
-    fontSize: 13,
+    fontSize: 14,
     letterSpacing: 1.4,
   },
   featuredBrands: {
@@ -317,13 +498,13 @@ const styles = StyleSheet.create({
     height: 1,
   },
   featuredSection: {
-    marginTop: 20,
+    marginTop: 4,
   },
   footerCommitment: {
     color: '#8A8A8E',
     fontFamily: AppFonts.sansRegular,
-    fontSize: 12,
-    lineHeight: 16,
+    fontSize: 13,
+    lineHeight: 18,
     marginTop: 10,
     textAlign: 'center',
   },
@@ -331,34 +512,41 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     width: '100%',
   },
+  headerBackButton: {
+    left: 20,
+    position: 'absolute',
+    top: 10,
+    zIndex: 2,
+  },
   headerCentered: {
     alignItems: 'center',
     justifyContent: 'center',
-    paddingTop: 6,
-    width: '100%',
-  },
-  heroContainer: {
-    borderColor: '#24282E',
-    borderRadius: 18,
-    borderWidth: 1,
-    height: 270,
-    marginTop: 16,
-    overflow: 'hidden',
+    paddingBottom: 12,
+    paddingTop: 8,
     position: 'relative',
     width: '100%',
+    zIndex: 10,
+  },
+  heroContainer: {
+    alignSelf: 'stretch',
+    height: 370,
+    marginHorizontal: -20,
+    marginTop: -96,
+    overflow: 'visible',
+    position: 'relative',
   },
   heroHeading: {
     color: '#FFFFFF',
     fontFamily: AppFonts.playfairRegular,
-    fontSize: 34,
+    fontSize: 38,
     fontWeight: '400',
-    left: 20,
+    left: 30,
     letterSpacing: -0.3,
-    lineHeight: 40,
+    lineHeight: 44,
     position: 'absolute',
-    right: 20,
+    right: 24,
     textAlign: 'left',
-    top: 20,
+    top: 128,
     zIndex: 10,
   },
   heroImage: {
@@ -366,5 +554,13 @@ const styles = StyleSheet.create({
     height: '100%',
     resizeMode: 'cover',
     width: '100%',
+  },
+  heroOutsideBlur: {
+    height: 32,
+    left: 0,
+    position: 'absolute',
+    right: 0,
+    top: -24,
+    zIndex: 2,
   },
 });

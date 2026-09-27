@@ -12,41 +12,61 @@ import {
 } from 'react-native';
 
 import { AuthSocialButton } from '@/components/auth/AuthSocialButton';
+import { AuthLegalFooter } from '@/components/auth/AuthLegalFooter';
 import { AuthTextField } from '@/components/auth/AuthTextField';
 import { OnboardingContinueButton } from '@/components/onboarding/OnboardingContinueButton';
 import { OnboardingScaffold } from '@/components/onboarding/OnboardingScaffold';
-import { HalcyonColors } from '@/constants/design';
+import { HalcyonColors, Typography } from '@/constants/design';
 import { AppFonts } from '@/constants/theme';
 import { signInWithApple } from '@/lib/apple-auth';
 import { signInWithGoogle } from '@/lib/google-auth';
 import { signIn } from '@/lib/haven-api';
 import { routeAfterSignIn } from '@/lib/auth/onboarding-routing';
+import { resetToMainApp } from '@/lib/navigation';
 
 const appleIcon = require('@/assets/icons/apple icon.png');
 const googleIcon = require('@/assets/icons/google icon.png');
 
 export default function LoginScreen() {
   const router = useRouter();
-  const { signedOut } = useLocalSearchParams<{ signedOut?: string }>();
+  const { signedOut, launch, from } = useLocalSearchParams<{
+    signedOut?: string;
+    launch?: string;
+    from?: string;
+  }>();
   // A user who just signed out has to sign back in or sign up — there is
   // nothing behind this screen worth going back to.
-  const canGoBack = signedOut !== '1';
+  // Opened straight from the first screen (or as the launch landing): nothing
+  // meaningful is behind it, so back leaves the app.
+  const isLaunchLanding = launch === '1' || from === 'intro';
+  const canGoBack = signedOut !== '1' && !isLaunchLanding;
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [passwordVisible, setPasswordVisible] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
   const [authenticated, setAuthenticated] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const goToWelcome = useCallback(() => router.replace('/'), [router]);
+  // Back returns to whichever screen opened Login (Arrival, or Save your space),
+  // never to the start of onboarding.
+  const goBack = useCallback(
+    () => (router.canGoBack() ? router.back() : router.replace('/')),
+    [router]
+  );
 
   useFocusEffect(useCallback(() => {
     const subscription = BackHandler.addEventListener('hardwareBackPress', () => {
-      if (authenticated || !canGoBack) return true;
-      goToWelcome();
+      if (authenticated) return true;
+      // The launch landing has nothing behind it, so back leaves the app.
+      if (isLaunchLanding) {
+        BackHandler.exitApp();
+        return true;
+      }
+      if (!canGoBack) return true;
+      goBack();
       return true;
     });
     return () => subscription.remove();
-  }, [authenticated, canGoBack, goToWelcome]));
+  }, [authenticated, canGoBack, goBack, isLaunchLanding]));
 
   const finishAuthentication = async () => {
     await routeAfterSignIn(router);
@@ -149,7 +169,8 @@ export default function LoginScreen() {
       style={styles.keyboardView}>
       <OnboardingScaffold
         contentContainerStyle={styles.scrollContent}
-        onBack={authenticated || !canGoBack ? undefined : goToWelcome}>
+        // No on-screen back arrow; the hardware back button is handled above.
+        footer={<AuthLegalFooter />}>
         <View style={styles.content}>
         <Text style={styles.heading}>Welcome back</Text>
         <Text style={styles.subtitle}>Sign in to continue your journey.</Text>
@@ -161,6 +182,13 @@ export default function LoginScreen() {
           </Pressable>
           {errorMessage ? <Text accessibilityLiveRegion={'polite'} style={styles.errorText}>{errorMessage}</Text> : null}
           <OnboardingContinueButton label={authenticated ? 'Retry saving preferences' : 'Sign in'} loading={isSubmitting} onPress={() => void (authenticated ? retryPreferenceSync() : handleLogin())} style={styles.primaryButton} />
+          {authenticated && errorMessage ? (
+            <OnboardingContinueButton
+              label="Continue to Home"
+              onPress={() => resetToMainApp(router)}
+              variant="secondary"
+            />
+          ) : null}
         </View>
         {!authenticated ? (
           <>
@@ -169,7 +197,7 @@ export default function LoginScreen() {
               <AuthSocialButton disabled={isSubmitting} icon={appleIcon} label={'Continue with Apple'} onPress={() => void handleApplePress()} />
               <AuthSocialButton disabled={isSubmitting} icon={googleIcon} label={'Continue with Google'} onPress={() => void handleGooglePress()} />
             </View>
-            <Pressable accessibilityRole={'button'} hitSlop={8} onPress={() => router.push('/create-account')} style={styles.signupButton}>
+            <Pressable accessibilityRole={'button'} hitSlop={8} onPress={() => router.push('/welcome')} style={styles.signupButton}>
               <Text style={styles.signupPrompt}>Don&apos;t have an account? <Text style={styles.signupLink}>Sign up</Text></Text>
             </Pressable>
           </>
@@ -218,10 +246,10 @@ const styles = StyleSheet.create({
     paddingVertical: 2,
   },
   forgotText: {
-    color: HalcyonColors.textSecondary,
-    fontFamily: AppFonts.sansRegular,
-    fontSize: 12,
-    lineHeight: 18,
+    color: 'rgba(255, 255, 255, 0.72)',
+    fontFamily: AppFonts.sansMedium,
+    fontSize: 14,
+    lineHeight: 20,
     textDecorationLine: 'underline',
   },
   form: {
@@ -229,11 +257,9 @@ const styles = StyleSheet.create({
     rowGap: 12,
   },
   heading: {
+    ...Typography.screenHeading,
     color: HalcyonColors.textPrimary,
-    fontFamily: AppFonts.displayRegular,
-    fontSize: 36,
-    fontWeight: '400',
-    lineHeight: 41,
+    textAlign: 'center',
   },
   keyboardView: {
     backgroundColor: HalcyonColors.background,
@@ -248,24 +274,23 @@ const styles = StyleSheet.create({
   },
   signupLink: {
     color: HalcyonColors.accent,
-    fontFamily: AppFonts.sansMedium,
-    fontWeight: '500',
+    fontFamily: AppFonts.sansSemiBold,
+    fontWeight: '600',
   },
   signupPrompt: {
-    color: HalcyonColors.textSecondary,
+    color: 'rgba(255, 255, 255, 0.72)',
     fontFamily: AppFonts.sansRegular,
-    fontSize: 12,
-    lineHeight: 18,
+    fontSize: 15,
+    lineHeight: 22,
   },
   socialButtons: {
     marginTop: 18,
     rowGap: 10,
   },
   subtitle: {
+    ...Typography.body,
     color: HalcyonColors.textSecondary,
-    fontFamily: AppFonts.sansRegular,
-    fontSize: 13,
-    lineHeight: 20,
-    marginTop: 7,
+    marginTop: 8,
+    textAlign: 'center',
   },
 });

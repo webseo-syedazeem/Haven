@@ -1,20 +1,20 @@
-import { Ionicons } from '@expo/vector-icons';
 import { StatusBar } from 'expo-status-bar';
 import type { ReactNode } from 'react';
 import {
   Image,
   ImageBackground,
-  Pressable,
   ScrollView,
   StyleSheet,
   Text,
   View,
   type ImageSourcePropType,
+  type LayoutChangeEvent,
   type StyleProp,
   type ViewStyle,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { OnboardingBackButton } from '@/components/onboarding/OnboardingBackButton';
 import { HalcyonColors } from '@/constants/design';
 import { AppFonts } from '@/constants/theme';
 
@@ -22,23 +22,27 @@ const brandIcon = require('@/assets/images/passage-brand-assets/screens-icon.web
 
 type Props = {
   backgroundImage?: ImageSourcePropType;
+  backgroundOverlayColor?: string;
   children: ReactNode;
   contentContainerStyle?: StyleProp<ViewStyle>;
   footer?: ReactNode;
   header?: ReactNode;
   headerRight?: ReactNode;
   onBack?: () => void;
+  onViewportLayout?: (event: LayoutChangeEvent) => void;
   scroll?: boolean;
 };
 
 export function OnboardingScaffold({
   backgroundImage,
+  backgroundOverlayColor = 'rgba(11,11,13,0.62)',
   children,
   contentContainerStyle,
   footer,
   header,
   headerRight,
   onBack,
+  onViewportLayout,
   scroll = true,
 }: Props) {
   const defaultHeader = (
@@ -51,13 +55,10 @@ export function OnboardingScaffold({
 
       <View style={styles.headerSideSlot}>
         {onBack ? (
-          <Pressable
-            accessibilityLabel="Go back"
-            hitSlop={12}
+          <OnboardingBackButton
+            color={HalcyonColors.textPrimary}
             onPress={onBack}
-            style={({ pressed }) => [styles.backButton, pressed && styles.pressed]}>
-            <Ionicons color={HalcyonColors.textPrimary} name="chevron-back" size={22} />
-          </Pressable>
+          />
         ) : null}
       </View>
 
@@ -70,12 +71,17 @@ export function OnboardingScaffold({
   const content = scroll ? (
     <ScrollView
       contentContainerStyle={[styles.scrollContent, contentContainerStyle]}
+      onLayout={onViewportLayout}
       keyboardShouldPersistTaps="handled"
       showsVerticalScrollIndicator={false}>
       {children}
     </ScrollView>
   ) : (
-    <View style={[styles.fixedContent, contentContainerStyle]}>{children}</View>
+    <View
+      onLayout={onViewportLayout}
+      style={[styles.fixedContent, contentContainerStyle]}>
+      {children}
+    </View>
   );
   const safeContent = (
     <SafeAreaView edges={['top', 'bottom']} style={styles.safeArea}>
@@ -90,7 +96,10 @@ export function OnboardingScaffold({
       <StatusBar style="light" />
       {backgroundImage ? (
         <ImageBackground resizeMode="cover" source={backgroundImage} style={styles.background}>
-          <View pointerEvents="none" style={styles.overlay} />
+          <View
+            pointerEvents="none"
+            style={[styles.overlay, { backgroundColor: backgroundOverlayColor }]}
+          />
           {safeContent}
         </ImageBackground>
       ) : (
@@ -101,15 +110,6 @@ export function OnboardingScaffold({
 }
 
 const styles = StyleSheet.create({
-  backButton: {
-    alignItems: 'center',
-    borderColor: HalcyonColors.border,
-    borderRadius: 18,
-    borderWidth: 1,
-    height: 36,
-    justifyContent: 'center',
-    width: 36,
-  },
   background: { flex: 1 },
   brandCenterAbsolute: {
     alignItems: 'center',
@@ -173,7 +173,6 @@ const styles = StyleSheet.create({
     ...StyleSheet.absoluteFillObject,
     backgroundColor: 'rgba(11,11,13,0.62)',
   },
-  pressed: { opacity: 0.72 },
   safeArea: { flex: 1 },
   screen: {
     backgroundColor: HalcyonColors.background,

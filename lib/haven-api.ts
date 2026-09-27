@@ -3,7 +3,7 @@ import { Platform } from 'react-native';
 
 import { ApiError, NetworkError } from '@/lib/api/errors';
 import { markLoggedIn, markLoggedOut } from '@/lib/auth/offline-session';
-import { setSessionSource } from '@/lib/auth/session-state';
+import { setGuestModeActive, setSessionSource } from '@/lib/auth/session-state';
 import { supabase } from '@/lib/supabase';
 
 const REMOTE_API_BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL ?? 'https://thehappyapp.co.uk';
@@ -333,6 +333,10 @@ export async function signUp(payload: { email: string; password: string; usernam
     body: JSON.stringify(payload),
     method: 'POST',
   });
+
+  // A successful account creation ends an earlier explicit guest session even
+  // when email confirmation means the new account has no token yet.
+  await setGuestModeActive(false);
 
   // Supabase returns session: null when email confirmation is enabled. That
   // is a successful registration, not a failed login, so only require a token

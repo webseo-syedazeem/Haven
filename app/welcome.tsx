@@ -1,12 +1,12 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useQuery } from '@tanstack/react-query';
 import { useEffect, useState } from 'react';
-import { BackHandler, Image, Pressable, StyleSheet, Text, View } from 'react-native';
+import { BackHandler, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { AuthButton } from '@/components/AuthButton';
-import { LegalDisclaimer } from '@/components/LegalDisclaimer';
+import { AuthLegalFooter } from '@/components/auth/AuthLegalFooter';
 import { OnboardingScaffold } from '@/components/onboarding/OnboardingScaffold';
-import { HalcyonColors } from '@/constants/design';
+import { HalcyonColors, Typography } from '@/constants/design';
 import { AppFonts } from '@/constants/theme';
 import { signInWithApple } from '@/lib/apple-auth';
 import { setGuestModeActive } from '@/lib/auth/session-state';
@@ -26,7 +26,6 @@ import { usePlayerActions } from '@/lib/player/PlayerProvider';
 const appleIcon = require('@/assets/icons/apple icon.png');
 const googleIcon = require('@/assets/icons/google icon.png');
 const emailIcon = require('@/assets/icons/email.png');
-const appLogo = require('@/assets/images/passage-brand-assets/icon.png');
 
 type Provider = 'apple' | 'email' | 'google' | 'guest' | null;
 
@@ -50,6 +49,7 @@ export default function SaveYourSpaceScreen() {
   const best = recommendationsQuery.data?.best_match ?? null;
   const alternatives = recommendationsQuery.data?.alternatives ?? [];
 
+  // Once signed in, back must not return to the sign-in options.
   useEffect(() => {
     if (!authReady) return;
     const subscription = BackHandler.addEventListener('hardwareBackPress', () => true);
@@ -71,7 +71,7 @@ export default function SaveYourSpaceScreen() {
       getGuestOnboardingAnswers(),
     ]);
     if (!isGuestOnboardingReady(answers)) {
-      router.replace('/passage-help');
+      router.replace('/why-passage');
       return false;
     }
     if (!completed) await markGuestOnboardingComplete();
@@ -169,7 +169,7 @@ export default function SaveYourSpaceScreen() {
       // Gates /api/me, /api/favourites, /api/home/continue-listening and
       // /api/play-history until a real sign in clears it (see
       // lib/auth/session-state.ts) — there is no bearer token to send yet.
-      setGuestModeActive(true);
+      await setGuestModeActive(true);
       await enterMainApp();
     } catch {
       setErrorMessage('We could not save your onboarding progress. Please try again.');
@@ -181,8 +181,11 @@ export default function SaveYourSpaceScreen() {
   return (
     <OnboardingScaffold
       contentContainerStyle={styles.content}
-      onBack={authReady ? undefined : () => router.back()}>
-      <Image source={appLogo} style={styles.appIcon} />
+      // Pinned to the very bottom, above the safe-area inset the scaffold applies.
+      footer={<AuthLegalFooter />}
+      // No back arrow: someone who picks sign up and then wants to sign in uses
+      // the Sign in link below instead of retracing their steps.
+      >
       <Text style={styles.heading}>Save your space</Text>
       <Text style={styles.body}>
         Create an account to keep your preferences with you.
@@ -190,12 +193,20 @@ export default function SaveYourSpaceScreen() {
 
       <View style={styles.buttons}>
         {authReady ? (
-          <Pressable
-            accessibilityRole="button"
-            onPress={() => void retryMigration()}
-            style={({ pressed }) => [styles.retryButton, pressed && styles.pressed]}>
-            <Text style={styles.retryLabel}>Retry saving preferences</Text>
-          </Pressable>
+          <>
+            <Pressable
+              accessibilityRole="button"
+              onPress={() => void retryMigration()}
+              style={({ pressed }) => [styles.retryButton, pressed && styles.pressed]}>
+              <Text style={styles.retryLabel}>Retry saving preferences</Text>
+            </Pressable>
+            <Pressable
+              accessibilityRole="button"
+              onPress={() => void enterMainApp()}
+              style={({ pressed }) => [styles.continueButton, pressed && styles.pressed]}>
+              <Text style={styles.continueLabel}>Continue to Home</Text>
+            </Pressable>
+          </>
         ) : (
           <>
             <AuthButton
@@ -231,6 +242,19 @@ export default function SaveYourSpaceScreen() {
         <Pressable
           accessibilityRole="button"
           disabled={Boolean(loading)}
+          hitSlop={8}
+          onPress={() => router.push('/login')}
+          style={styles.signInButton}>
+          <Text style={styles.signInPrompt}>
+            Already have an account? <Text style={styles.signInLink}>Sign in</Text>
+          </Text>
+        </Pressable>
+      ) : null}
+
+      {!authReady ? (
+        <Pressable
+          accessibilityRole="button"
+          disabled={Boolean(loading)}
           hitSlop={10}
           onPress={() => void continueAsGuest()}
           style={({ pressed }) => [
@@ -243,28 +267,16 @@ export default function SaveYourSpaceScreen() {
         </Pressable>
       ) : null}
 
-      <LegalDisclaimer
-        linkStyle={styles.legalLink}
-        style={styles.legal}
-        textStyle={styles.legalText}
-      />
     </OnboardingScaffold>
   );
 }
 
 const styles = StyleSheet.create({
-  appIcon: {
-    borderRadius: 20,
-    height: 72,
-    width: 72,
-  },
   body: {
-    color: HalcyonColors.textSecondary,
-    fontFamily: AppFonts.sansRegular,
-    fontSize: 13,
-    lineHeight: 20,
-    marginTop: 7,
-    maxWidth: 280,
+    ...Typography.body,
+    color: 'rgba(255, 255, 255, 0.72)',
+    marginTop: 10,
+    maxWidth: 300,
     textAlign: 'center',
   },
   buttons: {
@@ -277,6 +289,20 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingBottom: 28,
   },
+  continueButton: {
+    alignItems: 'center',
+    borderColor: HalcyonColors.border,
+    borderRadius: 18,
+    borderWidth: 1,
+    justifyContent: 'center',
+    minHeight: 52,
+  },
+  continueLabel: {
+    color: HalcyonColors.textPrimary,
+    fontFamily: AppFonts.sansSemiBold,
+    fontSize: 16,
+    fontWeight: '600',
+  },
   error: {
     color: HalcyonColors.textPrimary,
     fontFamily: AppFonts.sansRegular,
@@ -286,31 +312,35 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   guestLink: {
-    color: HalcyonColors.textSecondary,
+    color: 'rgba(255, 255, 255, 0.72)',
     fontFamily: AppFonts.sansRegular,
-    fontSize: 13,
-    lineHeight: 18,
-    marginTop: 22,
+    fontSize: 14,
+    lineHeight: 20,
+    marginTop: 16,
     textDecorationLine: 'underline',
   },
   guestDisabled: { opacity: 0.5 },
   heading: {
-    color: HalcyonColors.textPrimary,
-    fontFamily: AppFonts.displayRegular,
-    fontSize: 31,
-    lineHeight: 36,
-    
-  },
-  legal: { marginTop: 34, maxWidth: 300 },
-  legalLink: { color: HalcyonColors.textSecondary, textDecorationLine: 'underline' },
-  legalText: {
-    color: HalcyonColors.textSecondary,
-    fontFamily: AppFonts.sansRegular,
-    fontSize: 10,
-    lineHeight: 15,
+    ...Typography.screenHeading,
     textAlign: 'center',
   },
   pressed: { opacity: 0.72 },
+  signInButton: {
+    alignItems: 'center',
+    marginTop: 20,
+    paddingVertical: 4,
+  },
+  signInLink: {
+    color: HalcyonColors.accent,
+    fontFamily: AppFonts.sansSemiBold,
+    fontWeight: '600',
+  },
+  signInPrompt: {
+    color: 'rgba(255, 255, 255, 0.72)',
+    fontFamily: AppFonts.sansRegular,
+    fontSize: 15,
+    lineHeight: 22,
+  },
   retryButton: {
     alignItems: 'center',
     backgroundColor: HalcyonColors.accent,
@@ -321,7 +351,7 @@ const styles = StyleSheet.create({
   retryLabel: {
     color: HalcyonColors.background,
     fontFamily: AppFonts.sansSemiBold,
-    fontSize: 14,
+    fontSize: 16,
     fontWeight: '600',
   },
 });

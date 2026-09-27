@@ -8,7 +8,7 @@ import type { PlayerEngine } from './types';
  */
 const noop = async () => {};
 
-export const engine: PlayerEngine = {
+export const createPlayerEngine = (): PlayerEngine => ({
   setup: async () => false,
   isAvailable: () => false,
   hasSource: () => false,
@@ -22,4 +22,6 @@ export const engine: PlayerEngine = {
   getProgress: async () => ({ position: 0, duration: 0 }),
   subscribe: () => () => {},
   playEndTone: noop,
-};
+});
+
+export const engine: PlayerEngine = createPlayerEngine();

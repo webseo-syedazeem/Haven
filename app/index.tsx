@@ -1,14 +1,24 @@
 import { LinearGradient } from 'expo-linear-gradient';
-import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useFocusEffect } from '@react-navigation/native';
+import { type Href, useLocalSearchParams, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { useEffect, useState } from 'react';
-import { ActivityIndicator, ImageBackground, Pressable, StyleSheet, Text, View } from 'react-native';
+import { useCallback, useEffect, useState } from 'react';
+import {
+  ActivityIndicator,
+  BackHandler,
+  ImageBackground,
+  Pressable,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { OnboardingPillButton } from '@/components/onboarding/OnboardingPillButton';
 import { OnboardingStepHeader } from '@/components/onboarding/OnboardingStepHeader';
 import { HalcyonColors } from '@/constants/design';
 import { AppFonts } from '@/constants/theme';
+import { useSinglePress } from '@/hooks/useSinglePress';
 import { ME_QUERY_KEY } from '@/hooks/useUser';
 import type { MeApiResponse } from '@/lib/api/user';
 import {
@@ -17,22 +27,45 @@ import {
 } from '@/lib/auth/onboarding-routing';
 import { readCachedOnboardingCompleted } from '@/lib/auth/offline-session';
 import { restoreSession } from '@/lib/auth/restore-session';
+import { hasSeenIntro, setIntroSeen } from '@/lib/auth/intro-flag';
+import { isGuestModeActive, setGuestModeActive } from '@/lib/auth/session-state';
 import { hasPlayableDownloads, hydrateLocalDownloads } from '@/lib/local-downloads';
 import {
-  isGuestOnboardingComplete,
+  getGuestOnboardingAnswers,
+  getOnboardingResumeRoute,
+  hasOnboardingProgress,
   migrateGuestOnboardingAfterAuth,
   resetGuestOnboardingState,
 } from '@/lib/onboarding';
 import { queryClient } from '@/lib/query-client';
 
-const welcomeBackground = require('@/assets/images/understand-bg.webp');
+const welcomeBackground = require('@/assets/images/first-onboarding.webp');
 
 type LaunchState = 'checking' | 'welcome';
 
 export default function FirstPageScreen() {
   const router = useRouter();
+  const handleLoginPress = useSinglePress(() => {
+    void setIntroSeen();
+    router.push('/login?from=intro');
+  });
+  const handleGetStartedPress = useSinglePress(() => {
+    void getGuestOnboardingAnswers()
+      .then((answers) => router.push(getOnboardingResumeRoute(answers) as Href))
+      .catch(() => router.push('/why-passage'));
+  });
   const { reset } = useLocalSearchParams<{ reset?: string }>();
   const [launchState, setLaunchState] = useState<LaunchState>('checking');
+
+  useFocusEffect(
+    useCallback(() => {
+      const subscription = BackHandler.addEventListener('hardwareBackPress', () => {
+        BackHandler.exitApp();
+        return true;
+      });
+      return () => subscription.remove();
+    }, [])
+  );
 
   useEffect(() => {
     let active = true;
@@ -40,20 +73,37 @@ export default function FirstPageScreen() {
     void (async () => {
       if (reset === '1') {
         await resetGuestOnboardingState();
+        await setGuestModeActive(false);
         if (!active) return;
         setLaunchState('welcome');
         return;
       }
 
-      const [status, guestOnboardingComplete] = await Promise.all([
-        restoreSession(),
-        isGuestOnboardingComplete(),
-      ]);
+      const status = await restoreSession();
       if (!active) return;
 
       if (status === 'signed-out') {
-        if (guestOnboardingComplete) {
+        if (isGuestModeActive()) {
           router.replace('/(tabs)');
+          return;
+        }
+
+        try {
+          const answers = await getGuestOnboardingAnswers();
+          if (!active) return;
+          if (hasOnboardingProgress(answers)) {
+            router.replace(getOnboardingResumeRoute(answers) as Href);
+            return;
+          }
+        } catch (error) {
+          console.warn('[onboarding] could not restore guest progress', error);
+        }
+
+        // Neither a session, guest mode, nor onboarding progress, but the
+        // intro was already seen: land on Login.
+        if (await hasSeenIntro()) {
+          if (!active) return;
+          router.replace('/login?launch=1');
           return;
         }
 
@@ -62,6 +112,12 @@ export default function FirstPageScreen() {
       }
 
       if (status === 'offline') {
+        const cachedMe = queryClient.getQueryData<MeApiResponse>(ME_QUERY_KEY);
+        if (profileNeedsOnboarding(cachedMe)) {
+          await resetToAuthenticatedOnboarding(router);
+          return;
+        }
+
         const cachedOnboardingCompleted = await readCachedOnboardingCompleted();
 
         if (cachedOnboardingCompleted === true) {
@@ -78,7 +134,7 @@ export default function FirstPageScreen() {
       if (status === 'restored') {
         const me = queryClient.getQueryData<MeApiResponse>(ME_QUERY_KEY);
         if (profileNeedsOnboarding(me)) {
-          resetToAuthenticatedOnboarding(router);
+          await resetToAuthenticatedOnboarding(router);
           return;
         }
 
@@ -96,7 +152,7 @@ export default function FirstPageScreen() {
     return () => {
       active = false;
     };
-  }, [router]);
+  }, [reset, router]);
 
   const isCheckingSession = launchState === 'checking';
 
@@ -126,7 +182,11 @@ export default function FirstPageScreen() {
 
       <SafeAreaView edges={['top', 'bottom']} style={styles.welcomeSafeArea}>
         {/* Step 1 Header with Logo & 4-Segment Progress Bar */}
-        <OnboardingStepHeader currentStep={1} totalSteps={4} />
+        <OnboardingStepHeader
+          activeColor="#FFFFFF"
+          currentStep={1}
+          totalSteps={4}
+        />
 
         <View style={styles.bottomBlock}>
           <Text style={styles.heading}>
@@ -141,16 +201,17 @@ export default function FirstPageScreen() {
 
           <View style={styles.actionBlock}>
             <OnboardingPillButton
+              arrowAtEnd
               disabled={isCheckingSession}
               label="Get started"
-              onPress={() => router.push('/why-passage' as any)}
+              onPress={handleGetStartedPress}
             />
 
             <Pressable
               accessibilityRole="button"
               disabled={isCheckingSession}
               hitSlop={10}
-              onPress={() => router.push('/login')}
+              onPress={handleLoginPress}
               style={({ pressed }) => [
                 styles.loginAction,
                 pressed && styles.linkPressed,
@@ -180,15 +241,15 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   bottomBlock: {
-    paddingBottom: 24,
+    paddingBottom: 14,
     paddingHorizontal: 24,
     width: '100%',
   },
   heading: {
     color: '#FFFFFF',
     fontFamily: AppFonts.playfairRegular,
-    fontSize: 44,
-    lineHeight: 48,
+    fontSize: 46,
+    lineHeight: 52,
     letterSpacing: -0.5,
   },
   linkPressed: {
@@ -204,8 +265,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     alignSelf: 'center',
     justifyContent: 'center',
-    minHeight: 44,
-    marginTop: 12,
+    marginTop: 8,
+    minHeight: 32,
     paddingHorizontal: 18,
   },
   loginLabel: {
@@ -218,8 +279,8 @@ const styles = StyleSheet.create({
   subtitle: {
     color: 'rgba(255, 255, 255, 0.8)',
     fontFamily: AppFonts.sansRegular,
-    fontSize: 15,
-    lineHeight: 22,
+    fontSize: 16,
+    lineHeight: 24,
     marginTop: 14,
   },
   welcomeBackgroundImage: {

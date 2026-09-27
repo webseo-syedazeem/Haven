@@ -10,10 +10,10 @@ import { AvatarPreview } from '@/components/profile/AvatarPreview';
 import { ProfileAvatar } from '@/components/profile/ProfileAvatar';
 import { SettingsGroup, SettingsRow } from '@/components/SettingsRow';
 import { Toast, useToast } from '@/components/Toast';
-import { HalcyonColors, HalcyonSpacing } from '@/constants/design';
+import { HalcyonColors, HalcyonSpacing, Typography } from '@/constants/design';
 import { AppFonts } from '@/constants/theme';
 import { useTabContentInset } from '@/hooks/use-bottom-safe-spacing';
-import { useHasSession } from '@/hooks/useSession';
+import { useGuestModeActive, useHasSession } from '@/hooks/useSession';
 import { useUser } from '@/hooks/useUser';
 import { getDisplayName, getProfileEmail } from '@/lib/api/user';
 import { clearUserSession } from '@/lib/auth/clearSession';
@@ -39,6 +39,7 @@ export default function ProfileScreen() {
   const queryClient = useQueryClient();
   const bottomInset = useTabContentInset();
   const hasSession = useHasSession();
+  const isGuest = useGuestModeActive();
   const { notice, showToast } = useToast();
 
   const { data: me, isInitialLoading, isError, refetch } = useUser();
@@ -53,19 +54,21 @@ export default function ProfileScreen() {
   // The cached profile outlives a failed refresh, so a real email beats the
   // offline notice — that line is for a device that has never fetched one.
   const tagline =
-    email ||
-    (isError
-      ? 'Your details are offline right now.'
-      : isInitialLoading
-        ? 'Loading your details…'
-        : 'Signed in to Passage');
+    isGuest
+      ? 'Browsing as guest'
+      : email ||
+        (isError
+          ? 'Your details are offline right now.'
+          : isInitialLoading
+            ? 'Loading your details…'
+            : 'Signed in to Passage');
 
   async function confirmSignOut() {
     setSigningOut(true);
     try {
       await clearUserSession(queryClient);
       setSignOutVisible(false);
-      router.replace('/login?signedOut=1' as Href);
+      router.replace('/welcome?launch=1' as Href);
     } catch {
       showToast('Could not sign out. Try again.');
     } finally {
@@ -200,19 +203,14 @@ const styles = StyleSheet.create({
     opacity: 0.8,
   },
   name: {
-    color: HalcyonColors.textPrimary,
-    fontFamily: AppFonts.displaySemiBold,
-    fontSize: 28,
-    fontWeight: '600',
-    lineHeight: 36,
+    ...Typography.screenHeading,
+    fontSize: 32,
+    lineHeight: 40,
     marginTop: 16,
     textAlign: 'center',
   },
   tagline: {
-    color: HalcyonColors.textSecondary,
-    fontFamily: AppFonts.sansRegular,
-    fontSize: 13,
-    lineHeight: 19,
+    ...Typography.muted,
     marginTop: 3,
     textAlign: 'center',
   },

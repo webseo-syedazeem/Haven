@@ -9,11 +9,9 @@ import { Platform } from 'react-native';
  * renders the last good version of every screen instead of a spinner and an
  * error.
  *
- * Backed by a file in the app-private document directory rather than
- * AsyncStorage: AsyncStorage is not a dependency of this project and adding it
- * would force a new dev client build, while a file in the sandbox is just as
- * durable, is not purged the way the cache directory is, and needs nothing new.
- * `localStorage` stands in on web.
+ * Backed by the existing file in the app-private document directory. The
+ * explicit guest flag uses AsyncStorage, but this cache keeps its established
+ * file format and sign-out wipe path. `localStorage` stands in on web.
  */
 
 const CACHE_FILE_NAME = 'query-cache.json';

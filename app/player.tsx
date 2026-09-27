@@ -46,6 +46,7 @@ export default function PlayerScreen() {
     hasNext,
     hasPrevious,
     error,
+    canRetry,
     timerSelection,
     isFadingOut,
     endToneEnabled,
@@ -201,6 +202,17 @@ export default function PlayerScreen() {
             </Text>
             {!!meta && <Text style={styles.meta}>{meta}</Text>}
             {!!error && <Text style={styles.error}>{error}</Text>}
+            {canRetry && (
+              <Pressable
+                accessibilityLabel="Try playing again"
+                accessibilityRole="button"
+                hitSlop={10}
+                onPress={() => void togglePlayPause()}
+                style={({ pressed }) => [styles.retryButton, pressed && styles.pressed]}>
+                <Ionicons color={HalcyonColors.accent} name="refresh" size={14} />
+                <Text style={styles.retryLabel}>Try again</Text>
+              </Pressable>
+            )}
           </View>
 
           <View style={styles.progressBlock}>
@@ -561,6 +573,25 @@ const styles = StyleSheet.create({
     fontSize: 13,
     lineHeight: 18,
     marginTop: 8,
+  },
+  retryButton: {
+    alignItems: 'center',
+    alignSelf: 'flex-start',
+    borderColor: HalcyonColors.accent,
+    borderRadius: HalcyonRadius.pill,
+    borderWidth: 1,
+    columnGap: 6,
+    flexDirection: 'row',
+    marginTop: 10,
+    paddingHorizontal: 14,
+    paddingVertical: 6,
+  },
+  retryLabel: {
+    color: HalcyonColors.accent,
+    fontFamily: AppFonts.sansMedium,
+    fontSize: 13,
+    fontWeight: '500',
+    lineHeight: 18,
   },
   progressBlock: {
     marginBottom: 6,

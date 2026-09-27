@@ -10,6 +10,7 @@ import { OnboardingContinueButton } from '@/components/onboarding/OnboardingCont
 import { OnboardingScaffold } from '@/components/onboarding/OnboardingScaffold';
 import { HalcyonColors, HalcyonRadius } from '@/constants/design';
 import { AppFonts } from '@/constants/theme';
+import { useSinglePress } from '@/hooks/useSinglePress';
 import type { Soundscape } from '@/lib/api/home';
 import {
   finishOnboardingForAppEntry,
@@ -55,6 +56,7 @@ export default function FirstRecommendationsScreen() {
       setStarting(false);
     }
   };
+  const handleSaveSpacePress = useSinglePress(() => void saveSpace());
 
   return (
     <OnboardingScaffold
@@ -64,12 +66,13 @@ export default function FirstRecommendationsScreen() {
             label={best ? 'Start listening' : 'Enter Passage'}
             loading={starting}
             onPress={() => void (best ? startListening() : enterWithoutTrack())}
+            showArrow
           />
           <Pressable
             accessibilityRole="button"
             disabled={starting}
             hitSlop={8}
-            onPress={() => void saveSpace()}
+            onPress={handleSaveSpacePress}
             style={({ pressed }) => [
               starting && styles.linkDisabled,
               pressed && !starting && styles.pressed,

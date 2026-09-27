@@ -13,6 +13,7 @@ import { HalcyonColors, HalcyonRadius } from '@/constants/design';
 import { AppFonts } from '@/constants/theme';
 
 export function ChoiceRow({
+  accentColor,
   description,
   icon,
   label,
@@ -20,6 +21,7 @@ export function ChoiceRow({
   selected,
   style,
 }: {
+  accentColor?: string;
   description?: string;
   icon?: ReactNode;
   label: string;
@@ -35,6 +37,15 @@ export function ChoiceRow({
       style={({ pressed }) => [
         styles.row,
         selected && styles.rowSelected,
+        selected && accentColor
+          ? {
+              borderColor: accentColor,
+              shadowColor: accentColor,
+              shadowOffset: { width: 0, height: 0 },
+              shadowOpacity: 0.18,
+              shadowRadius: 8,
+            }
+          : null,
         pressed && styles.pressed,
         style,
       ]}>
@@ -43,7 +54,14 @@ export function ChoiceRow({
         <Text style={styles.rowLabel}>{label}</Text>
         {description ? <Text style={styles.description}>{description}</Text> : null}
       </View>
-      <View style={[styles.check, selected && styles.checkSelected]}>
+      <View
+        style={[
+          styles.check,
+          selected && styles.checkSelected,
+          selected && accentColor
+            ? { backgroundColor: accentColor, borderColor: accentColor }
+            : null,
+        ]}>
         {selected ? (
           <Ionicons color={HalcyonColors.background} name="checkmark" size={14} />
         ) : null}
@@ -108,8 +126,8 @@ const styles = StyleSheet.create({
   chipLabel: {
     color: HalcyonColors.textPrimary,
     fontFamily: AppFonts.sansRegular,
-    fontSize: 14,
-    lineHeight: 20,
+    fontSize: 15,
+    lineHeight: 21,
   },
   chipLabelSelected: {
     color: HalcyonColors.background,
@@ -124,8 +142,8 @@ const styles = StyleSheet.create({
   description: {
     color: HalcyonColors.textSecondary,
     fontFamily: AppFonts.sansRegular,
-    fontSize: 12,
-    lineHeight: 18,
+    fontSize: 13,
+    lineHeight: 19,
     marginTop: 3,
   },
   icon: { marginRight: 12 },
@@ -145,9 +163,9 @@ const styles = StyleSheet.create({
   rowLabel: {
     color: HalcyonColors.textPrimary,
     fontFamily: AppFonts.sansMedium,
-    fontSize: 14,
+    fontSize: 16,
     fontWeight: '500',
-    lineHeight: 20,
+    lineHeight: 22,
   },
   rowSelected: {
    

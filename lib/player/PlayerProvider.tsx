@@ -25,6 +25,8 @@ const UNAVAILABLE_MESSAGE =
   Platform.OS === 'web'
     ? 'Playback is not available on web yet.'
     : 'Audio needs the Passage dev build — it cannot run in Expo Go.';
+const STALLED_MESSAGE = 'Playback stopped unexpectedly. Check your connection and try again.';
+const LOCAL_FAILURE_MESSAGE = 'This soundscape could not be played.';
 
 export type ResumableState = {
   soundscape: Soundscape;
@@ -43,6 +45,8 @@ export type PlayerStateValue = {
   hasNext: boolean;
   hasPrevious: boolean;
   error: string | null;
+  /** True when `error` is a playback failure that trying again might fix. */
+  canRetry: boolean;
   timerSelection: TimerSelection | null;
   isFadingOut: boolean;
   endToneEnabled: boolean;
@@ -80,6 +84,7 @@ const INITIAL_STATE: PlayerStateValue = {
   hasNext: false,
   hasPrevious: false,
   error: null,
+  canRetry: false,
   timerSelection: null,
   isFadingOut: false,
   endToneEnabled: false,
@@ -238,11 +243,23 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
     const unsubscribe = engine.subscribe({
       onPlaybackChange: ({ isPlaying, isBuffering }) => {
         isPlayingRef.current = isPlaying;
-        setState((current) =>
-          current.isPlaying === isPlaying && current.isBuffering === isBuffering
-            ? current
-            : { ...current, isPlaying, isBuffering }
-        );
+        setState((current) => {
+          // Sound is flowing again, so an earlier failure message no longer applies.
+          const clearError = isPlaying && current.canRetry;
+          if (
+            current.isPlaying === isPlaying &&
+            current.isBuffering === isBuffering &&
+            !clearError
+          ) {
+            return current;
+          }
+          return {
+            ...current,
+            isPlaying,
+            isBuffering,
+            ...(clearError ? { error: null, canRetry: false } : null),
+          };
+        });
       },
       onProgress: ({ position, duration }) => {
         positionRef.current = position;
@@ -269,6 +286,22 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
         }
         void finishPlayback();
       },
+      onPlaybackFailed: () => {
+        // The engine's own reloads could not revive the source and it has released
+        // the player, so the next play loads afresh from the position it reported.
+        isPlayingRef.current = false;
+        const soundscape = soundscapeRef.current;
+        setState((current) => ({
+          ...current,
+          isPlaying: false,
+          isBuffering: false,
+          error:
+            soundscape && hasLocalSource(soundscape.id) ? LOCAL_FAILURE_MESSAGE : STALLED_MESSAGE,
+          canRetry: true,
+        }));
+        refreshResumable();
+        void persistNow();
+      },
       onRemoteNext: () => void skipNextRef.current?.(),
       onRemotePrevious: () => void skipPreviousRef.current?.(),
     });
@@ -282,7 +315,7 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
       // expected to run this JS cleanup after a swipe-close.
       void engine.reset();
     };
-  }, [finishPlayback, persistNow]);
+  }, [finishPlayback, persistNow, refreshResumable]);
 
   // Countdown tick for an active timer.
   useEffect(() => {
@@ -399,6 +432,7 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
         hasPrevious: index > 0,
         isBuffering: true,
         error: track ? null : 'This soundscape has no audio file yet.',
+        canRetry: false,
         resumable: null,
       }));
       setProgress({
@@ -441,8 +475,9 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
           // not open is usually just a missing connection, and saying so tells
           // the user what to do about it.
           error: hasLocalSource(soundscape.id)
-            ? 'This soundscape could not be played.'
+            ? LOCAL_FAILURE_MESSAGE
             : 'This one needs a connection. Download it to play offline.',
+          canRetry: true,
         }));
         return;
       }
@@ -497,7 +532,12 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
     await engine.setVolume(1);
     isPlayingRef.current = true;
     await engine.play();
-    setState((current) => ({ ...current, isPlaying: true }));
+    // Playing again is also how a failure is retried, so its message goes.
+    setState((current) => ({
+      ...current,
+      isPlaying: true,
+      ...(current.canRetry ? { error: null, canRetry: false } : null),
+    }));
     schedulePersist();
   }, [clearFade, persistNow, refreshResumable, schedulePersist]);
 
@@ -507,8 +547,14 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
 
       const clamped = Math.max(0, Math.min(seconds, durationRef.current || seconds));
       positionRef.current = clamped;
+      // Shown at once so the scrubber does not snap back. The engine confirms the
+      // seek from real playback, and reloads at this position if it never resumes.
       setProgress((current) => ({ ...current, position: clamped }));
-      await engine.seekTo(clamped);
+      try {
+        await engine.seekTo(clamped);
+      } catch (error) {
+        console.warn('[player] seek failed', error);
+      }
       schedulePersist();
     },
     [schedulePersist]

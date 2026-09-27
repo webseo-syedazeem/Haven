@@ -1,4 +1,4 @@
-{
+﻿{
   "expo": {
     "name": "Passage",
     "slug": "Passage",
@@ -10,7 +10,7 @@
     "newArchEnabled": true,
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.passage.preview",
+      "bundleIdentifier": "com.happycheeksltd.halcyon",
       "infoPlist": {
         "NSAppTransportSecurity": {
           "NSAllowsArbitraryLoads": true
@@ -22,7 +22,7 @@
       }
     },
     "android": {
-      "package": "com.passage.preview",
+      "package": "com.happycheeksltd.halcyon",
       "permissions": [
         "android.permission.SCHEDULE_EXACT_ALARM",
         "android.permission.USE_EXACT_ALARM",
@@ -113,7 +113,7 @@
     },
     "extra": {
       "eas": {
-        "projectId": "d67d8ad3-ff1a-4ea4-99d6-a10bb7079bde"
+        "projectId": "3b41b9a5-628e-4163-8bce-a78d7e9fe44f"
       }
     }
   }

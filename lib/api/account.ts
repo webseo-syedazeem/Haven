@@ -1,6 +1,5 @@
 import { apiClient } from './client';
 import type { SoundscapeMode } from './home';
-import type { DetailPreference } from './preferences';
 
 type Envelope<T> = { success: boolean; data: T };
 
@@ -38,32 +37,35 @@ export type ImportGuestPlaylist = {
   soundscape_ids?: string[];
 };
 
-/**
- * The exact subset of sound-preference fields validated by the import
- * controller. detail_preference deliberately cannot be null: the backend
- * accepts an omitted value, but rejects an explicitly-null one.
- */
-export type ImportGuestSoundPreferences = {
-  preferred_environments?: string[];
-  preferred_sounds?: string[];
-  preferred_animals?: string[];
-  preferred_instruments?: string[];
-  excluded_sounds?: string[];
-  detail_preference?: DetailPreference;
-  typical_duration?: string | null;
-  intensity_preference?: 1 | 2 | 3 | 4 | 5;
-};
-
-/** Authenticated guest-to-account import payload. All fields are optional. */
-export type ImportGuestDataPayload = {
+type ImportGuestExtras = {
   favourites?: string[];
   playlists?: ImportGuestPlaylist[];
-  sound_preferences?: ImportGuestSoundPreferences;
-  /** When supplied, the backend requires between one and five strings. */
-  goals?: string[];
-  starting_mode?: SoundscapeMode;
-  situation?: string | null;
 };
+
+/** Final mode-scoped onboarding body accepted by the guest import controller. */
+export type ImportGuestDataPayload = ImportGuestExtras &
+  (
+    | {
+        mode: Exclude<SoundscapeMode, 'relax'>;
+        user_goals: string;
+        mode_breakers: string[];
+        mode_areas: string[];
+        target_minutes: number;
+        main_goal?: never;
+        relax_causes?: never;
+        calming_moments?: never;
+      }
+    | {
+        mode: 'relax';
+        user_goals: string;
+        main_goal: string;
+        relax_causes: string[];
+        calming_moments: string;
+        mode_breakers?: never;
+        mode_areas?: never;
+        target_minutes?: never;
+      }
+  );
 
 /** Summary returned after the backend's best-effort batch import. */
 export type ImportGuestDataResult = {

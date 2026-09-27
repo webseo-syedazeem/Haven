@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Stack, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
@@ -6,37 +6,42 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 
 import { OnboardingPillButton } from '@/components/onboarding/OnboardingPillButton';
-import { OnboardingStepHeader, PASSAGE_GOLD, PASSAGE_SLEEP } from '@/components/onboarding/OnboardingStepHeader';
+import { OnboardingStepHeader } from '@/components/onboarding/OnboardingStepHeader';
 import { AppFonts } from '@/constants/theme';
-import { getOnboardingAnswers, saveOnboardingAnswers } from '@/lib/onboarding';
+import {
+  getOnboardingAnswers,
+  saveOnboardingAnswers,
+} from '@/lib/onboarding';
 
-const focusImage = require('@/assets/images/preview-library-dusk.webp');
-const calmImage = require('@/assets/images/preview-zen-garden.webp');
-const sleepImage = require('@/assets/images/preview-night-train.webp');
+const focusImage = require('@/assets/images/focus-mode.webp');
+const calmImage = require('@/assets/images/relax-mode.webp');
+const sleepImage = require('@/assets/images/sleep-mode.webp');
 
 type GoalCard = {
+  description: string;
   id: 'focus' | 'calm' | 'sleep';
-  mode: 'focus' | 'relax' | 'sleep';
   image: any;
   label: string;
 };
 
+const GOAL_SELECTION_COLOR = '#FFFFFF';
+
 const GOAL_CARDS: readonly GoalCard[] = [
   {
+    description: 'Create the conditions for deeper, calmer, and steadier work.',
     id: 'focus',
-    mode: 'focus',
     image: focusImage,
     label: 'Focus deeply',
   },
   {
+    description: 'Release tension and find calm through natural spaces.',
     id: 'calm',
-    mode: 'relax',
     image: calmImage,
     label: 'Feel calmer',
   },
   {
+    description: 'Create the conditions to wind down and rest more easily.',
     id: 'sleep',
-    mode: 'sleep',
     image: sleepImage,
     label: 'Sleep easier',
   },
@@ -44,43 +49,53 @@ const GOAL_CARDS: readonly GoalCard[] = [
 
 export default function WhatItDoesScreen() {
   const router = useRouter();
-  const [selectedGoal, setSelectedGoal] = useState<'focus' | 'calm' | 'sleep'>('focus');
+  const [selectedGoal, setSelectedGoal] = useState<GoalCard['id'] | null>(null);
+  const [hydrating, setHydrating] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState('');
+  const selectedGoalCard = GOAL_CARDS.find((card) => card.id === selectedGoal);
 
   useEffect(() => {
     let active = true;
-    void getOnboardingAnswers().then((answers) => {
-      if (!active) return;
-      if (answers.startingMode === 'relax') {
-        setSelectedGoal('calm');
-      } else if (answers.startingMode === 'sleep') {
-        setSelectedGoal('sleep');
-      } else if (answers.startingMode === 'focus') {
-        setSelectedGoal('focus');
-      }
-    });
+    void getOnboardingAnswers()
+      .then((answers) => {
+        if (!active) return;
+        const savedGoal = GOAL_CARDS.find(
+          (card) => answers.user_goals === card.label
+        );
+        setSelectedGoal(savedGoal?.id ?? null);
+      })
+      .catch(() => {
+        if (active) setSaveError('We could not load your saved choice.');
+      })
+      .finally(() => {
+        if (active) setHydrating(false);
+      });
     return () => {
       active = false;
     };
   }, []);
 
-  const handleContinue = async () => {
-    if (saving) return;
-    setSaving(true);
-    const card = GOAL_CARDS.find((c) => c.id === selectedGoal);
-    if (card) {
-      try {
-        await saveOnboardingAnswers({ startingMode: card.mode });
-      } catch (err) {
-        console.warn('[what-it-does] Failed to save starting mode:', err);
-      }
-    }
-    setSaving(false);
-    router.push('/select-focus' as any);
+  const handleGoalSelect = (card: GoalCard) => {
+    setSaveError('');
+    setSelectedGoal(card.id);
   };
 
-  const isSleep = selectedGoal === 'sleep';
-  const themeColor = isSleep ? PASSAGE_SLEEP : PASSAGE_GOLD;
+  const handleContinue = async () => {
+    if (hydrating || saving || !selectedGoalCard) return;
+
+    setSaving(true);
+    setSaveError('');
+    try {
+      await saveOnboardingAnswers({ user_goals: selectedGoalCard.label });
+      router.push('/select-focus' as any);
+    } catch (err) {
+      console.warn('[what-it-does] Failed to save goal:', err);
+      setSaveError('We could not save that choice. Please try again.');
+    } finally {
+      setSaving(false);
+    }
+  };
 
   return (
     <SafeAreaView edges={['top', 'bottom']} style={styles.safeArea}>
@@ -89,7 +104,7 @@ export default function WhatItDoesScreen() {
 
       {/* Header with Step 3 Active */}
       <OnboardingStepHeader
-        activeColor={themeColor}
+        activeColor={GOAL_SELECTION_COLOR}
         currentStep={3}
         onBack={() => router.back()}
         showBack
@@ -114,7 +129,8 @@ export default function WhatItDoesScreen() {
                 key={card.id}
                 accessibilityRole="radio"
                 accessibilityState={{ selected: isSelected }}
-                onPress={() => setSelectedGoal(card.id)}
+                disabled={hydrating}
+                onPress={() => handleGoalSelect(card)}
                 style={({ pressed }) => [
                   styles.cardColumn,
                   pressed && styles.cardPressed,
@@ -124,7 +140,10 @@ export default function WhatItDoesScreen() {
                   style={[
                     styles.imageCard,
                     isSelected
-                      ? [styles.imageCardSelected, { borderColor: themeColor }]
+                      ? [
+                          styles.imageCardSelected,
+                          { borderColor: GOAL_SELECTION_COLOR },
+                        ]
                       : styles.imageCardUnselected,
                   ]}
                 >
@@ -135,19 +154,16 @@ export default function WhatItDoesScreen() {
                   />
 
                   {isSelected && (
-                    <View style={[styles.checkBadge, { backgroundColor: themeColor }]}>
+                    <View
+                      style={[
+                        styles.checkBadge,
+                        { backgroundColor: GOAL_SELECTION_COLOR },
+                      ]}>
                       <Ionicons color="#0B0B0D" name="checkmark" size={13} />
                     </View>
                   )}
                 </View>
-                <Text
-                  style={[
-                    styles.cardLabel,
-                    isSelected && styles.cardLabelSelected,
-                  ]}
-                >
-                  {card.label}
-                </Text>
+                <Text style={styles.cardLabel}>{card.label}</Text>
               </Pressable>
             );
           })}
@@ -155,17 +171,23 @@ export default function WhatItDoesScreen() {
 
         {/* Subtitle / Explanatory Text */}
         <View style={styles.copyBlock}>
-          <Text style={styles.subtitle}>
+          {selectedGoalCard ? (
+            <Text style={styles.subtitle}>{selectedGoalCard.description}</Text>
+          ) : (
+            <Text style={styles.subtitle}>
             Choose a goal.{'\n'}
             Passage shapes the sound around it.
-          </Text>
+            </Text>
+          )}
         </View>
       </View>
 
       {/* Footer Continue Button */}
       <View style={styles.footer}>
+        {saveError ? <Text style={styles.errorText}>{saveError}</Text> : null}
         <OnboardingPillButton
-          disabled={saving}
+          arrowAtEnd
+          disabled={hydrating || saving || !selectedGoal}
           label="CONTINUE"
           onPress={handleContinue}
           variant="white"
@@ -185,16 +207,12 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   cardLabel: {
-    color: 'rgba(255, 255, 255, 0.65)',
+    color: '#FFFFFF',
     fontFamily: AppFonts.sansMedium,
-    fontSize: 13,
+    fontSize: 14,
     fontWeight: '600',
     marginTop: 10,
     textAlign: 'center',
-  },
-  cardLabelSelected: {
-    color: '#FFFFFF',
-    fontWeight: '700',
   },
   cardPressed: {
     opacity: 0.88,
@@ -207,7 +225,7 @@ const styles = StyleSheet.create({
   },
   checkBadge: {
     alignItems: 'center',
-    backgroundColor: PASSAGE_GOLD,
+    backgroundColor: GOAL_SELECTION_COLOR,
     borderRadius: 10,
     height: 20,
     justifyContent: 'center',
@@ -229,10 +247,18 @@ const styles = StyleSheet.create({
     marginTop: 16,
   },
   footer: {
-    paddingBottom: 24,
+    paddingBottom: 14,
     paddingHorizontal: 24,
     paddingTop: 8,
     width: '100%',
+  },
+  errorText: {
+    color: '#D9A39B',
+    fontFamily: AppFonts.sansRegular,
+    fontSize: 12,
+    lineHeight: 17,
+    marginBottom: 8,
+    textAlign: 'center',
   },
   headerBlock: {
     alignItems: 'center',
@@ -242,9 +268,9 @@ const styles = StyleSheet.create({
   heading: {
     color: '#FFFFFF',
     fontFamily: AppFonts.playfairRegular,
-    fontSize: 38,
+    fontSize: 40,
     letterSpacing: -0.5,
-    lineHeight: 44,
+    lineHeight: 46,
     textAlign: 'center',
   },
   imageCard: {
@@ -255,13 +281,12 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   imageCardSelected: {
-    borderColor: PASSAGE_GOLD,
+    borderColor: GOAL_SELECTION_COLOR,
     borderWidth: 2,
   },
   imageCardUnselected: {
     borderColor: 'rgba(255, 255, 255, 0.1)',
     borderWidth: 1,
-    opacity: 0.72,
   },
   safeArea: {
     backgroundColor: '#0B0B0D',
@@ -270,9 +295,8 @@ const styles = StyleSheet.create({
   subtitle: {
     color: 'rgba(255, 255, 255, 0.72)',
     fontFamily: AppFonts.sansRegular,
-    fontSize: 14.5,
-    lineHeight: 22,
+    fontSize: 16,
+    lineHeight: 24,
     textAlign: 'center',
   },
 });
-

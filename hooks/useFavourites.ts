@@ -1,8 +1,10 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useCallback, useMemo } from 'react';
 
+import { useAccountRequiredPrompt } from '@/components/auth/AccountRequiredPrompt';
 import { useHasSession } from '@/hooks/useSession';
 import { homeApi, type Favourite, type Soundscape } from '@/lib/api/home';
+import { hasActiveSession } from '@/lib/auth/session-state';
 
 /**
  * The single source of truth for favourites. Cards, rows, the soundscape
@@ -21,6 +23,7 @@ export function useFavourites() {
     queryKey: FAVOURITES_QUERY_KEY,
     queryFn: homeApi.favourites,
     enabled: hasSession,
+    select: (rows) => (hasSession ? rows : []),
   });
 }
 
@@ -71,10 +74,18 @@ type ToggleFavouriteInput = { soundscape: Soundscape; isFavourite: boolean };
  */
 export function useToggleFavourite() {
   const queryClient = useQueryClient();
+  const hasSession = useHasSession();
+  const { showAccountRequiredPrompt } = useAccountRequiredPrompt();
 
   const mutation = useMutation({
-    mutationFn: ({ soundscape, isFavourite }: ToggleFavouriteInput) =>
-      isFavourite ? homeApi.removeFavourite(soundscape.id) : homeApi.addFavourite(soundscape.id),
+    mutationFn: ({ soundscape, isFavourite }: ToggleFavouriteInput) => {
+      if (!hasActiveSession()) {
+        return Promise.reject(new Error('An account is required to save favourites.'));
+      }
+      return isFavourite
+        ? homeApi.removeFavourite(soundscape.id)
+        : homeApi.addFavourite(soundscape.id);
+    },
     onMutate: async ({ soundscape, isFavourite }: ToggleFavouriteInput) => {
       await queryClient.cancelQueries({ queryKey: FAVOURITES_QUERY_KEY });
       const previous = queryClient.getQueryData<Favourite[]>(FAVOURITES_QUERY_KEY);
@@ -112,8 +123,17 @@ export function useToggleFavourite() {
 
   const { mutate } = mutation;
   const toggleFavourite = useCallback(
-    (soundscape: Soundscape, isFavourite: boolean) => mutate({ soundscape, isFavourite }),
-    [mutate]
+    (soundscape: Soundscape, isFavourite: boolean) => {
+      if (!hasSession) {
+        showAccountRequiredPrompt({
+          title: 'Please log in',
+          message: 'Log in to save favourites and keep them across your devices.',
+        });
+        return;
+      }
+      mutate({ soundscape, isFavourite });
+    },
+    [hasSession, mutate, showAccountRequiredPrompt]
   );
 
   return { ...mutation, toggleFavourite };

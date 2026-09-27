@@ -1,9 +1,13 @@
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
 import {
   GUEST_MODE_ACTIVE_DEFAULT,
   getLocalSetting,
   LOCAL_SETTING_KEYS,
   setLocalSetting,
 } from '@/lib/local-settings';
+
+export const GUEST_MODE_STORAGE_KEY = 'is_guest';
 
 /**
  * Tracks whether a signed-in session actually exists, so authenticated queries
@@ -35,6 +39,7 @@ let restoring = true;
  * does not depend on that bookkeeping being right.
  */
 let guestModeActive = false;
+let guestPersistence: Promise<void> = Promise.resolve();
 
 const listeners = new Set<() => void>();
 
@@ -102,25 +107,60 @@ export function isGuestModeActive() {
  * confirmed sign in so a later real account is never left gated by a guest
  * choice made earlier on the same device.
  */
-export function setGuestModeActive(active: boolean) {
+export function setGuestModeActive(active: boolean): Promise<void> {
+  const changed = guestModeActive !== active;
+
   if (guestModeActive === active) {
-    void setLocalSetting(LOCAL_SETTING_KEYS.guestModeActive, active);
-    return;
+    return persistGuestMode(active);
   }
 
-  const wasActive = hasActiveSession();
   guestModeActive = active;
-  void setLocalSetting(LOCAL_SETTING_KEYS.guestModeActive, active);
+  persistGuestMode(active);
 
-  if (hasActiveSession() !== wasActive) {
-    notify();
-  }
+  // Guest state has consumers of its own (for example the account-required
+  // popup), so listeners must hear this even when hasActiveSession() was false
+  // both before and after the change.
+  if (changed) notify();
+  return guestPersistence;
 }
 
 /** Loads the persisted flag into memory. Call once, before the launch restore settles. */
 export async function hydrateGuestMode(): Promise<void> {
+  let stored: string | null = null;
+
+  try {
+    stored = await AsyncStorage.getItem(GUEST_MODE_STORAGE_KEY);
+  } catch {
+    // The legacy store below still gives existing installs a safe fallback.
+  }
+
+  if (stored !== null) {
+    guestModeActive = stored === 'true';
+    return;
+  }
+
+  // One-time migration from the earlier SecureStore/localStorage setting.
   guestModeActive = await getLocalSetting(
     LOCAL_SETTING_KEYS.guestModeActive,
     GUEST_MODE_ACTIVE_DEFAULT
   );
+  if (guestModeActive) persistGuestMode(true);
+}
+
+function persistGuestMode(active: boolean): Promise<void> {
+  guestPersistence = guestPersistence
+    .catch(() => undefined)
+    .then(async () => {
+      if (active) {
+        await AsyncStorage.setItem(GUEST_MODE_STORAGE_KEY, 'true');
+      } else {
+        await AsyncStorage.removeItem(GUEST_MODE_STORAGE_KEY);
+      }
+
+      // Keep the old key in a non-guest state after migration so it can never
+      // reactivate guest mode if AsyncStorage is later cleared independently.
+      await setLocalSetting(LOCAL_SETTING_KEYS.guestModeActive, active);
+    })
+    .catch(() => undefined);
+  return guestPersistence;
 }

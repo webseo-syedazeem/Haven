@@ -4,26 +4,39 @@ import { ME_QUERY_KEY } from '@/hooks/useUser';
 import { userApi, type MeApiResponse } from '@/lib/api/user';
 import { cacheProfile } from '@/lib/auth/offline-session';
 import { resetToMainApp } from '@/lib/navigation';
-import { migrateGuestOnboardingAfterAuth } from '@/lib/onboarding';
+import {
+  getOnboardingAnswers,
+  getOnboardingResumeRoute,
+  migrateGuestOnboardingAfterAuth,
+} from '@/lib/onboarding';
 import { queryClient } from '@/lib/query-client';
 
-export const AUTHENTICATED_ONBOARDING_START_ROUTE = '/passage-help' as const;
+/** Used only when local progress cannot be read or does not exist yet. */
+export const AUTHENTICATED_ONBOARDING_START_ROUTE = '/why-passage' as const;
 
 export function profileNeedsOnboarding(me: MeApiResponse | null | undefined): boolean {
   return me?.data?.profile?.onboarding_completed === false;
 }
 
-export function resetToAuthenticatedOnboarding(router: Router): void {
+export async function resetToAuthenticatedOnboarding(router: Router): Promise<void> {
+  let route: Href = AUTHENTICATED_ONBOARDING_START_ROUTE;
+
+  try {
+    route = getOnboardingResumeRoute(await getOnboardingAnswers()) as Href;
+  } catch (error) {
+    console.warn('[onboarding] could not read local resume progress', error);
+  }
+
   router.dismissAll();
-  router.replace(AUTHENTICATED_ONBOARDING_START_ROUTE as Href);
+  router.replace(route);
 }
 
-export function routeForOnboardingStatus(
+export async function routeForOnboardingStatus(
   router: Router,
   me: MeApiResponse | null | undefined
-): void {
+): Promise<void> {
   if (profileNeedsOnboarding(me)) {
-    resetToAuthenticatedOnboarding(router);
+    await resetToAuthenticatedOnboarding(router);
     return;
   }
 
@@ -40,5 +53,5 @@ export async function fetchAndCacheCurrentUser(): Promise<MeApiResponse> {
 export async function routeAfterSignIn(router: Router): Promise<void> {
   await migrateGuestOnboardingAfterAuth();
   const me = await fetchAndCacheCurrentUser();
-  routeForOnboardingStatus(router, me);
+  await routeForOnboardingStatus(router, me);
 }

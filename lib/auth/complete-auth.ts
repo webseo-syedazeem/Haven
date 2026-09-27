@@ -37,10 +37,14 @@ export async function completeSupabaseAuth(session: Session): Promise<MeApiRespo
     console.warn('[auth] profile sync remains pending', error);
   }
 
-  // Do not silently enter the app if a completed guest profile could not be
-  // imported. The caller keeps its retry UI active and the local flags remain
-  // pending until this authenticated request succeeds.
-  await migrateGuestOnboardingAfterAuth();
+  // Account creation is complete even if the optional guest import is briefly
+  // offline. Keep its local pending state intact; the verified screen offers a
+  // retry while still allowing the user to continue into the app.
+  try {
+    await migrateGuestOnboardingAfterAuth();
+  } catch (error) {
+    console.warn('[onboarding] guest answers remain pending after auth', error);
+  }
   await queryClient.invalidateQueries({ queryKey: ME_QUERY_KEY });
   const me = await queryClient.fetchQuery({
     queryKey: ME_QUERY_KEY,
