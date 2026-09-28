@@ -3,7 +3,13 @@ import type { ReactNode } from 'react';
 import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { HalcyonColors, HalcyonSpacing } from '@/constants/design';
+import {
+  HalcyonColors,
+  HalcyonModal,
+  HalcyonRadius,
+  HalcyonSpacing,
+  Typography,
+} from '@/constants/design';
 import { AppFonts } from '@/constants/theme';
 
 /** The bottom sheet shell every settings picker uses. */
@@ -21,10 +27,17 @@ export function SheetFrame({
   const insets = useSafeAreaInsets();
 
   return (
-    <Modal animationType="slide" onRequestClose={onClose} transparent visible={visible}>
-      <Pressable accessibilityLabel="Close" onPress={onClose} style={styles.backdrop} />
+    <Modal
+      animationType="slide"
+      navigationBarTranslucent
+      onRequestClose={onClose}
+      statusBarTranslucent
+      transparent
+      visible={visible}>
+      <View style={styles.container}>
+        <Pressable accessibilityLabel="Close" onPress={onClose} style={styles.backdrop} />
 
-      <View style={[styles.sheet, { paddingBottom: insets.bottom + 16 }]}>
+        <View style={[styles.sheet, { paddingBottom: insets.bottom + 16 }]}>
         <View style={styles.header}>
           <Text style={styles.title}>{title}</Text>
           <Pressable
@@ -36,6 +49,7 @@ export function SheetFrame({
           </Pressable>
         </View>
         {children}
+        </View>
       </View>
     </Modal>
   );
@@ -103,15 +117,19 @@ export function OptionSheet<T extends string | number | null>({
 }
 
 const styles = StyleSheet.create({
-  backdrop: {
-    backgroundColor: 'rgba(4,4,6,0.62)',
+  container: {
     flex: 1,
+    justifyContent: 'flex-end',
+  },
+  backdrop: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: HalcyonModal.backdrop,
   },
   sheet: {
     backgroundColor: HalcyonColors.surface,
     borderTopColor: HalcyonColors.border,
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
+    borderTopLeftRadius: HalcyonRadius.sheet,
+    borderTopRightRadius: HalcyonRadius.sheet,
     borderTopWidth: 1,
     maxHeight: '78%',
     paddingHorizontal: HalcyonSpacing.screenX,
@@ -124,11 +142,7 @@ const styles = StyleSheet.create({
     marginBottom: 6,
   },
   title: {
-    color: HalcyonColors.textPrimary,
-    fontFamily: AppFonts.displaySemiBold,
-    fontSize: 20,
-    fontWeight: '600',
-    lineHeight: 27,
+    ...Typography.sectionHeading,
   },
   list: {
     flexGrow: 0,

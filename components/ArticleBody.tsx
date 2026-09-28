@@ -111,21 +111,23 @@ export function ArticleBody({ body }: { body: string }) {
 const styles = StyleSheet.create({
   heading: {
     color: HalcyonColors.textPrimary,
-    fontFamily: AppFonts.displaySemiBold,
-    fontSize: 19,
-    fontWeight: '600',
-    lineHeight: 26,
+    fontFamily: AppFonts.playfairRegular,
+    fontSize: 21,
+    letterSpacing: -0.2,
+    lineHeight: 28,
     marginBottom: 6,
     marginTop: 22,
   },
   heading1: {
-    fontSize: 23,
-    lineHeight: 30,
+    fontSize: 28,
+    letterSpacing: -0.3,
+    lineHeight: 34,
   },
   heading3: {
     fontFamily: AppFonts.sansSemiBold,
-    fontSize: 15,
-    lineHeight: 21,
+    fontSize: 16,
+    letterSpacing: 0,
+    lineHeight: 24,
   },
   headingFirst: {
     marginTop: 0,
@@ -133,8 +135,8 @@ const styles = StyleSheet.create({
   paragraph: {
     color: HalcyonColors.textSecondary,
     fontFamily: AppFonts.sansRegular,
-    fontSize: 14,
-    lineHeight: 22,
+    fontSize: 16,
+    lineHeight: 24,
     marginTop: 10,
   },
   bulletRow: {
@@ -144,15 +146,15 @@ const styles = StyleSheet.create({
   bulletDot: {
     color: HalcyonColors.accent,
     fontFamily: AppFonts.sansRegular,
-    fontSize: 14,
-    lineHeight: 22,
+    fontSize: 16,
+    lineHeight: 24,
     marginRight: 10,
   },
   bulletText: {
     color: HalcyonColors.textSecondary,
     flex: 1,
     fontFamily: AppFonts.sansRegular,
-    fontSize: 14,
-    lineHeight: 22,
+    fontSize: 16,
+    lineHeight: 24,
   },
 });

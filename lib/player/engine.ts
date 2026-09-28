@@ -135,6 +135,12 @@ export function createPlayerEngine(options: EngineOptions = {}): PlayerEngine {
   let pendingSeek: number | null = null;
   /** Playback was asked for while `pendingSeek` waited, so it starts once the seek lands. */
   let resumeAfterSeek = false;
+  /**
+   * Whether this native player already owns expo-audio's one media session.
+   * Starting it launches an Android foreground service, so it must only happen
+   * beside a real play request, never speculatively while a source is loading.
+   */
+  let lockScreenActive = false;
 
   // Last values handed to subscribers, so an idle player emits nothing.
   let lastPosition = -1;
@@ -176,6 +182,34 @@ export function createPlayerEngine(options: EngineOptions = {}): PlayerEngine {
     lastIsPlaying = isPlaying;
     lastIsBuffering = isBuffering;
     emit('onPlaybackChange', { isPlaying, isBuffering });
+  }
+
+  function lockScreenMetadata(track: PlayableTrack): AudioMetadata {
+    const remoteArtwork = track.artwork;
+    const isRemote = !!remoteArtwork && /^https?:\/\//i.test(remoteArtwork);
+    const localArtwork = isRemote ? getArtworkCache()?.cached(remoteArtwork) : null;
+
+    return toMetadata(localArtwork ? { ...track, artwork: localArtwork } : track);
+  }
+
+  /**
+   * Arms the foreground media service once per native player, immediately
+   * before playback. Track changes reuse that service and only change metadata.
+   */
+  function activateLockScreen(current: AudioPlayer) {
+    if (!lockScreen || lockScreenActive || player !== current || !currentTrack) return;
+
+    current.setActiveForLockScreen(
+      true,
+      lockScreenMetadata(currentTrack),
+      LOCK_SCREEN_OPTIONS
+    );
+    lockScreenActive = true;
+  }
+
+  function playCurrent(current: AudioPlayer) {
+    activateLockScreen(current);
+    current.play();
   }
 
   function pushProgress() {
@@ -391,7 +425,7 @@ export function createPlayerEngine(options: EngineOptions = {}): PlayerEngine {
       if (generation !== sourceGeneration || !resumeAfterSeek) return;
 
       resumeAfterSeek = false;
-      if (wantsPlayback) current.play();
+      if (wantsPlayback) playCurrent(current);
     } catch (error) {
       console.warn('[player] could not start at the saved position', error);
       if (generation !== sourceGeneration) return;
@@ -472,6 +506,7 @@ export function createPlayerEngine(options: EngineOptions = {}): PlayerEngine {
     sourceOpen = false;
     pendingSeek = null;
     resumeAfterSeek = false;
+    lockScreenActive = false;
     wantsPlayback = false;
     resumeTarget = 0;
     knownDuration = 0;
@@ -498,9 +533,9 @@ export function createPlayerEngine(options: EngineOptions = {}): PlayerEngine {
   function disposePlayer(current: AudioPlayer) {
     const steps: [string, () => void][] = [['pause', () => current.pause()]];
 
-    if (lockScreen) {
+    if (lockScreenActive) {
       // Both are intentional: clearLockScreenControls clears now-playing state,
-      // while the explicit false mirrors the activation in `load`. The first only
+      // while the explicit false mirrors the activation beside `play`. The first only
       // acts if this player holds the lock screen; the second would clear another
       // player's, so a non-owner leaves it out. Clearing comes before `release`,
       // which would otherwise drop the whole media session if this player held it.
@@ -631,11 +666,14 @@ export function createPlayerEngine(options: EngineOptions = {}): PlayerEngine {
         const localArtwork =
           artworkCache && remoteArtwork ? artworkCache.cached(remoteArtwork) : null;
 
-        current.setActiveForLockScreen(
-          true,
-          toMetadata(localArtwork ? { ...track, artwork: localArtwork } : track),
-          LOCK_SCREEN_OPTIONS
-        );
+        // Once playback has created the media session, a queue change only
+        // updates it. Calling setActiveForLockScreen again can restart Android's
+        // foreground-service sequence during rapid track changes.
+        if (lockScreenActive) {
+          current.updateLockScreenMetadata(
+            toMetadata(localArtwork ? { ...track, artwork: localArtwork } : track)
+          );
+        }
 
         // First play of this cover: the remote URL above shows it right away,
         // and the saved copy replaces it as soon as it lands, so a fetch that
@@ -645,7 +683,12 @@ export function createPlayerEngine(options: EngineOptions = {}): PlayerEngine {
           void artworkCache
             .fetch(remoteArtwork)
             .then((uri) => {
-              if (!uri || player !== current || generation !== sourceGeneration) return;
+              if (
+                !uri ||
+                !lockScreenActive ||
+                player !== current ||
+                generation !== sourceGeneration
+              ) return;
               current.updateLockScreenMetadata(toMetadata({ ...track, artwork: uri }));
             })
             .catch((error) => console.warn('[player] lock screen artwork update failed', error));
@@ -685,7 +728,7 @@ export function createPlayerEngine(options: EngineOptions = {}): PlayerEngine {
         return;
       }
 
-      current.play();
+      playCurrent(current);
     },
 
     pause: async () => {

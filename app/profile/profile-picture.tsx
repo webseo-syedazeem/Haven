@@ -13,6 +13,11 @@ import { HalcyonColors } from '@/constants/design';
 import { AppFonts } from '@/constants/theme';
 import { useRemoveProfileImage, useUploadProfileImage, useUser } from '@/hooks/useUser';
 import { getDisplayName } from '@/lib/api/user';
+import { firstFieldError, parseAuthError } from '@/lib/auth/form-errors';
+
+const MAX_FILE_SIZE = 5 * 1024 * 1024;
+const SUPPORTED_EXTENSIONS = new Set(['jpg', 'jpeg', 'png', 'webp']);
+const SUPPORTED_MIME_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp']);
 
 const pickerOptions: ImagePicker.ImagePickerOptions = {
   mediaTypes: ['images'],
@@ -48,18 +53,29 @@ function ProfilePictureContent() {
       if (result.canceled || !result.assets[0]) return;
 
       const asset = result.assets[0];
+      const fileName = asset.fileName ?? `profile-${Date.now()}.jpg`;
+      const mimeType = asset.mimeType ?? 'image/jpeg';
+      const extension = fileName.split('.').pop()?.toLowerCase() ?? '';
+
+      if (asset.fileSize && asset.fileSize > MAX_FILE_SIZE) {
+        showToast('Image must be 5MB or smaller');
+        return;
+      }
+      if (!SUPPORTED_EXTENSIONS.has(extension) || !SUPPORTED_MIME_TYPES.has(mimeType)) {
+        showToast('Supported image formats are jpg, jpeg, png and webp');
+        return;
+      }
 
       try {
         await uploadImage.mutateAsync({
           uri: asset.uri,
-          name: asset.fileName ?? `profile-${Date.now()}.jpg`,
-          type: asset.mimeType ?? 'image/jpeg',
+          name: fileName,
+          type: mimeType,
         });
         showToast('Profile picture updated.');
       } catch (error) {
-        showToast(
-          error instanceof Error ? error.message : 'Could not upload that picture. Try again.'
-        );
+        const parsed = parseAuthError(error, 'Could not upload that picture. Try again.');
+        showToast(firstFieldError(parsed.fields) ?? parsed.message);
       }
     },
     [showToast, uploadImage]

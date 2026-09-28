@@ -10,7 +10,13 @@ import {
 } from 'react';
 import { Modal, Pressable, StyleSheet, Text, View } from 'react-native';
 
-import { HalcyonColors, HalcyonRadius, HalcyonSpacing, Typography } from '@/constants/design';
+import {
+  HalcyonColors,
+  HalcyonModal,
+  HalcyonRadius,
+  HalcyonSpacing,
+  Typography,
+} from '@/constants/design';
 import { AppFonts } from '@/constants/theme';
 
 type PromptOptions = {
@@ -28,8 +34,8 @@ const AccountRequiredPromptContext = createContext<AccountRequiredPromptValue>({
   dismissAccountRequiredPrompt: () => undefined,
 });
 
-const DEFAULT_TITLE = 'Please log in';
-const DEFAULT_MESSAGE = 'Log in to use account features and keep your saved items with you.';
+const DEFAULT_TITLE = 'Log in to continue';
+const DEFAULT_MESSAGE = 'Log in to use this account feature.';
 
 /** One app-wide, centered account prompt shared by every guest-only gate. */
 export function AccountRequiredPromptProvider({ children }: { children: ReactNode }) {
@@ -59,6 +65,7 @@ export function AccountRequiredPromptProvider({ children }: { children: ReactNod
       {children}
       <Modal
         animationType="fade"
+        navigationBarTranslucent
         onRequestClose={dismissAccountRequiredPrompt}
         statusBarTranslucent
         transparent
@@ -80,9 +87,6 @@ export function AccountRequiredPromptProvider({ children }: { children: ReactNod
               <Ionicons color={HalcyonColors.textSecondary} name="close" size={19} />
             </Pressable>
 
-            <View style={styles.iconCircle}>
-              <Ionicons color={HalcyonColors.accent} name="lock-closed-outline" size={25} />
-            </View>
             <Text style={styles.title}>{prompt?.title ?? DEFAULT_TITLE}</Text>
             <Text style={styles.message}>{prompt?.message ?? DEFAULT_MESSAGE}</Text>
 
@@ -110,7 +114,7 @@ export function useAccountRequiredPrompt() {
 const styles = StyleSheet.create({
   modalRoot: {
     alignItems: 'center',
-    backgroundColor: 'rgba(3, 5, 6, 0.78)',
+    backgroundColor: HalcyonModal.backdrop,
     flex: 1,
     justifyContent: 'center',
     paddingHorizontal: HalcyonSpacing.screenX,
@@ -118,41 +122,26 @@ const styles = StyleSheet.create({
   card: {
     alignItems: 'center',
     backgroundColor: HalcyonColors.surface,
-    borderColor: 'rgba(255, 187, 77, 0.28)',
+    borderColor: HalcyonColors.border,
     borderRadius: HalcyonRadius.card,
     borderWidth: 1,
     maxWidth: 360,
-    paddingBottom: 28,
-    paddingHorizontal: 26,
-    paddingTop: 32,
+    padding: 24,
     width: '100%',
   },
   closeButton: {
     alignItems: 'center',
-    borderColor: HalcyonColors.border,
-    borderRadius: 17,
-    borderWidth: 1,
-    height: 34,
+    height: 32,
     justifyContent: 'center',
     position: 'absolute',
-    right: 14,
-    top: 14,
-    width: 34,
+    right: 10,
+    top: 10,
+    width: 32,
   },
   pressed: { opacity: 0.7 },
-  iconCircle: {
-    alignItems: 'center',
-    backgroundColor: 'rgba(255, 187, 77, 0.08)',
-    borderColor: 'rgba(255, 187, 77, 0.24)',
-    borderRadius: 31,
-    borderWidth: 1,
-    height: 62,
-    justifyContent: 'center',
-    width: 62,
-  },
   title: {
-    ...Typography.screenHeading,
-    marginTop: 18,
+    ...Typography.sectionHeading,
+    paddingHorizontal: 24,
     textAlign: 'center',
   },
   message: {

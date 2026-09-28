@@ -14,3 +14,19 @@ export function resetToMainPlayer(router: Router): void {
   resetToMainApp(router);
   setTimeout(() => router.push('/player' as Href), 0);
 }
+
+/**
+ * Back-button handler for onboarding/auth screens, where a prior
+ * `dismissAll()` (see `resetToAuthenticatedOnboarding`) can leave a screen
+ * with nothing behind it in the stack. A blind `router.back()` there throws
+ * the "GO_BACK was not handled by any navigator" warning/crash. `/` re-derives
+ * the right destination itself (main app, onboarding resume, or the arrival
+ * screen), so it is a safe default fallback when no more specific one applies.
+ */
+export function safeGoBack(router: Router, fallback: Href = '/' as Href): void {
+  if (router.canGoBack()) {
+    router.back();
+  } else {
+    router.replace(fallback);
+  }
+}

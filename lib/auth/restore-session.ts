@@ -2,7 +2,7 @@ import * as SecureStore from 'expo-secure-store';
 import { Platform } from 'react-native';
 
 import { ME_QUERY_KEY } from '@/hooks/useUser';
-import { isNetworkError } from '@/lib/api/errors';
+import { isAuthFailure, isNetworkError } from '@/lib/api/errors';
 import { getAuthUserId, userApi } from '@/lib/api/user';
 import {
   cacheProfile,
@@ -135,8 +135,9 @@ async function runRestore(): Promise<SessionRestoreStatus> {
       await markLoggedIn();
       return 'restored';
     } catch (error) {
-      if (isNetworkError(error)) return offlineOutcome();
-      // Stored access token is no longer accepted, try the refresh token below.
+      if (isNetworkError(error) || !isAuthFailure(error)) return offlineOutcome();
+      // The server specifically rejected the stored credentials, so try the
+      // refresh token below. A 429/5xx must never sign out a valid session.
     }
 
     if (refreshToken) {
@@ -159,7 +160,7 @@ async function runRestore(): Promise<SessionRestoreStatus> {
           return 'restored';
         }
       } catch (error) {
-        if (isNetworkError(error)) return offlineOutcome();
+        if (isNetworkError(error) || !isAuthFailure(error)) return offlineOutcome();
         // Refresh was refused by a server that answered, so the session is
         // genuinely over. Fall through and drop it.
       }

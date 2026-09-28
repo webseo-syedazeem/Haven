@@ -219,6 +219,13 @@ async function apiRequest<T>(path: string, options: RequestInit = {}) {
     throw new ApiError(getErrorMessage(response.status, data), response.status, data);
   }
 
+  // Auth endpoints use the same envelope as the rest of the API. Keep this
+  // defensive check so a misconfigured proxy cannot turn `success: false`
+  // (for example EMAIL_ALREADY_REGISTERED) into a successful navigation.
+  if (data && typeof data === 'object' && (data as { success?: boolean }).success === false) {
+    throw new ApiError(getErrorMessage(response.status, data), response.status, data);
+  }
+
   return data as T;
 }
 
@@ -323,7 +330,12 @@ export async function refreshSession(token = refreshToken) {
   return response;
 }
 
-export async function signUp(payload: { email: string; password: string; username: string }) {
+export async function signUp(payload: {
+  email: string;
+  password: string;
+  username: string;
+  emailRedirectTo: string;
+}) {
   accessToken = null;
   refreshToken = null;
   syncSessionState();
@@ -383,7 +395,7 @@ export async function signIn(payload: { email: string; password: string }) {
 }
 
 export function forgotPassword(email: string) {
-  return apiRequest<{ message?: string }>('/api/forgot-password', {
+  return apiRequest<ApiResponse<{ message?: string }>>('/api/forgot-password', {
     body: JSON.stringify({ email }),
     method: 'POST',
   });

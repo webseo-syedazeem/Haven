@@ -9,7 +9,12 @@ import { RequireAuth } from '@/components/RequireAuth';
 import { PlaylistFormSheet } from '@/components/PlaylistFormSheet';
 import { SoundscapeRow, SoundscapeRowSkeletonList } from '@/components/SoundscapeRow';
 import { Toast, useToast } from '@/components/Toast';
-import { HalcyonColors, HalcyonRadius, HalcyonSpacing } from '@/constants/design';
+import {
+  HalcyonColors,
+  HalcyonModal,
+  HalcyonRadius,
+  HalcyonSpacing,
+} from '@/constants/design';
 import { AppFonts } from '@/constants/theme';
 import { useBottomSafeSpacing } from '@/hooks/use-bottom-safe-spacing';
 import {
@@ -280,7 +285,9 @@ function PlaylistScreenContent() {
 
       <Modal
         animationType="fade"
+        navigationBarTranslucent
         onRequestClose={() => setMenuVisible(false)}
+        statusBarTranslucent
         transparent
         visible={menuVisible}>
         <Pressable
@@ -410,14 +417,14 @@ const styles = StyleSheet.create({
     width: 34,
   },
   menuBackdrop: {
-    backgroundColor: 'rgba(4,4,6,0.6)',
+    backgroundColor: HalcyonModal.backdrop,
     flex: 1,
   },
   menu: {
     backgroundColor: HalcyonColors.surface,
     borderTopColor: HalcyonColors.border,
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
+    borderTopLeftRadius: HalcyonRadius.sheet,
+    borderTopRightRadius: HalcyonRadius.sheet,
     borderTopWidth: 1,
     paddingHorizontal: HalcyonSpacing.screenX,
     paddingTop: 12,

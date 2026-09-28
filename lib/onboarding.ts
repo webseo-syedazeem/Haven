@@ -493,6 +493,12 @@ export async function completeOnboardingAnswers(): Promise<void> {
 export async function finishOnboardingForAppEntry(): Promise<void> {
   if (!hasActiveSession()) {
     await markGuestOnboardingComplete();
+    // Bust all home rails so they fetch fresh personalised data when the tabs
+    // mount — the same invalidation authenticated users get via completeOnboardingAnswers.
+    await Promise.all([
+      queryClient.invalidateQueries({ queryKey: ['home'], refetchType: 'none' }),
+      queryClient.invalidateQueries({ queryKey: ['library'], refetchType: 'none' }),
+    ]).catch(() => undefined);
     return;
   }
 

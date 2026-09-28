@@ -16,11 +16,14 @@ import { OnboardingContinueButton } from '@/components/onboarding/OnboardingCont
 import { OnboardingScaffold } from '@/components/onboarding/OnboardingScaffold';
 import { HalcyonColors, Typography } from '@/constants/design';
 import { AppFonts } from '@/constants/theme';
+import { emailIssue, parseAuthError } from '@/lib/auth/form-errors';
 import { forgotPassword } from '@/lib/haven-api';
+import { safeGoBack } from '@/lib/navigation';
 
 export default function ResetPasswordScreen() {
   const router = useRouter();
   const [email, setEmail] = useState('');
+  const [emailError, setEmailError] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -28,28 +31,29 @@ export default function ResetPasswordScreen() {
     if (isSubmitting) return;
 
     const trimmedEmail = email.trim().toLowerCase();
-    if (!trimmedEmail) {
-      setErrorMessage('Please enter your email address.');
-      return;
-    }
-    if (!/^\S+@\S+\.\S+$/.test(trimmedEmail)) {
-      setErrorMessage('Please enter a valid email address.');
+    const validationError = emailIssue(trimmedEmail);
+    if (validationError) {
+      setEmailError(validationError);
+      setErrorMessage('A valid email is required');
       return;
     }
 
+    setEmailError('');
     setErrorMessage('');
     setIsSubmitting(true);
 
     try {
-      await forgotPassword(trimmedEmail);
+      const response = await forgotPassword(trimmedEmail);
       Alert.alert(
         'Reset link sent',
-        'Check your inbox for a secure link to choose a new password.'
+        response.data?.message ?? 'Check your inbox for a secure link to choose a new password.'
       );
     } catch (error) {
-      setErrorMessage(
-        error instanceof Error ? error.message : 'Unable to send a reset link right now.'
-      );
+      const parsed = parseAuthError(error, 'Unable to send a reset link right now.');
+      const nextEmailError = parsed.fields.email ??
+        (parsed.code === 'EMAIL_NOT_REGISTERED' ? parsed.message : '');
+      setEmailError(nextEmailError);
+      setErrorMessage(nextEmailError ? '' : parsed.message);
     } finally {
       setIsSubmitting(false);
     }
@@ -70,10 +74,11 @@ export default function ResetPasswordScreen() {
             <AuthTextField
               autoCapitalize="none"
               autoComplete="email"
-              error={Boolean(errorMessage)}
+              errorMessage={emailError}
               keyboardType="email-address"
               onChangeText={(value) => {
                 setEmail(value);
+                if (emailError) setEmailError('');
                 if (errorMessage) setErrorMessage('');
               }}
               onSubmitEditing={() => void handleSendResetLink()}
@@ -104,7 +109,7 @@ export default function ResetPasswordScreen() {
           <Pressable
             accessibilityRole="button"
             hitSlop={8}
-            onPress={() => (router.canGoBack() ? router.back() : router.replace('/login'))}
+            onPress={() => safeGoBack(router, '/login')}
             style={styles.signInButton}>
             <Text style={styles.signInPrompt}>
               Remember your password? <Text style={styles.signInLink}>Sign in</Text>

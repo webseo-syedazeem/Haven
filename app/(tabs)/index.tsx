@@ -1,6 +1,6 @@
 import { useRouter, type Href } from 'expo-router';
 import { useCallback, useState } from 'react';
-import { RefreshControl, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Dimensions, RefreshControl, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { CollectionCard, COLLECTION_CARD_WIDTH } from '@/components/CollectionCard';
@@ -292,6 +292,11 @@ export default function HomeScreen() {
   );
 }
 
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
+// Scale down font on narrow screens so "Good Afternoon," fits on one line
+const GREETING_FONT_SIZE = SCREEN_WIDTH < 380 ? 30 : SCREEN_WIDTH < 430 ? 35 : 40;
+const GREETING_LINE_HEIGHT = GREETING_FONT_SIZE * 1.15;
+
 const styles = StyleSheet.create({
   screen: {
     backgroundColor: HalcyonColors.background,
@@ -321,10 +326,14 @@ const styles = StyleSheet.create({
   },
   greetingLine: {
     ...Typography.screenHeading,
+    fontSize: GREETING_FONT_SIZE,
+    lineHeight: GREETING_LINE_HEIGHT,
   },
   greetingName: {
     ...Typography.screenHeading,
     color: HalcyonColors.accent,
+    fontSize: GREETING_FONT_SIZE,
+    lineHeight: GREETING_LINE_HEIGHT,
   },
   greetingNameSkeleton: {
     backgroundColor: HalcyonColors.skeleton,

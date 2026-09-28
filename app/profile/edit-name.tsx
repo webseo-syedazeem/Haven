@@ -9,6 +9,7 @@ import { Toast, useToast } from '@/components/Toast';
 import { HalcyonColors } from '@/constants/design';
 import { useUpdateName, useUser } from '@/hooks/useUser';
 import { getFirstName, getLastName } from '@/lib/api/user';
+import { nameIssue, parseAuthError, type AuthFieldErrors } from '@/lib/auth/form-errors';
 
 /** `PUT /api/update-name` takes a first and last name, both required. */
 function EditNameContent() {
@@ -21,6 +22,7 @@ function EditNameContent() {
   const [lastName, setLastName] = useState('');
   const [prefilled, setPrefilled] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<AuthFieldErrors>({});
 
   useEffect(() => {
     if (!me || prefilled) return;
@@ -30,12 +32,19 @@ function EditNameContent() {
   }, [me, prefilled]);
 
   const handleSave = () => {
-    if (!firstName.trim() || !lastName.trim()) {
-      setError('Enter both a first and a last name.');
+    const nextFieldErrors: AuthFieldErrors = {};
+    const firstNameError = nameIssue(firstName, 'first_name');
+    const lastNameError = nameIssue(lastName, 'last_name');
+    if (firstNameError) nextFieldErrors.first_name = firstNameError;
+    if (lastNameError) nextFieldErrors.last_name = lastNameError;
+    if (Object.keys(nextFieldErrors).length) {
+      setFieldErrors(nextFieldErrors);
+      setError('Please provide a valid first and last name');
       return;
     }
 
     setError(null);
+    setFieldErrors({});
 
     updateName.mutate(
       { first_name: firstName.trim(), last_name: lastName.trim() },
@@ -44,10 +53,11 @@ function EditNameContent() {
           showToast('Name saved.');
           router.back();
         },
-        onError: (saveError) =>
-          setError(
-            saveError instanceof Error ? saveError.message : 'Could not save that. Try again.'
-          ),
+        onError: (saveError) => {
+          const parsed = parseAuthError(saveError, 'Could not save that. Try again.');
+          setFieldErrors(parsed.fields);
+          setError(Object.keys(parsed.fields).length ? null : parsed.message);
+        },
       }
     );
   };
@@ -61,7 +71,11 @@ function EditNameContent() {
         <SettingsField
           autoCapitalize="words"
           label="First name"
-          onChangeText={setFirstName}
+          errorMessage={fieldErrors.first_name}
+          onChangeText={(value) => {
+            setFirstName(value);
+            setFieldErrors((current) => ({ ...current, first_name: '' }));
+          }}
           placeholder="First name"
           returnKeyType="next"
           value={firstName}
@@ -70,7 +84,11 @@ function EditNameContent() {
         <SettingsField
           autoCapitalize="words"
           label="Last name"
-          onChangeText={setLastName}
+          errorMessage={fieldErrors.last_name}
+          onChangeText={(value) => {
+            setLastName(value);
+            setFieldErrors((current) => ({ ...current, last_name: '' }));
+          }}
           placeholder="Last name"
           returnKeyType="done"
           value={lastName}

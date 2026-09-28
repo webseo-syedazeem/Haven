@@ -5,6 +5,7 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ConfirmDialog } from '@/components/ConfirmDialog';
+import { useAccountRequiredPrompt } from '@/components/auth/AccountRequiredPrompt';
 import { SwipeTabsWrapper } from '@/components/navigation/SwipeTabsWrapper';
 import { AvatarPreview } from '@/components/profile/AvatarPreview';
 import { ProfileAvatar } from '@/components/profile/ProfileAvatar';
@@ -17,6 +18,10 @@ import { useGuestModeActive, useHasSession } from '@/hooks/useSession';
 import { useUser } from '@/hooks/useUser';
 import { getDisplayName, getProfileEmail } from '@/lib/api/user';
 import { clearUserSession } from '@/lib/auth/clearSession';
+import { setIntroSeen } from '@/lib/auth/intro-flag';
+import { setGuestModeActive } from '@/lib/auth/session-state';
+import { resetGuestOnboardingState } from '@/lib/onboarding';
+import { usePlayerActions } from '@/lib/player/PlayerProvider';
 
 /** R-01. Every row here is a screen in `app/profile/`. */
 const SETTINGS_ROWS = [
@@ -30,8 +35,13 @@ const SETTINGS_ROWS = [
 ] as const;
 
 const SUPPORT_ROWS = [
-  { label: 'Help Centre', icon: 'help-circle-outline', route: '/profile/help' },
-  { label: 'Contact Support', icon: 'chatbubble-ellipses-outline', route: '/profile/contact-support' },
+  { label: 'Help Centre', icon: 'help-circle-outline', requiresAccount: false, route: '/profile/help' },
+  {
+    label: 'Contact Support',
+    icon: 'chatbubble-ellipses-outline',
+    requiresAccount: true,
+    route: '/profile/contact-support',
+  },
 ] as const;
 
 export default function ProfileScreen() {
@@ -40,6 +50,8 @@ export default function ProfileScreen() {
   const bottomInset = useTabContentInset();
   const hasSession = useHasSession();
   const isGuest = useGuestModeActive();
+  const { stop } = usePlayerActions();
+  const { showAccountRequiredPrompt } = useAccountRequiredPrompt();
   const { notice, showToast } = useToast();
 
   const { data: me, isInitialLoading, isError, refetch } = useUser();
@@ -63,12 +75,39 @@ export default function ProfileScreen() {
             ? 'Loading your details…'
             : 'Signed in to Passage');
 
+  function openProfileRoute(route: Href, requiresAccount = true) {
+    if (requiresAccount && isGuest) {
+      showAccountRequiredPrompt({
+        title: 'Log in to continue',
+        message: 'Log in to manage your account settings.',
+      });
+      return;
+    }
+
+    router.push(route);
+  }
+
+  // Choosing to sign in ends guest mode: with no back arrow on Login, backing out
+  // exits the app, and the next launch must open Login again, not the guest app.
+  async function leaveGuestForLogin() {
+    // Guest playback belongs to the guest session too. Tear down the native
+    // player and notification before leaving so audio cannot continue on Login.
+    await stop({ forgetResumable: true });
+    await setGuestModeActive(false);
+    await resetGuestOnboardingState();
+    await setIntroSeen();
+    router.replace('/login?signedOut=1' as Href);
+  }
+
   async function confirmSignOut() {
     setSigningOut(true);
     try {
+      // Silence the soundscape (and its notification) while the account is still
+      // signed in, so its progress is saved, then forget it with the account.
+      await stop({ forgetResumable: true });
       await clearUserSession(queryClient);
       setSignOutVisible(false);
-      router.replace('/welcome?launch=1' as Href);
+      router.replace('/login?signedOut=1' as Href);
     } catch {
       showToast('Could not sign out. Try again.');
     } finally {
@@ -119,7 +158,7 @@ export default function ProfileScreen() {
                   icon={row.icon}
                   key={row.label}
                   label={row.label}
-                  onPress={() => router.push(row.route as Href)}
+                  onPress={() => openProfileRoute(row.route as Href)}
                 />
               ))}
             </SettingsGroup>
@@ -130,7 +169,9 @@ export default function ProfileScreen() {
                   icon={row.icon}
                   key={row.label}
                   label={row.label}
-                  onPress={() => router.push(row.route as Href)}
+                  onPress={() =>
+                    openProfileRoute(row.route as Href, row.requiresAccount)
+                  }
                 />
               ))}
             </SettingsGroup>
@@ -147,7 +188,7 @@ export default function ProfileScreen() {
                 <SettingsRow
                   icon="log-in-outline"
                   label="Sign in"
-                  onPress={() => router.push('/login')}
+                  onPress={() => void leaveGuestForLogin()}
                 />
               )}
             </SettingsGroup>
@@ -169,6 +210,8 @@ export default function ProfileScreen() {
           message="You can sign back in at any time. Downloads stay on this device."
           onCancel={() => setSignOutVisible(false)}
           onConfirm={() => void confirmSignOut()}
+          showCancel={false}
+          showIcon={false}
           title="Sign out?"
           visible={signOutVisible}
         />
@@ -204,8 +247,6 @@ const styles = StyleSheet.create({
   },
   name: {
     ...Typography.screenHeading,
-    fontSize: 32,
-    lineHeight: 40,
     marginTop: 16,
     textAlign: 'center',
   },
@@ -230,12 +271,8 @@ const styles = StyleSheet.create({
     lineHeight: 18,
   },
   version: {
-    color: HalcyonColors.textSecondary,
-    fontFamily: AppFonts.sansRegular,
-    fontSize: 12,
-    lineHeight: 17,
+    ...Typography.muted,
     marginTop: 4,
-    opacity: 0.7,
     textAlign: 'center',
   },
 });

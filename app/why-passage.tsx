@@ -1,12 +1,14 @@
 import React, { useState } from 'react';
 import { Image, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { Stack, useRouter } from 'expo-router';
+import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { OnboardingPillButton } from '@/components/onboarding/OnboardingPillButton';
 import { OnboardingStepHeader } from '@/components/onboarding/OnboardingStepHeader';
 import { AppFonts } from '@/constants/theme';
+import { isGuestModeActive, setGuestModeActive } from '@/lib/auth/session-state';
+import { safeGoBack } from '@/lib/navigation';
 
 const heroImage = require('@/assets/images/why-passage-moonlit-window.webp');
 
@@ -25,6 +27,8 @@ const LAYOUT_ROUNDING_BUFFER = 2;
 
 export default function WhyPassageScreen() {
   const router = useRouter();
+  const { from } = useLocalSearchParams<{ from?: string }>();
+  const enteredViaAuthenticatedResume = from === 'authenticated-resume';
   const [viewportHeight, setViewportHeight] = useState(0);
   const [headerHeight, setHeaderHeight] = useState(0);
   const [featuresHeight, setFeaturesHeight] = useState(0);
@@ -53,8 +57,11 @@ export default function WhyPassageScreen() {
       <OnboardingStepHeader
         activeColor="#FFFFFF"
         currentStep={2}
-        onBack={() => router.back()}
-        showBack
+        onBack={enteredViaAuthenticatedResume ? undefined : async () => {
+          if (isGuestModeActive()) await setGuestModeActive(false);
+          safeGoBack(router);
+        }}
+        showBack={!enteredViaAuthenticatedResume}
         totalSteps={4}
       />
 

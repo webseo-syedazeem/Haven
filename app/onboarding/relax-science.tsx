@@ -8,6 +8,7 @@ import { OnboardingScaffold } from '@/components/onboarding/OnboardingScaffold';
 import { RelaxStepHeader } from '@/components/onboarding/RelaxStepHeader';
 import { RELAX_ONBOARDING } from '@/constants/relax-onboarding';
 import { AppFonts } from '@/constants/theme';
+import { safeGoBack } from '@/lib/navigation';
 
 const background = require('@/assets/images/relax-science-bg.webp');
 
@@ -86,7 +87,7 @@ export default function RelaxScienceScreen() {
     <OnboardingScaffold
       backgroundImage={background}
       contentContainerStyle={styles.content}
-      header={<RelaxStepHeader currentStep={3} onBack={() => router.back()} />}>
+      header={<RelaxStepHeader currentStep={3} onBack={() => safeGoBack(router)} />}>
       <View style={styles.copyBlock}>
         <Text style={styles.heading}>Backed by{'\n'}real science.</Text>
         <Text style={styles.body}>

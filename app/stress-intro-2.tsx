@@ -8,6 +8,7 @@ import { OnboardingScaffold } from '@/components/onboarding/OnboardingScaffold';
 import { RelaxStepHeader } from '@/components/onboarding/RelaxStepHeader';
 import { RELAX_ONBOARDING } from '@/constants/relax-onboarding';
 import { AppFonts } from '@/constants/theme';
+import { safeGoBack } from '@/lib/navigation';
 
 const background = require('@/assets/images/relax-intro-2-bg.webp');
 
@@ -70,7 +71,7 @@ export default function StressIntroTwoScreen() {
     <OnboardingScaffold
       backgroundImage={background}
       contentContainerStyle={styles.content}
-      header={<RelaxStepHeader currentStep={2} onBack={() => router.back()} />}
+      header={<RelaxStepHeader currentStep={2} onBack={() => safeGoBack(router)} />}
       scroll={false}>
       <View style={styles.copyBlock}>
         <Text style={styles.heading}>It&apos;s more than{'\n'}just sound.</Text>

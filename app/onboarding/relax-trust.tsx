@@ -9,6 +9,7 @@ import { RelaxStepHeader } from '@/components/onboarding/RelaxStepHeader';
 import { HalcyonColors } from '@/constants/design';
 import { RELAX_ONBOARDING } from '@/constants/relax-onboarding';
 import { AppFonts } from '@/constants/theme';
+import { safeGoBack } from '@/lib/navigation';
 
 const background = require('@/assets/images/relax-questions-bg.webp');
 const sophieAvatar = require('@/assets/images/rating-person-4.webp');
@@ -52,7 +53,7 @@ export default function RelaxTrustScreen() {
           </Text>
         </View>
       }
-      header={<RelaxStepHeader currentStep={9} onBack={() => router.back()} />}>
+      header={<RelaxStepHeader currentStep={9} onBack={() => safeGoBack(router)} />}>
       <Text style={styles.heading}>
         Trusted by people{'\n'}who feel calmer now.
       </Text>

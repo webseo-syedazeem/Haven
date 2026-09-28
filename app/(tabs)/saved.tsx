@@ -640,10 +640,7 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   storageLabel: {
-    color: HalcyonColors.textSecondary,
-    fontFamily: AppFonts.sansRegular,
-    fontSize: 13,
-    lineHeight: 18,
+    ...Typography.muted,
   },
   storageAction: {
     color: HalcyonColors.accent,

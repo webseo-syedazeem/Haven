@@ -16,6 +16,7 @@ import { RelaxStepHeader } from '@/components/onboarding/RelaxStepHeader';
 import { HalcyonColors, RELAX_ACCENT } from '@/constants/design';
 import { RELAX_ONBOARDING } from '@/constants/relax-onboarding';
 import { AppFonts } from '@/constants/theme';
+import { safeGoBack } from '@/lib/navigation';
 import {
   getOnboardingAnswers,
   type GuestOnboardingAnswers,
@@ -118,7 +119,7 @@ export default function RelaxYourFitScreen() {
       onViewportLayout={(event) =>
         setViewportHeight(event.nativeEvent.layout.height)
       }
-      header={<RelaxStepHeader currentStep={8} onBack={() => router.back()} />}>
+      header={<RelaxStepHeader currentStep={8} onBack={() => safeGoBack(router)} />}>
       <Text
         onLayout={(event) => setHeadingHeight(event.nativeEvent.layout.height)}
         style={styles.heading}>

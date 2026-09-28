@@ -18,6 +18,8 @@ const noFocusOutline = Platform.OS === 'web' ? ({ outlineStyle: 'none' } as neve
 
 type SettingsFieldProps = TextInputProps & {
   label: string;
+  /** Validation returned for this exact field. */
+  errorMessage?: string;
   /** Muted line under the field, for a rule the placeholder cannot carry. */
   hint?: string;
   /** Trailing control inside the card, e.g. a reveal-password eye. */
@@ -31,12 +33,12 @@ type SettingsFieldProps = TextInputProps & {
  * section — name, email, password, support messages — reads as one thing.
  */
 export const SettingsField = forwardRef<TextInput, SettingsFieldProps>(function SettingsField(
-  { label, hint, accessory, multiline = false, style, editable = true, ...inputProps },
+  { label, hint, errorMessage, accessory, multiline = false, style, editable = true, ...inputProps },
   ref
 ) {
   return (
     <View style={styles.wrapper}>
-      <View style={[styles.card, !editable && styles.cardReadOnly]}>
+      <View style={[styles.card, !editable && styles.cardReadOnly, !!errorMessage && styles.cardError]}>
         <Text style={styles.label}>{label}</Text>
         <View style={styles.row}>
           <TextInput
@@ -56,6 +58,7 @@ export const SettingsField = forwardRef<TextInput, SettingsFieldProps>(function 
           {accessory}
         </View>
       </View>
+      {!!errorMessage && <Text style={styles.fieldError}>{errorMessage}</Text>}
       {!!hint && <Text style={styles.hint}>{hint}</Text>}
     </View>
   );
@@ -98,6 +101,9 @@ const styles = StyleSheet.create({
   },
   cardReadOnly: {
     opacity: 0.8,
+  },
+  cardError: {
+    borderColor: 'rgba(211,137,126,0.78)',
   },
   label: {
     color: HalcyonColors.textSecondary,
@@ -143,6 +149,14 @@ const styles = StyleSheet.create({
     fontSize: 13,
     lineHeight: 18,
     marginBottom: 12,
+    paddingHorizontal: 4,
+  },
+  fieldError: {
+    color: '#DFA196',
+    fontFamily: AppFonts.sansRegular,
+    fontSize: 12,
+    lineHeight: 17,
+    marginTop: 7,
     paddingHorizontal: 4,
   },
 });

@@ -11,6 +11,7 @@ import { RelaxStepHeader } from '@/components/onboarding/RelaxStepHeader';
 import { RELAX_ACCENT } from '@/constants/design';
 import { RELAX_ONBOARDING } from '@/constants/relax-onboarding';
 import { AppFonts } from '@/constants/theme';
+import { safeGoBack } from '@/lib/navigation';
 import {
   getOnboardingAnswers,
   saveOnboardingAnswers,
@@ -112,7 +113,7 @@ export default function RelaxCausesScreen() {
     <OnboardingScaffold
       backgroundImage={background}
       contentContainerStyle={styles.content}
-      header={<RelaxStepHeader currentStep={5} onBack={() => router.back()} />}>
+      header={<RelaxStepHeader currentStep={5} onBack={() => safeGoBack(router)} />}>
       <Text style={styles.heading}>
         What&apos;s usually{'\n'}causes you stress?
       </Text>

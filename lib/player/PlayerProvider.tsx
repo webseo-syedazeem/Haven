@@ -71,7 +71,8 @@ export type PlayerActions = {
   skipPrevious: () => Promise<void>;
   setTimer: (selection: TimerSelection | null) => void;
   setEndToneEnabled: (enabled: boolean) => void;
-  stop: () => Promise<void>;
+  /** `forgetResumable` also drops the Continue card, for a sign out: it belongs to the account. */
+  stop: (options?: { forgetResumable?: boolean }) => Promise<void>;
   resume: () => Promise<void>;
 };
 
@@ -608,10 +609,11 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
     setState((current) => ({ ...current, endToneEnabled: enabled }));
   }, []);
 
-  const stop = useCallback(async () => {
+  const stop = useCallback(async (options?: { forgetResumable?: boolean }) => {
+    const forgetResumable = options?.forgetResumable === true;
     clearFade();
     await persistNow();
-    refreshResumable();
+    if (!forgetResumable) refreshResumable();
     await engine.reset();
     await engine.setVolume(1);
 
@@ -624,7 +626,7 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
 
     setState((current) => ({
       ...INITIAL_STATE,
-      resumable: current.resumable,
+      resumable: forgetResumable ? null : current.resumable,
       endToneEnabled: current.endToneEnabled,
     }));
     setProgress(INITIAL_PROGRESS);

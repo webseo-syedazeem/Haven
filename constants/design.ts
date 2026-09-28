@@ -91,8 +91,14 @@ export const HalcyonCardGradientLocations = [0, 0.55, 1] as const;
 export const HalcyonRadius = {
   card: 18,
   artwork: 14,
+  sheet: 28,
   pill: 999,
 };
+
+/** Shared modal treatment: dim the whole screen and keep sheets visibly raised. */
+export const HalcyonModal = {
+  backdrop: 'rgba(3, 5, 6, 0.72)',
+} as const;
 
 export const HalcyonSpacing = {
   screenX: 20,
@@ -133,7 +139,7 @@ export const Typography = {
   },
   /** Muted supporting copy at caption size. */
   muted: {
-    color: 'rgba(255, 255, 255, 0.8)',
+    color: HalcyonColors.textSecondary,
     fontFamily: ThemeFonts.sansRegular,
     fontSize: 13,
     lineHeight: 19,

@@ -8,7 +8,13 @@ import { OnboardingContinueButton } from '@/components/onboarding/OnboardingCont
 import { OnboardingScaffold } from '@/components/onboarding/OnboardingScaffold';
 import { HalcyonColors } from '@/constants/design';
 import { AppFonts } from '@/constants/theme';
+import {
+  parseAuthError,
+  passwordIssue,
+  type AuthFieldErrors,
+} from '@/lib/auth/form-errors';
 import { changePassword, resetPassword } from '@/lib/haven-api';
+import { safeGoBack } from '@/lib/navigation';
 
 function firstParam(value: string | string[] | undefined) {
   return Array.isArray(value) ? value[0] : value;
@@ -25,6 +31,7 @@ export default function ChangePasswordScreen() {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [confirmVisible, setConfirmVisible] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
+  const [fieldErrors, setFieldErrors] = useState<AuthFieldErrors>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [newPassword, setNewPassword] = useState('');
   const [newVisible, setNewVisible] = useState(false);
@@ -34,24 +41,28 @@ export default function ChangePasswordScreen() {
   const handleUpdatePassword = async () => {
     if (isSubmitting) return;
 
-    if ((!isResetFlow && !oldPassword) || !newPassword || !confirmPassword) {
-      setErrorMessage(
-        isResetFlow
-          ? 'Please enter and confirm your new password.'
-          : 'Please enter your current password and confirm the new password.'
-      );
-      return;
+    const nextFieldErrors: AuthFieldErrors = {};
+    if (!isResetFlow) {
+      const oldError = passwordIssue(oldPassword, 'oldPassword', false);
+      if (oldError) nextFieldErrors.oldPassword = oldError;
     }
-    if (newPassword.length < 8) {
-      setErrorMessage('Password must be at least 8 characters.');
-      return;
+    const newError = passwordIssue(newPassword, 'newPassword', true);
+    if (newError) nextFieldErrors.newPassword = newError;
+    if (!confirmPassword) nextFieldErrors.confirmPassword = 'confirmPassword is required';
+    else if (newPassword !== confirmPassword) nextFieldErrors.confirmPassword = 'Passwords do not match';
+    if (!isResetFlow && oldPassword && newPassword && oldPassword === newPassword) {
+      nextFieldErrors.newPassword = 'newPassword must be different from oldPassword';
     }
-    if (newPassword !== confirmPassword) {
-      setErrorMessage('Passwords do not match.');
+    if (Object.keys(nextFieldErrors).length) {
+      setFieldErrors(nextFieldErrors);
+      setErrorMessage(isResetFlow
+        ? 'A valid token and new password are required'
+        : 'Please provide valid password values');
       return;
     }
 
     setErrorMessage('');
+    setFieldErrors({});
     setIsSubmitting(true);
 
     try {
@@ -70,9 +81,13 @@ export default function ChangePasswordScreen() {
         router.replace('/login');
       }
     } catch (error) {
-      setErrorMessage(
-        error instanceof Error ? error.message : 'Unable to update your password right now.'
-      );
+      const parsed = parseAuthError(error, 'Unable to update your password right now.');
+      const nextErrors = { ...parsed.fields };
+      if (parsed.code === 'INVALID_CREDENTIALS' && !nextErrors.oldPassword) {
+        nextErrors.oldPassword = parsed.message;
+      }
+      setFieldErrors(nextErrors);
+      setErrorMessage(Object.keys(nextErrors).length ? '' : parsed.message);
     } finally {
       setIsSubmitting(false);
     }
@@ -82,13 +97,17 @@ export default function ChangePasswordScreen() {
     if (errorMessage) setErrorMessage('');
   };
 
+  const clearFieldError = (field: string) => {
+    if (fieldErrors[field]) setFieldErrors((current) => ({ ...current, [field]: '' }));
+  };
+
   return (
     <KeyboardAvoidingView
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       style={styles.keyboardView}>
       <OnboardingScaffold
         contentContainerStyle={styles.scrollContent}
-        onBack={() => router.back()}>
+        onBack={() => safeGoBack(router, isResetFlow ? '/login' : '/')}>
         <View style={styles.content}>
           <View style={styles.iconCircle}>
             <Ionicons color={HalcyonColors.accent} name="key-outline" size={27} />
@@ -108,10 +127,11 @@ export default function ChangePasswordScreen() {
               <AuthTextField
                 autoCapitalize="none"
                 autoComplete="current-password"
-                error={Boolean(errorMessage)}
+                errorMessage={fieldErrors.oldPassword}
                 onChangeText={(value) => {
                   setOldPassword(value);
                   clearError();
+                  clearFieldError('oldPassword');
                 }}
                 onToggleSecureText={() => setOldVisible((visible) => !visible)}
                 placeholder="Current password"
@@ -125,10 +145,11 @@ export default function ChangePasswordScreen() {
             <AuthTextField
               autoCapitalize="none"
               autoComplete="new-password"
-              error={Boolean(errorMessage)}
+              errorMessage={fieldErrors.newPassword}
               onChangeText={(value) => {
                 setNewPassword(value);
                 clearError();
+                clearFieldError('newPassword');
               }}
               onToggleSecureText={() => setNewVisible((visible) => !visible)}
               placeholder="New password"
@@ -141,10 +162,11 @@ export default function ChangePasswordScreen() {
             <AuthTextField
               autoCapitalize="none"
               autoComplete="new-password"
-              error={Boolean(errorMessage)}
+              errorMessage={fieldErrors.confirmPassword}
               onChangeText={(value) => {
                 setConfirmPassword(value);
                 clearError();
+                clearFieldError('confirmPassword');
               }}
               onSubmitEditing={() => void handleUpdatePassword()}
               onToggleSecureText={() => setConfirmVisible((visible) => !visible)}

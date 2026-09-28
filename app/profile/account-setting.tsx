@@ -15,6 +15,7 @@ import { useHasSession } from '@/hooks/useSession';
 import { useUser } from '@/hooks/useUser';
 import { getDisplayName, getProfileEmail } from '@/lib/api/user';
 import { clearUserSession } from '@/lib/auth/clearSession';
+import { usePlayerActions } from '@/lib/player/PlayerProvider';
 import { deleteAccount } from '@/lib/haven-api';
 
 /**
@@ -25,6 +26,7 @@ import { deleteAccount } from '@/lib/haven-api';
 function AccountSettingContent() {
   const router = useRouter();
   const queryClient = useQueryClient();
+  const { stop } = usePlayerActions();
   const hasSession = useHasSession();
   const { notice, showToast } = useToast();
 
@@ -47,6 +49,7 @@ function AccountSettingContent() {
   async function confirmSignOut() {
     setBusy(true);
     try {
+      await stop({ forgetResumable: true });
       await clearUserSession(queryClient);
       setSignOutVisible(false);
       router.dismissAll();
@@ -62,6 +65,7 @@ function AccountSettingContent() {
     setBusy(true);
     try {
       await deleteAccount();
+      await stop({ forgetResumable: true });
       await clearUserSession(queryClient);
       setDeleteVisible(false);
       router.dismissAll();
@@ -87,6 +91,8 @@ function AccountSettingContent() {
             message="You can sign back in at any time. Downloads stay on this device."
             onCancel={() => setSignOutVisible(false)}
             onConfirm={() => void confirmSignOut()}
+            showCancel={false}
+            showIcon={false}
             title="Sign out?"
             visible={signOutVisible}
           />

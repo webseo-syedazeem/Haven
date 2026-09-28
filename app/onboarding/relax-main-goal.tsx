@@ -12,6 +12,7 @@ import { RelaxStepHeader } from '@/components/onboarding/RelaxStepHeader';
 import { RELAX_ACCENT } from '@/constants/design';
 import { RELAX_ONBOARDING } from '@/constants/relax-onboarding';
 import { AppFonts } from '@/constants/theme';
+import { safeGoBack } from '@/lib/navigation';
 import {
   getOnboardingAnswers,
   saveOnboardingAnswers,
@@ -141,7 +142,7 @@ export default function RelaxMainGoalScreen() {
     <OnboardingScaffold
       backgroundImage={background}
       contentContainerStyle={styles.content}
-      header={<RelaxStepHeader currentStep={4} onBack={() => router.back()} />}>
+      header={<RelaxStepHeader currentStep={4} onBack={() => safeGoBack(router)} />}>
       <Text style={styles.heading}>
         What&apos;s your main{'\n'}goal right now?
       </Text>

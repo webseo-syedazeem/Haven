@@ -34,6 +34,7 @@ import {
   getGuestOnboardingAnswers,
   getOnboardingResumeRoute,
   hasOnboardingProgress,
+  isGuestOnboardingComplete,
   migrateGuestOnboardingAfterAuth,
   resetGuestOnboardingState,
 } from '@/lib/onboarding';
@@ -84,7 +85,22 @@ export default function FirstPageScreen() {
 
       if (status === 'signed-out') {
         if (isGuestModeActive()) {
-          router.replace('/(tabs)');
+          // Guest completed onboarding → go straight to home.
+          if (await isGuestOnboardingComplete()) {
+            router.replace('/(tabs)');
+            return;
+          }
+          // Guest chose "Continue as guest" but closed the app before finishing
+          // onboarding. Keep guest mode active (so the final screen can skip the
+          // account prompt) and resume where they left off.
+          try {
+            const answers = await getGuestOnboardingAnswers();
+            if (!active) return;
+            router.replace(getOnboardingResumeRoute(answers) as Href);
+          } catch (error) {
+            console.warn('[onboarding] could not restore guest progress', error);
+            router.replace('/why-passage');
+          }
           return;
         }
 

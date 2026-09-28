@@ -2,7 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { ActivityIndicator, Modal, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { DESTRUCTIVE_COLOR } from '@/components/SettingsRow';
-import { HalcyonColors, HalcyonRadius } from '@/constants/design';
+import { HalcyonColors, HalcyonModal, HalcyonRadius, Typography } from '@/constants/design';
 import { AppFonts } from '@/constants/theme';
 
 type ConfirmDialogProps = {
@@ -15,6 +15,10 @@ type ConfirmDialogProps = {
   /** Muted red confirm button, for delete and remove-all. */
   destructive?: boolean;
   loading?: boolean;
+  /** Login-prompt style: close with the X instead of a second cancel action. */
+  showCancel?: boolean;
+  /** Hide the decorative icon for quieter confirmations such as sign out. */
+  showIcon?: boolean;
   onConfirm: () => void;
   onCancel: () => void;
 };
@@ -33,18 +37,44 @@ export function ConfirmDialog({
   icon = 'alert-circle-outline',
   destructive = false,
   loading = false,
+  showCancel = true,
+  showIcon = true,
   onConfirm,
   onCancel,
 }: ConfirmDialogProps) {
   const accent = destructive ? DESTRUCTIVE_COLOR : HalcyonColors.accent;
 
   return (
-    <Modal animationType="fade" onRequestClose={onCancel} transparent visible={visible}>
+    <Modal
+      animationType="fade"
+      navigationBarTranslucent
+      onRequestClose={onCancel}
+      statusBarTranslucent
+      transparent
+      visible={visible}>
       <View style={styles.overlay}>
-        <View style={styles.card}>
-          <View style={[styles.iconRing, { borderColor: accent }]}>
-            <Ionicons color={accent} name={icon} size={26} />
-          </View>
+        <Pressable
+          accessibilityLabel="Close confirmation"
+          onPress={onCancel}
+          style={StyleSheet.absoluteFill}
+        />
+
+        <View accessibilityViewIsModal style={styles.card}>
+          <Pressable
+            accessibilityLabel="Close"
+            accessibilityRole="button"
+            disabled={loading}
+            hitSlop={10}
+            onPress={onCancel}
+            style={({ pressed }) => [styles.closeButton, pressed && styles.pressed]}>
+            <Ionicons color={HalcyonColors.textSecondary} name="close" size={19} />
+          </Pressable>
+
+          {showIcon ? (
+            <View style={[styles.iconRing, { borderColor: accent }]}>
+              <Ionicons color={accent} name={icon} size={26} />
+            </View>
+          ) : null}
 
           <Text style={styles.title}>{title}</Text>
           <Text style={styles.message}>{message}</Text>
@@ -67,14 +97,16 @@ export function ConfirmDialog({
             )}
           </Pressable>
 
-          <Pressable
-            accessibilityLabel={cancelLabel}
-            accessibilityRole="button"
-            disabled={loading}
-            onPress={onCancel}
-            style={({ pressed }) => [styles.cancel, pressed && styles.pressed]}>
-            <Text style={styles.cancelLabel}>{cancelLabel}</Text>
-          </Pressable>
+          {showCancel ? (
+            <Pressable
+              accessibilityLabel={cancelLabel}
+              accessibilityRole="button"
+              disabled={loading}
+              onPress={onCancel}
+              style={({ pressed }) => [styles.cancel, pressed && styles.pressed]}>
+              <Text style={styles.cancelLabel}>{cancelLabel}</Text>
+            </Pressable>
+          ) : null}
         </View>
       </View>
     </Modal>
@@ -84,7 +116,7 @@ export function ConfirmDialog({
 const styles = StyleSheet.create({
   overlay: {
     alignItems: 'center',
-    backgroundColor: 'rgba(4,4,6,0.72)',
+    backgroundColor: HalcyonModal.backdrop,
     flex: 1,
     justifyContent: 'center',
     paddingHorizontal: 26,
@@ -93,12 +125,20 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: HalcyonColors.surface,
     borderColor: HalcyonColors.border,
-    borderRadius: 22,
+    borderRadius: HalcyonRadius.card,
     borderWidth: 1,
     maxWidth: 360,
-    paddingHorizontal: 22,
-    paddingVertical: 26,
+    padding: 24,
     width: '100%',
+  },
+  closeButton: {
+    alignItems: 'center',
+    height: 32,
+    justifyContent: 'center',
+    position: 'absolute',
+    right: 10,
+    top: 10,
+    width: 32,
   },
   iconRing: {
     alignItems: 'center',
@@ -110,20 +150,16 @@ const styles = StyleSheet.create({
     width: 56,
   },
   title: {
-    color: HalcyonColors.textPrimary,
-    fontFamily: AppFonts.displaySemiBold,
-    fontSize: 22,
-    fontWeight: '600',
-    lineHeight: 29,
+    ...Typography.sectionHeading,
+    paddingHorizontal: 24,
     textAlign: 'center',
   },
   message: {
+    ...Typography.body,
     color: HalcyonColors.textSecondary,
-    fontFamily: AppFonts.sansRegular,
-    fontSize: 13,
-    lineHeight: 19,
-    marginBottom: 22,
+    marginBottom: 26,
     marginTop: 8,
+    maxWidth: 280,
     textAlign: 'center',
   },
   confirm: {
@@ -136,9 +172,9 @@ const styles = StyleSheet.create({
   confirmLabel: {
     color: HalcyonColors.background,
     fontFamily: AppFonts.sansSemiBold,
-    fontSize: 15,
+    fontSize: 16,
     fontWeight: '600',
-    lineHeight: 20,
+    lineHeight: 22,
   },
   cancel: {
     alignItems: 'center',
@@ -148,11 +184,11 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   cancelLabel: {
-    color: HalcyonColors.textSecondary,
+    color: 'rgba(255, 255, 255, 0.72)',
     fontFamily: AppFonts.sansMedium,
-    fontSize: 15,
+    fontSize: 16,
     fontWeight: '500',
-    lineHeight: 20,
+    lineHeight: 22,
   },
   pressed: {
     opacity: 0.8,

@@ -8,6 +8,7 @@ import { OnboardingScaffold } from '@/components/onboarding/OnboardingScaffold';
 import type { ModeId } from '@/constants/modes';
 import { RELAX_ONBOARDING } from '@/constants/relax-onboarding';
 import { AppFonts } from '@/constants/theme';
+import { safeGoBack } from '@/lib/navigation';
 import { getOnboardingAnswers } from '@/lib/onboarding';
 
 type RitualCopy = {
@@ -65,7 +66,7 @@ export default function TheRitualScreen() {
   return (
     <OnboardingScaffold
       contentContainerStyle={styles.content}
-      onBack={() => router.back()}
+      onBack={() => safeGoBack(router)}
       scroll={false}>
       <View style={styles.topSection}>
         <Text adjustsFontSizeToFit numberOfLines={1} style={styles.heading}>

@@ -13,6 +13,7 @@ import { AppFonts } from '@/constants/theme';
 import { useAccountExport } from '@/hooks/useAccountExport';
 import { isAnalyticsEnabled, setAnalyticsEnabled } from '@/lib/analytics';
 import { clearUserSession } from '@/lib/auth/clearSession';
+import { usePlayerActions } from '@/lib/player/PlayerProvider';
 import { deleteAccount } from '@/lib/haven-api';
 
 /**
@@ -25,6 +26,7 @@ import { deleteAccount } from '@/lib/haven-api';
 function PrivacyDataContent() {
   const router = useRouter();
   const queryClient = useQueryClient();
+  const { stop } = usePlayerActions();
   const { notice, showToast } = useToast();
 
   const exportData = useAccountExport();
@@ -76,6 +78,7 @@ function PrivacyDataContent() {
     setDeleting(true);
     try {
       await deleteAccount();
+      await stop({ forgetResumable: true });
       await clearUserSession(queryClient);
       setDeleteVisible(false);
       router.dismissAll();
@@ -88,7 +91,7 @@ function PrivacyDataContent() {
     } finally {
       setDeleting(false);
     }
-  }, [queryClient, router, showToast]);
+  }, [queryClient, router, showToast, stop]);
 
   return (
     <SettingsScreen

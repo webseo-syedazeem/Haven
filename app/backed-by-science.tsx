@@ -17,6 +17,7 @@ import { OnboardingBackButton } from '@/components/onboarding/OnboardingBackButt
 import { OnboardingContinueButton } from '@/components/onboarding/OnboardingContinueButton';
 import type { ModeId } from '@/constants/modes';
 import { AppFonts } from '@/constants/theme';
+import { safeGoBack } from '@/lib/navigation';
 import { getOnboardingAnswers } from '@/lib/onboarding';
 
 const brandIcon = require('@/assets/images/passage-brand-assets/screens-icon.webp');
@@ -74,7 +75,7 @@ export default function BackedByScienceScreen() {
             </View>
 
             <OnboardingBackButton
-              onPress={() => router.back()}
+              onPress={() => safeGoBack(router)}
               style={styles.backButtonLayer}
             />
 

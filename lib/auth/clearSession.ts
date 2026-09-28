@@ -3,6 +3,9 @@ import type { QueryClient } from '@tanstack/react-query';
 
 import { apiClient, clearStoredAccessToken } from '@/lib/api/client';
 import { markLoggedOut } from '@/lib/auth/offline-session';
+import { setIntroSeen } from '@/lib/auth/intro-flag';
+import { setGuestModeActive } from '@/lib/auth/session-state';
+import { resetGuestOnboardingState } from '@/lib/onboarding';
 import { clearAuthTokens } from '@/lib/haven-api';
 import { clearActiveDownloadUser } from '@/lib/local-downloads';
 import { clearPersistedQueryCache } from '@/lib/query-persist';
@@ -46,6 +49,13 @@ export async function clearUserSession(queryClient: QueryClient) {
     // Ignore if Google native sign out is unavailable or already cleared.
   }
   await supabase.auth.signOut();
+  // Signing out must never leave guest mode on: back from the sign-in screen
+  // would otherwise drop the person into the guest app they did not choose.
+  await setGuestModeActive(false);
+  // Leftover onboarding progress would send the next launch back into
+  // onboarding; a signed-out person belongs on Login instead.
+  await resetGuestOnboardingState();
+  await setIntroSeen();
 
   // Order matters: clearing the client first means the persister's own
   // subscription can only ever see an empty cache, and the disk wipe that

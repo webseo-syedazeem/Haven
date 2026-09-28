@@ -8,6 +8,11 @@ import { SettingsPrimaryButton, SettingsScreen } from '@/components/SettingsScre
 import { Toast, useToast } from '@/components/Toast';
 import { HalcyonColors } from '@/constants/design';
 import { useChangePassword } from '@/hooks/useUser';
+import {
+  parseAuthError,
+  passwordIssue,
+  type AuthFieldErrors,
+} from '@/lib/auth/form-errors';
 
 const MIN_LENGTH = 8;
 
@@ -24,24 +29,27 @@ function UpdatePasswordContent() {
   const [showNew, setShowNew] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<AuthFieldErrors>({});
 
   const handleUpdate = () => {
-    if (!currentPassword || !newPassword || !confirmPassword) {
-      setError('Fill in all three fields.');
-      return;
+    const nextFieldErrors: AuthFieldErrors = {};
+    const oldError = passwordIssue(currentPassword, 'oldPassword', false);
+    const newError = passwordIssue(newPassword, 'newPassword', true);
+    if (oldError) nextFieldErrors.oldPassword = oldError;
+    if (newError) nextFieldErrors.newPassword = newError;
+    if (!confirmPassword) nextFieldErrors.confirmPassword = 'confirmPassword is required';
+    else if (newPassword !== confirmPassword) nextFieldErrors.confirmPassword = 'Passwords do not match';
+    if (currentPassword && newPassword && currentPassword === newPassword) {
+      nextFieldErrors.newPassword = 'newPassword must be different from oldPassword';
     }
-
-    if (newPassword.length < MIN_LENGTH) {
-      setError(`Your new password needs at least ${MIN_LENGTH} characters.`);
-      return;
-    }
-
-    if (newPassword !== confirmPassword) {
-      setError('The new passwords do not match.');
+    if (Object.keys(nextFieldErrors).length) {
+      setFieldErrors(nextFieldErrors);
+      setError('Please provide valid password values');
       return;
     }
 
     setError(null);
+    setFieldErrors({});
 
     changePassword.mutate(
       { oldPassword: currentPassword, newPassword },
@@ -50,12 +58,15 @@ function UpdatePasswordContent() {
           showToast('Password updated.');
           router.back();
         },
-        onError: (saveError) =>
-          setError(
-            saveError instanceof Error
-              ? saveError.message
-              : 'Could not change your password. Try again.'
-          ),
+        onError: (saveError) => {
+          const parsed = parseAuthError(saveError, 'Could not change your password. Try again.');
+          const nextErrors = { ...parsed.fields };
+          if (parsed.code === 'INVALID_CREDENTIALS' && !nextErrors.oldPassword) {
+            nextErrors.oldPassword = parsed.message;
+          }
+          setFieldErrors(nextErrors);
+          setError(Object.keys(nextErrors).length ? null : parsed.message);
+        },
       }
     );
   };
@@ -71,7 +82,11 @@ function UpdatePasswordContent() {
           autoCapitalize="none"
           autoCorrect={false}
           label="Current password"
-          onChangeText={setCurrentPassword}
+          errorMessage={fieldErrors.oldPassword}
+          onChangeText={(value) => {
+            setCurrentPassword(value);
+            setFieldErrors((current) => ({ ...current, oldPassword: '' }));
+          }}
           placeholder="••••••••"
           secureTextEntry={!showCurrent}
           value={currentPassword}
@@ -83,7 +98,11 @@ function UpdatePasswordContent() {
           autoCorrect={false}
           hint={`At least ${MIN_LENGTH} characters.`}
           label="New password"
-          onChangeText={setNewPassword}
+          errorMessage={fieldErrors.newPassword}
+          onChangeText={(value) => {
+            setNewPassword(value);
+            setFieldErrors((current) => ({ ...current, newPassword: '' }));
+          }}
           placeholder="••••••••"
           secureTextEntry={!showNew}
           value={newPassword}
@@ -94,7 +113,11 @@ function UpdatePasswordContent() {
           autoCapitalize="none"
           autoCorrect={false}
           label="Confirm new password"
-          onChangeText={setConfirmPassword}
+          errorMessage={fieldErrors.confirmPassword}
+          onChangeText={(value) => {
+            setConfirmPassword(value);
+            setFieldErrors((current) => ({ ...current, confirmPassword: '' }));
+          }}
           placeholder="••••••••"
           secureTextEntry={!showConfirm}
           value={confirmPassword}

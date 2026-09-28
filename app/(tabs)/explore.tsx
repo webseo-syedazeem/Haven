@@ -472,11 +472,7 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
   },
   featuredTitle: {
-    color: HalcyonColors.textPrimary,
-    fontFamily: AppFonts.displaySemiBold,
-    fontSize: 26,
-    fontWeight: '600',
-    lineHeight: 33,
+    ...Typography.sectionHeading,
     marginTop: 6,
   },
   featuredBody: {

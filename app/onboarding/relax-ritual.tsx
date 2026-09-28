@@ -7,6 +7,7 @@ import { OnboardingScaffold } from '@/components/onboarding/OnboardingScaffold';
 import { RelaxStepHeader } from '@/components/onboarding/RelaxStepHeader';
 import { RELAX_ONBOARDING } from '@/constants/relax-onboarding';
 import { AppFonts } from '@/constants/theme';
+import { safeGoBack } from '@/lib/navigation';
 
 const background = require('@/assets/images/relax-ritual-bg.webp');
 
@@ -17,7 +18,7 @@ export default function RelaxRitualScreen() {
     <OnboardingScaffold
       backgroundImage={background}
       contentContainerStyle={styles.content}
-      header={<RelaxStepHeader currentStep={7} onBack={() => router.back()} />}
+      header={<RelaxStepHeader currentStep={7} onBack={() => safeGoBack(router)} />}
       scroll={false}>
       <View style={styles.copy}>
         <Text style={styles.heading}>A moment{'\n'}to breathe.</Text>

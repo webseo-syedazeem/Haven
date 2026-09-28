@@ -33,8 +33,8 @@ import {
   getOnboardingAnswers,
 } from '@/lib/onboarding';
 import { setIntroSeen } from '@/lib/auth/intro-flag';
-import { hasActiveSession } from '@/lib/auth/session-state';
-import { resetToMainApp } from '@/lib/navigation';
+import { hasActiveSession, isGuestModeActive } from '@/lib/auth/session-state';
+import { resetToMainApp, safeGoBack } from '@/lib/navigation';
 import { toPreviewTrack } from '@/lib/player/types';
 import { useScopedPlayer } from '@/lib/player/useScopedPlayer';
 import { formatClock } from '@/lib/utils/duration';
@@ -126,7 +126,7 @@ export default function TryPassageScreen() {
 
   const handleBack = () => {
     player.stop();
-    router.back();
+    safeGoBack(router);
   };
 
   useEffect(() => {
@@ -202,7 +202,9 @@ export default function TryPassageScreen() {
 
       await finishOnboardingForAppEntry();
       await setIntroSeen();
-      if (hasActiveSession()) {
+      if (hasActiveSession() || isGuestModeActive()) {
+        // Signed in or already chosen as guest on the account screen, so there is
+        // nothing left to choose.
         resetToMainApp(router);
       } else {
         // Reaching the end of onboarding is not consent to guest mode. The

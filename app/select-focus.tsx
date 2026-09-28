@@ -9,6 +9,7 @@ import { OnboardingPillButton } from '@/components/onboarding/OnboardingPillButt
 import { OnboardingStepHeader, PASSAGE_GOLD, PASSAGE_SLEEP } from '@/components/onboarding/OnboardingStepHeader';
 import { RELAX_ACCENT } from '@/constants/design';
 import { AppFonts } from '@/constants/theme';
+import { safeGoBack } from '@/lib/navigation';
 import {
   getOnboardingAnswers,
   saveOnboardingAnswers,
@@ -123,7 +124,7 @@ export default function SelectFocusScreen() {
       <OnboardingStepHeader
         activeColor={selectedAccent}
         currentStep={4}
-        onBack={() => router.back()}
+        onBack={() => safeGoBack(router)}
         showBack
         totalSteps={4}
       />

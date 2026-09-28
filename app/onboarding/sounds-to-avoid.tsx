@@ -10,6 +10,7 @@ import { OnboardingScaffold } from '@/components/onboarding/OnboardingScaffold';
 import { HalcyonColors } from '@/constants/design';
 import { getFilterGroupValues } from '@/constants/filters';
 import { AppFonts } from '@/constants/theme';
+import { safeGoBack } from '@/lib/navigation';
 import { getOnboardingAnswers, saveOnboardingAnswers } from '@/lib/onboarding';
 import { OnboardingContinueButtonBlack } from '@/components/onboarding/OnboardingcontinueButtonBlack';
 
@@ -73,7 +74,7 @@ export default function SoundsToAvoidScreen() {
           />
         </View>
       }
-      onBack={() => router.back()}
+      onBack={() => safeGoBack(router)}
      >
       <Text style={styles.heading}>Anything to leave out?</Text>
       <Text style={styles.hint}>

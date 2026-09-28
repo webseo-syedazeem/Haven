@@ -2,6 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
+  Keyboard,
   KeyboardAvoidingView,
   Modal,
   Platform,
@@ -13,7 +14,13 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { HalcyonColors, HalcyonRadius, HalcyonSpacing } from '@/constants/design';
+import {
+  HalcyonColors,
+  HalcyonModal,
+  HalcyonRadius,
+  HalcyonSpacing,
+  Typography,
+} from '@/constants/design';
 import { AppFonts } from '@/constants/theme';
 import type { Playlist, PlaylistPayload } from '@/lib/api/playlists';
 
@@ -39,6 +46,7 @@ export function PlaylistFormSheet({
   const [description, setDescription] = useState('');
   const [coverUrl, setCoverUrl] = useState('');
   const [error, setError] = useState<string | null>(null);
+  const [keyboardVisible, setKeyboardVisible] = useState(false);
 
   useEffect(() => {
     if (!visible) return;
@@ -47,6 +55,25 @@ export function PlaylistFormSheet({
     setCoverUrl(playlist?.cover_image_url ?? '');
     setError(null);
   }, [playlist, visible]);
+
+  useEffect(() => {
+    if (!visible) {
+      setKeyboardVisible(false);
+      return;
+    }
+
+    const showSubscription = Keyboard.addListener('keyboardDidShow', () => {
+      setKeyboardVisible(true);
+    });
+    const hideSubscription = Keyboard.addListener('keyboardDidHide', () => {
+      setKeyboardVisible(false);
+    });
+
+    return () => {
+      showSubscription.remove();
+      hideSubscription.remove();
+    };
+  }, [visible]);
 
   const handleSubmit = async () => {
     const cleanName = name.trim();
@@ -63,11 +90,26 @@ export function PlaylistFormSheet({
   };
 
   return (
-    <Modal animationType="slide" onRequestClose={onClose} transparent visible={visible}>
-      <Pressable accessibilityLabel="Close" onPress={onClose} style={styles.backdrop} />
+    <Modal
+      animationType="slide"
+      navigationBarTranslucent
+      onRequestClose={onClose}
+      statusBarTranslucent
+      transparent
+      visible={visible}>
+      <View style={styles.container}>
+        <Pressable accessibilityLabel="Close" onPress={onClose} style={styles.backdrop} />
 
-      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-        <View style={[styles.sheet, { paddingBottom: insets.bottom + 18 }]}>
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : 'position'}
+          contentContainerStyle={styles.avoiderContent}
+          enabled={Platform.OS === 'ios' || keyboardVisible}
+          style={styles.avoider}>
+          <View
+            style={[
+              styles.sheet,
+              { paddingBottom: keyboardVisible ? 20 : insets.bottom + 18 },
+            ]}>
           <View style={styles.header}>
             <Text style={styles.title}>{playlist ? 'Edit playlist' : 'New playlist'}</Text>
             <Pressable
@@ -134,22 +176,33 @@ export function PlaylistFormSheet({
               <Text style={styles.submitLabel}>{playlist ? 'Save' : 'Create playlist'}</Text>
             )}
           </Pressable>
-        </View>
-      </KeyboardAvoidingView>
+          </View>
+        </KeyboardAvoidingView>
+      </View>
     </Modal>
   );
 }
 
 const styles = StyleSheet.create({
-  backdrop: {
-    backgroundColor: 'rgba(4,4,6,0.62)',
+  container: {
     flex: 1,
+  },
+  avoider: {
+    flex: 1,
+  },
+  avoiderContent: {
+    flex: 1,
+    justifyContent: 'flex-end',
+  },
+  backdrop: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: HalcyonModal.backdrop,
   },
   sheet: {
     backgroundColor: HalcyonColors.surface,
     borderTopColor: HalcyonColors.border,
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
+    borderTopLeftRadius: HalcyonRadius.sheet,
+    borderTopRightRadius: HalcyonRadius.sheet,
     borderTopWidth: 1,
     paddingHorizontal: HalcyonSpacing.screenX,
     paddingTop: 16,
@@ -161,11 +214,7 @@ const styles = StyleSheet.create({
     marginBottom: 14,
   },
   title: {
-    color: HalcyonColors.textPrimary,
-    fontFamily: AppFonts.displaySemiBold,
-    fontSize: 20,
-    fontWeight: '600',
-    lineHeight: 27,
+    ...Typography.sectionHeading,
   },
   label: {
     color: HalcyonColors.textSecondary,

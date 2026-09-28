@@ -182,21 +182,28 @@ test('queue loads replace audio, lock-screen metadata and progress on the same n
   const progress = [];
   engine.subscribe({ onProgress: (value) => progress.push(plain(value)) });
   // Initial selection, Next, then Previous use the same engine load path.
-  for (const item of [track('a'), track('b'), track('a')]) {
+  for (const [index, item] of [track('a'), track('b'), track('a')].entries()) {
     await engine.load(item);
+    const native = players[0];
+    assert.equal(named(native.calls, 'lockScreen').length, index === 0 ? 0 : 1,
+      'loading alone never starts the foreground media service');
     await engine.play();
     assert.equal(players.length, 1);
-    const native = players[0];
     assert.equal(native.source, item.url);
-    const metadata = native.calls.filter(([name]) => name === 'lockScreen').at(-1);
+    const metadata = index === 0
+      ? named(native.calls, 'lockScreen').at(-1)
+      : named(native.calls, 'lockScreenUpdate').at(-1);
     assert.deepEqual(plain(metadata), [
-      'lockScreen', true,
+      index === 0 ? 'lockScreen' : 'lockScreenUpdate',
+      ...(index === 0 ? [true] : []),
       { title: item.title, artist: item.artist, artworkUrl: item.artwork },
-      { showSeekForward: true, showSeekBackward: true },
+      ...(index === 0 ? [{ showSeekForward: true, showSeekBackward: true }] : []),
     ]);
     assert.deepEqual(progress.at(-1), { position: 0, duration: 180 });
     assert.deepEqual(native.calls.at(-1), ['play']);
   }
+  assert.equal(named(players[0].calls, 'lockScreen').length, 1,
+    'track changes reuse the existing foreground media service');
 });
 
 test('resume seeks after loading and track completion fires once per source', async () => {
@@ -230,9 +237,8 @@ test('background setup remains enabled and reset releases media controls and aud
   await engine.reset();
   assert.equal(engine.hasSource(), false);
   assert.equal(players[0].released, true);
-  assert.deepEqual(players[0].calls.slice(-6), [
-    ['removeListener', 'playbackStatusUpdate'], ['pause'], ['clearLockScreen'],
-    ['lockScreen', false], ['remove'], ['release'],
+  assert.deepEqual(players[0].calls.slice(-4), [
+    ['removeListener', 'playbackStatusUpdate'], ['pause'], ['remove'], ['release'],
   ]);
   assert.deepEqual(audioActive, [true, false]);
   assert.deepEqual(progress.at(-1), { position: 0, duration: 0 });
@@ -301,7 +307,7 @@ test('a scoped engine keeps its own player and listeners and leaves the lock scr
   assert.equal(players[1].source, track('b').url);
 });
 
-test('a scoped engine with lock screen on publishes each track and clears only its own controls', async () => {
+test('a scoped engine with lock screen on activates once, updates tracks, and clears only its controls', async () => {
   const { createPlayerEngine, players, audioActive } = createEngineHarness();
   const scoped = createPlayerEngine({
     lockScreen: true, ownsLockScreen: false, releaseAudioSession: false,
@@ -309,7 +315,7 @@ test('a scoped engine with lock screen on publishes each track and clears only i
   const lockScreenCalls = () => players[0].calls.filter(([name]) => name === 'lockScreen');
   await scoped.load(track('a'));
   await scoped.play();
-  // Switching card re-publishes metadata for the new track on the same player.
+  // Switching card updates metadata without re-arming the foreground service.
   await scoped.load(track('b'));
   await scoped.play();
   assert.equal(players.length, 1);
@@ -317,15 +323,16 @@ test('a scoped engine with lock screen on publishes each track and clears only i
     ['lockScreen', true,
       { title: 'Soundscape a', artist: 'Passage', artworkUrl: track('a').artwork },
       { showSeekForward: true, showSeekBackward: true }],
-    ['lockScreen', true,
-      { title: 'Soundscape b', artist: 'Passage', artworkUrl: track('b').artwork },
-      { showSeekForward: true, showSeekBackward: true }],
+  ]);
+  assert.deepEqual(plain(named(players[0].calls, 'lockScreenUpdate').at(-1)), [
+    'lockScreenUpdate',
+    { title: 'Soundscape b', artist: 'Passage', artworkUrl: track('b').artwork },
   ]);
   await scoped.reset();
   const names = players[0].calls.map(([name]) => name);
   assert.ok(names.includes('clearLockScreen'));
   // `setActiveForLockScreen(false)` would clear a lock screen held by another player.
-  assert.equal(lockScreenCalls().length, 2);
+  assert.equal(lockScreenCalls().length, 1);
   assert.equal(names.at(-1), 'release');
   assert.deepEqual(audioActive, [true]);
 });
@@ -356,6 +363,7 @@ test('teardown frees the native player without replacing its source, and raises 
 test('a teardown step that fails cannot skip the steps after it, or the audio session release', async () => {
   const { engine, players, audioActive, warnings } = createEngineHarness();
   await engine.load(track('a'));
+  await engine.play();
   players[0].failing.add('clearLockScreenControls');
   players[0].failing.add('pause');
   await engine.reset();
@@ -489,6 +497,8 @@ test('a seek that leaves the native player idle is reloaded at the seek target a
   }
   assert.deepEqual(seen.changes.at(-1), { isPlaying: true, isBuffering: false });
   assert.equal(named(native.calls, 'replace').length, 2);
+  assert.equal(named(native.calls, 'lockScreen').length, 1,
+    'same-track recovery never re-arms the foreground media service');
   assert.equal(seen.failures, 0);
 });
 
@@ -639,7 +649,13 @@ test('a resume offset holds playback until its seek lands, so it never starts fr
 
   native.emit({ playing: false, isLoaded: true, isBuffering: false, playbackState: 'ready', currentTime: 0, duration: 180 });
   await harness.flush();
-  assert.deepEqual(native.calls.slice(-2), [['seek', 23], ['play']]);
+  assert.deepEqual(plain(native.calls.slice(-3)), [
+    ['seek', 23],
+    ['lockScreen', true,
+      { title: 'Soundscape a', artist: 'Passage', artworkUrl: track('a').artwork },
+      { showSeekForward: true, showSeekBackward: true }],
+    ['play'],
+  ]);
 });
 
 test('play on a source that failed while paused reloads it at the last position straight away', async () => {
@@ -758,6 +774,7 @@ test('a cover already saved on the device is what the lock screen is given', asy
   };
   const { engine, players } = createEngineHarness({ artworkCache: cache });
   await engine.load(track('a'));
+  await engine.play();
   assert.deepEqual(lockScreenMetadata(players[0], 'lockScreen'), [[
     'lockScreen', true,
     { title: 'Soundscape a', artist: 'Passage', artworkUrl: 'file:///cache/a.jpg' },
@@ -773,6 +790,7 @@ test('a cover that is not saved yet shows from its URL, then swaps to the saved 
   };
   const { engine, players, flush } = createEngineHarness({ artworkCache: cache });
   await engine.load(track('a'));
+  await engine.play();
   assert.equal(lockScreenMetadata(players[0], 'lockScreen')[0][2].artworkUrl, track('a').artwork);
   assert.deepEqual(lockScreenMetadata(players[0], 'lockScreenUpdate'), []);
 
@@ -792,21 +810,24 @@ test('a saved cover that arrives after the track changed is not shown for the ne
   };
   const { engine, players, flush } = createEngineHarness({ artworkCache: cache });
   await engine.load(track('a'));
+  await engine.play();
   await engine.load(track('b'));
 
+  const afterTrackChange = lockScreenMetadata(players[0], 'lockScreenUpdate');
   pending.get(track('a').artwork)('file:///cache/a.jpg');
   await flush();
-  assert.deepEqual(lockScreenMetadata(players[0], 'lockScreenUpdate'), []);
+  assert.deepEqual(lockScreenMetadata(players[0], 'lockScreenUpdate'), afterTrackChange);
 
   pending.get(track('b').artwork)('file:///cache/b.jpg');
   await flush();
-  assert.equal(lockScreenMetadata(players[0], 'lockScreenUpdate')[0][1].artworkUrl, 'file:///cache/b.jpg');
+  assert.equal(lockScreenMetadata(players[0], 'lockScreenUpdate').at(-1)[1].artworkUrl, 'file:///cache/b.jpg');
 });
 
 test('a cover that could not be saved leaves the remote URL in place and raises no warning', async () => {
   const cache = { cached: () => null, fetch: async () => null };
   const { engine, players, flush, warnings } = createEngineHarness({ artworkCache: cache });
   await engine.load(track('a'));
+  await engine.play();
   await flush();
   assert.deepEqual(lockScreenMetadata(players[0], 'lockScreenUpdate'), []);
   assert.deepEqual(warnings, []);
@@ -816,6 +837,7 @@ test('a cover already on disk (downloads) is passed through untouched and never 
   const cache = { cached: () => 'unused', fetch: async () => { throw new Error('unexpected fetch'); } };
   const { engine, players, flush } = createEngineHarness({ artworkCache: cache });
   await engine.load({ ...track('a'), artwork: 'file:///docs/a.jpg' });
+  await engine.play();
   await flush();
   assert.equal(lockScreenMetadata(players[0], 'lockScreen')[0][2].artworkUrl, 'file:///docs/a.jpg');
 });

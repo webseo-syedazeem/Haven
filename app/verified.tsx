@@ -1,14 +1,12 @@
-import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, BackHandler, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, BackHandler, StyleSheet, Text } from 'react-native';
 
 import { OnboardingContinueButton } from '@/components/onboarding/OnboardingContinueButton';
 import { OnboardingScaffold } from '@/components/onboarding/OnboardingScaffold';
-import { HalcyonColors } from '@/constants/design';
-import { AppFonts } from '@/constants/theme';
+import { HalcyonColors, Typography } from '@/constants/design';
 import { hasEmailIdentity, isEmailConfirmed } from '@/lib/auth/complete-auth';
-import { migrateGuestOnboardingAfterAuth } from '@/lib/onboarding';
+import { routeAfterSignIn } from '@/lib/auth/onboarding-routing';
 import { resetToMainApp } from '@/lib/navigation';
 import { supabase } from '@/lib/supabase';
 
@@ -16,7 +14,6 @@ export default function VerifiedScreen() {
   const router = useRouter();
   const [checking, setChecking] = useState(true);
   const [continuing, setContinuing] = useState(false);
-  const [errorMessage, setErrorMessage] = useState('');
 
   useEffect(() => {
     const subscription = BackHandler.addEventListener('hardwareBackPress', () => true);
@@ -45,17 +42,13 @@ export default function VerifiedScreen() {
   const continueIntoApp = async () => {
     if (continuing) return;
     setContinuing(true);
-    setErrorMessage('');
     try {
-      // A3/callback already attempts this. Calling again is intentional: the
-      // local migration is idempotent and a network failure stays pending.
-      await migrateGuestOnboardingAfterAuth();
+      // Email signup is account-first: after verification, a new profile starts
+      // (or resumes) onboarding; a profile that already completed it enters Home.
+      await routeAfterSignIn(router);
+    } catch (error) {
+      console.warn('[auth] post-verification setup failed; continuing to the app', error);
       resetToMainApp(router);
-    } catch {
-      setErrorMessage(
-        'Your email is confirmed, but your Passage preferences still need to be saved. Check your connection and try again.'
-      );
-      setContinuing(false);
     }
   };
 
@@ -69,92 +62,35 @@ export default function VerifiedScreen() {
 
   return (
     <OnboardingScaffold contentContainerStyle={styles.content} scroll={false}>
-      <View style={styles.topLine} />
-      <View style={styles.iconCircle}>
-        <Ionicons color={HalcyonColors.accent} name="checkmark" size={34} />
-      </View>
       <Text style={styles.heading}>You&apos;re all set</Text>
       <Text style={styles.body}>Your email is confirmed.</Text>
-      {errorMessage ? (
-        <Text accessibilityLiveRegion="polite" style={styles.error}>
-          {errorMessage}
-        </Text>
-      ) : null}
       <OnboardingContinueButton
-        label={errorMessage ? 'Retry saving preferences' : 'Continue'}
+        label="Continue"
         loading={continuing}
         onPress={() => void continueIntoApp()}
         style={styles.primaryButton}
       />
-      {errorMessage ? (
-        <OnboardingContinueButton
-          label="Continue to Home"
-          onPress={() => resetToMainApp(router)}
-          style={styles.secondaryButton}
-          variant="secondary"
-        />
-      ) : null}
     </OnboardingScaffold>
   );
 }
 
 const styles = StyleSheet.create({
   body: {
-    color: HalcyonColors.textSecondary,
-    fontFamily: AppFonts.sansRegular,
-    fontSize: 13,
-    lineHeight: 20,
+    ...Typography.body,
     marginTop: 8,
+    textAlign: 'center',
   },
   content: {
     alignItems: 'center',
     justifyContent: 'center',
     paddingBottom: 62,
   },
-  error: {
-    color: '#DFA196',
-    fontFamily: AppFonts.sansRegular,
-    fontSize: 11,
-    lineHeight: 17,
-    marginTop: 18,
-    maxWidth: 320,
-    textAlign: 'center',
-  },
   heading: {
-    color: HalcyonColors.textPrimary,
-    fontFamily: AppFonts.displayRegular,
-    fontSize: 35,
-    fontWeight: '400',
-    lineHeight: 40,
-    marginTop: 27,
-  },
-  iconCircle: {
-    alignItems: 'center',
-    borderColor: HalcyonColors.accent,
-    borderRadius: 34,
-    borderWidth: 1,
-    height: 68,
-    justifyContent: 'center',
-    shadowColor: HalcyonColors.accent,
-    shadowOffset: { height: 0, width: 0 },
-    shadowOpacity: 0.24,
-    shadowRadius: 16,
-    width: 68,
+    ...Typography.screenHeading,
+    textAlign: 'center',
   },
   primaryButton: {
     marginTop: 34,
     maxWidth: 390,
-  },
-  secondaryButton: {
-    marginTop: 12,
-    maxWidth: 390,
-  },
-  topLine: {
-    backgroundColor: HalcyonColors.accent,
-    height: 2,
-    opacity: 0.92,
-    position: 'absolute',
-    top: 18,
-    width: 28,
   },
 });

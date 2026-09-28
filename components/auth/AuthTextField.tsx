@@ -16,6 +16,7 @@ type IconName = ComponentProps<typeof Ionicons>['name'];
 
 type AuthTextFieldProps = Omit<TextInputProps, 'style'> & {
   error?: boolean;
+  errorMessage?: string;
   label?: string;
   onToggleSecureText?: () => void;
   secureTextVisible?: boolean;
@@ -24,6 +25,7 @@ type AuthTextFieldProps = Omit<TextInputProps, 'style'> & {
 
 export function AuthTextField({
   error = false,
+  errorMessage,
   label,
   onToggleSecureText,
   secureTextVisible = false,
@@ -35,7 +37,7 @@ export function AuthTextField({
   return (
     <View style={styles.group}>
       {label ? <Text style={styles.label}>{label}</Text> : null}
-      <View style={[styles.field, error && styles.fieldError]}>
+      <View style={[styles.field, (error || errorMessage) && styles.fieldError]}>
         <TextInput
           {...inputProps}
           placeholderTextColor={inputProps.placeholderTextColor ?? HalcyonColors.textSecondary}
@@ -56,6 +58,11 @@ export function AuthTextField({
           </View>
         ) : null}
       </View>
+      {errorMessage ? (
+        <Text accessibilityLiveRegion={'polite'} style={styles.errorMessage}>
+          {errorMessage}
+        </Text>
+      ) : null}
     </View>
   );
 }
@@ -72,6 +79,13 @@ const styles = StyleSheet.create({
   },
   fieldError: {
     borderColor: 'rgba(211,137,126,0.78)',
+  },
+  errorMessage: {
+    color: '#DFA196',
+    fontFamily: AppFonts.sansRegular,
+    fontSize: 12,
+    lineHeight: 17,
+    paddingHorizontal: 4,
   },
   group: {
     rowGap: 7,

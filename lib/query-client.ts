@@ -1,6 +1,6 @@
 import { QueryClient } from '@tanstack/react-query';
 
-import { isNetworkError } from '@/lib/api/errors';
+import { ApiError, isNetworkError } from '@/lib/api/errors';
 
 /** Long enough that a restored cache is still there to show; see `query-persist`. */
 const CACHE_TIME_MS = 1000 * 60 * 60 * 24;
@@ -20,7 +20,12 @@ export const queryClient = new QueryClient({
       // Retrying a request that never reached anyone just delays the moment the
       // cached data is shown. Anything the server actually answered gets one
       // more go.
-      retry: (failureCount, error) => !isNetworkError(error) && failureCount < 1,
+      // The API client already gives 429s two bounded attempts with
+      // Retry-After-aware backoff. Do not multiply those attempts here.
+      retry: (failureCount, error) =>
+        !isNetworkError(error) &&
+        !(error instanceof ApiError && error.status === 429) &&
+        failureCount < 1,
       refetchOnWindowFocus: false,
     },
   },

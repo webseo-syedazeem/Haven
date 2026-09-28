@@ -19,6 +19,7 @@ import { OnboardingContinueButton } from '@/components/onboarding/OnboardingCont
 import type { ModeId } from '@/constants/modes';
 import { RELAX_ONBOARDING } from '@/constants/relax-onboarding';
 import { AppFonts } from '@/constants/theme';
+import { safeGoBack } from '@/lib/navigation';
 import {
   getOnboardingAnswers,
   saveOnboardingAnswers,
@@ -128,7 +129,7 @@ export default function SituationScreen() {
             </View>
 
             <OnboardingBackButton
-              onPress={() => router.back()}
+              onPress={() => safeGoBack(router)}
               style={styles.backButtonLayer}
             />
 

@@ -21,7 +21,12 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { PlaylistPickerSheet } from '@/components/PlaylistPickerSheet';
 import { TimerSheet } from '@/components/TimerSheet';
 import { Toast, useToast } from '@/components/Toast';
-import { HalcyonColors, HalcyonRadius, HalcyonSpacing } from '@/constants/design';
+import {
+  HalcyonColors,
+  HalcyonModal,
+  HalcyonRadius,
+  HalcyonSpacing,
+} from '@/constants/design';
 import { getModeLabel } from '@/constants/modes';
 import { formatTimerLabel, UNTIL_I_STOP } from '@/constants/timers';
 import { AppFonts } from '@/constants/theme';
@@ -352,7 +357,13 @@ export default function PlayerScreen() {
         visible={timerVisible}
       />
 
-      <Modal animationType="fade" onRequestClose={() => setMenuVisible(false)} transparent visible={menuVisible}>
+      <Modal
+        animationType="fade"
+        navigationBarTranslucent
+        onRequestClose={() => setMenuVisible(false)}
+        statusBarTranslucent
+        transparent
+        visible={menuVisible}>
         <Pressable
           accessibilityLabel="Close menu"
           onPress={() => setMenuVisible(false)}
@@ -697,14 +708,14 @@ const styles = StyleSheet.create({
     lineHeight: 16,
   },
   menuBackdrop: {
-    backgroundColor: 'rgba(4,4,6,0.6)',
+    backgroundColor: HalcyonModal.backdrop,
     flex: 1,
   },
   menu: {
     backgroundColor: HalcyonColors.surface,
     borderTopColor: HalcyonColors.border,
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
+    borderTopLeftRadius: HalcyonRadius.sheet,
+    borderTopRightRadius: HalcyonRadius.sheet,
     borderTopWidth: 1,
     paddingHorizontal: HalcyonSpacing.screenX,
     paddingTop: 12,

@@ -394,11 +394,8 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
   },
   searchInput: {
-    color: HalcyonColors.textPrimary,
+    ...Typography.body,
     flex: 1,
-    fontFamily: AppFonts.sansRegular,
-    fontSize: 15,
-    lineHeight: 20,
     padding: 0,
   },
   suggestions: {
@@ -413,10 +410,7 @@ const styles = StyleSheet.create({
     paddingVertical: 22,
   },
   suggestionEmpty: {
-    color: HalcyonColors.textSecondary,
-    fontFamily: AppFonts.sansRegular,
-    fontSize: 13,
-    lineHeight: 18,
+    ...Typography.muted,
     padding: 16,
   },
   suggestionRow: {
@@ -432,16 +426,10 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   suggestionTitle: {
-    color: HalcyonColors.textPrimary,
-    fontFamily: AppFonts.sansRegular,
-    fontSize: 14,
-    lineHeight: 19,
+    ...Typography.body,
   },
   suggestionMeta: {
-    color: HalcyonColors.textSecondary,
-    fontFamily: AppFonts.sansRegular,
-    fontSize: 12,
-    lineHeight: 16,
+    ...Typography.muted,
     marginTop: 1,
   },
   suggestionArrow: {
@@ -513,21 +501,14 @@ const styles = StyleSheet.create({
     paddingTop: 16,
   },
   count: {
-    color: HalcyonColors.textSecondary,
-    fontFamily: AppFonts.sansRegular,
-    fontSize: 13,
-    lineHeight: 18,
+    ...Typography.muted,
   },
   rescueBlock: {
     paddingHorizontal: HalcyonSpacing.screenX,
     paddingTop: 4,
   },
   rescueTitle: {
-    color: HalcyonColors.textPrimary,
-    fontFamily: AppFonts.sansSemiBold,
-    fontSize: 14,
-    fontWeight: '600',
-    lineHeight: 19,
+    ...Typography.sectionHeading,
     marginBottom: 12,
   },
   rescueChips: {

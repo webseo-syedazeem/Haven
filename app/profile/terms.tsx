@@ -21,10 +21,10 @@ export default function TermsScreen() {
 
 const styles = StyleSheet.create({
   lede: {
-    color: HalcyonColors.textPrimary,
+    color: HalcyonColors.textSecondary,
     fontFamily: AppFonts.sansRegular,
-    fontSize: 15,
-    lineHeight: 23,
+    fontSize: 16,
+    lineHeight: 24,
     marginBottom: 18,
   },
 });

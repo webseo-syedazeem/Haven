@@ -4,7 +4,7 @@ import type { ReactNode } from 'react';
 import { Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { HalcyonColors, HalcyonSpacing } from '@/constants/design';
+import { HalcyonColors, HalcyonSpacing, Typography } from '@/constants/design';
 import { AppFonts } from '@/constants/theme';
 
 const ANDROID_NAV_FALLBACK = 34;
@@ -117,27 +117,26 @@ const styles = StyleSheet.create({
   },
   backButton: {
     alignItems: 'center',
+    backgroundColor: 'rgba(11, 11, 13, 0.42)',
+    borderColor: 'rgba(255, 255, 255, 0.2)',
+    borderRadius: 18,
+    borderWidth: 1,
     height: 36,
     justifyContent: 'center',
     marginBottom: 10,
-    marginLeft: -8,
     width: 36,
   },
   pressed: {
-    opacity: 0.7,
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    opacity: 0.78,
   },
   title: {
+    ...Typography.screenHeading,
     color: HalcyonColors.textPrimary,
-    fontFamily: AppFonts.displaySemiBold,
-    fontSize: 32,
-    fontWeight: '600',
-    lineHeight: 40,
   },
   subtitle: {
+    ...Typography.body,
     color: HalcyonColors.textSecondary,
-    fontFamily: AppFonts.sansRegular,
-    fontSize: 13,
-    lineHeight: 19,
     marginTop: 6,
   },
   primaryButton: {

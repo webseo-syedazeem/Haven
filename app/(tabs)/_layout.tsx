@@ -74,14 +74,6 @@ function FloatingTabBar({ state, descriptors, navigation }: BottomTabBarProps) {
                   return;
                 }
 
-                if (route.name === 'profile' && isGuest) {
-                  showAccountRequiredPrompt({
-                    title: 'Please log in',
-                    message: 'Log in to manage your account, preferences, and settings.',
-                  });
-                  return;
-                }
-
                 const event = navigation.emit({
                   type: 'tabPress',
                   target: route.key,

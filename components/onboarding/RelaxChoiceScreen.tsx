@@ -18,6 +18,7 @@ import {
 } from '@/constants/design';
 import { RELAX_ONBOARDING } from '@/constants/relax-onboarding';
 import { AppFonts } from '@/constants/theme';
+import { safeGoBack } from '@/lib/navigation';
 import {
   completeOnboardingAnswers,
   getOnboardingAnswers,
@@ -141,7 +142,7 @@ export function RelaxChoiceScreen({
         </View>
       }
       header={
-        <RelaxStepHeader currentStep={step} onBack={() => router.back()} />
+        <RelaxStepHeader currentStep={step} onBack={() => safeGoBack(router)} />
       }>
       <Text style={styles.eyebrow}>{eyebrow}</Text>
       <Text style={styles.heading}>{title}</Text>

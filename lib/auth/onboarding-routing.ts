@@ -27,8 +27,16 @@ export async function resetToAuthenticatedOnboarding(router: Router): Promise<vo
     console.warn('[onboarding] could not read local resume progress', error);
   }
 
+  const destination: Href =
+    route === AUTHENTICATED_ONBOARDING_START_ROUTE
+      ? {
+          pathname: AUTHENTICATED_ONBOARDING_START_ROUTE,
+          params: { from: 'authenticated-resume' },
+        }
+      : route;
+
   router.dismissAll();
-  router.replace(route);
+  router.replace(destination);
 }
 
 export async function routeForOnboardingStatus(
@@ -51,7 +59,11 @@ export async function fetchAndCacheCurrentUser(): Promise<MeApiResponse> {
 }
 
 export async function routeAfterSignIn(router: Router): Promise<void> {
-  await migrateGuestOnboardingAfterAuth();
+  // A failed import stays pending (see `migrateGuestOnboardingAfterAuth`) and is
+  // retried on later launches; it must not stop someone who is signed in.
+  await migrateGuestOnboardingAfterAuth().catch((error) => {
+    console.warn('[onboarding] import remains pending after sign in', error);
+  });
   const me = await fetchAndCacheCurrentUser();
   await routeForOnboardingStatus(router, me);
 }

@@ -2,7 +2,13 @@ import { Ionicons } from '@expo/vector-icons';
 import { Modal, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { HalcyonColors, HalcyonSpacing } from '@/constants/design';
+import {
+  HalcyonColors,
+  HalcyonModal,
+  HalcyonRadius,
+  HalcyonSpacing,
+  Typography,
+} from '@/constants/design';
 import { SORT_OPTIONS, type SortValue } from '@/constants/filters';
 import { AppFonts } from '@/constants/theme';
 
@@ -18,10 +24,17 @@ export function SortSheet({ visible, value, onClose, onSelect }: SortSheetProps)
   const insets = useSafeAreaInsets();
 
   return (
-    <Modal animationType="slide" onRequestClose={onClose} transparent visible={visible}>
-      <Pressable accessibilityLabel="Close sort" onPress={onClose} style={styles.backdrop} />
+    <Modal
+      animationType="slide"
+      navigationBarTranslucent
+      onRequestClose={onClose}
+      statusBarTranslucent
+      transparent
+      visible={visible}>
+      <View style={styles.container}>
+        <Pressable accessibilityLabel="Close sort" onPress={onClose} style={styles.backdrop} />
 
-      <View style={[styles.sheet, { paddingBottom: insets.bottom + 16 }]}>
+        <View style={[styles.sheet, { paddingBottom: insets.bottom + 16 }]}>
         <View style={styles.header}>
           <Text style={styles.title}>Sort by</Text>
           <Pressable
@@ -54,21 +67,26 @@ export function SortSheet({ visible, value, onClose, onSelect }: SortSheetProps)
             </Pressable>
           );
         })}
+        </View>
       </View>
     </Modal>
   );
 }
 
 const styles = StyleSheet.create({
-  backdrop: {
-    backgroundColor: 'rgba(4,4,6,0.62)',
+  container: {
     flex: 1,
+    justifyContent: 'flex-end',
+  },
+  backdrop: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: HalcyonModal.backdrop,
   },
   sheet: {
     backgroundColor: HalcyonColors.surface,
     borderTopColor: HalcyonColors.border,
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
+    borderTopLeftRadius: HalcyonRadius.sheet,
+    borderTopRightRadius: HalcyonRadius.sheet,
     borderTopWidth: 1,
     paddingHorizontal: HalcyonSpacing.screenX,
     paddingTop: 16,
@@ -80,11 +98,7 @@ const styles = StyleSheet.create({
     marginBottom: 6,
   },
   title: {
-    color: HalcyonColors.textPrimary,
-    fontFamily: AppFonts.displaySemiBold,
-    fontSize: 20,
-    fontWeight: '600',
-    lineHeight: 27,
+    ...Typography.sectionHeading,
   },
   row: {
     alignItems: 'center',

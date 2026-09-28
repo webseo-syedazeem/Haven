@@ -5,7 +5,13 @@ import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-nati
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { ChipGroup, FilterChip } from '@/components/FilterChip';
-import { HalcyonColors, HalcyonRadius, HalcyonSpacing } from '@/constants/design';
+import {
+  HalcyonColors,
+  HalcyonModal,
+  HalcyonRadius,
+  HalcyonSpacing,
+  Typography,
+} from '@/constants/design';
 import {
   countActiveFilters,
   DURATION_MAX_MINUTES,
@@ -82,7 +88,13 @@ export function FilterSheet({ visible, filters, sort, onClose, onApply }: Filter
   }, [count, isLoading, isStale]);
 
   return (
-    <Modal animationType="slide" onRequestClose={onClose} transparent visible={visible}>
+    <Modal
+      animationType="slide"
+      navigationBarTranslucent
+      onRequestClose={onClose}
+      statusBarTranslucent
+      transparent
+      visible={visible}>
       <Pressable accessibilityLabel="Close filters" onPress={onClose} style={styles.backdrop} />
 
       <View style={[styles.sheet, { paddingBottom: insets.bottom + 12 }]}>
@@ -326,14 +338,14 @@ function Section({
 
 const styles = StyleSheet.create({
   backdrop: {
-    backgroundColor: 'rgba(4,4,6,0.62)',
+    backgroundColor: HalcyonModal.backdrop,
     flex: 1,
   },
   sheet: {
     backgroundColor: HalcyonColors.surface,
     borderTopColor: HalcyonColors.border,
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
+    borderTopLeftRadius: HalcyonRadius.sheet,
+    borderTopRightRadius: HalcyonRadius.sheet,
     borderTopWidth: 1,
     maxHeight: '86%',
     paddingTop: 14,
@@ -346,11 +358,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: HalcyonSpacing.screenX,
   },
   title: {
-    color: HalcyonColors.textPrimary,
-    fontFamily: AppFonts.displaySemiBold,
-    fontSize: 20,
-    fontWeight: '600',
-    lineHeight: 27,
+    ...Typography.sectionHeading,
   },
   reset: {
     color: HalcyonColors.accent,

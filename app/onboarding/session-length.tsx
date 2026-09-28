@@ -10,6 +10,7 @@ import { OnboardingScaffold } from '@/components/onboarding/OnboardingScaffold';
 import { HalcyonColors } from '@/constants/design';
 import { ONBOARDING_DURATION_OPTIONS } from '@/constants/filters';
 import { AppFonts } from '@/constants/theme';
+import { safeGoBack } from '@/lib/navigation';
 import {
   completeOnboardingAnswers,
   getOnboardingAnswers,
@@ -54,7 +55,7 @@ export default function SessionLengthScreen() {
           />
         </View>
       }
-      onBack={() => router.back()}>
+      onBack={() => safeGoBack(router)}>
       <Text style={styles.heading}>How long are your sessions?</Text>
       <Text style={styles.hint}>Choose your usual listening time.</Text>
       <View style={styles.list}>

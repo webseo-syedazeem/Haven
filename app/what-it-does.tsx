@@ -8,6 +8,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { OnboardingPillButton } from '@/components/onboarding/OnboardingPillButton';
 import { OnboardingStepHeader } from '@/components/onboarding/OnboardingStepHeader';
 import { AppFonts } from '@/constants/theme';
+import { safeGoBack } from '@/lib/navigation';
 import {
   getOnboardingAnswers,
   saveOnboardingAnswers,
@@ -106,7 +107,7 @@ export default function WhatItDoesScreen() {
       <OnboardingStepHeader
         activeColor={GOAL_SELECTION_COLOR}
         currentStep={3}
-        onBack={() => router.back()}
+        onBack={() => safeGoBack(router)}
         showBack
         totalSteps={4}
       />

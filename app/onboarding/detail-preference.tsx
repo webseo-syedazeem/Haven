@@ -11,6 +11,7 @@ import { HalcyonColors } from '@/constants/design';
 import { DETAIL_LEVEL_LABELS, DETAIL_LEVEL_VALUES } from '@/constants/filters';
 import { AppFonts } from '@/constants/theme';
 import type { DetailPreference } from '@/lib/api/preferences';
+import { safeGoBack } from '@/lib/navigation';
 import { getOnboardingAnswers, saveOnboardingAnswers } from '@/lib/onboarding';
 import { OnboardingContinueButtonBlack } from '@/components/onboarding/OnboardingcontinueButtonBlack';
 
@@ -63,7 +64,7 @@ export default function DetailPreferenceScreen() {
           />
         </View>
       }
-      onBack={() => router.back()}
+      onBack={() => safeGoBack(router)}
       >
       <Text style={styles.heading}>How much detail do you like?</Text>
       <Text style={styles.hint}>Choose the texture that feels most comfortable.</Text>

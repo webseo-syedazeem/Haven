@@ -2,7 +2,13 @@ import { Ionicons } from '@expo/vector-icons';
 import { Modal, Pressable, StyleSheet, Switch, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { HalcyonColors, HalcyonRadius, HalcyonSpacing } from '@/constants/design';
+import {
+  HalcyonColors,
+  HalcyonModal,
+  HalcyonRadius,
+  HalcyonSpacing,
+  Typography,
+} from '@/constants/design';
 import { getModeLabel, type ModeId } from '@/constants/modes';
 import {
   getTimerConfig,
@@ -41,7 +47,13 @@ export function TimerSheet({
       : `${modeLabel} sessions stop quietly when the time is up.`;
 
   return (
-    <Modal animationType="slide" onRequestClose={onClose} transparent visible={visible}>
+    <Modal
+      animationType="slide"
+      navigationBarTranslucent
+      onRequestClose={onClose}
+      statusBarTranslucent
+      transparent
+      visible={visible}>
       <Pressable accessibilityLabel="Close timer" onPress={onClose} style={styles.backdrop} />
       <View style={[styles.sheet, { paddingBottom: insets.bottom + 20 }]}>
         <View style={styles.grabber} />
@@ -114,14 +126,14 @@ export function TimerSheet({
 
 const styles = StyleSheet.create({
   backdrop: {
-    backgroundColor: 'rgba(4,4,6,0.6)',
+    backgroundColor: HalcyonModal.backdrop,
     flex: 1,
   },
   sheet: {
     backgroundColor: HalcyonColors.surface,
     borderTopColor: HalcyonColors.border,
-    borderTopLeftRadius: 26,
-    borderTopRightRadius: 26,
+    borderTopLeftRadius: HalcyonRadius.sheet,
+    borderTopRightRadius: HalcyonRadius.sheet,
     borderTopWidth: 1,
     paddingHorizontal: HalcyonSpacing.screenX,
     paddingTop: 10,
@@ -141,11 +153,7 @@ const styles = StyleSheet.create({
     marginBottom: 18,
   },
   title: {
-    color: HalcyonColors.textPrimary,
-    fontFamily: AppFonts.displaySemiBold,
-    fontSize: 24,
-    fontWeight: '600',
-    lineHeight: 30,
+    ...Typography.sectionHeading,
   },
   options: {
     columnGap: 10,

@@ -1,7 +1,8 @@
+import { useFocusEffect } from '@react-navigation/native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useQuery } from '@tanstack/react-query';
-import { useEffect, useState } from 'react';
-import { BackHandler, Pressable, StyleSheet, Text, View } from 'react-native';
+import { useCallback, useState } from 'react';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { AuthButton } from '@/components/AuthButton';
 import { AuthLegalFooter } from '@/components/auth/AuthLegalFooter';
@@ -9,7 +10,7 @@ import { OnboardingScaffold } from '@/components/onboarding/OnboardingScaffold';
 import { HalcyonColors, Typography } from '@/constants/design';
 import { AppFonts } from '@/constants/theme';
 import { signInWithApple } from '@/lib/apple-auth';
-import { setGuestModeActive } from '@/lib/auth/session-state';
+import { isGuestModeActive, setGuestModeActive } from '@/lib/auth/session-state';
 import { signInWithGoogle } from '@/lib/google-auth';
 import {
   getGuestOnboardingAnswers,
@@ -20,6 +21,7 @@ import {
   markGuestOnboardingComplete,
   migrateGuestOnboardingAfterAuth,
 } from '@/lib/onboarding';
+import { routeAfterSignIn } from '@/lib/auth/onboarding-routing';
 import { resetToMainApp, resetToMainPlayer } from '@/lib/navigation';
 import { usePlayerActions } from '@/lib/player/PlayerProvider';
 
@@ -32,10 +34,22 @@ type Provider = 'apple' | 'email' | 'google' | 'guest' | null;
 export default function SaveYourSpaceScreen() {
   const router = useRouter();
   const { startTrack } = useLocalSearchParams<{ startTrack?: string }>();
+
+  // If the user pressed back from onboarding (guest mode was set but onboarding
+  // is not complete), clear guest mode so the app does not skip onboarding on
+  // the next launch.
+  useFocusEffect(
+    useCallback(() => {
+      void (async () => {
+        if (isGuestModeActive() && !(await isGuestOnboardingComplete())) {
+          await setGuestModeActive(false);
+        }
+      })();
+    }, [])
+  );
   const wantsTrack = startTrack === '1';
   const { playSoundscape } = usePlayerActions();
   const [loading, setLoading] = useState<Provider>(null);
-  const [authReady, setAuthReady] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
 
   // Reuses the cached pick from the recommendations screen (same query key,
@@ -49,13 +63,6 @@ export default function SaveYourSpaceScreen() {
   const best = recommendationsQuery.data?.best_match ?? null;
   const alternatives = recommendationsQuery.data?.alternatives ?? [];
 
-  // Once signed in, back must not return to the sign-in options.
-  useEffect(() => {
-    if (!authReady) return;
-    const subscription = BackHandler.addEventListener('hardwareBackPress', () => true);
-    return () => subscription.remove();
-  }, [authReady]);
-
   const enterMainApp = async () => {
     if (wantsTrack && best) {
       await playSoundscape(best, { queue: [best, ...alternatives] });
@@ -65,21 +72,32 @@ export default function SaveYourSpaceScreen() {
     resetToMainApp(router);
   };
 
-  const ensureComplete = async () => {
+  /**
+   * A choice made here comes first when onboarding has not been done: the person
+   * signs in (or continues as guest) and is then taken through onboarding, whose
+   * last button goes straight to Home instead of asking them to choose again.
+   */
+  const isOnboardingDone = async () => {
     const [completed, answers] = await Promise.all([
       isGuestOnboardingComplete(),
       getGuestOnboardingAnswers(),
     ]);
-    if (!isGuestOnboardingReady(answers)) {
-      router.replace('/why-passage');
-      return false;
-    }
+    if (!isGuestOnboardingReady(answers)) return false;
     if (!completed) await markGuestOnboardingComplete();
     return true;
   };
 
-  const finishAuthenticatedFlow = async () => {
-    await migrateGuestOnboardingAfterAuth();
+  const finishAuthenticatedFlow = async (onboardingDone = true) => {
+    if (!onboardingDone) {
+      // Sends a new account to the onboarding it has not finished.
+      await routeAfterSignIn(router);
+      return;
+    }
+    // Saving the onboarding answers must not hold a signed-in person on this
+    // screen: a failed import stays pending and is retried on the next launch.
+    await migrateGuestOnboardingAfterAuth().catch((error) => {
+      console.warn('[onboarding] import remains pending after sign in', error);
+    });
     await enterMainApp();
   };
 
@@ -89,22 +107,22 @@ export default function SaveYourSpaceScreen() {
     setErrorMessage('');
     setLoading('google');
     try {
-      if (!(await ensureComplete())) return;
+      const onboardingDone = await isOnboardingDone();
       const session = await signInWithGoogle();
       if (!session) {
         setLoading(null);
         return;
       }
       authenticated = true;
-      setAuthReady(true);
-      await finishAuthenticatedFlow();
+      await finishAuthenticatedFlow(onboardingDone);
     } catch (error) {
+      if (authenticated) {
+        console.warn('[auth] finishing sign in failed; continuing to the app', error);
+        resetToMainApp(router);
+        return;
+      }
       setErrorMessage(
-        authenticated
-          ? 'You’re signed in, but your preferences could not be saved. Try again.'
-          : error instanceof Error
-            ? error.message
-            : 'Google sign in is unavailable right now.'
+        error instanceof Error ? error.message : 'Google sign in is unavailable right now.'
       );
       setLoading(null);
     }
@@ -116,22 +134,22 @@ export default function SaveYourSpaceScreen() {
     setErrorMessage('');
     setLoading('apple');
     try {
-      if (!(await ensureComplete())) return;
+      const onboardingDone = await isOnboardingDone();
       const session = await signInWithApple();
       if (!session) {
         setLoading(null);
         return;
       }
       authenticated = true;
-      setAuthReady(true);
-      await finishAuthenticatedFlow();
+      await finishAuthenticatedFlow(onboardingDone);
     } catch (error) {
+      if (authenticated) {
+        console.warn('[auth] finishing sign in failed; continuing to the app', error);
+        resetToMainApp(router);
+        return;
+      }
       setErrorMessage(
-        authenticated
-          ? 'You’re signed in, but your preferences could not be saved. Try again.'
-          : error instanceof Error
-            ? error.message
-            : 'Apple sign in is unavailable right now.'
+        error instanceof Error ? error.message : 'Apple sign in is unavailable right now.'
       );
       setLoading(null);
     }
@@ -142,21 +160,11 @@ export default function SaveYourSpaceScreen() {
     setErrorMessage('');
     setLoading('email');
     try {
-      if (!(await ensureComplete())) return;
+      // Email registration collects the account details first. Once the email
+      // is confirmed, /verified routes a new profile into onboarding.
       router.push('/create-account?from=onboarding');
-    } catch {
-      setErrorMessage('We could not save your onboarding progress. Please try again.');
     } finally {
       setLoading(null);
-    }
-  };
-
-  const retryMigration = async () => {
-    setErrorMessage('');
-    try {
-      await finishAuthenticatedFlow();
-    } catch {
-      setErrorMessage('Your preferences still couldn’t be saved. Check your connection and try again.');
     }
   };
 
@@ -165,7 +173,12 @@ export default function SaveYourSpaceScreen() {
     setErrorMessage('');
     setLoading('guest');
     try {
-      if (!(await ensureComplete())) return;
+      if (!(await isOnboardingDone())) {
+        // Guest is chosen now; onboarding follows and ends at Home.
+        await setGuestModeActive(true);
+        router.replace('/why-passage');
+        return;
+      }
       // Gates /api/me, /api/favourites, /api/home/continue-listening and
       // /api/play-history until a real sign in clears it (see
       // lib/auth/session-state.ts) — there is no bearer token to send yet.
@@ -192,80 +205,57 @@ export default function SaveYourSpaceScreen() {
       </Text>
 
       <View style={styles.buttons}>
-        {authReady ? (
-          <>
-            <Pressable
-              accessibilityRole="button"
-              onPress={() => void retryMigration()}
-              style={({ pressed }) => [styles.retryButton, pressed && styles.pressed]}>
-              <Text style={styles.retryLabel}>Retry saving preferences</Text>
-            </Pressable>
-            <Pressable
-              accessibilityRole="button"
-              onPress={() => void enterMainApp()}
-              style={({ pressed }) => [styles.continueButton, pressed && styles.pressed]}>
-              <Text style={styles.continueLabel}>Continue to Home</Text>
-            </Pressable>
-          </>
-        ) : (
-          <>
-            <AuthButton
-              disabled={Boolean(loading)}
-              iconSource={appleIcon}
-              iconTintColor={HalcyonColors.textPrimary}
-              label="Continue with Apple"
-              loading={loading === 'apple'}
-              onPress={() => void handleApple()}
-            />
-            <AuthButton
-              disabled={Boolean(loading)}
-              iconSource={googleIcon}
-              label="Continue with Google"
-              loading={loading === 'google'}
-              onPress={() => void handleGoogle()}
-            />
-            <AuthButton
-              disabled={Boolean(loading)}
-              iconSource={emailIcon}
-              iconTintColor={HalcyonColors.textPrimary}
-              label="Sign up with email"
-              loading={loading === 'email'}
-              onPress={() => void handleEmail()}
-            />
-          </>
-        )}
+        <AuthButton
+          disabled={Boolean(loading)}
+          iconSource={appleIcon}
+          iconTintColor={HalcyonColors.textPrimary}
+          label="Continue with Apple"
+          loading={loading === 'apple'}
+          onPress={() => void handleApple()}
+        />
+        <AuthButton
+          disabled={Boolean(loading)}
+          iconSource={googleIcon}
+          label="Continue with Google"
+          loading={loading === 'google'}
+          onPress={() => void handleGoogle()}
+        />
+        <AuthButton
+          disabled={Boolean(loading)}
+          iconSource={emailIcon}
+          iconTintColor={HalcyonColors.textPrimary}
+          label="Sign up with email"
+          loading={loading === 'email'}
+          onPress={() => void handleEmail()}
+        />
       </View>
 
       {errorMessage ? <Text style={styles.error}>{errorMessage}</Text> : null}
 
-      {!authReady ? (
-        <Pressable
-          accessibilityRole="button"
-          disabled={Boolean(loading)}
-          hitSlop={8}
-          onPress={() => router.push('/login')}
-          style={styles.signInButton}>
-          <Text style={styles.signInPrompt}>
-            Already have an account? <Text style={styles.signInLink}>Sign in</Text>
-          </Text>
-        </Pressable>
-      ) : null}
+      <Pressable
+        accessibilityRole="button"
+        disabled={Boolean(loading)}
+        hitSlop={8}
+        onPress={() => router.push('/login')}
+        style={styles.signInButton}>
+        <Text style={styles.signInPrompt}>
+          Already have an account? <Text style={styles.signInLink}>Sign in</Text>
+        </Text>
+      </Pressable>
 
-      {!authReady ? (
-        <Pressable
-          accessibilityRole="button"
-          disabled={Boolean(loading)}
-          hitSlop={10}
-          onPress={() => void continueAsGuest()}
-          style={({ pressed }) => [
-            loading === 'guest' && styles.guestDisabled,
-            pressed && !loading && styles.pressed,
-          ]}>
-          <Text style={styles.guestLink}>
-            {loading === 'guest' ? 'Opening Passage…' : 'Continue as guest'}
-          </Text>
-        </Pressable>
-      ) : null}
+      <Pressable
+        accessibilityRole="button"
+        disabled={Boolean(loading)}
+        hitSlop={10}
+        onPress={() => void continueAsGuest()}
+        style={({ pressed }) => [
+          loading === 'guest' && styles.guestDisabled,
+          pressed && !loading && styles.pressed,
+        ]}>
+        <Text style={styles.guestLink}>
+          {loading === 'guest' ? 'Opening Passage…' : 'Continue as guest'}
+        </Text>
+      </Pressable>
 
     </OnboardingScaffold>
   );
@@ -288,20 +278,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     paddingBottom: 28,
-  },
-  continueButton: {
-    alignItems: 'center',
-    borderColor: HalcyonColors.border,
-    borderRadius: 18,
-    borderWidth: 1,
-    justifyContent: 'center',
-    minHeight: 52,
-  },
-  continueLabel: {
-    color: HalcyonColors.textPrimary,
-    fontFamily: AppFonts.sansSemiBold,
-    fontSize: 16,
-    fontWeight: '600',
   },
   error: {
     color: HalcyonColors.textPrimary,
@@ -340,18 +316,5 @@ const styles = StyleSheet.create({
     fontFamily: AppFonts.sansRegular,
     fontSize: 15,
     lineHeight: 22,
-  },
-  retryButton: {
-    alignItems: 'center',
-    backgroundColor: HalcyonColors.accent,
-    borderRadius: 18,
-    justifyContent: 'center',
-    minHeight: 52,
-  },
-  retryLabel: {
-    color: HalcyonColors.background,
-    fontFamily: AppFonts.sansSemiBold,
-    fontSize: 16,
-    fontWeight: '600',
   },
 });

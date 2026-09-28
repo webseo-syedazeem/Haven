@@ -1,14 +1,13 @@
-import { Ionicons } from '@expo/vector-icons';
 import type { Session } from '@supabase/supabase-js';
 import * as Linking from 'expo-linking';
 import type { Href } from 'expo-router';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { AppState, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
+import { AppState, Platform, Pressable, StyleSheet, Text } from 'react-native';
 
 import { OnboardingContinueButton } from '@/components/onboarding/OnboardingContinueButton';
 import { OnboardingScaffold } from '@/components/onboarding/OnboardingScaffold';
-import { HalcyonColors } from '@/constants/design';
+import { HalcyonColors, Typography } from '@/constants/design';
 import { AppFonts } from '@/constants/theme';
 import {
   completeSupabaseAuth,
@@ -165,10 +164,6 @@ export default function VerifyEmailScreen() {
 
   return (
     <OnboardingScaffold contentContainerStyle={styles.content}>
-      <View style={styles.iconCircle}>
-        <Ionicons color={HalcyonColors.accent} name="mail-outline" size={30} />
-      </View>
-
       <Text style={styles.heading}>Check your inbox</Text>
       <Text style={styles.body}>
         We&apos;ve sent a verification link to{' '}
@@ -220,21 +215,19 @@ export default function VerifyEmailScreen() {
 
 const styles = StyleSheet.create({
   automatic: {
-    color: HalcyonColors.textSecondary,
+    color: 'rgba(255, 255, 255, 0.56)',
     fontFamily: AppFonts.sansRegular,
-    fontSize: 10,
-    lineHeight: 16,
+    fontSize: 13,
+    lineHeight: 19,
     marginTop: 24,
     maxWidth: 300,
     textAlign: 'center',
   },
   body: {
-    color: HalcyonColors.textSecondary,
-    fontFamily: AppFonts.sansRegular,
-    fontSize: 13,
-    lineHeight: 20,
+    ...Typography.body,
+    color: 'rgba(255, 255, 255, 0.72)',
     marginTop: 10,
-    maxWidth: 310,
+    maxWidth: 330,
     textAlign: 'center',
   },
   changeButton: {
@@ -247,10 +240,10 @@ const styles = StyleSheet.create({
     textDecorationLine: 'underline',
   },
   changeText: {
-    color: HalcyonColors.textSecondary,
-    fontFamily: AppFonts.sansRegular,
-    fontSize: 11,
-    lineHeight: 17,
+    color: 'rgba(255, 255, 255, 0.72)',
+    fontFamily: AppFonts.sansSemiBold,
+    fontSize: 16,
+    lineHeight: 22,
   },
   content: {
     alignItems: 'center',
@@ -258,31 +251,14 @@ const styles = StyleSheet.create({
     paddingBottom: 46,
   },
   email: {
-    color: HalcyonColors.textPrimary,
+    color: '#FFFFFF',
     fontFamily: AppFonts.sansMedium,
     fontWeight: '500',
   },
   heading: {
+    ...Typography.screenHeading,
     color: HalcyonColors.textPrimary,
-    fontFamily: AppFonts.displayRegular,
-    fontSize: 33,
-    fontWeight: '400',
-    lineHeight: 38,
-    marginTop: 25,
     textAlign: 'center',
-  },
-  iconCircle: {
-    alignItems: 'center',
-    borderColor: HalcyonColors.accent,
-    borderRadius: 32,
-    borderWidth: 1,
-    height: 64,
-    justifyContent: 'center',
-    shadowColor: HalcyonColors.accent,
-    shadowOffset: { height: 0, width: 0 },
-    shadowOpacity: 0.22,
-    shadowRadius: 15,
-    width: 64,
   },
   linkButton: {
     marginTop: 17,
@@ -291,17 +267,17 @@ const styles = StyleSheet.create({
   },
   linkDisabled: { opacity: 0.58 },
   linkText: {
-    color: HalcyonColors.textSecondary,
-    fontFamily: AppFonts.sansRegular,
-    fontSize: 12,
-    lineHeight: 18,
+    color: 'rgba(255, 255, 255, 0.72)',
+    fontFamily: AppFonts.sansSemiBold,
+    fontSize: 16,
+    lineHeight: 22,
     textDecorationLine: 'underline',
   },
   message: {
     color: HalcyonColors.accent,
     fontFamily: AppFonts.sansRegular,
-    fontSize: 11,
-    lineHeight: 17,
+    fontSize: 14,
+    lineHeight: 21,
     marginTop: 16,
     maxWidth: 310,
     textAlign: 'center',

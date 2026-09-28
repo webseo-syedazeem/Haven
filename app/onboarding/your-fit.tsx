@@ -9,6 +9,7 @@ import { getTypicalDurationLabel } from '@/constants/filters';
 import type { ModeId } from '@/constants/modes';
 import { RELAX_ONBOARDING } from '@/constants/relax-onboarding';
 import { AppFonts } from '@/constants/theme';
+import { safeGoBack } from '@/lib/navigation';
 import { getOnboardingAnswers, type GuestOnboardingAnswers } from '@/lib/onboarding';
 
 const FIT_BANNER = {
@@ -146,7 +147,7 @@ export default function YourFitScreen() {
       onViewportLayout={(event) =>
         setViewportHeight(event.nativeEvent.layout.height)
       }
-      onBack={() => router.back()}>
+      onBack={() => safeGoBack(router)}>
       <Text
         onLayout={(event) => setHeadingHeight(event.nativeEvent.layout.height)}
         style={styles.heading}>

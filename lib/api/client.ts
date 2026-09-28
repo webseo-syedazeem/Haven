@@ -1,4 +1,4 @@
-import { ApiError, NetworkError, isNetworkError } from '@/lib/api/errors';
+import { ApiError, NetworkError, isAuthFailure, isNetworkError } from '@/lib/api/errors';
 import { supabase } from '@/lib/supabase';
 import * as SecureStore from 'expo-secure-store';
 import { isGuestModeActive, setSessionSource } from '@/lib/auth/session-state';
@@ -9,6 +9,10 @@ import { Platform } from 'react-native';
 const API_BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL ?? 'https://thehappyapp.co.uk';
 export const AUTH_TOKEN_KEY = 'haven.auth.access_token';
 const LEGACY_AUTH_TOKEN_KEY = 'access_token';
+const RATE_LIMIT_MAX_RETRIES = 2;
+const RATE_LIMIT_FALLBACK_DELAYS_MS = [1_000, 2_000] as const;
+/** A long server window must not leave a screen apparently hung for minutes. */
+const RATE_LIMIT_MAX_DELAY_MS = 10_000;
 
 const TOKEN_REQUIRED_PATH_PREFIXES = [
   '/api/me',
@@ -141,8 +145,9 @@ async function refreshAccessToken(): Promise<string | null> {
       await refreshSession(refreshToken);
       return getAccessToken();
     } catch (error) {
-      if (isNetworkError(error)) return null;
-      // A reachable server refused the refresh token: the session is over.
+      if (isNetworkError(error) || !isAuthFailure(error)) return null;
+      // The server specifically refused the refresh token: the session is over.
+      // Rate limits and transient server errors must leave the session intact.
       await forceSignOutStaleSession();
       return null;
     }
@@ -176,6 +181,64 @@ async function send(path: string, options: RequestInit, token: string | null): P
   }
 }
 
+function retryAfterMs(response: Response, retryIndex: number): number {
+  const value = response.headers.get('Retry-After')?.trim();
+  let requestedDelay: number | null = null;
+
+  if (value) {
+    const seconds = Number(value);
+    if (Number.isFinite(seconds) && seconds >= 0) {
+      requestedDelay = seconds * 1_000;
+    } else {
+      const retryAt = Date.parse(value);
+      if (Number.isFinite(retryAt)) requestedDelay = Math.max(0, retryAt - Date.now());
+    }
+  }
+
+  return Math.min(
+    requestedDelay ?? RATE_LIMIT_FALLBACK_DELAYS_MS[retryIndex],
+    RATE_LIMIT_MAX_DELAY_MS
+  );
+}
+
+function waitForRetry(delayMs: number, signal?: AbortSignal | null): Promise<void> {
+  if (signal?.aborted) {
+    return Promise.reject(
+      new NetworkError('Request was cancelled.', { cause: signal.reason })
+    );
+  }
+
+  return new Promise((resolve, reject) => {
+    const onAbort = () => {
+      clearTimeout(timer);
+      reject(new NetworkError('Request was cancelled.', { cause: signal?.reason }));
+    };
+    const timer = setTimeout(() => {
+      signal?.removeEventListener('abort', onAbort);
+      resolve();
+    }, delayMs);
+
+    signal?.addEventListener('abort', onAbort, { once: true });
+  });
+}
+
+/**
+ * A launch can legitimately fan out several independent queries. If they land
+ * at the end of the backend's fixed window, retry a 429 twice with bounded
+ * backoff instead of immediately turning it into a visible query error.
+ */
+async function sendWithRateLimitRetry(
+  request: () => Promise<Response>,
+  signal?: AbortSignal | null
+): Promise<Response> {
+  for (let retryIndex = 0; ; retryIndex += 1) {
+    const response = await request();
+    if (response.status !== 429 || retryIndex >= RATE_LIMIT_MAX_RETRIES) return response;
+
+    await waitForRetry(retryAfterMs(response, retryIndex), signal);
+  }
+}
+
 export async function apiClient<T>(
   path: string,
   options: RequestInit = {}
@@ -200,7 +263,10 @@ export async function apiClient<T>(
     }
   }
 
-  const res = await send(path, options, token);
+  const res = await sendWithRateLimitRetry(
+    () => send(path, options, token),
+    options.signal
+  );
 
   try {
     return await readEnvelope<T>(res);
@@ -209,7 +275,12 @@ export async function apiClient<T>(
       if (token) {
         const freshToken = await refreshAccessToken();
         if (freshToken) {
-          return readEnvelope<T>(await send(path, options, freshToken));
+          return readEnvelope<T>(
+            await sendWithRateLimitRetry(
+              () => send(path, options, freshToken),
+              options.signal
+            )
+          );
         }
       } else {
         // Nothing was even sent, yet this call only fires when the app
@@ -229,7 +300,12 @@ export async function apiClient<T>(
  * sign out because of) a guest request.
  */
 export async function publicApiClient<T>(path: string, options: RequestInit = {}): Promise<T> {
-  return readEnvelope<T>(await send(path, options, null));
+  return readEnvelope<T>(
+    await sendWithRateLimitRetry(
+      () => send(path, options, null),
+      options.signal
+    )
+  );
 }
 
 /**
@@ -291,7 +367,7 @@ export async function apiClientFormData<T>(
     }
   };
 
-  const res = await sendForm(token);
+  const res = await sendWithRateLimitRetry(() => sendForm(token));
 
   try {
     return await readEnvelope<T>(res);
@@ -300,7 +376,9 @@ export async function apiClientFormData<T>(
       if (token) {
         const freshToken = await refreshAccessToken();
         if (freshToken) {
-          return readEnvelope<T>(await sendForm(freshToken));
+          return readEnvelope<T>(
+            await sendWithRateLimitRetry(() => sendForm(freshToken))
+          );
         }
       } else {
         await forceSignOutStaleSession();

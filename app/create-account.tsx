@@ -1,3 +1,4 @@
+import * as Linking from 'expo-linking';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useMemo, useState } from 'react';
 import {
@@ -15,7 +16,15 @@ import { OnboardingContinueButton } from '@/components/onboarding/OnboardingCont
 import { OnboardingScaffold } from '@/components/onboarding/OnboardingScaffold';
 import { HalcyonColors, Typography } from '@/constants/design';
 import { AppFonts } from '@/constants/theme';
+import {
+  emailIssue,
+  nameIssue,
+  parseAuthError,
+  passwordIssue,
+  type AuthFieldErrors,
+} from '@/lib/auth/form-errors';
 import { signUp } from '@/lib/haven-api';
+import { safeGoBack } from '@/lib/navigation';
 
 function firstParam(value: string | string[] | undefined): string {
   return Array.isArray(value) ? value[0] ?? '' : value ?? '';
@@ -27,41 +36,59 @@ export default function CreateAccountScreen() {
   const initialEmail = useMemo(() => firstParam(params.email), [params.email]);
   const [email, setEmail] = useState(initialEmail);
   const [errorMessage, setErrorMessage] = useState('');
+  const [fieldErrors, setFieldErrors] = useState<AuthFieldErrors>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [password, setPassword] = useState('');
   const [passwordVisible, setPasswordVisible] = useState(false);
   const [name, setName] = useState('');
+
+  const clearFieldError = (field: string) => {
+    if (fieldErrors[field]) setFieldErrors((current) => ({ ...current, [field]: '' }));
+  };
 
   const handleCreateAccount = async () => {
     if (isSubmitting) return;
     const trimmedEmail = email.trim().toLowerCase();
     const trimmedName = name.trim();
 
-    if (!trimmedName || !trimmedEmail || !password) {
-      setErrorMessage('Please fill in your name, email, and password.');
-      return;
-    }
-    if (!/^\S+@\S+\.\S+$/.test(trimmedEmail)) {
-      setErrorMessage('Please enter a valid email address.');
-      return;
-    }
-    if (password.length < 8) {
-      setErrorMessage('Password must be at least 8 characters.');
+    const nextFieldErrors: AuthFieldErrors = {};
+    const usernameError = nameIssue(trimmedName, 'username', 2);
+    const emailError = emailIssue(trimmedEmail);
+    const passwordError = passwordIssue(password, 'password', true);
+    if (usernameError) nextFieldErrors.username = usernameError;
+    if (emailError) nextFieldErrors.email = emailError;
+    if (passwordError) nextFieldErrors.password = passwordError;
+
+    if (Object.keys(nextFieldErrors).length) {
+      setFieldErrors(nextFieldErrors);
+      setErrorMessage('Please provide valid signup details');
       return;
     }
 
     setErrorMessage('');
+    setFieldErrors({});
     setIsSubmitting(true);
     try {
-      await signUp({ email: trimmedEmail, password, username: trimmedName });
+      await signUp({
+        email: trimmedEmail,
+        password,
+        username: trimmedName,
+        emailRedirectTo: Linking.createURL('auth/callback', {
+          queryParams: { flow: 'signup' },
+        }),
+      });
       router.replace({
         pathname: '/verify-email',
         params: { email: trimmedEmail },
       } as never);
     } catch (error) {
-      setErrorMessage(
-        error instanceof Error ? error.message : 'Unable to create your account right now.'
-      );
+      const parsed = parseAuthError(error, 'Unable to create your account right now.');
+      const nextErrors = { ...parsed.fields };
+      if (parsed.code === 'EMAIL_ALREADY_REGISTERED' && !nextErrors.email) {
+        nextErrors.email = parsed.message;
+      }
+      setFieldErrors(nextErrors);
+      setErrorMessage(parsed.message);
     } finally {
       setIsSubmitting(false);
     }
@@ -74,15 +101,28 @@ export default function CreateAccountScreen() {
       <OnboardingScaffold
         contentContainerStyle={styles.scrollContent}
         footer={<AuthLegalFooter />}
-        onBack={() => router.back()}>
+        onBack={() => safeGoBack(router)}>
         <View style={styles.content}>
         <Text style={styles.heading}>Create your account</Text>
         <Text style={styles.subtitle}>Join Passage today.</Text>
 
         <View style={styles.form}>
-          <AuthTextField autoCapitalize={'words'} autoComplete={'name'} onChangeText={setName} placeholder={'Name'} returnKeyType={'next'} value={name} />
-          <AuthTextField autoCapitalize={'none'} autoComplete={'email'} keyboardType={'email-address'} onChangeText={setEmail} placeholder={'Email address'} returnKeyType={'next'} value={email} />
-          <AuthTextField autoCapitalize={'none'} autoComplete={'new-password'} onChangeText={setPassword} onSubmitEditing={() => void handleCreateAccount()} onToggleSecureText={() => setPasswordVisible((visible) => !visible)} placeholder={'Password'} returnKeyType={'done'} secureTextEntry={!passwordVisible} secureTextVisible={passwordVisible} value={password} />
+          <AuthTextField
+            autoCapitalize={'words'}
+            autoComplete={'name'}
+            errorMessage={fieldErrors.username}
+            onChangeText={(value) => {
+              setName(value);
+              if (fieldErrors.username) {
+                setFieldErrors((current) => ({ ...current, username: '' }));
+              }
+            }}
+            placeholder={'Name'}
+            returnKeyType={'next'}
+            value={name}
+          />
+          <AuthTextField autoCapitalize={'none'} autoComplete={'email'} errorMessage={fieldErrors.email} keyboardType={'email-address'} onChangeText={(value) => { setEmail(value); clearFieldError('email'); }} placeholder={'Email address'} returnKeyType={'next'} value={email} />
+          <AuthTextField autoCapitalize={'none'} autoComplete={'new-password'} errorMessage={fieldErrors.password} onChangeText={(value) => { setPassword(value); clearFieldError('password'); }} onSubmitEditing={() => void handleCreateAccount()} onToggleSecureText={() => setPasswordVisible((visible) => !visible)} placeholder={'Password'} returnKeyType={'done'} secureTextEntry={!passwordVisible} secureTextVisible={passwordVisible} value={password} />
           {errorMessage ? (
             <Text accessibilityLiveRegion={'polite'} style={styles.errorText}>{errorMessage}</Text>
           ) : null}

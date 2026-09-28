@@ -19,6 +19,7 @@ import { OnboardingScaffold } from '@/components/onboarding/OnboardingScaffold';
 import { HalcyonColors } from '@/constants/design';
 import type { ModeId } from '@/constants/modes';
 import { AppFonts } from '@/constants/theme';
+import { safeGoBack } from '@/lib/navigation';
 import { getOnboardingAnswers } from '@/lib/onboarding';
 
 const brandIcon = require('@/assets/images/passage-brand-assets/screens-icon.webp');
@@ -139,7 +140,7 @@ export default function TrustScreen() {
         },
       ]}>
       <OnboardingBackButton
-        onPress={() => router.back()}
+        onPress={() => safeGoBack(router)}
         style={[styles.headerBackButton, { top: Math.max(4, scale(10)) }]}
       />
       <View style={[styles.brandRow, { height: Math.max(30, scale(40)) }]}>
