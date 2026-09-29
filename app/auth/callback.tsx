@@ -1,4 +1,4 @@
-import type { EmailOtpType, Session } from '@supabase/supabase-js';
+import type { EmailOtpType, Session, User } from '@supabase/supabase-js';
 import * as Linking from 'expo-linking';
 import type { Href } from 'expo-router';
 import { useRouter } from 'expo-router';
@@ -18,6 +18,11 @@ import { supabase } from '@/lib/supabase';
 
 WebBrowser.maybeCompleteAuthSession();
 
+const INITIAL_URL_TIMEOUT_MS = 4_000;
+const SUPABASE_CALLBACK_TIMEOUT_MS = 10_000;
+const SESSION_FALLBACK_TIMEOUT_MS = 4_000;
+const PROFILE_FINALISATION_TIMEOUT_MS = 10_000;
+
 type CallbackValues = {
   accessToken: string | null;
   code: string | null;
@@ -28,6 +33,35 @@ type CallbackValues = {
   tokenHash: string | null;
   type: string | null;
 };
+
+type NavigationFallback = {
+  body: string;
+  destination: Href;
+};
+
+class AuthCallbackTimeoutError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'AuthCallbackTimeoutError';
+  }
+}
+
+function withTimeout<T>(operation: PromiseLike<T>, timeoutMs: number, message: string): Promise<T> {
+  return new Promise<T>((resolve, reject) => {
+    const timer = setTimeout(() => reject(new AuthCallbackTimeoutError(message)), timeoutMs);
+
+    Promise.resolve(operation).then(
+      (value) => {
+        clearTimeout(timer);
+        resolve(value);
+      },
+      (error: unknown) => {
+        clearTimeout(timer);
+        reject(error);
+      }
+    );
+  });
+}
 
 function readCallbackValues(url: string): CallbackValues {
   const parsed = new URL(url);
@@ -78,93 +112,284 @@ async function sessionFromCallback(values: CallbackValues): Promise<Session | nu
   return data.session;
 }
 
+function isConfirmedEmailSession(session: Session | null): boolean {
+  return Boolean(session && hasEmailIdentity(session.user) && isEmailConfirmed(session.user));
+}
+
+function sessionForTokenUser(
+  values: CallbackValues,
+  storedSession: Session | null,
+  user: User
+): Session | null {
+  if (storedSession) return { ...storedSession, user };
+  if (!values.accessToken || !values.refreshToken) return null;
+
+  // getUser(accessToken) has just validated this token with Supabase. This lets
+  // the app adopt it even if setSession's local storage write was what stalled.
+  return {
+    access_token: values.accessToken,
+    expires_at: Math.floor(Date.now() / 1_000) + 3_600,
+    expires_in: 3_600,
+    refresh_token: values.refreshToken,
+    token_type: 'bearer',
+    user,
+  };
+}
+
+/** Recover a link that was already used successfully or timed out after confirmation. */
+async function findConfirmedSession(values: CallbackValues): Promise<Session | null> {
+  let storedSession: Session | null = null;
+
+  try {
+    const { data, error } = await withTimeout(
+      supabase.auth.getSession(),
+      SESSION_FALLBACK_TIMEOUT_MS,
+      'Checking the confirmed session timed out.'
+    );
+    if (!error) storedSession = data.session;
+  } catch {
+    // The direct access-token check below can still recover an implicit link.
+  }
+
+  if (isConfirmedEmailSession(storedSession)) return storedSession;
+
+  const accessToken = values.accessToken ?? storedSession?.access_token;
+  if (!accessToken) return null;
+
+  try {
+    const { data, error } = await withTimeout(
+      supabase.auth.getUser(accessToken),
+      SESSION_FALLBACK_TIMEOUT_MS,
+      'Checking the confirmed user timed out.'
+    );
+    if (error || !hasEmailIdentity(data.user) || !isEmailConfirmed(data.user)) return null;
+    return sessionForTokenUser(values, storedSession, data.user);
+  } catch {
+    return null;
+  }
+}
+
+function isSignupCallback(values: CallbackValues, session: Session): boolean {
+  return (
+    values.type === 'signup' ||
+    values.flow === 'signup' ||
+    (!values.type && hasEmailIdentity(session.user) && isEmailConfirmed(session.user))
+  );
+}
+
 export default function AuthCallback() {
   const router = useRouter();
   const currentUrl = Linking.useURL();
-  const handledUrlRef = useRef<string | null>(null);
+  const mountedRef = useRef(true);
+  const processingUrlRef = useRef<string | null>(null);
+  const runIdRef = useRef(0);
   const [errorMessage, setErrorMessage] = useState('');
+  const [isLoading, setIsLoading] = useState(true);
+  const [navigationFallback, setNavigationFallback] = useState<NavigationFallback | null>(null);
+  const [retryCount, setRetryCount] = useState(0);
 
   useEffect(() => {
-    let active = true;
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+    };
+  }, []);
 
+  useEffect(() => {
     void (async () => {
-      const url = currentUrl ?? (await Linking.getInitialURL());
-      if (!active || !url || handledUrlRef.current === url) return;
-      handledUrlRef.current = url;
+      let url: string | null = null;
+
+      try {
+        url =
+          currentUrl ??
+          (await withTimeout(
+            Linking.getInitialURL(),
+            INITIAL_URL_TIMEOUT_MS,
+            'The confirmation link could not be read in time.'
+          ));
+      } catch (error) {
+        // useURL() may already have given a second effect ownership of the URL.
+        if (!mountedRef.current || processingUrlRef.current) return;
+        setErrorMessage(
+          error instanceof Error ? error.message : 'The confirmation link could not be read.'
+        );
+        setIsLoading(false);
+        return;
+      }
+
+      if (!mountedRef.current) return;
+      if (!url) {
+        if (processingUrlRef.current) return;
+        setErrorMessage('The confirmation link is missing. Please open it again from your email.');
+        setIsLoading(false);
+        return;
+      }
+
+      // On a cold launch, getInitialURL() and useURL() commonly yield the same
+      // URL in adjacent renders. The first claimant must stay alive; cancelling
+      // it and skipping the duplicate was the permanent-spinner race.
+      if (processingUrlRef.current === url) return;
+      processingUrlRef.current = url;
+      const runId = ++runIdRef.current;
+      const isCurrentRun = () => mountedRef.current && runIdRef.current === runId;
+
+      setErrorMessage('');
+      setNavigationFallback(null);
+      setIsLoading(true);
 
       try {
         const values = readCallbackValues(url);
-        const session = await sessionFromCallback(values);
-        if (!active) return;
-        if (!session) throw new Error('The confirmation link did not create a session.');
+        let session: Session | null = null;
+        let callbackError: unknown = null;
 
-        const isEmailIdentity = hasEmailIdentity(session.user);
-        const isSignupCallback =
-          values.type === 'signup' ||
-          values.flow === 'signup' ||
-          (!values.type && isEmailIdentity && isEmailConfirmed(session.user));
-        const isRecoveryCallback =
-          values.type === 'recovery' || values.flow === 'recovery';
+        try {
+          session = await withTimeout(
+            sessionFromCallback(values),
+            SUPABASE_CALLBACK_TIMEOUT_MS,
+            'Confirming the email timed out.'
+          );
+        } catch (error) {
+          callbackError = error;
+        }
 
-        if (isSignupCallback && !isEmailConfirmed(session.user)) {
-          router.replace({
+        if (!isCurrentRun()) return;
+
+        // An expired/reused link can still have created a confirmed session on
+        // its first opening. A stale local user is refreshed before giving up.
+        const requestedSignup = values.type === 'signup' || values.flow === 'signup';
+        if (!session || (requestedSignup && !isConfirmedEmailSession(session))) {
+          session = (await findConfirmedSession(values)) ?? session;
+        }
+
+        if (!isCurrentRun()) return;
+        if (!session) {
+          throw callbackError ?? new Error('The confirmation link did not create a session.');
+        }
+
+        const signupCallback = isSignupCallback(values, session);
+        const recoveryCallback = values.type === 'recovery' || values.flow === 'recovery';
+
+        if (signupCallback && !isConfirmedEmailSession(session)) {
+          const destination = {
             pathname: '/verify-email',
             params: { email: values.email ?? session.user.email ?? '' },
-          } as never);
+          } as Href;
+          setNavigationFallback({
+            body: 'This email still needs confirmation. Return to the verification screen.',
+            destination,
+          });
+          router.replace(destination);
           return;
         }
 
-        // Password recovery only needs the real Supabase access token passed to
-        // the reset endpoint. Do not let an unrelated guest-profile import
-        // delay or block the user from choosing a new password.
-        if (isRecoveryCallback) {
-          router.replace({
+        if (recoveryCallback) {
+          const destination = {
             pathname: '/change-password',
             params: { access_token: session.access_token },
-          } as never);
+          } as Href;
+          setNavigationFallback({
+            body: 'The recovery link is ready. Continue to choose a new password.',
+            destination,
+          });
+          router.replace(destination);
           return;
         }
 
-        const me = await completeSupabaseAuth(session);
-        if (!active) return;
+        if (signupCallback) {
+          // Supabase confirmation is authoritative. Profile projection and
+          // guest import are retryable and must not hide a confirmed account.
+          void withTimeout(
+            completeSupabaseAuth(session),
+            PROFILE_FINALISATION_TIMEOUT_MS,
+            'Confirmed account setup timed out.'
+          ).catch((error: unknown) => {
+            console.warn('[auth] confirmed account setup remains pending', error);
+          });
 
-        if (isSignupCallback) {
-          router.replace('/verified' as Href);
+          const destination = {
+            pathname: '/verified',
+            params: { confirmed: '1' },
+          } as Href;
+          setNavigationFallback({
+            body: 'Your email is confirmed. Continue to your account.',
+            destination,
+          });
+          router.replace(destination);
           return;
         }
 
+        const me = await withTimeout(
+          completeSupabaseAuth(session),
+          PROFILE_FINALISATION_TIMEOUT_MS,
+          'Finishing sign in timed out.'
+        );
+        if (!isCurrentRun()) return;
         await routeForOnboardingStatus(router, me);
       } catch (error) {
-        if (!active) return;
-        handledUrlRef.current = null;
+        if (!isCurrentRun()) return;
+        processingUrlRef.current = null;
+        setNavigationFallback(null);
         setErrorMessage(
           error instanceof Error
             ? error.message
             : 'This confirmation link could not be completed.'
         );
+      } finally {
+        if (isCurrentRun()) setIsLoading(false);
       }
     })();
+  }, [currentUrl, retryCount, router]);
 
-    return () => {
-      active = false;
-    };
-  }, [currentUrl, router]);
+  const retry = () => {
+    processingUrlRef.current = null;
+    setErrorMessage('');
+    setIsLoading(true);
+    setRetryCount((count) => count + 1);
+  };
 
   return (
     <View style={styles.screen}>
-      {errorMessage ? (
+      {isLoading ? (
+        <ActivityIndicator color={HalcyonColors.accent} size={'large'} />
+      ) : errorMessage ? (
         <View style={styles.errorCard}>
           <Text style={styles.errorTitle}>We couldn&apos;t confirm that link</Text>
           <Text style={styles.errorBody}>{errorMessage}</Text>
           <Pressable
-            accessibilityRole="button"
+            accessibilityRole={'button'}
+            onPress={retry}
+            style={({ pressed }) => [styles.errorButton, pressed && styles.pressed]}>
+            <Text style={styles.errorButtonLabel}>Try again</Text>
+          </Pressable>
+          <Pressable
+            accessibilityRole={'button'}
+            onPress={() => router.replace('/login')}
+            style={({ pressed }) => [styles.secondaryButton, pressed && styles.pressed]}>
+            <Text style={styles.secondaryButtonLabel}>Return to sign in</Text>
+          </Pressable>
+        </View>
+      ) : navigationFallback ? (
+        <View style={styles.errorCard}>
+          <Text style={styles.errorTitle}>Ready to continue</Text>
+          <Text style={styles.errorBody}>{navigationFallback.body}</Text>
+          <Pressable
+            accessibilityRole={'button'}
+            onPress={() => router.replace(navigationFallback.destination)}
+            style={({ pressed }) => [styles.errorButton, pressed && styles.pressed]}>
+            <Text style={styles.errorButtonLabel}>Continue</Text>
+          </Pressable>
+        </View>
+      ) : (
+        <View style={styles.errorCard}>
+          <Text style={styles.errorTitle}>We couldn&apos;t confirm that link</Text>
+          <Text style={styles.errorBody}>Please return to sign in and try again.</Text>
+          <Pressable
+            accessibilityRole={'button'}
             onPress={() => router.replace('/login')}
             style={({ pressed }) => [styles.errorButton, pressed && styles.pressed]}>
             <Text style={styles.errorButtonLabel}>Return to sign in</Text>
           </Pressable>
         </View>
-      ) : (
-        <ActivityIndicator color={HalcyonColors.accent} size="large" />
       )}
     </View>
   );
@@ -211,5 +436,15 @@ const styles = StyleSheet.create({
     backgroundColor: HalcyonColors.background,
     flex: 1,
     justifyContent: 'center',
+  },
+  secondaryButton: {
+    marginTop: 8,
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+  },
+  secondaryButtonLabel: {
+    color: HalcyonColors.textSecondary,
+    fontFamily: AppFonts.sansRegular,
+    fontSize: 13,
   },
 });

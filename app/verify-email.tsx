@@ -34,7 +34,7 @@ export default function VerifyEmailScreen() {
   const finalisingRef = useRef(false);
 
   const acceptConfirmedSession = useCallback(
-    async (session: Session | null) => {
+    (session: Session | null) => {
       const sessionEmail = session?.user.email?.trim().toLowerCase();
       if (
         !session ||
@@ -49,13 +49,10 @@ export default function VerifyEmailScreen() {
 
       finalisingRef.current = true;
       setMessage('Email confirmed. Finishing your account…');
-      try {
-        await completeSupabaseAuth(session);
-        router.replace('/verified' as Href);
-      } catch {
-        finalisingRef.current = false;
-        setMessage('Your email is confirmed, but we could not finish signing you in. Please try again.');
-      }
+      // Confirmation is authoritative; profile projection is retryable setup
+      // and must never hold this screen on a finishing message forever.
+      void completeSupabaseAuth(session).catch(() => undefined);
+      router.replace({ pathname: '/verified', params: { confirmed: '1' } } as Href);
     },
     [email, router]
   );
@@ -66,7 +63,7 @@ export default function VerifyEmailScreen() {
       setMessage(error.message);
       return;
     }
-    await acceptConfirmedSession(data.session);
+    acceptConfirmedSession(data.session);
   }, [acceptConfirmedSession]);
 
   useEffect(() => {

@@ -1,4 +1,4 @@
-import { useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, BackHandler, StyleSheet, Text } from 'react-native';
 
@@ -12,7 +12,11 @@ import { supabase } from '@/lib/supabase';
 
 export default function VerifiedScreen() {
   const router = useRouter();
-  const [checking, setChecking] = useState(true);
+  const params = useLocalSearchParams<{ confirmed?: string | string[] }>();
+  const confirmedByCallback =
+    (Array.isArray(params.confirmed) ? params.confirmed[0] : params.confirmed) === '1';
+  const [checking, setChecking] = useState(!confirmedByCallback);
+  const [checkError, setCheckError] = useState('');
   const [continuing, setContinuing] = useState(false);
 
   useEffect(() => {
@@ -21,23 +25,48 @@ export default function VerifiedScreen() {
   }, []);
 
   useEffect(() => {
-    let active = true;
-    void supabase.auth.getSession().then(({ data }) => {
-      if (!active) return;
-      if (
-        !data.session ||
-        !hasEmailIdentity(data.session.user) ||
-        !isEmailConfirmed(data.session.user)
-      ) {
-        router.replace('/login');
-        return;
-      }
+    if (confirmedByCallback) {
       setChecking(false);
-    });
+      return;
+    }
+
+    let active = true;
+    let finished = false;
+    const timeout = setTimeout(() => {
+      if (!active || finished) return;
+      finished = true;
+      setCheckError('We could not check your confirmed session. Please sign in to continue.');
+      setChecking(false);
+    }, 4_000);
+
+    void supabase.auth
+      .getSession()
+      .then(({ data, error }) => {
+        if (!active || finished) return;
+        finished = true;
+        if (
+          error ||
+          !data.session ||
+          !hasEmailIdentity(data.session.user) ||
+          !isEmailConfirmed(data.session.user)
+        ) {
+          setCheckError('Your confirmed session is unavailable. Please sign in to continue.');
+        }
+        setChecking(false);
+      })
+      .catch(() => {
+        if (!active || finished) return;
+        finished = true;
+        setCheckError('We could not check your confirmed session. Please sign in to continue.');
+        setChecking(false);
+      })
+      .finally(() => clearTimeout(timeout));
+
     return () => {
       active = false;
+      clearTimeout(timeout);
     };
-  }, [router]);
+  }, [confirmedByCallback]);
 
   const continueIntoApp = async () => {
     if (continuing) return;
@@ -56,6 +85,22 @@ export default function VerifiedScreen() {
     return (
       <OnboardingScaffold contentContainerStyle={styles.content} scroll={false}>
         <ActivityIndicator color={HalcyonColors.accent} size="small" />
+      </OnboardingScaffold>
+    );
+  }
+
+  if (checkError) {
+    return (
+      <OnboardingScaffold contentContainerStyle={styles.content} scroll={false}>
+        <Text style={styles.heading}>Your email is confirmed</Text>
+        <Text accessibilityLiveRegion="polite" style={styles.body}>
+          {checkError}
+        </Text>
+        <OnboardingContinueButton
+          label="Continue to sign in"
+          onPress={() => router.replace('/login')}
+          style={styles.primaryButton}
+        />
       </OnboardingScaffold>
     );
   }
