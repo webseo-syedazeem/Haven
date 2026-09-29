@@ -1,4 +1,5 @@
 import type { ModeId } from '@/constants/modes';
+import { DURATION_STEP_ENABLED } from '@/constants/onboarding';
 import type { ImportGuestDataPayload, ImportGuestDataResult } from '@/lib/api/account';
 import { apiClient } from '@/lib/api/client';
 import { accountApi } from '@/lib/api/account';
@@ -73,7 +74,8 @@ export type ModeScopedOnboardingPayload =
       user_goals: string;
       mode_breakers: string[];
       mode_areas: string[];
-      target_minutes: number;
+      // Optional: not sent when DURATION_STEP_ENABLED is false (no 1-hour variant yet).
+      target_minutes?: number;
     }
   | {
       mode: 'relax';
@@ -214,7 +216,7 @@ export function toModeScopedOnboardingPayload(
     user_goals: value.user_goals,
     mode_breakers: value.mode_breakers,
     mode_areas: value.mode_areas,
-    target_minutes: value.target_minutes!,
+    ...(value.target_minutes !== null ? { target_minutes: value.target_minutes } : {}),
   };
 }
 
@@ -385,7 +387,7 @@ export function getOnboardingResumeRoute(
   }
 
   if (value.mode_breakers.length === 0) return '/onboarding/situation';
-  if (value.mode_areas.length === 0 || value.target_minutes === null) {
+  if (value.mode_areas.length === 0 || (DURATION_STEP_ENABLED && value.target_minutes === null)) {
     return '/onboarding/personalise';
   }
   return '/backed-by-science';
@@ -405,7 +407,7 @@ export function getIncompleteOnboardingRoute(
   }
 
   if (answers.mode_breakers.length === 0) return '/onboarding/situation';
-  if (answers.mode_areas.length === 0 || answers.target_minutes === null) {
+  if (answers.mode_areas.length === 0 || (DURATION_STEP_ENABLED && answers.target_minutes === null)) {
     return '/onboarding/personalise';
   }
   return null;

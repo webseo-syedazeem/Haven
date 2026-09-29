@@ -50,7 +50,8 @@ export type ImportGuestDataPayload = ImportGuestExtras &
         user_goals: string;
         mode_breakers: string[];
         mode_areas: string[];
-        target_minutes: number;
+        // Optional: omitted when DURATION_STEP_ENABLED is false in constants/onboarding.ts.
+        target_minutes?: number;
         main_goal?: never;
         relax_causes?: never;
         calming_moments?: never;

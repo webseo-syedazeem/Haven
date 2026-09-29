@@ -17,6 +17,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { OnboardingBackButton } from '@/components/onboarding/OnboardingBackButton';
 import { OnboardingContinueButton } from '@/components/onboarding/OnboardingContinueButton';
 import type { ModeId } from '@/constants/modes';
+import { DURATION_STEP_ENABLED } from '@/constants/onboarding';
 import { AppFonts } from '@/constants/theme';
 import { safeGoBack } from '@/lib/navigation';
 import {
@@ -137,13 +138,13 @@ export default function PersonaliseScreen() {
   };
 
   const handleContinue = async () => {
-    if (hydrating || selectedContexts.length === 0 || !selectedDuration || saving) return;
+    if (hydrating || selectedContexts.length === 0 || (DURATION_STEP_ENABLED && !selectedDuration) || saving) return;
     setSaving(true);
     setSaveError(null);
     try {
       await saveOnboardingAnswers({
         mode_areas: selectedContexts,
-        target_minutes: selectedDuration,
+        ...(DURATION_STEP_ENABLED && selectedDuration !== null ? { target_minutes: selectedDuration } : {}),
       });
       router.push('/backed-by-science' as Href);
     } catch {
@@ -241,53 +242,60 @@ export default function PersonaliseScreen() {
             })}
           </View>
 
-          {/* Divider with centered label */}
-          <View style={styles.dividerContainer}>
-            <View style={styles.dividerLine} />
-            <Text style={styles.dividerText}>
-              {isSleep ? 'HOW LONG DO YOU USUALLY NEED?' : 'HOW LONG DO YOU USUALLY FOCUS?'}
-            </Text>
-            <View style={styles.dividerLine} />
-          </View>
+          {/* Duration section: hidden when DURATION_STEP_ENABLED is false.
+              Flip to true in constants/onboarding.ts to restore when soundscape
+              durations vary. */}
+          {DURATION_STEP_ENABLED && (
+            <>
+              {/* Divider with centered label */}
+              <View style={styles.dividerContainer}>
+                <View style={styles.dividerLine} />
+                <Text style={styles.dividerText}>
+                  {isSleep ? 'HOW LONG DO YOU USUALLY NEED?' : 'HOW LONG DO YOU USUALLY FOCUS?'}
+                </Text>
+                <View style={styles.dividerLine} />
+              </View>
 
-          {/* Duration Pills */}
-          <View style={styles.durationRow}>
-            {durations.map((dur) => {
-              const minutes = durationMinutes(dur);
-              const isSelected = selectedDuration === minutes;
-              return (
-                <Pressable
-                  accessibilityRole="radio"
-                  accessibilityState={{ selected: isSelected }}
-                  disabled={hydrating}
-                  key={dur}
-                  onPress={() => {
-                    setSaveError(null);
-                    setSelectedDuration(minutes);
-                  }}
-                  style={[
-                    styles.durationPill,
-                    isSelected
-                      ? [styles.durationPillSelected, { backgroundColor: themeColor }]
-                      : styles.durationPillUnselected,
-                  ]}>
-                  <Text
-                    style={[
-                      styles.durationText,
-                      isSelected ? styles.durationTextSelected : styles.durationTextUnselected,
-                    ]}>
-                    {dur}
-                  </Text>
-                </Pressable>
-              );
-            })}
-          </View>
+              {/* Duration Pills */}
+              <View style={styles.durationRow}>
+                {durations.map((dur) => {
+                  const minutes = durationMinutes(dur);
+                  const isSelected = selectedDuration === minutes;
+                  return (
+                    <Pressable
+                      accessibilityRole="radio"
+                      accessibilityState={{ selected: isSelected }}
+                      disabled={hydrating}
+                      key={dur}
+                      onPress={() => {
+                        setSaveError(null);
+                        setSelectedDuration(minutes);
+                      }}
+                      style={[
+                        styles.durationPill,
+                        isSelected
+                          ? [styles.durationPillSelected, { backgroundColor: themeColor }]
+                          : styles.durationPillUnselected,
+                      ]}>
+                      <Text
+                        style={[
+                          styles.durationText,
+                          isSelected ? styles.durationTextSelected : styles.durationTextUnselected,
+                        ]}>
+                        {dur}
+                      </Text>
+                    </Pressable>
+                  );
+                })}
+              </View>
+            </>
+          )}
         </ScrollView>
 
         <View style={styles.footer}>
           {saveError ? <Text style={styles.errorText}>{saveError}</Text> : null}
           <OnboardingContinueButton
-            disabled={hydrating || selectedContexts.length === 0 || !selectedDuration}
+            disabled={hydrating || selectedContexts.length === 0 || (DURATION_STEP_ENABLED && !selectedDuration)}
             label="CONTINUE"
             loading={saving}
             onPress={() => void handleContinue()}
