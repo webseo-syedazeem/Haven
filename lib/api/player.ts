@@ -58,6 +58,9 @@ export type PlayHistoryRow = {
   soundscape?: import('./home').Soundscape | null;
 };
 
+/** One cache entry shared by Home and Saved → Recently Played. */
+export const PLAY_HISTORY_QUERY_KEY = ['home', 'play-history'] as const;
+
 export const playerApi = {
   getState: async (): Promise<PlayerState | null> => {
     const res = await apiClient<Envelope<{ player_state: PlayerState | null }>>(
@@ -80,14 +83,22 @@ export const playerApi = {
     }),
 
   /** One row per play, recorded when playback actually starts. */
-  addPlayHistory: (soundscapeId: string, positionSeconds = 0) =>
-    apiClient<Envelope<{ play_history: unknown }>>('/api/play-history', {
-      method: 'POST',
-      body: JSON.stringify({
-        soundscape_id: soundscapeId,
-        position_seconds: Math.max(0, Math.round(positionSeconds)),
-      }),
-    }),
+  addPlayHistory: async (
+    soundscapeId: string,
+    positionSeconds = 0
+  ): Promise<PlayHistoryRow> => {
+    const res = await apiClient<Envelope<{ play_history: PlayHistoryRow }>>(
+      '/api/play-history',
+      {
+        method: 'POST',
+        body: JSON.stringify({
+          soundscape_id: soundscapeId,
+          position_seconds: Math.max(0, Math.round(positionSeconds)),
+        }),
+      }
+    );
+    return res.data.play_history;
+  },
 
   getDownloads: async (): Promise<Download[]> => {
     const res = await apiClient<Envelope<{ downloads: Download[] }>>('/api/downloads');

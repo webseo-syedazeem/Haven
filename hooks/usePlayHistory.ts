@@ -3,12 +3,15 @@ import { useCallback } from 'react';
 
 import { useHasSession } from '@/hooks/useSession';
 import { homeApi, type Soundscape } from '@/lib/api/home';
-import { playerApi, type PlayHistoryRow } from '@/lib/api/player';
+import {
+  playerApi,
+  PLAY_HISTORY_QUERY_KEY,
+  type PlayHistoryRow,
+} from '@/lib/api/player';
 import { getLocalDownload, soundscapeFromLocalDownload } from '@/lib/local-downloads';
 import { usePlayerActions } from '@/lib/player/PlayerProvider';
 
-/** One cache entry for every play-history consumer (Home rail, Saved tab). */
-export const PLAY_HISTORY_QUERY_KEY = ['home', 'play-history'] as const;
+export { PLAY_HISTORY_QUERY_KEY };
 
 /**
  * The raw history rows, newest first, with `played_at` intact. Home's rail

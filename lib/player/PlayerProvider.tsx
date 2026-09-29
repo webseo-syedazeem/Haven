@@ -13,7 +13,12 @@ import { AppState, Platform } from 'react-native';
 import { getTimerConfig, UNTIL_I_STOP, type TimerSelection } from '@/constants/timers';
 import { useHasSession } from '@/hooks/useSession';
 import { homeApi, type Soundscape } from '@/lib/api/home';
-import { playerApi } from '@/lib/api/player';
+import {
+  playerApi,
+  PLAY_HISTORY_QUERY_KEY,
+  type PlayHistoryRow,
+} from '@/lib/api/player';
+import { queryClient } from '@/lib/query-client';
 import { engine } from './engine';
 import { hasLocalSource, toPlayableTrack } from './types';
 
@@ -27,6 +32,53 @@ const UNAVAILABLE_MESSAGE =
     : 'Audio needs the Passage dev build — it cannot run in Expo Go.';
 const STALLED_MESSAGE = 'Playback stopped unexpectedly. Check your connection and try again.';
 const LOCAL_FAILURE_MESSAGE = 'This soundscape could not be played.';
+const PLAY_HISTORY_LIMIT = 50;
+
+let optimisticPlaySequence = 0;
+
+/**
+ * Makes a confirmed playback visible on Home and Saved immediately, while the
+ * POST continues in the background. The server row replaces the temporary one;
+ * a failed POST removes only that play without disturbing concurrent plays.
+ */
+async function recordPlayHistoryOptimistically(
+  soundscape: Soundscape,
+  positionSeconds: number
+) {
+  await queryClient.cancelQueries({ queryKey: PLAY_HISTORY_QUERY_KEY }).catch(() => {});
+
+  const optimisticId = [
+    'optimistic-play',
+    Date.now(),
+    optimisticPlaySequence++,
+    soundscape.id,
+  ].join('-');
+  const optimisticRow: PlayHistoryRow = {
+    id: optimisticId,
+    soundscape_id: soundscape.id,
+    played_at: new Date().toISOString(),
+    soundscape,
+  };
+
+  queryClient.setQueryData<PlayHistoryRow[]>(PLAY_HISTORY_QUERY_KEY, (current) =>
+    [optimisticRow, ...(current ?? [])].slice(0, PLAY_HISTORY_LIMIT)
+  );
+
+  try {
+    const savedRow = await playerApi.addPlayHistory(soundscape.id, positionSeconds);
+    queryClient.setQueryData<PlayHistoryRow[]>(PLAY_HISTORY_QUERY_KEY, (current) =>
+      (current ?? []).map((row) =>
+        row.id === optimisticId
+          ? { ...optimisticRow, ...savedRow, soundscape }
+          : row
+      )
+    );
+  } catch {
+    queryClient.setQueryData<PlayHistoryRow[]>(PLAY_HISTORY_QUERY_KEY, (current) =>
+      (current ?? []).filter((row) => row.id !== optimisticId)
+    );
+  }
+}
 
 export type ResumableState = {
   soundscape: Soundscape;
@@ -485,7 +537,7 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
 
       // A play is recorded when audio actually starts, not on navigation.
       if (hasSessionRef.current) {
-        void playerApi.addPlayHistory(soundscape.id, startAt).catch(() => {});
+        void recordPlayHistoryOptimistically(soundscape, startAt);
       }
       schedulePersist();
     },
