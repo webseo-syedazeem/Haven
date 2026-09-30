@@ -1,17 +1,52 @@
-Passage App Icon & Splash Assets
-=================================
+Passage — New Client P Brand Assets
+===================================
 
-Files:
-- icon.png            1024x1024  Main app icon (full-bleed dark square, iOS/Android will round it)
-- adaptive-icon.png    1024x1024  Android adaptive icon foreground layer (smaller wave, more padding for safe zone)
-- splash-icon.png      1024x1024  Splash screen mark (smallest wave, most padding, for centering on launch screen)
-- favicon.png          48x48      Web favicon
-- PREVIEW.png                     Visual reference sheet: icon at multiple small sizes + splash mockup
+Files
+-----
+icon.png              1024x1024  Main Expo app icon, full-bleed #0B0B0D background
+adaptive-icon.png     1024x1024  Android adaptive foreground, transparent safe zone
+splash-icon.png       1024x1024  Splash mark, transparent with generous padding
+favicon.png             48x48    Web favicon
+notification-icon.png   96x96    Android notification icon, pure white + transparent
+logo-transparent.png  1024x1024  Extra transparent master for screens / branding
 
-Usage in app.json (Expo):
-  "icon": "./assets/images/icon.png"
-  "android": { "adaptiveIcon": { "foregroundImage": "./assets/images/adaptive-icon.png", "backgroundColor": "#0B0B0D" } }
-  "splash": { "image": "./assets/images/splash-icon.png", "backgroundColor": "#0B0B0D" }
-  "web": { "favicon": "./assets/images/favicon.png" }
+Recommended app.json usage
+--------------------------
+"icon": "./assets/images/passage-brand-assets/icon.png"
 
-All assets share the same interwoven-wave gold mark on the #0B0B0D dark background, matching the client-approved logo.
+"android": {
+  "adaptiveIcon": {
+    "foregroundImage": "./assets/images/passage-brand-assets/adaptive-icon.png",
+    "backgroundColor": "#0B0B0D"
+  }
+}
+
+"web": {
+  "favicon": "./assets/images/passage-brand-assets/favicon.png"
+}
+
+For expo-notifications, use notification-icon.png instead of the normal app icon:
+[
+  "expo-notifications",
+  {
+    "icon": "./assets/images/passage-brand-assets/notification-icon.png",
+    "color": "#0B0B0D",
+    "defaultChannel": "default",
+    "sounds": []
+  }
+]
+
+For expo-splash-screen:
+[
+  "expo-splash-screen",
+  {
+    "backgroundColor": "#0B0B0D",
+    "image": "./assets/images/passage-brand-assets/splash-icon.png",
+    "imageWidth": 250,
+    "dark": {
+      "backgroundColor": "#0B0B0D",
+      "image": "./assets/images/passage-brand-assets/splash-icon.png",
+      "imageWidth": 250
+    }
+  }
+]

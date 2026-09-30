@@ -20,8 +20,8 @@ export const RELAX_ONBOARDING = {
     optionRows: 8,
   },
   header: {
-    backButtonSize: 36,
-    backIconSize: 20,
+    backButtonSize: 48,
+    backIconSize: 28,
     brandIconSize: 29,
     brandTextSize: 23,
     topRowHeight: 40,

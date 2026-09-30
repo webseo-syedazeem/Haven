@@ -16,7 +16,6 @@ const STORED_KEYS = [
   'mode_breakers',
   'relax_causes',
   'target_minutes',
-  'user_goals',
 ];
 
 function loadOnboarding(options = {}) {
@@ -46,6 +45,9 @@ function loadOnboarding(options = {}) {
     Set,
     String,
     require(id) {
+      if (id === '@/constants/onboarding') {
+        return { DURATION_STEP_ENABLED: false };
+      }
       if (id === '@/lib/local-settings') {
         return {
           getLocalSetting: async (key, fallback) =>
@@ -116,7 +118,6 @@ function loadOnboarding(options = {}) {
 test('Focus answers persist in the exact backend shape with integer minutes', async () => {
   const harness = loadOnboarding();
 
-  await harness.api.saveOnboardingAnswers({ user_goals: 'Focus deeply' });
   await harness.api.saveOnboardingAnswers({ mode: 'focus' });
   await harness.api.saveOnboardingAnswers({
     mode_breakers: ['Background noise', 'Racing thoughts'],
@@ -130,7 +131,6 @@ test('Focus answers persist in the exact backend shape with integer minutes', as
   assert.deepEqual(Object.keys(stored).sort(), STORED_KEYS);
   assert.deepEqual(stored, {
     mode: 'focus',
-    user_goals: 'Focus deeply',
     mode_breakers: ['Background noise', 'Racing thoughts'],
     mode_areas: ['At a desk', 'Creative work'],
     target_minutes: 45,
@@ -149,7 +149,6 @@ test('Focus answers persist in the exact backend shape with integer minutes', as
 test('Relax answers persist in the exact backend shape without an API call', async () => {
   const harness = loadOnboarding();
 
-  await harness.api.saveOnboardingAnswers({ user_goals: 'Feel calmer' });
   await harness.api.saveOnboardingAnswers({ mode: 'relax' });
   await harness.api.saveOnboardingAnswers({ main_goal: 'Be more present' });
   await harness.api.saveOnboardingAnswers({
@@ -161,7 +160,6 @@ test('Relax answers persist in the exact backend shape without an API call', asy
   assert.deepEqual(Object.keys(stored).sort(), STORED_KEYS);
   assert.deepEqual(stored, {
     mode: 'relax',
-    user_goals: 'Feel calmer',
     mode_breakers: [],
     mode_areas: [],
     target_minutes: null,
@@ -176,12 +174,11 @@ test('Relax answers persist in the exact backend shape without an API call', asy
   assert.equal(harness.apiCallCount(), 0);
 });
 
-test('changing mode clears only the previous mode fields and keeps the shared goal', async () => {
+test('changing mode clears only the previous mode fields', async () => {
   const harness = loadOnboarding();
 
   await harness.api.saveOnboardingAnswers({
     mode: 'focus',
-    user_goals: 'Focus deeply',
     mode_breakers: ['Phone distractions'],
     mode_areas: ['At a desk'],
     target_minutes: 25,
@@ -191,7 +188,6 @@ test('changing mode clears only the previous mode fields and keeps the shared go
   assert.deepEqual(harness.storedAnswers().mode_breakers, ['Phone distractions']);
 
   await harness.api.saveOnboardingAnswers({ mode: 'sleep' });
-  assert.equal(harness.storedAnswers().user_goals, 'Focus deeply');
   assert.deepEqual(harness.storedAnswers().mode_breakers, []);
   assert.deepEqual(harness.storedAnswers().mode_areas, []);
   assert.equal(harness.storedAnswers().target_minutes, null);
@@ -212,29 +208,19 @@ test('changing mode clears only the previous mode fields and keeps the shared go
     calming_moments: 'In the evenings',
   });
   await harness.api.saveOnboardingAnswers({ mode: 'focus' });
-  assert.equal(harness.storedAnswers().user_goals, 'Focus deeply');
   assert.equal(harness.storedAnswers().main_goal, null);
   assert.deepEqual(harness.storedAnswers().relax_causes, []);
   assert.equal(harness.storedAnswers().calming_moments, null);
 });
 
-test('resume routing follows the real goal, mode, and mode-specific screen order', () => {
+test('resume routing follows the real mode and mode-specific screen order', () => {
   const { getOnboardingResumeRoute } = loadOnboarding().api;
 
   assert.equal(getOnboardingResumeRoute({}), '/why-passage');
-  assert.equal(getOnboardingResumeRoute({ mode: 'focus' }), '/what-it-does');
-  assert.equal(
-    getOnboardingResumeRoute({ user_goals: 'Focus deeply' }),
-    '/select-focus'
-  );
-  assert.equal(
-    getOnboardingResumeRoute({ mode: 'focus', user_goals: 'Focus deeply' }),
-    '/onboarding/situation'
-  );
+  assert.equal(getOnboardingResumeRoute({ mode: 'focus' }), '/onboarding/situation');
   assert.equal(
     getOnboardingResumeRoute({
       mode: 'sleep',
-      user_goals: 'Sleep easier',
       mode_breakers: ['Outside noise'],
     }),
     '/onboarding/personalise'
@@ -242,7 +228,6 @@ test('resume routing follows the real goal, mode, and mode-specific screen order
   assert.equal(
     getOnboardingResumeRoute({
       mode: 'focus',
-      user_goals: 'Focus deeply',
       mode_breakers: ['Phone distractions'],
       mode_areas: ['At a desk'],
       target_minutes: 25,
@@ -250,13 +235,12 @@ test('resume routing follows the real goal, mode, and mode-specific screen order
     '/backed-by-science'
   );
   assert.equal(
-    getOnboardingResumeRoute({ mode: 'relax', user_goals: 'Feel calmer' }),
+    getOnboardingResumeRoute({ mode: 'relax' }),
     '/onboarding/relax-main-goal'
   );
   assert.equal(
     getOnboardingResumeRoute({
       mode: 'relax',
-      user_goals: 'Feel calmer',
       main_goal: 'Be more present',
     }),
     '/onboarding/relax-causes'
@@ -264,7 +248,6 @@ test('resume routing follows the real goal, mode, and mode-specific screen order
   assert.equal(
     getOnboardingResumeRoute({
       mode: 'relax',
-      user_goals: 'Feel calmer',
       main_goal: 'Be more present',
       relax_causes: ['Work'],
     }),
@@ -273,7 +256,6 @@ test('resume routing follows the real goal, mode, and mode-specific screen order
   assert.equal(
     getOnboardingResumeRoute({
       mode: 'relax',
-      user_goals: 'Feel calmer',
       main_goal: 'Be more present',
       relax_causes: ['Work'],
       calming_moments: 'In the evenings',
@@ -287,7 +269,6 @@ test('an authenticated Focus completion posts only Focus fields and clears local
 
   await harness.api.saveOnboardingAnswers({
     mode: 'focus',
-    user_goals: 'Focus deeply',
     mode_breakers: ['Phone distractions'],
     mode_areas: ['At a desk'],
     target_minutes: 25,
@@ -299,7 +280,6 @@ test('an authenticated Focus completion posts only Focus fields and clears local
       path: '/api/onboarding',
       body: {
         mode: 'focus',
-        user_goals: 'Focus deeply',
         mode_breakers: ['Phone distractions'],
         mode_areas: ['At a desk'],
         target_minutes: 25,
@@ -307,7 +287,6 @@ test('an authenticated Focus completion posts only Focus fields and clears local
     },
   ]);
   assert.equal(harness.storedAnswers().mode, null);
-  assert.equal(harness.storedAnswers().user_goals, null);
 });
 
 test('guest-to-account Relax import is mode-scoped and clears only after acceptance', async () => {
@@ -315,7 +294,6 @@ test('guest-to-account Relax import is mode-scoped and clears only after accepta
 
   await harness.api.saveOnboardingAnswers({
     mode: 'relax',
-    user_goals: 'Feel calmer',
     main_goal: 'Be more present',
     relax_causes: ['Work'],
     calming_moments: 'In the evenings',
@@ -326,14 +304,12 @@ test('guest-to-account Relax import is mode-scoped and clears only after accepta
   assert.deepEqual(harness.importPayloads, [
     {
       mode: 'relax',
-      user_goals: 'Feel calmer',
       main_goal: 'Be more present',
       relax_causes: ['Work'],
       calming_moments: 'In the evenings',
     },
   ]);
   assert.equal(harness.storedAnswers().mode, null);
-  assert.equal(harness.storedAnswers().user_goals, null);
 });
 
 test('failed guest import retains every local onboarding answer for retry', async () => {
@@ -341,7 +317,6 @@ test('failed guest import retains every local onboarding answer for retry', asyn
 
   await harness.api.saveOnboardingAnswers({
     mode: 'sleep',
-    user_goals: 'Sleep easier',
     mode_breakers: ['Outside noise'],
     mode_areas: ['Falling asleep'],
     target_minutes: 45,
@@ -351,7 +326,6 @@ test('failed guest import retains every local onboarding answer for retry', asyn
   await assert.rejects(() => harness.api.migrateGuestOnboardingAfterAuth(), /offline/);
   assert.deepEqual(harness.storedAnswers(), {
     mode: 'sleep',
-    user_goals: 'Sleep easier',
     mode_breakers: ['Outside noise'],
     mode_areas: ['Falling asleep'],
     target_minutes: 45,
@@ -366,7 +340,6 @@ test('continuing as a guest marks local completion without an onboarding request
 
   await harness.api.saveOnboardingAnswers({
     mode: 'sleep',
-    user_goals: 'Sleep easier',
     mode_breakers: ['Outside noise'],
     mode_areas: ['Falling asleep'],
     target_minutes: 45,
@@ -377,7 +350,6 @@ test('continuing as a guest marks local completion without an onboarding request
   assert.equal(harness.apiCallCount(), 0);
   assert.deepEqual(harness.storedAnswers(), {
     mode: 'sleep',
-    user_goals: 'Sleep easier',
     mode_breakers: ['Outside noise'],
     mode_areas: ['Falling asleep'],
     target_minutes: 45,
@@ -392,7 +364,6 @@ test('incomplete authenticated answers are never submitted or cleared', async ()
 
   await harness.api.saveOnboardingAnswers({
     mode: 'focus',
-    user_goals: 'Focus deeply',
     mode_breakers: ['Phone distractions'],
   });
 
@@ -404,7 +375,6 @@ test('incomplete authenticated answers are never submitted or cleared', async ()
   assert.equal(harness.apiCallCount(), 0);
   assert.deepEqual(harness.storedAnswers(), {
     mode: 'focus',
-    user_goals: 'Focus deeply',
     mode_breakers: ['Phone distractions'],
     mode_areas: [],
     target_minutes: null,
@@ -419,7 +389,6 @@ test('an import response that declines onboarding keeps local answers pending', 
 
   await harness.api.saveOnboardingAnswers({
     mode: 'relax',
-    user_goals: 'Feel calmer',
     main_goal: 'Be more present',
     relax_causes: ['Work'],
     calming_moments: 'In the evenings',

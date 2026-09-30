@@ -47,7 +47,7 @@ export function SettingsScreen({
         hitSlop={12}
         onPress={() => router.back()}
         style={({ pressed }) => [styles.backButton, pressed && styles.pressed]}>
-        <Ionicons color={HalcyonColors.textPrimary} name="chevron-back" size={20} />
+        <Ionicons color={HalcyonColors.textPrimary} name="chevron-back" size={28} />
       </Pressable>
       <Text style={styles.title}>{title}</Text>
       {!!subtitle && <Text style={styles.subtitle}>{subtitle}</Text>}
@@ -117,18 +117,13 @@ const styles = StyleSheet.create({
   },
   backButton: {
     alignItems: 'center',
-    backgroundColor: 'rgba(11, 11, 13, 0.42)',
-    borderColor: 'rgba(255, 255, 255, 0.2)',
-    borderRadius: 18,
-    borderWidth: 1,
-    height: 36,
+    height: 48,
     justifyContent: 'center',
     marginBottom: 10,
-    width: 36,
+    width: 48,
   },
   pressed: {
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
-    opacity: 0.78,
+    opacity: 0.6,
   },
   title: {
     ...Typography.screenHeading,

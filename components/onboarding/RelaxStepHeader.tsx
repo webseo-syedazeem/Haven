@@ -44,8 +44,9 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
 brandIcon: {
-  height: 40,
-  width: 40,
+  height: 38,
+  resizeMode: 'contain',
+  width: 58,
 },
   brandText: {
     color: '#FFFFFF',
@@ -53,11 +54,12 @@ brandIcon: {
     fontSize: RELAX_ONBOARDING.header.brandTextSize,
     fontWeight: '600',
     letterSpacing: -0.2,
-    marginLeft: 8,
+    marginLeft: -9,
   },
   header: {
     paddingBottom: 10,
-    paddingHorizontal: RELAX_ONBOARDING.screenPaddingHorizontal,
+    paddingLeft: 10,
+    paddingRight: RELAX_ONBOARDING.screenPaddingHorizontal,
     paddingTop: 8,
     width: '100%',
   },

@@ -46,7 +46,7 @@ export default function RelaxTrustScreen() {
         <View style={styles.footer}>
           <RelaxContinueButton
             label="Preview the soundscapes"
-            onPress={() => router.push('/onboarding/try-passage' as Href)}
+            onPress={() => router.push('/onboarding/try-passage?mode=relax' as Href)}
           />
           <Text style={styles.footerNote}>
             Three one-minute previews. No commitment.

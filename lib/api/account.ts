@@ -47,7 +47,6 @@ export type ImportGuestDataPayload = ImportGuestExtras &
   (
     | {
         mode: Exclude<SoundscapeMode, 'relax'>;
-        user_goals: string;
         mode_breakers: string[];
         mode_areas: string[];
         // Optional: omitted when DURATION_STEP_ENABLED is false in constants/onboarding.ts.
@@ -58,7 +57,6 @@ export type ImportGuestDataPayload = ImportGuestExtras &
       }
     | {
         mode: 'relax';
-        user_goals: string;
         main_goal: string;
         relax_causes: string[];
         calming_moments: string;

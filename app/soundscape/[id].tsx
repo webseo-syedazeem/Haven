@@ -15,6 +15,7 @@ import {
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { OnboardingBackButton } from '@/components/onboarding/OnboardingBackButton';
 import { PlaylistPickerSheet } from '@/components/PlaylistPickerSheet';
 import { SectionRail } from '@/components/SectionRail';
 import { SoundscapeCard } from '@/components/SoundscapeCard';
@@ -345,14 +346,7 @@ export default function SoundscapeDetailScreen() {
     <View style={styles.screen}>
       <SafeAreaView edges={['top']} style={styles.safeArea}>
         <View style={styles.topBar}>
-          <Pressable
-            accessibilityLabel="Go back"
-            accessibilityRole="button"
-            hitSlop={12}
-            onPress={() => router.back()}
-            style={({ pressed }) => [styles.iconButton, pressed && styles.pressed]}>
-            <Ionicons color={HalcyonColors.textPrimary} name="chevron-back" size={20} />
-          </Pressable>
+          <OnboardingBackButton onPress={() => router.back()} />
           <Pressable
             accessibilityLabel={isFavourite ? 'Remove from favourites' : 'Add to favourites'}
             accessibilityRole="button"

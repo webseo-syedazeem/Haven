@@ -164,7 +164,7 @@ export default function HomeScreen() {
                     {firstName || 'there'}
                   </Text>
                 )}
-                <Text style={styles.subtitle}>Where would you like to go?</Text>
+                {/* <Text style={styles.subtitle}>Where would you like to go?</Text> */}
               </View>
               <TouchableOpacity
                 accessibilityLabel="Open profile"
@@ -202,6 +202,18 @@ export default function HomeScreen() {
             </View>
           ) : null}
 
+          <SectionRail
+            data={recommended.data}
+            emptyNote="We're adding more soundscapes soon — check back shortly."
+            emptyTitle="Coming soon"
+            isError={recommended.isError}
+            isLoading={recommended.isInitialLoading}
+            keyExtractor={soundscapeKey}
+            onSeeAll={() => router.push('/(tabs)/explore' as Href)}
+            renderItem={(soundscape) => renderCard(soundscape, recommended.data ?? [])}
+            title="Recommendation for you"
+          />
+
           {/* Choose your mode — always present, even on a brand new account */}
           <View style={[styles.block, styles.section]}>
             <Text style={styles.sectionTitle}>Choose your mode</Text>
@@ -211,16 +223,6 @@ export default function HomeScreen() {
                 : MODES.map((mode) => <ModeCard key={mode.id} mode={mode} onPress={openMode} />)}
             </View>
           </View>
-
-          <SectionRail
-            data={recommended.data}
-            isError={recommended.isError}
-            isLoading={recommended.isInitialLoading}
-            keyExtractor={soundscapeKey}
-            onSeeAll={() => router.push('/(tabs)/explore' as Href)}
-            renderItem={(soundscape) => renderCard(soundscape, recommended.data ?? [])}
-            title="Recommended Now"
-          />
 
           <SectionRail
             data={recentlyPlayed.data}

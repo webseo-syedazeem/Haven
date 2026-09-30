@@ -1,47 +1,37 @@
-import { useEffect, useState } from 'react';
-import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Image, StyleSheet, Text, View } from 'react-native';
 import { Stack, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Ionicons } from '@expo/vector-icons';
 
 import { OnboardingPillButton } from '@/components/onboarding/OnboardingPillButton';
 import { OnboardingStepHeader } from '@/components/onboarding/OnboardingStepHeader';
 import { AppFonts } from '@/constants/theme';
 import { safeGoBack } from '@/lib/navigation';
-import {
-  getOnboardingAnswers,
-  saveOnboardingAnswers,
-} from '@/lib/onboarding';
 
 const focusImage = require('@/assets/images/focus-mode.webp');
 const calmImage = require('@/assets/images/relax-mode.webp');
 const sleepImage = require('@/assets/images/sleep-mode.webp');
 
 type GoalCard = {
-  description: string;
   id: 'focus' | 'calm' | 'sleep';
   image: any;
   label: string;
 };
 
-const GOAL_SELECTION_COLOR = '#FFFFFF';
+const PREVIEW_ACCENT_COLOR = '#FFFFFF';
 
 const GOAL_CARDS: readonly GoalCard[] = [
   {
-    description: 'Create the conditions for deeper, calmer, and steadier work.',
     id: 'focus',
     image: focusImage,
     label: 'Focus deeply',
   },
   {
-    description: 'Release tension and find calm through natural spaces.',
     id: 'calm',
     image: calmImage,
     label: 'Feel calmer',
   },
   {
-    description: 'Create the conditions to wind down and rest more easily.',
     id: 'sleep',
     image: sleepImage,
     label: 'Sleep easier',
@@ -50,52 +40,8 @@ const GOAL_CARDS: readonly GoalCard[] = [
 
 export default function WhatItDoesScreen() {
   const router = useRouter();
-  const [selectedGoal, setSelectedGoal] = useState<GoalCard['id'] | null>(null);
-  const [hydrating, setHydrating] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const [saveError, setSaveError] = useState('');
-  const selectedGoalCard = GOAL_CARDS.find((card) => card.id === selectedGoal);
-
-  useEffect(() => {
-    let active = true;
-    void getOnboardingAnswers()
-      .then((answers) => {
-        if (!active) return;
-        const savedGoal = GOAL_CARDS.find(
-          (card) => answers.user_goals === card.label
-        );
-        setSelectedGoal(savedGoal?.id ?? null);
-      })
-      .catch(() => {
-        if (active) setSaveError('We could not load your saved choice.');
-      })
-      .finally(() => {
-        if (active) setHydrating(false);
-      });
-    return () => {
-      active = false;
-    };
-  }, []);
-
-  const handleGoalSelect = (card: GoalCard) => {
-    setSaveError('');
-    setSelectedGoal(card.id);
-  };
-
-  const handleContinue = async () => {
-    if (hydrating || saving || !selectedGoalCard) return;
-
-    setSaving(true);
-    setSaveError('');
-    try {
-      await saveOnboardingAnswers({ user_goals: selectedGoalCard.label });
-      router.push('/select-focus' as any);
-    } catch (err) {
-      console.warn('[what-it-does] Failed to save goal:', err);
-      setSaveError('We could not save that choice. Please try again.');
-    } finally {
-      setSaving(false);
-    }
+  const handleContinue = () => {
+    router.push('/select-focus' as any);
   };
 
   return (
@@ -105,7 +51,7 @@ export default function WhatItDoesScreen() {
 
       {/* Header with Step 3 Active */}
       <OnboardingStepHeader
-        activeColor={GOAL_SELECTION_COLOR}
+        activeColor={PREVIEW_ACCENT_COLOR}
         currentStep={3}
         onBack={() => safeGoBack(router)}
         showBack
@@ -120,75 +66,37 @@ export default function WhatItDoesScreen() {
           </Text>
         </View>
 
-        {/* 3 Selectable Vertical Cards */}
+        {/* Three decorative preview cards */}
         <View style={styles.cardsRow}>
-          {GOAL_CARDS.map((card) => {
-            const isSelected = card.id === selectedGoal;
-
-            return (
-              <Pressable
-                key={card.id}
-                accessibilityRole="radio"
-                accessibilityState={{ selected: isSelected }}
-                disabled={hydrating}
-                onPress={() => handleGoalSelect(card)}
-                style={({ pressed }) => [
-                  styles.cardColumn,
-                  pressed && styles.cardPressed,
-                ]}
-              >
-                <View
-                  style={[
-                    styles.imageCard,
-                    isSelected
-                      ? [
-                          styles.imageCardSelected,
-                          { borderColor: GOAL_SELECTION_COLOR },
-                        ]
-                      : styles.imageCardUnselected,
-                  ]}
-                >
-                  <Image
-                    resizeMode="cover"
-                    source={card.image}
-                    style={styles.cardImage}
-                  />
-
-                  {isSelected && (
-                    <View
-                      style={[
-                        styles.checkBadge,
-                        { backgroundColor: GOAL_SELECTION_COLOR },
-                      ]}>
-                      <Ionicons color="#0B0B0D" name="checkmark" size={13} />
-                    </View>
-                  )}
-                </View>
-                <Text style={styles.cardLabel}>{card.label}</Text>
-              </Pressable>
-            );
-          })}
+          {GOAL_CARDS.map((card) => (
+            <View key={card.id} style={styles.cardColumn}>
+              <View style={[styles.imageCard, styles.imageCardPreview]}>
+                <Image
+                  resizeMode="cover"
+                  source={card.image}
+                  style={styles.cardImage}
+                />
+              </View>
+              <Text style={styles.cardLabel}>{card.label}</Text>
+            </View>
+          ))}
         </View>
 
         {/* Subtitle / Explanatory Text */}
         <View style={styles.copyBlock}>
-          {selectedGoalCard ? (
-            <Text style={styles.subtitle}>{selectedGoalCard.description}</Text>
-          ) : (
-            <Text style={styles.subtitle}>
-            Choose a goal.{'\n'}
+          <Text style={styles.subtitle}>
+            Choose a goal
+          </Text>
+          <Text style={styles.subtitle}>
             Passage shapes the sound around it.
-            </Text>
-          )}
+          </Text>
         </View>
       </View>
 
       {/* Footer Continue Button */}
       <View style={styles.footer}>
-        {saveError ? <Text style={styles.errorText}>{saveError}</Text> : null}
         <OnboardingPillButton
           arrowAtEnd
-          disabled={hydrating || saving || !selectedGoal}
           label="CONTINUE"
           onPress={handleContinue}
           variant="white"
@@ -215,26 +123,11 @@ const styles = StyleSheet.create({
     marginTop: 10,
     textAlign: 'center',
   },
-  cardPressed: {
-    opacity: 0.88,
-  },
   cardsRow: {
     flexDirection: 'row',
     gap: 10,
     marginTop: 20,
     width: '100%',
-  },
-  checkBadge: {
-    alignItems: 'center',
-    backgroundColor: GOAL_SELECTION_COLOR,
-    borderRadius: 10,
-    height: 20,
-    justifyContent: 'center',
-    position: 'absolute',
-    right: 8,
-    top: 8,
-    width: 20,
-    zIndex: 2,
   },
   content: {
     flex: 1,
@@ -252,14 +145,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     paddingTop: 8,
     width: '100%',
-  },
-  errorText: {
-    color: '#D9A39B',
-    fontFamily: AppFonts.sansRegular,
-    fontSize: 12,
-    lineHeight: 17,
-    marginBottom: 8,
-    textAlign: 'center',
   },
   headerBlock: {
     alignItems: 'center',
@@ -281,11 +166,7 @@ const styles = StyleSheet.create({
     position: 'relative',
     width: '100%',
   },
-  imageCardSelected: {
-    borderColor: GOAL_SELECTION_COLOR,
-    borderWidth: 2,
-  },
-  imageCardUnselected: {
+  imageCardPreview: {
     borderColor: 'rgba(255, 255, 255, 0.1)',
     borderWidth: 1,
   },
@@ -294,7 +175,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   subtitle: {
-    color: 'rgba(255, 255, 255, 0.72)',
+    color: '#FFFFFF',
     fontFamily: AppFonts.sansRegular,
     fontSize: 16,
     lineHeight: 24,

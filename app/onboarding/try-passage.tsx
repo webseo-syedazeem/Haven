@@ -2,7 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useQuery } from '@tanstack/react-query';
 import { Image as ArtworkImage } from 'expo-image';
 import { useRouter } from 'expo-router';
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   Image,
@@ -12,6 +12,7 @@ import {
   View,
 } from 'react-native';
 
+import { useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { OnboardingBackButton } from '@/components/onboarding/OnboardingBackButton';
 import { OnboardingContinueButton } from '@/components/onboarding/OnboardingContinueButton';
 import { RelaxContinueButton } from '@/components/onboarding/RelaxContinueButton';
@@ -112,10 +113,14 @@ function SkeletonCard({ accentColor }: { accentColor: string }) {
   );
 }
 
+const VALID_MODES: ModeId[] = ['focus', 'relax', 'sleep'];
+
 export default function TryPassageScreen() {
   const router = useRouter();
-  const [mode, setMode] = useState<ModeId | null>(null);
-  const [modeReady, setModeReady] = useState(false);
+  const { mode: modeParam } = useLocalSearchParams<{ mode?: string }>();
+  const initialMode = VALID_MODES.includes(modeParam as ModeId) ? (modeParam as ModeId) : null;
+  const [mode, setMode] = useState<ModeId | null>(initialMode);
+  const [modeReady, setModeReady] = useState(initialMode !== null);
   const [enteringApp, setEnteringApp] = useState(false);
   const [entryError, setEntryError] = useState('');
   const player = useScopedPlayer();
@@ -124,27 +129,37 @@ export default function TryPassageScreen() {
   const accentColor = ONBOARDING_MODE_ACCENTS[resolvedMode];
   const accentPressedColor = ONBOARDING_MODE_ACCENTS_PRESSED[resolvedMode];
 
+  // Reset loading state when the screen comes back into focus (e.g. back from welcome).
+  useFocusEffect(
+    useCallback(() => {
+      setEnteringApp(false);
+      setEntryError('');
+    }, [])
+  );
+
   const handleBack = () => {
     player.stop();
     safeGoBack(router);
   };
 
   useEffect(() => {
+    if (initialMode !== null) return;
     let active = true;
     void getOnboardingAnswers()
       .then((answers) => {
-        if (active) setMode(answers.mode ?? 'focus');
+        if (!active) return;
+        setMode(answers.mode ?? answers.startingMode ?? 'focus');
+        setModeReady(true);
       })
       .catch(() => {
-        if (active) setMode('focus');
-      })
-      .finally(() => {
-        if (active) setModeReady(true);
+        if (!active) return;
+        setMode('focus');
+        setModeReady(true);
       });
     return () => {
       active = false;
     };
-  }, []);
+  }, [initialMode]);
 
   const preview = useQuery({
     enabled: modeReady,
@@ -403,7 +418,7 @@ export default function TryPassageScreen() {
         </>
       ) : (
         <View style={styles.loadingMode}>
-          <ActivityIndicator color={accentColor} size="small" />
+          <ActivityIndicator color={mode ? accentColor : '#FFFFFF'} size="small" />
           <Text style={styles.loadingModeText}>Preparing your previews...</Text>
         </View>
       )}
@@ -413,9 +428,9 @@ export default function TryPassageScreen() {
 
 const styles = StyleSheet.create({
   brandIcon: {
-    height: 22,
+    height: 38,
     resizeMode: 'contain',
-    width: 38,
+    width: 58,
   },
   brandText: {
     color: HalcyonColors.textPrimary,
@@ -423,7 +438,7 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: '700',
     letterSpacing: -0.3,
-    marginLeft: 9,
+    marginLeft: -9,
   },
   card: {
     alignItems: 'center',
@@ -477,7 +492,7 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   headerBackButton: {
-    left: 20,
+    left: 10,
     position: 'absolute',
     top: 8,
   },

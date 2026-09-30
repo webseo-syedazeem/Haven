@@ -194,11 +194,8 @@ export default function SaveYourSpaceScreen() {
   return (
     <OnboardingScaffold
       contentContainerStyle={styles.content}
-      // Pinned to the very bottom, above the safe-area inset the scaffold applies.
       footer={<AuthLegalFooter />}
-      // No back arrow: someone who picks sign up and then wants to sign in uses
-      // the Sign in link below instead of retracing their steps.
-      >
+      onBack={() => router.back()}>
       <Text style={styles.heading}>Save your space</Text>
       <Text style={styles.body}>
         Create an account to keep your preferences with you.

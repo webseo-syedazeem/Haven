@@ -358,17 +358,18 @@ export default function PlayerScreen() {
       />
 
       <Modal
-        animationType="fade"
+        animationType="slide"
         navigationBarTranslucent
         onRequestClose={() => setMenuVisible(false)}
         statusBarTranslucent
         transparent
         visible={menuVisible}>
-        <Pressable
-          accessibilityLabel="Close menu"
-          onPress={() => setMenuVisible(false)}
-          style={styles.menuBackdrop}
-        />
+        <View style={styles.menuContainer}>
+          <Pressable
+            accessibilityLabel="Close menu"
+            onPress={() => setMenuVisible(false)}
+            style={styles.menuBackdrop}
+          />
         <View style={[styles.menu, { paddingBottom: insets.bottom + 20 }]}>
           <MenuRow
             icon="information-circle-outline"
@@ -402,6 +403,7 @@ export default function PlayerScreen() {
               router.push(`/profile/report-problem?soundscapeId=${soundscape.id}` as Href);
             }}
           />
+        </View>
         </View>
       </Modal>
 
@@ -707,9 +709,13 @@ const styles = StyleSheet.create({
     fontSize: 12,
     lineHeight: 16,
   },
-  menuBackdrop: {
-    backgroundColor: HalcyonModal.backdrop,
+  menuContainer: {
     flex: 1,
+    justifyContent: 'flex-end',
+  },
+  menuBackdrop: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: HalcyonModal.backdrop,
   },
   menu: {
     backgroundColor: HalcyonColors.surface,

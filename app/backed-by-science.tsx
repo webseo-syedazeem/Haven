@@ -133,13 +133,13 @@ export default function BackedByScienceScreen() {
                     </Text>
                     <Text style={styles.labelDesc}>
                       {isSleep
-                        ? 'The sleeping brain still\nnotices sudden change.'
+                        ? 'The sleeping brain\nnotices change.'
                         : 'Attention reacts to\nsudden change.'}
                     </Text>
                   </View>
 
                   <View style={styles.labelCol}>
-                    <Text style={styles.steadierTitle}>A steadier sound field</Text>
+                    <Text style={styles.steadierTitle}>A steadier sound</Text>
                     <Text style={styles.labelDesc}>
                       {isSleep
                         ? 'Steady sound can\nsoften the contrast.'
@@ -184,9 +184,9 @@ const styles = StyleSheet.create({
     zIndex: 0,
   },
   brandIcon: {
-    height: 22,
+    height: 38,
     resizeMode: 'contain',
-    width: 38,
+    width: 58,
   },
   brandText: {
     color: '#FFFFFF',
@@ -194,7 +194,7 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: '700',
     letterSpacing: -0.3,
-    marginLeft: 9,
+    marginLeft: -9,
   },
   contentCenter: {
     alignItems: 'center',

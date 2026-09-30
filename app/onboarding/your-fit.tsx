@@ -76,16 +76,19 @@ function buildFitRows(answers: GuestOnboardingAnswers, mode: ModeId) {
       ? answers.situation.join(' + ')
       : DEFAULT_CHALLENGE[mode] || 'Noise + racing thoughts';
 
-  const rhythmValue =
-    answers.sessionLength
-      ? getTypicalDurationLabel(answers.sessionLength)
-      : '45 minutes';
-
-  return [
+  const rows = [
     { label: mode === 'sleep' ? 'Your moment' : 'Your setting', value: settingValue },
     { label: 'Your challenge', value: challengeValue },
-    { label: 'Your rhythm', value: rhythmValue },
   ];
+
+  if (mode === 'relax') {
+    const rhythmValue = answers.sessionLength
+      ? getTypicalDurationLabel(answers.sessionLength)
+      : '45 minutes';
+    rows.push({ label: 'Your rhythm', value: rhythmValue });
+  }
+
+  return rows;
 }
 
 export default function YourFitScreen() {

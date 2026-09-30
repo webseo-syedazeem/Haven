@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Image, Modal, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Stack, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -7,7 +7,12 @@ import { Ionicons } from '@expo/vector-icons';
 
 import { OnboardingPillButton } from '@/components/onboarding/OnboardingPillButton';
 import { OnboardingStepHeader, PASSAGE_GOLD, PASSAGE_SLEEP } from '@/components/onboarding/OnboardingStepHeader';
-import { RELAX_ACCENT } from '@/constants/design';
+import {
+  HalcyonColors,
+  HalcyonModal,
+  HalcyonRadius,
+  RELAX_ACCENT,
+} from '@/constants/design';
 import { AppFonts } from '@/constants/theme';
 import { safeGoBack } from '@/lib/navigation';
 import {
@@ -55,12 +60,19 @@ const OPTIONS: readonly FocusOption[] = [
   },
 ] as const;
 
+function accentForMode(mode: FocusOption['mode'] | undefined): string {
+  if (mode === 'relax') return RELAX_ACCENT;
+  if (mode === 'sleep') return PASSAGE_SLEEP;
+  return PASSAGE_GOLD;
+}
+
 export default function SelectFocusScreen() {
   const router = useRouter();
   const [selectedId, setSelectedId] = useState<FocusOption['id'] | null>(null);
   const [hydrating, setHydrating] = useState(true);
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState('');
+  const [modalVisible, setModalVisible] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -89,19 +101,28 @@ export default function SelectFocusScreen() {
           ? PASSAGE_GOLD
           : '#FFFFFF';
 
+  const otherOptions = OPTIONS.filter((item) => item.id !== selectedId);
+
   const handleOptionSelect = (option: FocusOption) => {
     setSaveError('');
     setSelectedId(option.id);
   };
 
-  const handleContinue = async () => {
+  // Opens confirmation modal — no navigation yet.
+  const handleContinue = () => {
     if (hydrating || saving || !selectedOption) return;
+    setSaveError('');
+    setModalVisible(true);
+  };
+
+  // Called from inside the modal — saves and navigates.
+  const handleConfirm = async () => {
+    if (!selectedOption) return;
     setSaving(true);
     setSaveError('');
+    setModalVisible(false);
     try {
-      await saveOnboardingAnswers({
-        mode: selectedOption.mode,
-      });
+      await saveOnboardingAnswers({ mode: selectedOption.mode });
       router.push(
         selectedOption.mode === 'relax'
           ? '/stress-intro-1'
@@ -113,6 +134,13 @@ export default function SelectFocusScreen() {
     } finally {
       setSaving(false);
     }
+  };
+
+  // Switches mode from inside the modal and returns to tile screen.
+  const handleSwitchMode = (option: FocusOption) => {
+    setModalVisible(false);
+    setSaveError('');
+    setSelectedId(option.id);
   };
 
   return (
@@ -133,7 +161,7 @@ export default function SelectFocusScreen() {
         {/* Heading */}
         <View style={styles.headerBlock}>
           <Text style={styles.heading}>
-            What would you{'\n'}like help with?
+            What would you{'\n'}like help with most?
           </Text>
         </View>
 
@@ -219,6 +247,103 @@ export default function SelectFocusScreen() {
           }
         />
       </View>
+
+      {/* ── Confirmation modal ── */}
+      <Modal
+        animationType="fade"
+        navigationBarTranslucent
+        onRequestClose={() => setModalVisible(false)}
+        statusBarTranslucent
+        transparent
+        visible={modalVisible}>
+        <View style={styles.modalOverlay}>
+          {/* Tap backdrop to dismiss without changing selection */}
+          <Pressable
+            accessibilityLabel="Close"
+            onPress={() => setModalVisible(false)}
+            style={StyleSheet.absoluteFill}
+          />
+
+          <View accessibilityViewIsModal style={styles.modalCard}>
+            {/* X close button */}
+            <Pressable
+              accessibilityLabel="Close"
+              accessibilityRole="button"
+              hitSlop={10}
+              onPress={() => setModalVisible(false)}
+              style={({ pressed }) => [styles.modalClose, pressed && styles.pressed]}>
+              <Ionicons color={HalcyonColors.textSecondary} name="close" size={19} />
+            </Pressable>
+
+            {/* Mode icon ring */}
+            <View style={[styles.modalIconRing, { borderColor: selectedAccent }]}>
+              <Ionicons
+                color={selectedAccent}
+                name={
+                  selectedOption?.mode === 'sleep'
+                    ? 'moon-outline'
+                    : selectedOption?.mode === 'relax'
+                      ? 'leaf-outline'
+                      : 'flash-outline'
+                }
+                size={26}
+              />
+            </View>
+
+            <Text style={styles.modalTitle}>
+              You've chosen {selectedOption?.label}
+            </Text>
+            <Text style={styles.modalMessage}>
+              {`We'll customise Passage around ${selectedOption?.label ?? 'your mode'}, but you can still explore the other areas anytime.`}
+            </Text>
+
+            {/* Primary confirm button */}
+            <Pressable
+              accessibilityLabel={`Continue with ${selectedOption?.label}`}
+              accessibilityRole="button"
+              onPress={handleConfirm}
+              style={({ pressed }) => [
+                styles.modalConfirm,
+                { backgroundColor: selectedAccent },
+                pressed && styles.pressed,
+              ]}>
+              <Text style={styles.modalConfirmLabel}>
+                Continue with {selectedOption?.label}
+              </Text>
+            </Pressable>
+
+            {/* Switch-mode tiles for the other two options */}
+            <Text style={styles.modalSwitchHeading}>Or explore a different area</Text>
+            <View style={styles.modalSwitchRow}>
+              {otherOptions.map((option) => {
+                const tileAccent = accentForMode(option.mode);
+                return (
+                  <Pressable
+                    key={option.id}
+                    accessibilityLabel={`Switch to ${option.label}`}
+                    accessibilityRole="button"
+                    onPress={() => handleSwitchMode(option)}
+                    style={({ pressed }) => [
+                      styles.modalSwitchTile,
+                      { borderColor: tileAccent },
+                      pressed && styles.pressed,
+                    ]}>
+                    <Image
+                      resizeMode="cover"
+                      source={option.image}
+                      style={styles.modalSwitchImage}
+                    />
+                    <View style={styles.modalSwitchScrim} />
+                    <Text style={[styles.modalSwitchLabel, { color: tileAccent }]}>
+                      {option.label}
+                    </Text>
+                  </Pressable>
+                );
+              })}
+            </View>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -292,7 +417,7 @@ const styles = StyleSheet.create({
   },
   headerBlock: {
     alignItems: 'center',
-    paddingTop: 8,
+    paddingTop: 2,
     width: '100%',
   },
   heading: {
@@ -324,5 +449,119 @@ const styles = StyleSheet.create({
   safeArea: {
     backgroundColor: '#0B0B0D',
     flex: 1,
+  },
+  // ── Modal ──
+  modalOverlay: {
+    alignItems: 'center',
+    backgroundColor: HalcyonModal.backdrop,
+    flex: 1,
+    justifyContent: 'center',
+    paddingHorizontal: 26,
+  },
+  modalCard: {
+    alignItems: 'center',
+    backgroundColor: HalcyonColors.surface,
+    borderColor: HalcyonColors.border,
+    borderRadius: HalcyonRadius.card,
+    borderWidth: 1,
+    maxWidth: 360,
+    paddingBottom: 24,
+    paddingHorizontal: 24,
+    paddingTop: 44,
+    width: '100%',
+  },
+  modalClose: {
+    alignItems: 'center',
+    height: 32,
+    justifyContent: 'center',
+    position: 'absolute',
+    right: 10,
+    top: 10,
+    width: 32,
+  },
+  modalIconRing: {
+    alignItems: 'center',
+    borderRadius: 28,
+    borderWidth: 1,
+    height: 56,
+    justifyContent: 'center',
+    marginBottom: 16,
+    width: 56,
+  },
+  modalTitle: {
+    color: HalcyonColors.textPrimary,
+    fontFamily: AppFonts.sansSemiBold,
+    fontSize: 18,
+    fontWeight: '600',
+    lineHeight: 24,
+    paddingHorizontal: 12,
+    textAlign: 'center',
+  },
+  modalMessage: {
+    color: HalcyonColors.textSecondary,
+    fontFamily: AppFonts.sansRegular,
+    fontSize: 14,
+    lineHeight: 21,
+    marginBottom: 26,
+    marginTop: 8,
+    maxWidth: 280,
+    textAlign: 'center',
+  },
+  modalConfirm: {
+    alignItems: 'center',
+    borderRadius: HalcyonRadius.pill,
+    justifyContent: 'center',
+    minHeight: 48,
+    width: '100%',
+  },
+  modalConfirmLabel: {
+    color: '#0B0B0D',
+    fontFamily: AppFonts.sansSemiBold,
+    fontSize: 15,
+    fontWeight: '600',
+    lineHeight: 22,
+  },
+  modalSwitchHeading: {
+    color: 'rgba(255,255,255,0.45)',
+    fontFamily: AppFonts.sansRegular,
+    fontSize: 12,
+    letterSpacing: 0.4,
+    marginBottom: 10,
+    marginTop: 20,
+    textAlign: 'center',
+  },
+  modalSwitchRow: {
+    flexDirection: 'row',
+    gap: 12,
+    width: '100%',
+  },
+  modalSwitchTile: {
+    borderRadius: 10,
+    borderWidth: 1,
+    flex: 1,
+    height: 72,
+    overflow: 'hidden',
+    position: 'relative',
+  },
+  modalSwitchImage: {
+    height: '100%',
+    width: '100%',
+  },
+  modalSwitchScrim: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(11,11,13,0.38)',
+  },
+  modalSwitchLabel: {
+    bottom: 8,
+    fontFamily: AppFonts.sansSemiBold,
+    fontSize: 13,
+    fontWeight: '600',
+    left: 0,
+    position: 'absolute',
+    right: 0,
+    textAlign: 'center',
+  },
+  pressed: {
+    opacity: 0.8,
   },
 });

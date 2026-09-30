@@ -28,6 +28,7 @@ import {
   type AuthFieldErrors,
 } from '@/lib/auth/form-errors';
 import { routeAfterSignIn } from '@/lib/auth/onboarding-routing';
+import { clearIntroSeen } from '@/lib/auth/intro-flag';
 import { resetToMainApp, safeGoBack } from '@/lib/navigation';
 
 const appleIcon = require('@/assets/icons/apple icon.png');
@@ -35,40 +36,34 @@ const googleIcon = require('@/assets/icons/google icon.png');
 
 export default function LoginScreen() {
   const router = useRouter();
-  const { signedOut, launch, from } = useLocalSearchParams<{
+  const { signedOut, from } = useLocalSearchParams<{
     signedOut?: string;
-    launch?: string;
     from?: string;
   }>();
-  // A user who just signed out has to sign back in or sign up — there is
-  // nothing behind this screen worth going back to.
-  // Opened straight from the first screen (or as the launch landing): nothing
-  // meaningful is behind it, so back leaves the app.
-  const isLaunchLanding = launch === '1' || from === 'intro' || signedOut === '1';
-  const canGoBack = !isLaunchLanding;
+  const isFromIntro = from === 'intro';
+  const isSignedOut = signedOut === '1';
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [passwordVisible, setPasswordVisible] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
   const [fieldErrors, setFieldErrors] = useState<AuthFieldErrors>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
-  // Back returns to whichever screen opened Login (Arrival, or Save your space),
-  // never to the start of onboarding.
-  const goBack = useCallback(() => safeGoBack(router), [router]);
+
+  const goBack = useCallback(() => {
+    if (isFromIntro || isSignedOut) {
+      void clearIntroSeen().then(() => router.replace('/'));
+    } else {
+      safeGoBack(router);
+    }
+  }, [isFromIntro, isSignedOut, router]);
 
   useFocusEffect(useCallback(() => {
     const subscription = BackHandler.addEventListener('hardwareBackPress', () => {
-      // The launch landing has nothing behind it, so back leaves the app.
-      if (isLaunchLanding) {
-        BackHandler.exitApp();
-        return true;
-      }
-      if (!canGoBack) return true;
       goBack();
       return true;
     });
     return () => subscription.remove();
-  }, [canGoBack, goBack, isLaunchLanding]));
+  }, [goBack]));
 
   const finishAuthentication = async () => {
     await routeAfterSignIn(router);
@@ -165,8 +160,8 @@ export default function LoginScreen() {
       style={styles.keyboardView}>
       <OnboardingScaffold
         contentContainerStyle={styles.scrollContent}
-        // No on-screen back arrow; the hardware back button is handled above.
-        footer={<AuthLegalFooter />}>
+        footer={<AuthLegalFooter />}
+        onBack={goBack}>
         <View style={styles.content}>
         <Text style={styles.heading}>Welcome back</Text>
         <Text style={styles.subtitle}>Sign in to continue your journey.</Text>

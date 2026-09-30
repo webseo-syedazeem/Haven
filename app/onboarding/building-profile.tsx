@@ -9,6 +9,7 @@ import { PassageLogo } from '@/components/onboarding/PassageLogo';
 import { HalcyonColors } from '@/constants/design';
 import { AppFonts } from '@/constants/theme';
 import {
+  getOnboardingAnswers,
   getOnboardingRecommendations,
   getOnboardingRecommendationsQueryKey,
 } from '@/lib/onboarding';
@@ -54,8 +55,10 @@ export default function BuildingProfileScreen() {
       setTimeout(() => resolve(null), MAXIMUM_RECOMMENDATION_WAIT_MS);
     });
 
-    void Promise.all([delay, Promise.race([prefetch, maximumWait])]).then(() => {
-      if (active) router.replace('/onboarding/try-passage' as Href);
+    void Promise.all([delay, Promise.race([prefetch, maximumWait]), getOnboardingAnswers()]).then(([, , answers]) => {
+      if (!active) return;
+      const mode = answers.mode ?? answers.startingMode ?? 'focus';
+      router.replace(`/onboarding/try-passage?mode=${mode}` as Href);
     });
 
     return () => {

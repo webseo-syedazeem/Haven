@@ -106,18 +106,19 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: '700',
     letterSpacing: -0.3,
-    marginLeft: 9,
+    marginLeft: -9,
   },
   container: {
-    paddingHorizontal: 24,
+    paddingLeft: 12,
+    paddingRight: 24,
     paddingTop: 8,
     paddingBottom: 12,
     width: '100%',
   },
   iconMark: {
-    height: 22,
+    height: 38,
     resizeMode: 'contain',
-    width: 38,
+    width: 58,
   },
   inactiveSegment: {
     backgroundColor: 'rgba(255, 255, 255, 0.22)',

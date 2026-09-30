@@ -46,16 +46,11 @@ export function OnboardingBackButton({
 const styles = StyleSheet.create({
   button: {
     alignItems: 'center',
-    backgroundColor: 'rgba(11, 11, 13, 0.42)',
-    borderColor: 'rgba(255, 255, 255, 0.2)',
-    borderRadius: RELAX_ONBOARDING.header.backButtonSize / 2,
-    borderWidth: 1,
     height: RELAX_ONBOARDING.header.backButtonSize,
     justifyContent: 'center',
     width: RELAX_ONBOARDING.header.backButtonSize,
   },
   pressed: {
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
-    opacity: 0.78,
+    opacity: 0.6,
   },
 });

@@ -63,7 +63,7 @@ export default function ResetPasswordScreen() {
     <KeyboardAvoidingView
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       style={styles.keyboardView}>
-      <OnboardingScaffold contentContainerStyle={styles.scrollContent} footer={<AuthLegalFooter />}>
+      <OnboardingScaffold contentContainerStyle={styles.scrollContent} footer={<AuthLegalFooter />} onBack={() => safeGoBack(router, '/login')}>
         <View style={styles.content}>
           <Text style={styles.heading}>Reset your password</Text>
           <Text style={styles.description}>

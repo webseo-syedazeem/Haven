@@ -26,14 +26,13 @@ import { queryClient } from '@/lib/query-client';
  */
 export type GuestOnboardingAnswers = {
   mode: ModeId | null;
-  user_goals: string | null;
   mode_breakers: string[];
   mode_areas: string[];
   target_minutes: number | null;
   main_goal: string | null;
   relax_causes: string[];
   calming_moments: string | null;
-  /** @deprecated Compatibility alias for user_goals. */
+  /** @deprecated Legacy goal answers retained for old local data only. */
   goals: string[];
   /** @deprecated Compatibility alias for mode. */
   startingMode: ModeId | null;
@@ -59,7 +58,6 @@ export type GuestOnboardingAnswersPatch = Partial<GuestOnboardingAnswers>;
 export type OnboardingAnswersPayload = Pick<
   GuestOnboardingAnswers,
   | 'mode'
-  | 'user_goals'
   | 'mode_breakers'
   | 'mode_areas'
   | 'target_minutes'
@@ -71,7 +69,6 @@ export type OnboardingAnswersPayload = Pick<
 export type ModeScopedOnboardingPayload =
   | {
       mode: 'focus' | 'sleep';
-      user_goals: string;
       mode_breakers: string[];
       mode_areas: string[];
       // Optional: not sent when DURATION_STEP_ENABLED is false (no 1-hour variant yet).
@@ -79,7 +76,6 @@ export type ModeScopedOnboardingPayload =
     }
   | {
       mode: 'relax';
-      user_goals: string;
       main_goal: string;
       relax_causes: string[];
       calming_moments: string;
@@ -92,7 +88,6 @@ export type GuestOnboardingStatus = {
 };
 
 export type IncompleteOnboardingRoute =
-  | '/what-it-does'
   | '/select-focus'
   | '/onboarding/situation'
   | '/onboarding/personalise'
@@ -108,7 +103,6 @@ export type OnboardingResumeRoute =
 
 export const DEFAULT_GUEST_ONBOARDING_ANSWERS: GuestOnboardingAnswers = {
   mode: null,
-  user_goals: null,
   mode_breakers: [],
   mode_areas: [],
   target_minutes: null,
@@ -155,9 +149,6 @@ function canonicalPatch(
   if (next.mode === undefined && next.startingMode !== undefined) {
     next.mode = next.startingMode;
   }
-  if (next.user_goals === undefined && next.goals !== undefined) {
-    next.user_goals = next.goals[0] ?? null;
-  }
   if (next.mode_breakers === undefined && next.situation !== undefined) {
     next.mode_breakers = next.situation;
   }
@@ -183,7 +174,6 @@ function canonicalPatch(
 function toStoredAnswers(answers: GuestOnboardingAnswers): OnboardingAnswersPayload {
   return {
     mode: answers.mode,
-    user_goals: answers.user_goals,
     mode_breakers: answers.mode_breakers,
     mode_areas: answers.mode_areas,
     target_minutes: answers.target_minutes,
@@ -197,14 +187,13 @@ export function toModeScopedOnboardingPayload(
   answers: GuestOnboardingAnswers
 ): ModeScopedOnboardingPayload {
   const value = normaliseAnswers(answers);
-  if (!isGuestOnboardingReady(value) || !value.mode || !value.user_goals) {
+  if (!isGuestOnboardingReady(value) || !value.mode) {
     throw new Error('Complete each personalisation step before finishing onboarding.');
   }
 
   if (value.mode === 'relax') {
     return {
       mode: value.mode,
-      user_goals: value.user_goals,
       main_goal: value.main_goal!,
       relax_causes: value.relax_causes,
       calming_moments: value.calming_moments!,
@@ -213,7 +202,6 @@ export function toModeScopedOnboardingPayload(
 
   return {
     mode: value.mode,
-    user_goals: value.user_goals,
     mode_breakers: value.mode_breakers,
     mode_areas: value.mode_areas,
     ...(value.target_minutes !== null ? { target_minutes: value.target_minutes } : {}),
@@ -230,7 +218,6 @@ export const GUEST_ONBOARDING_STORAGE_KEYS = {
 
 const MODES: readonly ModeId[] = ['sleep', 'relax', 'focus'];
 const DETAIL_PREFERENCES: readonly DetailPreference[] = ['minimal', 'balanced', 'rich'];
-const MAX_GOALS = 5;
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
@@ -279,10 +266,7 @@ function normaliseAnswers(value: unknown): GuestOnboardingAnswers {
   const mode = MODES.includes(rawMode as ModeId)
     ? (rawMode as ModeId)
     : null;
-  const legacyGoals = cleanStringList(row.goals).slice(0, MAX_GOALS);
-  const userGoals = hasOwn(row, 'user_goals')
-    ? cleanOptionalString(row.user_goals)
-    : legacyGoals[0] ?? null;
+  const legacyGoals = cleanStringList(row.goals).slice(0, 5);
   const modeBreakers = hasOwn(row, 'mode_breakers')
     ? cleanStringList(row.mode_breakers)
     : cleanStringList(row.situation);
@@ -309,14 +293,13 @@ function normaliseAnswers(value: unknown): GuestOnboardingAnswers {
 
   return {
     mode,
-    user_goals: userGoals,
     mode_breakers: modeBreakers,
     mode_areas: modeAreas,
     target_minutes: targetMinutes,
     main_goal: mainGoal,
     relax_causes: relaxCauses,
     calming_moments: calmingMoments,
-    goals: userGoals ? [userGoals] : [],
+    goals: legacyGoals,
     startingMode: mode,
     mainGoal,
     relaxCauses,
@@ -353,8 +336,7 @@ export function isGuestOnboardingReady(
 export function hasOnboardingProgress(answers: GuestOnboardingAnswers): boolean {
   const value = normaliseAnswers(answers);
   return Boolean(
-    value.user_goals ||
-      value.mode ||
+    value.mode ||
       value.mode_breakers.length ||
       value.mode_areas.length ||
       value.target_minutes !== null ||
@@ -366,7 +348,7 @@ export function hasOnboardingProgress(answers: GuestOnboardingAnswers): boolean 
 
 /**
  * Returns the next screen in the real data-collection order. The first two
- * answers are goal then mode; after that each mode follows its own branch.
+ * answers begin with mode; after that each mode follows its own branch.
  * Informational screens are not persisted, so a complete answer set resumes
  * at the first screen immediately after that branch's final question.
  */
@@ -376,7 +358,6 @@ export function getOnboardingResumeRoute(
   const value = normaliseAnswers(answers);
 
   if (!hasOnboardingProgress(value)) return '/why-passage';
-  if (!value.user_goals) return '/what-it-does';
   if (!value.mode) return '/select-focus';
 
   if (value.mode === 'relax') {
@@ -396,7 +377,6 @@ export function getOnboardingResumeRoute(
 export function getIncompleteOnboardingRoute(
   answers: GuestOnboardingAnswers
 ): IncompleteOnboardingRoute | null {
-  if (!answers.user_goals) return '/what-it-does';
   if (!answers.mode) return '/select-focus';
 
   if (answers.mode === 'relax') {

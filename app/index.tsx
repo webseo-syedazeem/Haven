@@ -253,7 +253,7 @@ function LaunchLoadingScreen() {
 
 const styles = StyleSheet.create({
   actionBlock: {
-    paddingTop: 28,
+    paddingTop: 34,
     width: '100%',
   },
   bottomBlock: {

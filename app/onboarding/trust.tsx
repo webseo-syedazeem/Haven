@@ -141,14 +141,14 @@ export default function TrustScreen() {
       ]}>
       <OnboardingBackButton
         onPress={() => safeGoBack(router)}
-        style={[styles.headerBackButton, { top: Math.max(4, scale(10)) }]}
+        style={styles.headerBackButton}
       />
       <View style={[styles.brandRow, { height: Math.max(30, scale(40)) }]}>
         <Image
           source={brandIcon}
           style={[
             styles.brandIcon,
-            { height: Math.max(18, scale(22)), width: Math.max(31, scale(38)) },
+            { height: Math.max(28, scale(38)), width: Math.max(44, scale(58)) },
           ]}
         />
         <Text
@@ -156,7 +156,7 @@ export default function TrustScreen() {
             styles.brandText,
             {
               fontSize: Math.max(17, scale(20)),
-              marginLeft: Math.max(7, scale(9)),
+              marginLeft: -9,
             },
           ]}>
           Passage
@@ -200,7 +200,7 @@ export default function TrustScreen() {
           <OnboardingContinueButton
             disabled={!copy}
             label="Preview the soundscapes"
-            onPress={() => router.push('/onboarding/try-passage' as Href)}
+            onPress={() => router.push(`/onboarding/try-passage?mode=${mode ?? 'focus'}` as Href)}
             showArrow
             style={{ minHeight: Math.max(44, scale(60)) }}
             variant={isSleep ? 'lavender' : 'amber'}
@@ -388,9 +388,9 @@ const styles = StyleSheet.create({
     width: 68,
   },
   brandIcon: {
-    height: 22,
+    height: 38,
     resizeMode: 'contain',
-    width: 38,
+    width: 58,
   },
   brandRow: {
     alignItems: 'center',
@@ -404,7 +404,7 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: '700',
     letterSpacing: -0.3,
-    marginLeft: 9,
+    marginLeft: -9,
   },
   card: {
     alignItems: 'center',
@@ -514,9 +514,9 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   headerBackButton: {
-    left: 20,
+    left: 10,
     position: 'absolute',
-    top: 10,
+    top: 8,
     zIndex: 2,
   },
   headerCentered: {

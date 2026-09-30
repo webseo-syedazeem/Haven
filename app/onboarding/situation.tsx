@@ -223,9 +223,9 @@ const styles = StyleSheet.create({
     zIndex: 0,
   },
   brandIcon: {
-    height: 22,
+    height: 38,
     resizeMode: 'contain',
-    width: 38,
+    width: 58,
   },
   brandText: {
     color: '#FFFFFF',
@@ -233,7 +233,7 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: '700',
     letterSpacing: -0.3,
-    marginLeft: 9,
+    marginLeft: -9,
   },
   checkCircle: {
     alignItems: 'center',

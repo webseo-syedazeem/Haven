@@ -130,9 +130,9 @@ const styles = StyleSheet.create({
     zIndex: 1,
   },
   brandIcon: {
-    height: 22,
+    height: 38,
     resizeMode: 'contain',
-    width: 38,
+    width: 58,
   },
   brandText: {
     color: HalcyonColors.textPrimary,
@@ -140,7 +140,7 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: '700',
     letterSpacing: -0.3,
-    marginLeft: 9,
+    marginLeft: -9,
   },
   fixedContent: {
     flex: 1,
@@ -157,7 +157,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     minHeight: 52,
-    paddingHorizontal: 20,
+    paddingLeft: 10,
+    paddingRight: 20,
     position: 'relative',
     width: '100%',
   },

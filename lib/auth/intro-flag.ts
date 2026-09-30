@@ -18,3 +18,11 @@ export async function hasSeenIntro(): Promise<boolean> {
     return false;
   }
 }
+
+export async function clearIntroSeen(): Promise<void> {
+  try {
+    await AsyncStorage.removeItem(INTRO_STORAGE_KEY);
+  } catch {
+    // Best effort.
+  }
+}
