@@ -12,9 +12,6 @@
       "supportsTablet": true,
       "bundleIdentifier": "com.happycheeksltd.halcyon",
       "infoPlist": {
-        "NSAppTransportSecurity": {
-          "NSAllowsArbitraryLoads": true
-        },
         "ITSAppUsesNonExemptEncryption": false,
         "UIBackgroundModes": [
           "audio"
@@ -113,7 +110,7 @@
     },
     "extra": {
       "eas": {
-        "projectId": "3b41b9a5-628e-4163-8bce-a78d7e9fe44f"
+        "projectId": "7c3de45f-9321-49af-a1e8-7e69d554ec37"
       }
     }
   }

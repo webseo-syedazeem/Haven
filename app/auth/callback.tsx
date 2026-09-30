@@ -6,7 +6,9 @@ import * as WebBrowser from 'expo-web-browser';
 import { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
 
-import { HalcyonColors } from '@/constants/design';
+import { OnboardingContinueButton } from '@/components/onboarding/OnboardingContinueButton';
+import { OnboardingScaffold } from '@/components/onboarding/OnboardingScaffold';
+import { HalcyonColors, Typography } from '@/constants/design';
 import { AppFonts } from '@/constants/theme';
 import {
   completeSupabaseAuth,
@@ -179,7 +181,10 @@ function isSignupCallback(values: CallbackValues, session: Session): boolean {
 
 export default function AuthCallback() {
   const router = useRouter();
-  const currentUrl = Linking.useURL();
+  // Unlike the deprecated useURL(), this reads Expo's retained native linking
+  // URL synchronously. That matters when the app is already open: Expo Router
+  // can mount this route after the one-shot React Native URL event has fired.
+  const currentUrl = Linking.useLinkingURL();
   const mountedRef = useRef(true);
   const processingUrlRef = useRef<string | null>(null);
   const runIdRef = useRef(0);
@@ -208,7 +213,7 @@ export default function AuthCallback() {
             'The confirmation link could not be read in time.'
           ));
       } catch (error) {
-        // useURL() may already have given a second effect ownership of the URL.
+        // useLinkingURL() may already have given a second effect ownership of the URL.
         if (!mountedRef.current || processingUrlRef.current) return;
         setErrorMessage(
           error instanceof Error ? error.message : 'The confirmation link could not be read.'
@@ -225,7 +230,7 @@ export default function AuthCallback() {
         return;
       }
 
-      // On a cold launch, getInitialURL() and useURL() commonly yield the same
+      // On a cold launch, getInitialURL() and useLinkingURL() can yield the same
       // URL in adjacent renders. The first claimant must stay alive; cancelling
       // it and skipping the duplicate was the permanent-spinner race.
       if (processingUrlRef.current === url) return;
@@ -348,103 +353,95 @@ export default function AuthCallback() {
   };
 
   return (
-    <View style={styles.screen}>
+    <OnboardingScaffold contentContainerStyle={styles.content} scroll={false}>
       {isLoading ? (
         <ActivityIndicator color={HalcyonColors.accent} size={'large'} />
       ) : errorMessage ? (
-        <View style={styles.errorCard}>
-          <Text style={styles.errorTitle}>We couldn&apos;t confirm that link</Text>
-          <Text style={styles.errorBody}>{errorMessage}</Text>
+        <>
+          <Text style={styles.heading}>We couldn&apos;t confirm that link</Text>
+          <Text accessibilityLiveRegion={'polite'} style={styles.body}>{errorMessage}</Text>
+          <View style={styles.actions}>
+            <OnboardingContinueButton
+              label={'Try again'}
+              onPress={retry}
+              style={styles.primaryButton}
+            />
+          </View>
           <Pressable
-            accessibilityRole={'button'}
-            onPress={retry}
-            style={({ pressed }) => [styles.errorButton, pressed && styles.pressed]}>
-            <Text style={styles.errorButtonLabel}>Try again</Text>
-          </Pressable>
-          <Pressable
-            accessibilityRole={'button'}
+            accessibilityRole={'link'}
+            hitSlop={8}
             onPress={() => router.replace('/login')}
-            style={({ pressed }) => [styles.secondaryButton, pressed && styles.pressed]}>
-            <Text style={styles.secondaryButtonLabel}>Return to sign in</Text>
+            style={({ pressed }) => [styles.signInButton, pressed && styles.pressed]}>
+            <Text style={styles.signInLink}>Return to sign in</Text>
           </Pressable>
-        </View>
+        </>
       ) : navigationFallback ? (
-        <View style={styles.errorCard}>
-          <Text style={styles.errorTitle}>Ready to continue</Text>
-          <Text style={styles.errorBody}>{navigationFallback.body}</Text>
-          <Pressable
-            accessibilityRole={'button'}
-            onPress={() => router.replace(navigationFallback.destination)}
-            style={({ pressed }) => [styles.errorButton, pressed && styles.pressed]}>
-            <Text style={styles.errorButtonLabel}>Continue</Text>
-          </Pressable>
-        </View>
+        <>
+          <Text style={styles.heading}>Ready to continue</Text>
+          <Text style={styles.body}>{navigationFallback.body}</Text>
+          <View style={styles.actions}>
+            <OnboardingContinueButton
+              label={'Continue'}
+              onPress={() => router.replace(navigationFallback.destination)}
+              style={styles.primaryButton}
+            />
+          </View>
+        </>
       ) : (
-        <View style={styles.errorCard}>
-          <Text style={styles.errorTitle}>We couldn&apos;t confirm that link</Text>
-          <Text style={styles.errorBody}>Please return to sign in and try again.</Text>
-          <Pressable
-            accessibilityRole={'button'}
-            onPress={() => router.replace('/login')}
-            style={({ pressed }) => [styles.errorButton, pressed && styles.pressed]}>
-            <Text style={styles.errorButtonLabel}>Return to sign in</Text>
-          </Pressable>
-        </View>
+        <>
+          <Text style={styles.heading}>We couldn&apos;t confirm that link</Text>
+          <Text style={styles.body}>Please return to sign in and try again.</Text>
+          <View style={styles.actions}>
+            <OnboardingContinueButton
+              label={'Return to sign in'}
+              onPress={() => router.replace('/login')}
+              style={styles.primaryButton}
+            />
+          </View>
+        </>
       )}
-    </View>
+    </OnboardingScaffold>
   );
 }
 
 const styles = StyleSheet.create({
-  errorBody: {
+  actions: {
+    marginTop: 30,
+    maxWidth: 440,
+    width: '100%',
+  },
+  body: {
+    ...Typography.body,
     color: HalcyonColors.textSecondary,
-    fontFamily: AppFonts.sansRegular,
-    fontSize: 13,
-    lineHeight: 20,
-    marginTop: 8,
+    marginTop: 10,
+    maxWidth: 350,
     textAlign: 'center',
   },
-  errorButton: {
-    borderColor: HalcyonColors.border,
-    borderRadius: 18,
-    borderWidth: 1,
-    marginTop: 22,
-    paddingHorizontal: 20,
-    paddingVertical: 12,
-  },
-  errorButtonLabel: {
-    color: HalcyonColors.accent,
-    fontFamily: AppFonts.sansMedium,
-    fontSize: 13,
-    fontWeight: '500',
-  },
-  errorCard: {
+  content: {
     alignItems: 'center',
-    maxWidth: 330,
-    paddingHorizontal: 20,
+    justifyContent: 'center',
+    paddingBottom: 30,
   },
-  errorTitle: {
+  heading: {
+    ...Typography.screenHeading,
     color: HalcyonColors.textPrimary,
-    fontFamily: AppFonts.displayRegular,
-    fontSize: 29,
-    lineHeight: 34,
+    maxWidth: 440,
     textAlign: 'center',
   },
   pressed: { opacity: 0.7 },
-  screen: {
+  primaryButton: {
+    width: '100%',
+  },
+  signInButton: {
     alignItems: 'center',
-    backgroundColor: HalcyonColors.background,
-    flex: 1,
-    justifyContent: 'center',
+    marginTop: 20,
+    paddingVertical: 6,
   },
-  secondaryButton: {
-    marginTop: 8,
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-  },
-  secondaryButtonLabel: {
-    color: HalcyonColors.textSecondary,
-    fontFamily: AppFonts.sansRegular,
-    fontSize: 13,
+  signInLink: {
+    color: HalcyonColors.accent,
+    fontFamily: AppFonts.sansSemiBold,
+    fontSize: 15,
+    fontWeight: '600',
+    lineHeight: 22,
   },
 });

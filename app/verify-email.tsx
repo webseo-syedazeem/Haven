@@ -1,9 +1,10 @@
 import type { Session } from '@supabase/supabase-js';
+import { useIsFocused } from '@react-navigation/native';
 import * as Linking from 'expo-linking';
 import type { Href } from 'expo-router';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { AppState, Platform, Pressable, StyleSheet, Text } from 'react-native';
+import { Platform, Pressable, StyleSheet, Text } from 'react-native';
 
 import { OnboardingContinueButton } from '@/components/onboarding/OnboardingContinueButton';
 import { OnboardingScaffold } from '@/components/onboarding/OnboardingScaffold';
@@ -17,7 +18,6 @@ import {
 import { supabase } from '@/lib/supabase';
 
 const RESEND_COOLDOWN_SECONDS = 30;
-const SESSION_POLL_MS = 4000;
 
 function firstParam(value: string | string[] | undefined): string {
   return Array.isArray(value) ? value[0] ?? '' : value ?? '';
@@ -25,6 +25,9 @@ function firstParam(value: string | string[] | undefined): string {
 
 export default function VerifyEmailScreen() {
   const router = useRouter();
+  const isFocused = useIsFocused();
+  const isFocusedRef = useRef(isFocused);
+  isFocusedRef.current = isFocused;
   const params = useLocalSearchParams<{ email?: string | string[] }>();
   const email = firstParam(params.email).trim().toLowerCase();
   const [cooldown, setCooldown] = useState(RESEND_COOLDOWN_SECONDS);
@@ -42,6 +45,7 @@ export default function VerifyEmailScreen() {
         sessionEmail !== email ||
         !hasEmailIdentity(session.user) ||
         !isEmailConfirmed(session.user) ||
+        !isFocusedRef.current ||
         finalisingRef.current
       ) {
         return;
@@ -74,25 +78,18 @@ export default function VerifyEmailScreen() {
   }, []);
 
   useEffect(() => {
-    void checkSession();
-    const poll = setInterval(() => void checkSession(), SESSION_POLL_MS);
-    const appStateSubscription = AppState.addEventListener('change', (state) => {
-      if (state === 'active') void checkSession();
-    });
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (session && isEmailConfirmed(session.user)) {
-        setTimeout(() => void acceptConfirmedSession(session), 0);
-      }
-    });
-
     return () => {
-      clearInterval(poll);
-      appStateSubscription.remove();
-      subscription.unsubscribe();
+      isFocusedRef.current = false;
     };
-  }, [acceptConfirmedSession, checkSession]);
+  }, []);
+
+  useEffect(() => {
+    void checkSession();
+    // The auth callback route exclusively owns deep-link completion. Listening
+    // here as well caused both mounted routes to replace with /verified, making
+    // the success screen appear twice. This one mount-time check only covers a
+    // session that was already confirmed before this screen opened.
+  }, [checkSession]);
 
   const openMailApp = async () => {
     if (openingMail) return;
