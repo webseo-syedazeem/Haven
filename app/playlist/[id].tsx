@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter, type Href } from 'expo-router';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Alert, FlatList, Modal, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Alert, FlatList, Image, Modal, Pressable, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { EmptyState, ErrorState } from '@/components/EmptyState';
@@ -142,6 +142,11 @@ function PlaylistScreenContent() {
 
   return (
     <View style={styles.screen}>
+      <Image
+        source={require('@/assets/images/playlist-detail-dark-cinematic-bg.webp')}
+        resizeMode="cover"
+        style={styles.background}
+      />
       <SafeAreaView edges={['top']} style={styles.safeArea}>
         <View style={styles.topBar}>
           <Pressable
@@ -261,6 +266,7 @@ function PlaylistScreenContent() {
                   onPlay={(picked) => void playSoundscape(picked, { queue: tracks })}
                   onPress={(picked) => router.push(`/soundscape/${picked.id}` as Href)}
                   soundscape={item.soundscape}
+                  variant={'saved'}
                   trailing={
                     <Pressable
                       accessibilityLabel={`Remove ${item.soundscape.title}`}
@@ -335,6 +341,11 @@ const styles = StyleSheet.create({
   screen: {
     backgroundColor: HalcyonColors.background,
     flex: 1,
+  },
+  background: {
+    ...StyleSheet.absoluteFillObject,
+    height: undefined,
+    width: undefined,
   },
   safeArea: {
     flex: 1,

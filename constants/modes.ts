@@ -24,6 +24,8 @@ export type ModeConfig = {
   artworkPosition?: { top: string; left: string };
   /** Painted under the artwork so the card still reads while the image loads. */
   gradient: readonly [string, string];
+  /** Mode-specific accent used for the card border ring and outer glow. */
+  ringColor: string;
 };
 
 export const MODES: readonly ModeConfig[] = [
@@ -39,9 +41,9 @@ export const MODES: readonly ModeConfig[] = [
       { icon: 'notifications-off-outline', label: 'Minimise distractions' },
       { icon: 'infinite-outline', label: 'Sustain deep work' },
     ],
-    artwork: require('@/assets/images/welcome-page-background.webp'),
-    artworkPosition: { top: '64%', left: '50%' },
+    artwork: require('@/assets/images/focus-mode-card-background.webp'),
     gradient: ['#1B2430', '#0B0B0D'],
+    ringColor: 'rgba(200, 165, 122, 0.55)',
   },
   {
     id: 'sleep',
@@ -55,8 +57,9 @@ export const MODES: readonly ModeConfig[] = [
       { icon: 'volume-low-outline', label: 'Mask background noise' },
       { icon: 'sunny-outline', label: 'Wake up rested' },
     ],
-    artwork: require('@/assets/images/environment-background.webp'),
+    artwork: require('@/assets/images/sleep-mode-card-background.webp'),
     gradient: ['#101828', '#0B0B0D'],
+    ringColor: 'rgba(142, 167, 199, 0.55)',
   },
   {
     id: 'relax',
@@ -70,9 +73,9 @@ export const MODES: readonly ModeConfig[] = [
       { icon: 'water-outline', label: 'Quieten a busy mind' },
       { icon: 'flower-outline', label: 'Unwind anywhere' },
     ],
-    artwork: require('@/assets/images/what-make-unique-background.webp'),
-    artworkPosition: { top: '88%', left: '50%' },
+    artwork: require('@/assets/images/relax-mode-card-background.webp'),
     gradient: ['#241C16', '#0B0B0D'],
+    ringColor: 'rgba(107, 191, 123, 0.55)',
   },
 ] as const;
 

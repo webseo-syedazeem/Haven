@@ -5,8 +5,14 @@ import type { Href, Router } from 'expo-router';
  * would leave personalisation screens behind the tabs on Android back.
  */
 export function resetToMainApp(router: Router): void {
-  router.dismissAll();
+  if (router.canDismiss()) router.dismissAll();
   router.replace('/(tabs)' as Href);
+}
+
+/** Leaves no authenticated or guest app screen behind the signed-out login. */
+export function resetToLogin(router: Router): void {
+  if (router.canDismiss()) router.dismissAll();
+  router.replace('/login?signedOut=1' as Href);
 }
 
 /** Establishes tabs underneath the existing full-screen player modal. */

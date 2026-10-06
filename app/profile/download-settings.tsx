@@ -175,6 +175,7 @@ function DownloadSettingsContent() {
           <Toast bottom={72} notice={notice} />
         </>
       }
+      backgroundImage={require('@/assets/images/notifications-top-dusk-mountains-bg.webp')}
       subtitle="What Passage saves to this device."
       title="Downloads">
       {renderBody()}

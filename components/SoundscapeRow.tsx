@@ -24,6 +24,8 @@ type SoundscapeRowProps = {
   leading?: ReactNode;
   /** Overrides the description line, e.g. a file size or a played-at stamp. */
   subtitle?: string;
+  /** Adds the Saved screen's full-row outline without affecting other screens. */
+  variant?: 'default' | 'saved';
 };
 
 /**
@@ -41,6 +43,7 @@ export function SoundscapeRow({
   trailing,
   leading,
   subtitle,
+  variant = 'default',
 }: SoundscapeRowProps) {
   const title = soundscape.short_title?.trim() || soundscape.title;
   const duration = formatDuration(soundscape.duration_seconds);
@@ -52,7 +55,11 @@ export function SoundscapeRow({
       accessibilityLabel={title}
       accessibilityRole="button"
       onPress={() => onPress?.(soundscape)}
-      style={({ pressed }) => [styles.row, pressed && styles.rowPressed]}>
+      style={({ pressed }) => [
+        styles.row,
+        variant === 'saved' && styles.savedRow,
+        pressed && styles.rowPressed,
+      ]}>
       {leading}
 
       <Pressable
@@ -151,11 +158,18 @@ const styles = StyleSheet.create({
   rowPressed: {
     opacity: 0.72,
   },
+  savedRow: {
+    backgroundColor: 'rgba(0,0,0,0.10)',
+    borderColor: 'rgba(255,255,255,0.34)',
+    borderRadius: 16,
+    borderWidth: 1,
+    marginBottom: 10,
+    marginHorizontal: HalcyonSpacing.screenX,
+    paddingHorizontal: 9,
+  },
   artworkFrame: {
     backgroundColor: HalcyonColors.surface,
-    borderColor: HalcyonColors.border,
     borderRadius: 12,
-    borderWidth: 1,
     height: THUMBNAIL,
     overflow: 'hidden',
     width: THUMBNAIL,

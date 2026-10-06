@@ -66,7 +66,9 @@ function ContactSupportContent() {
 
   if (sent) {
     return (
-      <SettingsScreen title="Contact Support">
+      <SettingsScreen
+        backgroundImage={require('@/assets/images/contact-support-top-moonlit-lake-bg.webp')}
+        title="Contact Support">
         <SupportSuccess
           message="We usually reply within a couple of days."
           onPrimary={() => router.back()}
@@ -85,6 +87,7 @@ function ContactSupportContent() {
 
   return (
     <SettingsScreen
+      backgroundImage={require('@/assets/images/contact-support-top-moonlit-lake-bg.webp')}
       subtitle="Tell us what happened and we will help."
       title="Contact Support">
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined}>

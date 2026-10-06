@@ -153,7 +153,9 @@ function SoundPreferencesContent() {
 
   return (
     <SettingsScreen
+      backgroundImage={require('@/assets/images/sound-preferences-compact-moonlit-mountains-bg.webp')}
       overlay={<Toast bottom={72} notice={notice} />}
+      scrollingBackground
       subtitle="What we lean towards when we choose for you."
       title="Sound Preferences">
       {renderBody()}

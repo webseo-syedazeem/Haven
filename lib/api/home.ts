@@ -63,8 +63,12 @@ export type Collection = {
   title: string;
   description?: string | null;
   cover_image_url?: string | null;
+  mode?: SoundscapeMode | null;
+  /** Modes represented by this collection's currently live members. */
+  soundscape_modes?: SoundscapeMode[];
   soundscape_count?: number | null;
   popularity_score?: number | null;
+  created_at?: string | null;
 };
 
 export type ContinueListeningItem = {

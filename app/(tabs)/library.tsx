@@ -4,6 +4,7 @@ import { useCallback, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   FlatList,
+  ImageBackground,
   Keyboard,
   Pressable,
   ScrollView,
@@ -12,6 +13,7 @@ import {
   TextInput,
   View,
 } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { EmptyState, ErrorState } from '@/components/EmptyState';
@@ -34,6 +36,8 @@ import { useFavouriteIds, useToggleFavourite } from '@/hooks/useFavourites';
 import { useLibraryResults, useSearchSuggestions } from '@/hooks/useLibrary';
 import type { Soundscape } from '@/lib/api/home';
 import { usePlayerActions } from '@/lib/player/PlayerProvider';
+
+const libraryBackground = require('@/assets/images/library-compact-moonlit-lake-bg.webp');
 
 export default function LibraryScreen() {
   const router = useRouter();
@@ -108,6 +112,7 @@ export default function LibraryScreen() {
         onToggleFavourite={toggleFavourite}
         showFavourite
         soundscape={item}
+        variant={'saved'}
       />
     ),
     [favouriteIds, openSoundscape, playSoundscape, results, toggleFavourite]
@@ -119,7 +124,17 @@ export default function LibraryScreen() {
 
   return (
     <View style={styles.screen}>
-      <SafeAreaView edges={['top']} style={styles.safeArea}>
+      <ImageBackground
+        resizeMode="cover"
+        source={libraryBackground}
+        style={styles.background}>
+        <LinearGradient
+          colors={['rgba(2, 6, 10, 0.08)', 'rgba(2, 5, 8, 0.18)', 'rgba(0, 0, 0, 0.38)']}
+          locations={[0, 0.42, 1]}
+          pointerEvents="none"
+          style={StyleSheet.absoluteFillObject}
+        />
+        <SafeAreaView edges={['top']} style={styles.safeArea}>
         <View style={styles.header}>
           <Text style={styles.heading}>Library</Text>
         </View>
@@ -236,7 +251,7 @@ export default function LibraryScreen() {
             <Text numberOfLines={1} style={styles.sortLabel}>
               {getSortLabel(sort)}
             </Text>
-            <Ionicons color={HalcyonColors.textSecondary} name="chevron-down" size={14} />
+            <Ionicons color={HalcyonColors.textPrimary} name="chevron-down" size={14} />
           </Pressable>
         </View>
 
@@ -317,7 +332,8 @@ export default function LibraryScreen() {
             showsVerticalScrollIndicator={false}
           />
         )}
-      </SafeAreaView>
+        </SafeAreaView>
+      </ImageBackground>
 
       <FilterSheet
         filters={filters}
@@ -361,8 +377,12 @@ function relatedSearches(query: string): string[] {
 
 const styles = StyleSheet.create({
   screen: {
-    backgroundColor: HalcyonColors.background,
+    backgroundColor: '#000000',
     flex: 1,
+  },
+  background: {
+    flex: 1,
+    width: '100%',
   },
   safeArea: {
     flex: 1,
@@ -486,7 +506,7 @@ const styles = StyleSheet.create({
     maxWidth: 140,
   },
   sortLabel: {
-    color: HalcyonColors.textSecondary,
+    color: HalcyonColors.textPrimary,
     fontFamily: AppFonts.sansMedium,
     fontSize: 13,
     fontWeight: '500',

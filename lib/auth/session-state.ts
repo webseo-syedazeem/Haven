@@ -47,6 +47,48 @@ function notify() {
   listeners.forEach((listener) => listener());
 }
 
+// True from the moment an explicit sign-out/account-deletion starts clearing
+// the session until the login screen it navigates to has actually mounted.
+//
+// `clearUserSession` drops the Haven access token as one of its first steps,
+// which flips `hasActiveSession()` to false well before the explicit
+// `resetToLogin()` navigation that follows it actually runs — the function
+// awaits several more network/native calls (Google and Supabase sign-out
+// among them) that can each take the better part of a second. Without this
+// flag, the tabs layout's own "no session" guard reacts to that early flip on
+// its own and navigates to `/login?launch=1` immediately, and then the
+// explicit `resetToLogin()` call lands moments later on `/login?signedOut=1`
+// — the login screen visibly mounting twice.
+//
+// Cleared for real once the login screen mounts; the timer here only guards
+// against that mount never happening (an unexpected error before the
+// explicit navigation runs), so a stuck flag can never permanently disable
+// the automatic redirect for a later, unrelated session expiry.
+let explicitSignOutInFlight = false;
+let explicitSignOutSafetyTimer: ReturnType<typeof setTimeout> | null = null;
+
+export function beginExplicitSignOut() {
+  explicitSignOutInFlight = true;
+  if (explicitSignOutSafetyTimer) clearTimeout(explicitSignOutSafetyTimer);
+  explicitSignOutSafetyTimer = setTimeout(() => {
+    explicitSignOutInFlight = false;
+    explicitSignOutSafetyTimer = null;
+  }, 10000);
+}
+
+/** Called once the login screen (the explicit sign-out's destination) mounts. */
+export function endExplicitSignOut() {
+  explicitSignOutInFlight = false;
+  if (explicitSignOutSafetyTimer) {
+    clearTimeout(explicitSignOutSafetyTimer);
+    explicitSignOutSafetyTimer = null;
+  }
+}
+
+export function isExplicitSignOutInFlight() {
+  return explicitSignOutInFlight;
+}
+
 /** True when an authenticated request is safe to make. */
 export function hasActiveSession() {
   return !restoring && !guestModeActive && (activeSources.haven || activeSources.supabase);
@@ -154,7 +196,10 @@ function persistGuestMode(active: boolean): Promise<void> {
       if (active) {
         await AsyncStorage.setItem(GUEST_MODE_STORAGE_KEY, 'true');
       } else {
-        await AsyncStorage.removeItem(GUEST_MODE_STORAGE_KEY);
+        // Keep an authoritative false tombstone. Removing the key would make
+        // the legacy-store migration run again and could resurrect an old
+        // guest=true value after a partial storage failure.
+        await AsyncStorage.setItem(GUEST_MODE_STORAGE_KEY, 'false');
       }
 
       // Keep the old key in a non-guest state after migration so it can never

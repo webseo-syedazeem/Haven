@@ -5,6 +5,7 @@ import {
   ActivityIndicator,
   Alert,
   FlatList,
+  Image,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -69,6 +70,27 @@ export default function SavedScreen() {
 
   return (
     <View style={styles.screen}>
+      {segment === 'favourites' && (
+        <Image
+          source={require('@/assets/images/saved-dark-alpine-lake-bg.webp')}
+          resizeMode="cover"
+          style={styles.favouritesBackground}
+        />
+      )}
+      {segment === 'downloads' && (
+        <Image
+          source={require('@/assets/images/downloads-empty-cool-alpine-lake-bg.webp')}
+          resizeMode="cover"
+          style={styles.downloadsBackground}
+        />
+      )}
+      {segment === 'recent' && (
+        <Image
+          source={require('@/assets/images/recently-played-dark-alpine-lake-bg.webp')}
+          resizeMode={'cover'}
+          style={styles.recentBackground}
+        />
+      )}
       <SafeAreaView edges={['top']} style={styles.safeArea}>
         <View style={styles.header}>
           <Text style={styles.heading}>Saved</Text>
@@ -180,6 +202,7 @@ function FavouritesPanel({
           }}
           showFavourite
           soundscape={item}
+          variant={'saved'}
         />
       )}
       showsVerticalScrollIndicator={false}
@@ -221,6 +244,11 @@ function PlaylistsPanel({
 
   return (
     <View style={styles.panel}>
+      <Image
+        source={require('@/assets/images/playlists-empty-dark-alpine-valley-bg.webp')}
+        resizeMode="cover"
+        style={styles.playlistsBackground}
+      />
       {playlists.isInitialLoading ? (
         <View style={styles.gridSkeleton}>
           {[0, 1, 2, 3].map((index) => (
@@ -419,6 +447,7 @@ function DownloadRow({
       onPlay={download.status === 'completed' ? onPlay : undefined}
       soundscape={soundscape}
       subtitle={downloadSubtitle(download)}
+      variant={'saved'}
       trailing={
         <View style={styles.downloadTrailing}>
           {download.status === 'failed' ? (
@@ -514,6 +543,7 @@ function RecentPanel({ bottomInset }: { bottomInset: number }) {
           onPress={(picked) => router.push(`/soundscape/${picked.id}` as Href)}
           soundscape={item.soundscape}
           subtitle={formatPlayedAt(item.played_at)}
+          variant={'saved'}
           trailing={
             <Pressable
               accessibilityLabel={`Resume ${item.soundscape.title}`}
@@ -563,6 +593,21 @@ const styles = StyleSheet.create({
     backgroundColor: HalcyonColors.background,
     flex: 1,
   },
+  favouritesBackground: {
+    ...StyleSheet.absoluteFillObject,
+    height: undefined,
+    width: undefined,
+  },
+  downloadsBackground: {
+    ...StyleSheet.absoluteFillObject,
+    height: undefined,
+    width: undefined,
+  },
+  recentBackground: {
+    ...StyleSheet.absoluteFillObject,
+    height: undefined,
+    width: undefined,
+  },
   safeArea: {
     flex: 1,
   },
@@ -589,6 +634,11 @@ const styles = StyleSheet.create({
   },
   panel: {
     flex: 1,
+  },
+  playlistsBackground: {
+    ...StyleSheet.absoluteFillObject,
+    height: undefined,
+    width: undefined,
   },
   grid: {
     columnGap: 14,

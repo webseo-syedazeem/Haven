@@ -95,9 +95,10 @@ export function FilterSheet({ visible, filters, sort, onClose, onApply }: Filter
       statusBarTranslucent
       transparent
       visible={visible}>
-      <Pressable accessibilityLabel="Close filters" onPress={onClose} style={styles.backdrop} />
+      <View style={styles.container}>
+        <Pressable accessibilityLabel="Close filters" onPress={onClose} style={styles.backdrop} />
 
-      <View style={[styles.sheet, { paddingBottom: insets.bottom + 12 }]}>
+        <View style={[styles.sheet, { paddingBottom: insets.bottom + 12 }]}>
         <View style={styles.header}>
           {subView ? (
             <Pressable
@@ -279,6 +280,7 @@ export function FilterSheet({ visible, filters, sort, onClose, onApply }: Filter
           )}
         </Pressable>
       </View>
+      </View>
     </Modal>
   );
 }
@@ -337,9 +339,13 @@ function Section({
 }
 
 const styles = StyleSheet.create({
-  backdrop: {
-    backgroundColor: HalcyonModal.backdrop,
+  container: {
     flex: 1,
+    justifyContent: 'flex-end',
+  },
+  backdrop: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: HalcyonModal.backdrop,
   },
   sheet: {
     backgroundColor: HalcyonColors.surface,

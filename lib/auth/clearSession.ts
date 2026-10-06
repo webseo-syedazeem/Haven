@@ -4,7 +4,7 @@ import type { QueryClient } from '@tanstack/react-query';
 import { apiClient, clearStoredAccessToken } from '@/lib/api/client';
 import { markLoggedOut } from '@/lib/auth/offline-session';
 import { setIntroSeen } from '@/lib/auth/intro-flag';
-import { setGuestModeActive } from '@/lib/auth/session-state';
+import { beginExplicitSignOut, setGuestModeActive } from '@/lib/auth/session-state';
 import { resetGuestOnboardingState } from '@/lib/onboarding';
 import { clearAuthTokens } from '@/lib/haven-api';
 import { clearActiveDownloadUser } from '@/lib/local-downloads';
@@ -27,6 +27,11 @@ import { supabase } from '@/lib/supabase';
  * `lib/local-downloads.ts`.
  */
 export async function clearUserSession(queryClient: QueryClient) {
+  // Marked before anything else here flips the session flag off, so the tabs
+  // layout's own "no session" redirect does not fire mid-cleanup — see
+  // `beginExplicitSignOut`'s comment for why that race exists.
+  beginExplicitSignOut();
+
   try {
     await apiClient('/api/logout', { method: 'POST' });
   } catch {

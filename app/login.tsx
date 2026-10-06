@@ -1,6 +1,6 @@
 import { useFocusEffect } from '@react-navigation/native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import {
   BackHandler,
   KeyboardAvoidingView,
@@ -29,19 +29,23 @@ import {
 } from '@/lib/auth/form-errors';
 import { routeAfterSignIn } from '@/lib/auth/onboarding-routing';
 import { clearIntroSeen } from '@/lib/auth/intro-flag';
+import { endExplicitSignOut } from '@/lib/auth/session-state';
 import { resetToMainApp, safeGoBack } from '@/lib/navigation';
 
 const appleIcon = require('@/assets/icons/apple icon.png');
 const googleIcon = require('@/assets/icons/google icon.png');
+const background = require('@/assets/images/welcome-back-moonlit-lake-background.webp');
 
 export default function LoginScreen() {
   const router = useRouter();
-  const { signedOut, from } = useLocalSearchParams<{
+  const { signedOut, from, launch } = useLocalSearchParams<{
     signedOut?: string;
     from?: string;
+    launch?: string;
   }>();
   const isFromIntro = from === 'intro';
   const isSignedOut = signedOut === '1';
+  const isSignedOutLaunch = launch === '1';
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [passwordVisible, setPasswordVisible] = useState(false);
@@ -49,13 +53,20 @@ export default function LoginScreen() {
   const [fieldErrors, setFieldErrors] = useState<AuthFieldErrors>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  // Signals that whichever navigation got here (the explicit sign-out's own
+  // replace, or the tabs layout's automatic redirect) has landed, so a later,
+  // unrelated session expiry can still trigger that automatic redirect.
+  useEffect(() => {
+    endExplicitSignOut();
+  }, []);
+
   const goBack = useCallback(() => {
-    if (isFromIntro || isSignedOut) {
-      void clearIntroSeen().then(() => router.replace('/'));
+    if (isFromIntro || isSignedOut || isSignedOutLaunch) {
+      void clearIntroSeen().then(() => router.replace('/?reset=1'));
     } else {
       safeGoBack(router);
     }
-  }, [isFromIntro, isSignedOut, router]);
+  }, [isFromIntro, isSignedOut, isSignedOutLaunch, router]);
 
   useFocusEffect(useCallback(() => {
     const subscription = BackHandler.addEventListener('hardwareBackPress', () => {
@@ -159,6 +170,8 @@ export default function LoginScreen() {
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       style={styles.keyboardView}>
       <OnboardingScaffold
+        backgroundImage={background}
+        backgroundOverlayColor="rgba(7, 11, 16, 0.30)"
         contentContainerStyle={styles.scrollContent}
         footer={<AuthLegalFooter />}
         onBack={goBack}>
@@ -208,7 +221,7 @@ const styles = StyleSheet.create({
     marginTop: 24,
   },
   dividerText: {
-    color: HalcyonColors.textSecondary,
+    color: 'rgba(255, 255, 255, 0.72)',
     fontFamily: AppFonts.sansRegular,
     fontSize: 12,
     lineHeight: 18,
@@ -269,7 +282,7 @@ const styles = StyleSheet.create({
   },
   subtitle: {
     ...Typography.body,
-    color: HalcyonColors.textSecondary,
+    color: 'rgba(255, 255, 255, 0.72)',
     marginTop: 8,
     textAlign: 'center',
   },

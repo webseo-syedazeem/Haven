@@ -122,6 +122,7 @@ export default function VerifiedScreen() {
 const styles = StyleSheet.create({
   body: {
     ...Typography.body,
+    color: 'rgba(255, 255, 255, 0.72)',
     marginTop: 8,
     textAlign: 'center',
   },

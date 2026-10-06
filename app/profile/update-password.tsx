@@ -73,6 +73,7 @@ function UpdatePasswordContent() {
 
   return (
     <SettingsScreen
+      backgroundImage={require('@/assets/images/change-password-compact-dusk-mountains-bg.webp')}
       overlay={<Toast bottom={72} notice={notice} />}
       subtitle="Choose something only you would know."
       title="Change Password">

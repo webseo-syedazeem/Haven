@@ -1,7 +1,17 @@
 import { useRouter, type Href } from 'expo-router';
-import { useCallback, useState } from 'react';
-import { Dimensions, RefreshControl, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useCallback, useRef, useState } from 'react';
+import {
+  Animated,
+  Dimensions,
+  Image,
+  RefreshControl,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  useWindowDimensions,
+  View,
+} from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { CollectionCard, COLLECTION_CARD_WIDTH } from '@/components/CollectionCard';
 import { ContinueCard, ContinueCardSkeleton } from '@/components/ContinueCard';
@@ -11,6 +21,7 @@ import { ProfileAvatar } from '@/components/profile/ProfileAvatar';
 import { SectionRail } from '@/components/SectionRail';
 import { SoundscapeCard } from '@/components/SoundscapeCard';
 import { HALCYON_TAB_BAR_HEIGHT, HalcyonColors, HalcyonSpacing, Typography } from '@/constants/design';
+import { AppFonts } from '@/constants/theme';
 import { MODES, type ModeConfig } from '@/constants/modes';
 import {
   useContinueListening,
@@ -28,9 +39,14 @@ import { usePlayerActions, usePlayerState } from '@/lib/player/PlayerProvider';
 import { getFirstName } from '@/lib/api/user';
 import { getTimeOfDay } from '@/lib/utils/greeting';
 
+const heroBackground = require('@/assets/images/home-top-moonlit-lake-cabin-bg.webp');
+const brandIcon = require('@/assets/images/passage-brand-assets/screens-icon.webp');
+const HERO_BACKGROUND_ASPECT_RATIO = 941 / 1672;
+
 export default function HomeScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const { width: screenWidth } = useWindowDimensions();
   const [refreshing, setRefreshing] = useState(false);
   const hasSession = useHasSession();
   const guestModeActive = useGuestModeActive();
@@ -60,6 +76,10 @@ export default function HomeScreen() {
     [router]
   );
 
+  const openCollection = useCallback(
+    (collection: Collection) => router.push(`/collection/${collection.id}` as Href),
+    [router]
+  );
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
@@ -137,34 +157,47 @@ export default function HomeScreen() {
   const soundscapeKey = useCallback((item: Soundscape, index: number) => item.id ?? `${index}`, []);
   const bottomInset =
     insets.bottom + HALCYON_TAB_BAR_HEIGHT + (currentTrack ? MINI_PLAYER_HEIGHT : 0) + 36;
+  const backgroundHeight = screenWidth / HERO_BACKGROUND_ASPECT_RATIO;
+
+  const scrollAnim = useRef(new Animated.Value(0)).current;
+  const overlayOpacity = scrollAnim.interpolate({
+    inputRange: [0, 30],
+    outputRange: [0, 1],
+    extrapolate: 'clamp',
+  });
 
   return (
     <View style={styles.screen}>
-      <SafeAreaView edges={['top']} style={styles.safeArea}>
-        <ScrollView
-          contentContainerStyle={[styles.content, { paddingBottom: bottomInset }]}
-          refreshControl={
-            <RefreshControl
-              colors={[HalcyonColors.accent]}
-              onRefresh={onRefresh}
-              refreshing={refreshing}
-              tintColor={HalcyonColors.accent}
-            />
-          }
-          showsVerticalScrollIndicator={false}>
-          {/* Greeting */}
-          <View style={styles.block}>
-            <View style={styles.headerRow}>
-              <View style={styles.greetingBlock}>
-                <Text style={styles.greetingLine}>{`Good ${getTimeOfDay()},`}</Text>
-                {isBootstrapping ? (
-                  <View style={styles.greetingNameSkeleton} />
-                ) : (
-                  <Text numberOfLines={1} style={styles.greetingName}>
-                    {firstName || 'there'}
-                  </Text>
-                )}
-                {/* <Text style={styles.subtitle}>Where would you like to go?</Text> */}
+      <Animated.ScrollView
+        contentContainerStyle={[styles.content, { paddingBottom: bottomInset }]}
+        onScroll={Animated.event(
+          [{ nativeEvent: { contentOffset: { y: scrollAnim } } }],
+          { useNativeDriver: true }
+        )}
+        refreshControl={
+          <RefreshControl
+            colors={[HalcyonColors.accent]}
+            onRefresh={onRefresh}
+            refreshing={refreshing}
+            tintColor={HalcyonColors.accent}
+          />
+        }
+        scrollEventThrottle={16}
+        showsVerticalScrollIndicator={false}>
+        {/* Scroll scene: background + hero share a relative container so image scrolls with content */}
+        <View style={styles.scrollScene}>
+          <Image
+            resizeMode="contain"
+            source={heroBackground}
+            style={[styles.backgroundImage, { width: screenWidth, height: backgroundHeight }]}
+          />
+          {/* Hero Header — paddingTop pushes content below status bar */}
+          <View style={[styles.hero, { paddingTop: insets.top + 14, minHeight: 260 + insets.top }]}>
+            {/* Top bar: brand left, avatar right */}
+            <View style={styles.heroTopRow}>
+              <View style={styles.brand}>
+                <Image source={brandIcon} style={styles.brandIcon} />
+                <Text style={styles.brandText}>Passage</Text>
               </View>
               <TouchableOpacity
                 accessibilityLabel="Open profile"
@@ -172,16 +205,29 @@ export default function HomeScreen() {
                 activeOpacity={0.86}
                 onPress={() => router.push('/(tabs)/profile' as Href)}>
                 <ProfileAvatar
-                  iconColor={HalcyonColors.textSecondary}
+                  iconColor="rgba(255,255,255,0.7)"
                   imageUrl={profileImageUrl}
-                  placeholderBackgroundColor={HalcyonColors.surface}
-                  size={46}
+                  placeholderBackgroundColor="rgba(255,255,255,0.12)"
+                  size={40}
                 />
               </TouchableOpacity>
             </View>
+            {/* Greeting + subtitle */}
+            <View style={styles.heroBottom}>
+              <Text style={styles.greetingLine}>{`Good ${getTimeOfDay()},`}</Text>
+              {isBootstrapping ? (
+                <View style={styles.greetingNameSkeleton} />
+              ) : (
+                <Text numberOfLines={1} style={styles.greetingName}>
+                  {firstName || 'there'}
+                </Text>
+              )}
+              <Text style={styles.subtitle}>Where would you like to go?</Text>
+            </View>
           </View>
+        </View>{/* end scrollScene */}
 
-          {/* Continue Listening — the whole section drops when there is nothing to resume */}
+        {/* Continue Listening — the whole section drops when there is nothing to resume */}
           {continueListening.isInitialLoading ? (
             <View style={[styles.block, styles.section]}>
               <Text style={styles.sectionTitle}>Continue Listening</Text>
@@ -284,12 +330,19 @@ export default function HomeScreen() {
             itemWidth={COLLECTION_CARD_WIDTH}
             keyExtractor={(collection, index) => collection.id ?? `${index}`}
             onSeeAll={() => router.push('/(tabs)/explore' as Href)}
-            renderItem={(collection) => <CollectionCard collection={collection} />}
+            renderItem={(collection) => (
+              <CollectionCard collection={collection} onPress={openCollection} />
+            )}
             title="Popular Collections"
             withCaptionSkeleton={false}
           />
-        </ScrollView>
-      </SafeAreaView>
+      </Animated.ScrollView>
+
+      {/* Fixed top safe-area overlay: transparent at scrollY=0, fades to black as user scrolls */}
+      <Animated.View
+        pointerEvents="none"
+        style={[styles.topOverlay, { height: insets.top, opacity: overlayOpacity }]}
+      />
     </View>
   );
 }
@@ -301,15 +354,26 @@ const GREETING_LINE_HEIGHT = GREETING_FONT_SIZE * 1.15;
 
 const styles = StyleSheet.create({
   screen: {
-    backgroundColor: HalcyonColors.background,
+    backgroundColor: '#000000',
     flex: 1,
   },
-  safeArea: {
-    flex: 1,
+  scrollScene: {
+    // relative wrapper — background image is absolute within this, so it scrolls with content
+  },
+  backgroundImage: {
+    left: 0,
+    position: 'absolute',
+    top: 0,
+  },
+  topOverlay: {
+    backgroundColor: '#000000',
+    left: 0,
+    position: 'absolute',
+    right: 0,
+    top: 0,
   },
   content: {
     flexGrow: 1,
-    paddingTop: 18,
   },
   block: {
     paddingHorizontal: HalcyonSpacing.screenX,
@@ -317,15 +381,40 @@ const styles = StyleSheet.create({
   section: {
     marginTop: HalcyonSpacing.section,
   },
-  headerRow: {
-    alignItems: 'flex-start',
+  /* ── Hero header ───────────────────────────────────────── */
+  hero: {
+    justifyContent: 'space-between',
+    paddingBottom: 28,
+    paddingHorizontal: HalcyonSpacing.screenX,
+  },
+  heroTopRow: {
+    alignItems: 'center',
     flexDirection: 'row',
     justifyContent: 'space-between',
   },
-  greetingBlock: {
-    flex: 1,
-    paddingRight: 16,
+  brand: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: 2,
+    marginLeft: -11,
   },
+  brandIcon: {
+    height: 34,
+    resizeMode: 'contain',
+    width: 52,
+  },
+  brandText: {
+    color: '#FFFFFF',
+    fontFamily: AppFonts.sansBold,
+    fontSize: 18,
+    fontWeight: '700',
+    letterSpacing: -0.3,
+    marginLeft: -11,
+  },
+  heroBottom: {
+    marginTop: 16,
+  },
+  /* ── Greeting ──────────────────────────────────────────── */
   greetingLine: {
     ...Typography.screenHeading,
     fontSize: GREETING_FONT_SIZE,
@@ -345,9 +434,13 @@ const styles = StyleSheet.create({
     maxWidth: 180,
   },
   subtitle: {
-    ...Typography.body,
-    marginTop: 10,
+    color: 'rgba(255, 255, 255, 0.72)',
+    fontFamily: AppFonts.sansRegular,
+    fontSize: 16,
+    lineHeight: 24,
+    marginTop: 8,
   },
+  /* ── Sections ──────────────────────────────────────────── */
   sectionTitle: {
     ...Typography.sectionHeading,
     marginBottom: 14,

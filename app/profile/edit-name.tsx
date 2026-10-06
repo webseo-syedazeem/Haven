@@ -64,6 +64,7 @@ function EditNameContent() {
 
   return (
     <SettingsScreen
+      backgroundImage={require('@/assets/images/your-name-compact-dusk-mountains-bg.webp')}
       overlay={<Toast bottom={72} notice={notice} />}
       subtitle="How you appear across Passage."
       title="Your Name">

@@ -1,15 +1,20 @@
 import { Ionicons } from '@expo/vector-icons';
 import { BottomTabBarProps } from '@react-navigation/bottom-tabs';
-import { Tabs } from 'expo-router';
+import { Redirect, Tabs, useSegments } from 'expo-router';
 import React from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { MiniPlayer } from '@/components/MiniPlayer';
 import { useAccountRequiredPrompt } from '@/components/auth/AccountRequiredPrompt';
 import { HALCYON_TAB_BAR_HEIGHT, HalcyonColors } from '@/constants/design';
 import { AppFonts } from '@/constants/theme';
-import { useGuestModeActive } from '@/hooks/useSession';
+import { isExplicitSignOutInFlight } from '@/lib/auth/session-state';
+import {
+  useGuestModeActive,
+  useHasSession,
+  useSessionRestoring,
+} from '@/hooks/useSession';
 
 const menuIcons: Record<string, keyof typeof Ionicons.glyphMap> = {
   index: 'home-outline',
@@ -98,6 +103,32 @@ function FloatingTabBar({ state, descriptors, navigation }: BottomTabBarProps) {
 }
 
 export default function TabLayout() {
+  const segments = useSegments();
+  const hasSession = useHasSession();
+  const isGuest = useGuestModeActive();
+  const isRestoring = useSessionRestoring();
+  const tabsAreActive = segments[0] === '(tabs)';
+
+  if (tabsAreActive && isRestoring) {
+    return (
+      <View style={styles.authLoading}>
+        <ActivityIndicator color={HalcyonColors.accent} size="large" />
+      </View>
+    );
+  }
+
+  // The main app is reachable only through a confirmed session or the one
+  // explicit "Continue as guest" action. Stale navigation history and deep
+  // links must not silently turn a signed-out person into a guest.
+  //
+  // `isExplicitSignOutInFlight()` is skipped while an explicit sign-out or
+  // account deletion is already clearing the session and about to navigate
+  // to login itself — otherwise this fires on the same drop in `hasSession`
+  // and lands on `/login?launch=1` moments before the explicit call lands on
+  // `/login?signedOut=1`, mounting the login screen twice.
+  if (tabsAreActive && !hasSession && !isGuest && !isExplicitSignOutInFlight()) {
+    return <Redirect href="/login?launch=1" />;
+  }
   return (
     <Tabs
       tabBar={(props) => <FloatingTabBar {...props} />}
@@ -115,6 +146,12 @@ export default function TabLayout() {
 }
 
 const styles = StyleSheet.create({
+  authLoading: {
+    alignItems: 'center',
+    backgroundColor: HalcyonColors.background,
+    flex: 1,
+    justifyContent: 'center',
+  },
   dock: {
     bottom: 0,
     left: 0,

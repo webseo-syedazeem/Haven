@@ -19,35 +19,44 @@ type ModeCardProps = {
 
 export function ModeCard({ mode, onPress }: ModeCardProps) {
   return (
-    <Pressable
-      accessibilityLabel={`${mode.label}. ${mode.tagline}`}
-      accessibilityRole="button"
-      onPress={() => onPress?.(mode)}
-      style={({ pressed }) => [styles.card, pressed && styles.cardPressed]}>
-      {/* Painted first so the card still reads while the artwork decodes. */}
-      <LinearGradient colors={mode.gradient} style={StyleSheet.absoluteFill} />
-      <Image
-        contentFit="cover"
-        contentPosition={mode.artworkPosition ?? 'center'}
-        source={mode.artwork}
-        style={StyleSheet.absoluteFill}
-        transition={220}
-      />
-      <LinearGradient
-        colors={HalcyonCardGradient as unknown as readonly [string, string, ...string[]]}
-        locations={HalcyonCardGradientLocations as unknown as readonly [number, number, ...number[]]}
-        style={StyleSheet.absoluteFill}
-      />
-      <View style={styles.row}>
-        <View style={styles.copy}>
-          <Text style={styles.title}>{mode.label.toUpperCase()}</Text>
-          <Text numberOfLines={1} style={styles.tagline}>
-            {mode.tagline}
-          </Text>
+    <View
+      style={[
+        styles.ring,
+        {
+          borderColor: mode.ringColor,
+          shadowColor: mode.ringColor,
+        },
+      ]}>
+      <Pressable
+        accessibilityLabel={`${mode.label}. ${mode.tagline}`}
+        accessibilityRole="button"
+        onPress={() => onPress?.(mode)}
+        style={({ pressed }) => [styles.card, pressed && styles.cardPressed]}>
+        {/* Painted first so the card still reads while the artwork decodes. */}
+        <LinearGradient colors={mode.gradient} style={StyleSheet.absoluteFill} />
+        <Image
+          contentFit="cover"
+          contentPosition={mode.artworkPosition ?? 'center'}
+          source={mode.artwork}
+          style={StyleSheet.absoluteFill}
+          transition={220}
+        />
+        <LinearGradient
+          colors={HalcyonCardGradient as unknown as readonly [string, string, ...string[]]}
+          locations={HalcyonCardGradientLocations as unknown as readonly [number, number, ...number[]]}
+          style={StyleSheet.absoluteFill}
+        />
+        <View style={styles.row}>
+          <View style={styles.copy}>
+            <Text style={styles.title}>{mode.label.toUpperCase()}</Text>
+            <Text numberOfLines={1} style={styles.tagline}>
+              {mode.tagline}
+            </Text>
+          </View>
+          <Ionicons color={HalcyonColors.textPrimary} name="chevron-forward" size={18} />
         </View>
-        <Ionicons color={HalcyonColors.textPrimary} name="chevron-forward" size={18} />
-      </View>
-    </Pressable>
+      </Pressable>
+    </View>
   );
 }
 
@@ -57,11 +66,19 @@ export function ModeCardSkeleton() {
 }
 
 const styles = StyleSheet.create({
-  card: {
-    aspectRatio: 2.6,
-    borderColor: HalcyonColors.border,
+  ring: {
+    backgroundColor: 'transparent',
     borderRadius: HalcyonRadius.card,
     borderWidth: 1,
+    // borderColor and shadowColor applied inline (mode-specific)
+    elevation: 4,
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.32,
+    shadowRadius: 8,
+  },
+  card: {
+    aspectRatio: 2.6,
+    borderRadius: HalcyonRadius.card,
     justifyContent: 'flex-end',
     minHeight: 118,
     overflow: 'hidden',

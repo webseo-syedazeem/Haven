@@ -124,7 +124,9 @@ function ReportProblemContent() {
 
   if (sent) {
     return (
-      <SettingsScreen title="Report a Problem">
+      <SettingsScreen
+        backgroundImage={require('@/assets/images/contact-support-top-moonlit-lake-bg.webp')}
+        title="Report a Problem">
         <SupportSuccess
           message="Thank you. We will listen back and fix what we find."
           onPrimary={() => router.back()}
@@ -137,6 +139,7 @@ function ReportProblemContent() {
 
   return (
     <SettingsScreen
+      backgroundImage={require('@/assets/images/contact-support-top-moonlit-lake-bg.webp')}
       subtitle="Tell us what went wrong and we will listen back."
       title="Report a Problem">
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined}>

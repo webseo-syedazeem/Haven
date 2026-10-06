@@ -26,6 +26,8 @@ import {
 import { signUp } from '@/lib/haven-api';
 import { safeGoBack } from '@/lib/navigation';
 
+const background = require('@/assets/images/create-account-moonlit-lake-background.webp');
+
 function firstParam(value: string | string[] | undefined): string {
   return Array.isArray(value) ? value[0] ?? '' : value ?? '';
 }
@@ -99,6 +101,8 @@ export default function CreateAccountScreen() {
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       style={styles.keyboardView}>
       <OnboardingScaffold
+        backgroundImage={background}
+        backgroundOverlayColor="rgba(7, 11, 16, 0.30)"
         contentContainerStyle={styles.scrollContent}
         footer={<AuthLegalFooter />}
         onBack={() => safeGoBack(router)}>
@@ -186,7 +190,7 @@ const styles = StyleSheet.create({
   },
   subtitle: {
     ...Typography.body,
-    color: HalcyonColors.textSecondary,
+    color: 'rgba(255, 255, 255, 0.72)',
     marginTop: 8,
     textAlign: 'center',
   },

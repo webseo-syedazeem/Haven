@@ -15,7 +15,10 @@ import {
   hasEmailIdentity,
   isEmailConfirmed,
 } from '@/lib/auth/complete-auth';
+import { safeGoBack } from '@/lib/navigation';
 import { supabase } from '@/lib/supabase';
+
+const background = require('@/assets/images/check-inbox-moonlit-alpine-background.webp');
 
 const RESEND_COOLDOWN_SECONDS = 30;
 
@@ -157,7 +160,11 @@ export default function VerifyEmailScreen() {
       : 'Resend email';
 
   return (
-    <OnboardingScaffold contentContainerStyle={styles.content}>
+    <OnboardingScaffold
+      backgroundImage={background}
+      backgroundOverlayColor="rgba(7, 11, 16, 0.30)"
+      contentContainerStyle={styles.content}
+      onBack={() => safeGoBack(router, '/create-account')}>
       <Text style={styles.heading}>Check your inbox</Text>
       <Text style={styles.body}>
         We&apos;ve sent a verification link to{' '}
@@ -209,7 +216,7 @@ export default function VerifyEmailScreen() {
 
 const styles = StyleSheet.create({
   automatic: {
-    color: 'rgba(255, 255, 255, 0.56)',
+    color: 'rgba(255, 255, 255, 0.72)',
     fontFamily: AppFonts.sansRegular,
     fontSize: 13,
     lineHeight: 19,

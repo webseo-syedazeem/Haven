@@ -74,7 +74,10 @@ export default function HelpCentreScreen() {
   };
 
   return (
-    <SettingsScreen subtitle="Answers to the things people ask most." title="Help Centre">
+    <SettingsScreen
+      backgroundImage={require('@/assets/images/contact-support-top-moonlit-lake-bg.webp')}
+      subtitle="Answers to the things people ask most."
+      title="Help Centre">
       <View style={styles.searchBar}>
         <Ionicons color={HalcyonColors.textSecondary} name="search-outline" size={18} />
         <TextInput

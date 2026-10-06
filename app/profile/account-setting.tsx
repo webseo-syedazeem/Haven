@@ -15,6 +15,7 @@ import { useHasSession } from '@/hooks/useSession';
 import { useUser } from '@/hooks/useUser';
 import { getDisplayName, getProfileEmail } from '@/lib/api/user';
 import { clearUserSession } from '@/lib/auth/clearSession';
+import { resetToLogin } from '@/lib/navigation';
 import { usePlayerActions } from '@/lib/player/PlayerProvider';
 import { deleteAccount } from '@/lib/haven-api';
 
@@ -52,8 +53,7 @@ function AccountSettingContent() {
       await stop({ forgetResumable: true });
       await clearUserSession(queryClient);
       setSignOutVisible(false);
-      router.dismissAll();
-      router.replace('/login');
+      resetToLogin(router);
     } catch {
       showToast('Could not sign out. Try again.');
     } finally {
@@ -68,8 +68,7 @@ function AccountSettingContent() {
       await stop({ forgetResumable: true });
       await clearUserSession(queryClient);
       setDeleteVisible(false);
-      router.dismissAll();
-      router.replace('/login');
+      resetToLogin(router);
     } catch (error) {
       setDeleteVisible(false);
       showToast(
@@ -82,6 +81,7 @@ function AccountSettingContent() {
 
   return (
     <SettingsScreen
+      backgroundImage={require('@/assets/images/account-compact-dusk-mountains-bg.webp')}
       overlay={
         <>
           <ConfirmDialog

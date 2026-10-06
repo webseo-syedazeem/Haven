@@ -1,7 +1,17 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import type { ReactNode } from 'react';
-import { Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useRef, type ReactNode } from 'react';
+import {
+  Animated,
+  ImageBackground,
+  Platform,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+  type ImageSourcePropType,
+} from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { HalcyonColors, HalcyonSpacing, Typography } from '@/constants/design';
@@ -18,6 +28,13 @@ type SettingsScreenProps = {
   overlay?: ReactNode;
   /** Extra bottom padding on top of the safe area. */
   bottomExtra?: number;
+  /** Scenic backdrop for this screen only — falls back to the flat ground when omitted. */
+  backgroundImage?: ImageSourcePropType;
+  /**
+   * Scroll the backdrop with the body and fade in a black status-bar cover as
+   * it moves, matching the main Profile screen. Needs `backgroundImage`.
+   */
+  scrollingBackground?: boolean;
 };
 
 /**
@@ -33,11 +50,19 @@ export function SettingsScreen({
   children,
   overlay,
   bottomExtra = 32,
+  backgroundImage,
+  scrollingBackground = false,
 }: SettingsScreenProps) {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const bottomInset =
     Math.max(insets.bottom, Platform.OS === 'android' ? ANDROID_NAV_FALLBACK : 0) + bottomExtra;
+  const scrollAnim = useRef(new Animated.Value(0)).current;
+  const overlayOpacity = scrollAnim.interpolate({
+    inputRange: [0, 30],
+    outputRange: [0, 1],
+    extrapolate: 'clamp',
+  });
 
   const header = (
     <View style={styles.header}>
@@ -54,17 +79,66 @@ export function SettingsScreen({
     </View>
   );
 
+  const body = (
+    <SafeAreaView edges={['top']} style={styles.safeArea}>
+      <ScrollView
+        contentContainerStyle={[styles.content, { paddingBottom: bottomInset }]}
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}>
+        {header}
+        {children}
+      </ScrollView>
+    </SafeAreaView>
+  );
+
+  // Same structure as the main Profile screen: the artwork lives inside the
+  // scroll view so it moves with the content, and the status-bar cover is an
+  // absolute layer that only appears once the content has scrolled.
+  if (scrollingBackground && backgroundImage) {
+    return (
+      <View style={styles.screen}>
+        <Animated.ScrollView
+          contentContainerStyle={styles.scrollContent}
+          keyboardShouldPersistTaps="handled"
+          onScroll={Animated.event(
+            [{ nativeEvent: { contentOffset: { y: scrollAnim } } }],
+            { useNativeDriver: true }
+          )}
+          scrollEventThrottle={16}
+          showsVerticalScrollIndicator={false}>
+          <ImageBackground
+            resizeMode="cover"
+            source={backgroundImage}
+            style={[
+              styles.scrollScene,
+              { paddingBottom: bottomInset, paddingTop: insets.top + 6 },
+            ]}>
+            {header}
+            {children}
+          </ImageBackground>
+        </Animated.ScrollView>
+
+        <Animated.View
+          pointerEvents="none"
+          style={[styles.topCover, { height: insets.top, opacity: overlayOpacity }]}
+        />
+        {overlay}
+      </View>
+    );
+  }
+
+  if (backgroundImage) {
+    return (
+      <ImageBackground resizeMode="cover" source={backgroundImage} style={styles.screen}>
+        {body}
+        {overlay}
+      </ImageBackground>
+    );
+  }
+
   return (
     <View style={styles.screen}>
-      <SafeAreaView edges={['top']} style={styles.safeArea}>
-        <ScrollView
-          contentContainerStyle={[styles.content, { paddingBottom: bottomInset }]}
-          keyboardShouldPersistTaps="handled"
-          showsVerticalScrollIndicator={false}>
-          {header}
-          {children}
-        </ScrollView>
-      </SafeAreaView>
+      {body}
       {overlay}
     </View>
   );
@@ -107,6 +181,20 @@ const styles = StyleSheet.create({
   },
   safeArea: {
     flex: 1,
+  },
+  scrollContent: {
+    flexGrow: 1,
+  },
+  scrollScene: {
+    flexGrow: 1,
+    paddingHorizontal: HalcyonSpacing.screenX,
+  },
+  topCover: {
+    backgroundColor: '#000000',
+    left: 0,
+    position: 'absolute',
+    right: 0,
+    top: 0,
   },
   content: {
     paddingHorizontal: HalcyonSpacing.screenX,

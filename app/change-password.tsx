@@ -205,7 +205,7 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   description: {
-    color: HalcyonColors.textSecondary,
+    color: 'rgba(255, 255, 255, 0.72)',
     fontFamily: AppFonts.sansRegular,
     fontSize: 14,
     lineHeight: 21,

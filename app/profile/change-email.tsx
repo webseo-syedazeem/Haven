@@ -26,7 +26,10 @@ function ChangeEmailContent() {
   const value = email || (isInitialLoading ? 'Loading…' : isError ? 'Unavailable' : 'Not set');
 
   return (
-    <SettingsScreen subtitle="The address your account signs in with." title="Email">
+    <SettingsScreen
+      backgroundImage={require('@/assets/images/email-compact-dusk-mountains-bg.webp')}
+      subtitle="The address your account signs in with."
+      title="Email">
       <SettingsField
         editable={false}
         hint="Your email is how you sign in and how we reach you about your account."

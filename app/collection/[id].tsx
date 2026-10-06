@@ -6,6 +6,7 @@ import { useCallback, useMemo, useState } from 'react';
 import {
   Alert,
   FlatList,
+  ImageBackground,
   Pressable,
   StyleSheet,
   Text,
@@ -151,22 +152,26 @@ export default function CollectionScreen() {
         onToggleFavourite={toggleFavourite}
         showFavourite
         soundscape={item}
+        variant="saved"
       />
     ),
     [favouriteIds, playSoundscape, router, soundscapes, toggleFavourite]
   );
 
   return (
-    <View style={styles.screen}>
+    <ImageBackground
+      source={require('@/assets/images/explore-collection-detail-bg.webp')}
+      style={styles.screen}
+      resizeMode="cover">
       <SafeAreaView edges={['top']} style={styles.safeArea}>
         <View style={styles.topBar}>
           <Pressable
             accessibilityLabel="Go back"
             accessibilityRole="button"
-            hitSlop={10}
+            hitSlop={12}
             onPress={() => router.back()}
             style={({ pressed }) => [styles.iconButton, pressed && styles.pressed]}>
-            <Ionicons color={HalcyonColors.textPrimary} name="chevron-back" size={22} />
+            <Ionicons color="#FFFFFF" name="chevron-back" size={28} />
           </Pressable>
         </View>
 
@@ -186,16 +191,8 @@ export default function CollectionScreen() {
             title="Collection not found"
           />
         ) : (
-          <FlatList
-            ListEmptyComponent={
-              <EmptyState
-                icon="musical-notes-outline"
-                message="Soundscapes are still being added to this collection."
-                title="Nothing here yet"
-              />
-            }
-            ListHeaderComponent={
-              <View>
+          <View style={styles.detailContent}>
+            <View>
                 <View style={styles.hero}>
                   {collection.cover_image_url ? (
                     <Image
@@ -282,14 +279,23 @@ export default function CollectionScreen() {
                     </View>
                   </View>
                 )}
-              </View>
-            }
+            </View>
+            <FlatList
+              ListEmptyComponent={
+                <EmptyState
+                  icon="musical-notes-outline"
+                  message="Soundscapes are still being added to this collection."
+                  title="Nothing here yet"
+                />
+              }
             contentContainerStyle={{ paddingBottom: bottomInset + 32 }}
             data={soundscapes}
             keyExtractor={(item) => item.id}
             renderItem={renderRow}
             showsVerticalScrollIndicator={false}
+            style={styles.soundscapeList}
           />
+          </View>
         )}
       </SafeAreaView>
 
@@ -303,7 +309,7 @@ export default function CollectionScreen() {
         visible={downloadPlan !== null}
       />
       <Toast bottom={bottomInset + 20} notice={notice} />
-    </View>
+    </ImageBackground>
   );
 }
 
@@ -315,19 +321,25 @@ const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
   },
+  detailContent: {
+    flex: 1,
+    minHeight: 0,
+  },
+  soundscapeList: {
+    flex: 1,
+  },
   topBar: {
     paddingHorizontal: HalcyonSpacing.screenX,
     paddingTop: 6,
   },
   iconButton: {
     alignItems: 'center',
-    borderRadius: 20,
-    height: 40,
+    height: 48,
     justifyContent: 'center',
-    width: 40,
+    width: 48,
   },
   pressed: {
-    opacity: 0.76,
+    opacity: 0.6,
   },
   disabled: {
     opacity: 0.5,
@@ -369,7 +381,7 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   description: {
-    color: HalcyonColors.textSecondary,
+    color: HalcyonColors.textPrimary,
     fontFamily: AppFonts.sansRegular,
     fontSize: 14,
     lineHeight: 21,
@@ -381,6 +393,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     paddingHorizontal: HalcyonSpacing.screenX,
     paddingTop: 18,
+    paddingBottom: 16,
   },
   playAll: {
     alignItems: 'center',
@@ -404,7 +417,7 @@ const styles = StyleSheet.create({
   },
   downloadAll: {
     alignItems: 'center',
-    borderColor: HalcyonColors.border,
+    borderColor: HalcyonColors.textPrimary,
     borderRadius: HalcyonRadius.pill,
     borderWidth: 1,
     columnGap: 8,

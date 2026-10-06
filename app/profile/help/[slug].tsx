@@ -69,7 +69,13 @@ export default function HelpArticleScreen() {
     );
   };
 
-  return <SettingsScreen title={article?.title ?? 'Help'}>{renderBody()}</SettingsScreen>;
+  return (
+    <SettingsScreen
+      backgroundImage={require('@/assets/images/contact-support-top-moonlit-lake-bg.webp')}
+      title={article?.title ?? 'Help'}>
+      {renderBody()}
+    </SettingsScreen>
+  );
 }
 
 const styles = StyleSheet.create({

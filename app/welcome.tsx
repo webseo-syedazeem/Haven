@@ -28,6 +28,7 @@ import { usePlayerActions } from '@/lib/player/PlayerProvider';
 const appleIcon = require('@/assets/icons/apple icon.png');
 const googleIcon = require('@/assets/icons/google icon.png');
 const emailIcon = require('@/assets/icons/email.png');
+const background = require('@/assets/images/save-your-space-twilight-lake-background.webp');
 
 type Provider = 'apple' | 'email' | 'google' | 'guest' | null;
 
@@ -173,16 +174,17 @@ export default function SaveYourSpaceScreen() {
     setErrorMessage('');
     setLoading('guest');
     try {
-      if (!(await isOnboardingDone())) {
+      const onboardingDone = await isOnboardingDone();
+      await setGuestModeActive(true);
+
+      if (!onboardingDone) {
         // Guest is chosen now; onboarding follows and ends at Home.
-        await setGuestModeActive(true);
         router.replace('/why-passage');
         return;
       }
       // Gates /api/me, /api/favourites, /api/home/continue-listening and
       // /api/play-history until a real sign in clears it (see
       // lib/auth/session-state.ts) — there is no bearer token to send yet.
-      await setGuestModeActive(true);
       await enterMainApp();
     } catch {
       setErrorMessage('We could not save your onboarding progress. Please try again.');
@@ -193,6 +195,8 @@ export default function SaveYourSpaceScreen() {
 
   return (
     <OnboardingScaffold
+      backgroundImage={background}
+      backgroundOverlayColor="rgba(7, 11, 16, 0.30)"
       contentContainerStyle={styles.content}
       footer={<AuthLegalFooter />}
       onBack={() => router.back()}>

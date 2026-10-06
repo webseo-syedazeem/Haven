@@ -147,7 +147,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
   },
   footer: {
-    backgroundColor: HalcyonColors.background,
     paddingBottom: 12,
     paddingHorizontal: 20,
     paddingTop: 12,

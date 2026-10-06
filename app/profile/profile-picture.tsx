@@ -122,6 +122,7 @@ function ProfilePictureContent() {
 
   return (
     <SettingsScreen
+      backgroundImage={require('@/assets/images/email-compact-dusk-mountains-bg.webp')}
       overlay={
         <>
           <ConfirmDialog

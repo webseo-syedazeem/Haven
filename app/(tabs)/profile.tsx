@@ -1,8 +1,8 @@
 import { useQueryClient } from '@tanstack/react-query';
 import { useRouter, type Href } from 'expo-router';
-import { useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { useRef, useState } from 'react';
+import { Animated, ImageBackground, Pressable, StyleSheet, Text, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { ConfirmDialog } from '@/components/ConfirmDialog';
 import { useAccountRequiredPrompt } from '@/components/auth/AccountRequiredPrompt';
@@ -21,6 +21,7 @@ import { clearUserSession } from '@/lib/auth/clearSession';
 import { setIntroSeen } from '@/lib/auth/intro-flag';
 import { setGuestModeActive } from '@/lib/auth/session-state';
 import { resetGuestOnboardingState } from '@/lib/onboarding';
+import { resetToLogin } from '@/lib/navigation';
 import { usePlayerActions } from '@/lib/player/PlayerProvider';
 
 /** R-01. Every row here is a screen in `app/profile/`. */
@@ -47,6 +48,7 @@ const SUPPORT_ROWS = [
 export default function ProfileScreen() {
   const router = useRouter();
   const queryClient = useQueryClient();
+  const insets = useSafeAreaInsets();
   const bottomInset = useTabContentInset();
   const hasSession = useHasSession();
   const isGuest = useGuestModeActive();
@@ -58,6 +60,12 @@ export default function ProfileScreen() {
   const [avatarPreviewVisible, setAvatarPreviewVisible] = useState(false);
   const [signOutVisible, setSignOutVisible] = useState(false);
   const [signingOut, setSigningOut] = useState(false);
+  const scrollAnim = useRef(new Animated.Value(0)).current;
+  const overlayOpacity = scrollAnim.interpolate({
+    inputRange: [0, 30],
+    outputRange: [0, 1],
+    extrapolate: 'clamp',
+  });
 
   const displayName = getDisplayName(me);
   const email = getProfileEmail(me);
@@ -96,7 +104,7 @@ export default function ProfileScreen() {
     await setGuestModeActive(false);
     await resetGuestOnboardingState();
     await setIntroSeen();
-    router.replace('/login?signedOut=1' as Href);
+    resetToLogin(router);
   }
 
   async function confirmSignOut() {
@@ -107,7 +115,7 @@ export default function ProfileScreen() {
       await stop({ forgetResumable: true });
       await clearUserSession(queryClient);
       setSignOutVisible(false);
-      router.replace('/login?signedOut=1' as Href);
+      resetToLogin(router);
     } catch {
       showToast('Could not sign out. Try again.');
     } finally {
@@ -118,10 +126,18 @@ export default function ProfileScreen() {
   return (
     <SwipeTabsWrapper>
       <View style={styles.screen}>
-        <SafeAreaView edges={['top']} style={styles.safeArea}>
-          <ScrollView
-            contentContainerStyle={[styles.content, { paddingBottom: bottomInset }]}
-            showsVerticalScrollIndicator={false}>
+        <Animated.ScrollView
+          contentContainerStyle={styles.scrollContent}
+          onScroll={Animated.event(
+            [{ nativeEvent: { contentOffset: { y: scrollAnim } } }],
+            { useNativeDriver: true }
+          )}
+          scrollEventThrottle={16}
+          showsVerticalScrollIndicator={false}>
+          <ImageBackground
+            resizeMode="cover"
+            source={require('@/assets/images/profile-compact-moonlit-alpine-bg.webp')}
+            style={[styles.scrollScene, { paddingBottom: bottomInset, paddingTop: insets.top + 18 }]}>
             <View style={styles.header}>
               <Pressable
                 accessibilityLabel="View profile picture"
@@ -194,8 +210,13 @@ export default function ProfileScreen() {
             </SettingsGroup>
 
             <Text style={styles.version}>Passage · free, with no subscription</Text>
-          </ScrollView>
-        </SafeAreaView>
+          </ImageBackground>
+        </Animated.ScrollView>
+
+        <Animated.View
+          pointerEvents="none"
+          style={[styles.topOverlay, { height: insets.top, opacity: overlayOpacity }]}
+        />
 
         <AvatarPreview
           imageUrl={profileImageUrl}
@@ -224,15 +245,22 @@ export default function ProfileScreen() {
 
 const styles = StyleSheet.create({
   screen: {
-    backgroundColor: HalcyonColors.background,
+    backgroundColor: '#000000',
     flex: 1,
   },
-  safeArea: {
-    flex: 1,
+  scrollContent: {
+    flexGrow: 1,
   },
-  content: {
+  scrollScene: {
+    flexGrow: 1,
     paddingHorizontal: HalcyonSpacing.screenX,
-    paddingTop: 18,
+  },
+  topOverlay: {
+    backgroundColor: '#000000',
+    left: 0,
+    position: 'absolute',
+    right: 0,
+    top: 0,
   },
   header: {
     alignItems: 'center',

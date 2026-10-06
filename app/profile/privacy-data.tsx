@@ -13,6 +13,7 @@ import { AppFonts } from '@/constants/theme';
 import { useAccountExport } from '@/hooks/useAccountExport';
 import { isAnalyticsEnabled, setAnalyticsEnabled } from '@/lib/analytics';
 import { clearUserSession } from '@/lib/auth/clearSession';
+import { resetToLogin } from '@/lib/navigation';
 import { usePlayerActions } from '@/lib/player/PlayerProvider';
 import { deleteAccount } from '@/lib/haven-api';
 
@@ -81,8 +82,7 @@ function PrivacyDataContent() {
       await stop({ forgetResumable: true });
       await clearUserSession(queryClient);
       setDeleteVisible(false);
-      router.dismissAll();
-      router.replace('/login');
+      resetToLogin(router);
     } catch (error) {
       setDeleteVisible(false);
       showToast(
@@ -111,6 +111,7 @@ function PrivacyDataContent() {
           <Toast bottom={72} notice={notice} />
         </>
       }
+      backgroundImage={require('@/assets/images/notifications-top-dusk-mountains-bg.webp')}
       subtitle="What we hold, and what you can do with it."
       title="Privacy & Data">
       <SettingsGroup title="Policies">

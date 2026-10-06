@@ -2,8 +2,9 @@ import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter, type Href } from 'expo-router';
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import {
+  Animated,
   Pressable,
   RefreshControl,
   ScrollView,
@@ -12,7 +13,7 @@ import {
   useWindowDimensions,
   View,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import {
   CollectionCard,
@@ -20,38 +21,29 @@ import {
   COLLECTION_CARD_WIDTH,
 } from '@/components/CollectionCard';
 import { EmptyState, ErrorState } from '@/components/EmptyState';
-import { FilterChip } from '@/components/FilterChip';
 import {
   HalcyonCardGradient,
   HalcyonCardGradientLocations,
   HalcyonColors,
   HalcyonRadius,
-  HalcyonSpacing, Typography } from '@/constants/design';
-import { MODES, type ModeId } from '@/constants/modes';
+  HalcyonSpacing,
+  Typography,
+} from '@/constants/design';
 import { AppFonts } from '@/constants/theme';
 import { useTabContentInset } from '@/hooks/use-bottom-safe-spacing';
 import { EXPLORE_GROUP_TITLES, useExploreGroups } from '@/hooks/useExplore';
-import type { ExploreGroup } from '@/lib/api/catalogue';
 import type { Collection } from '@/lib/api/home';
 
-type QuickFilter = 'all' | ModeId | 'new';
+const EXPLORE_BACKGROUND = require('@/assets/images/f96d5b3c-1856-4db7-ad2e-fcc7056d3aa1.webp');
+const EXPLORE_BACKGROUND_ASPECT_RATIO = 941 / 1672;
 
-const QUICK_FILTERS: { value: QuickFilter; label: string }[] = [
-  { value: 'all', label: 'All' },
-  ...MODES.map((mode) => ({ value: mode.id as QuickFilter, label: mode.label })),
-  { value: 'new', label: 'New' },
-];
-
-const MAX_SITUATION_TILE = 116;
-const SITUATION_COLUMNS = 4;
 const CARD_GAP = HalcyonSpacing.card;
-const NEW_WINDOW_DAYS = 30;
 
 export default function ExploreScreen() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const bottomInset = useTabContentInset();
   const { width } = useWindowDimensions();
-  const [filter, setFilter] = useState<QuickFilter>('all');
   const [refreshing, setRefreshing] = useState(false);
 
   const exploreQuery = useExploreGroups();
@@ -70,19 +62,7 @@ export default function ExploreScreen() {
     [router]
   );
 
-  /**
-   * `/api/explore` returns every published collection grouped by
-   * `explore_group`; it takes no mode or recency parameter, so the quick
-   * filters narrow the same payload here rather than re-querying.
-   */
-  const groups = useMemo<ExploreGroup[]>(() => {
-    const all = exploreQuery.data ?? [];
-    if (filter === 'all') return all;
-
-    return all
-      .map((group) => ({ ...group, collections: filterCollections(group.collections, filter) }))
-      .filter((group) => group.collections.length > 0);
-  }, [exploreQuery.data, filter]);
+  const groups = exploreQuery.data ?? [];
 
   const featured = groups.find((group) => group.group === 'editorial')?.collections[0]
     ?? groups[0]?.collections[0]
@@ -94,74 +74,69 @@ export default function ExploreScreen() {
     (group) => group.group !== 'situation' && group.group !== 'editorial'
   );
 
-  // Two-column grid, matching the screen gutters and the 14px rail gap.
-  const contentWidth = width - HalcyonSpacing.screenX * 2;
-  const gridWidth = (contentWidth - CARD_GAP) / 2;
-  const situationWidth = Math.min(
-    MAX_SITUATION_TILE,
-    (contentWidth - CARD_GAP * (SITUATION_COLUMNS - 1)) / SITUATION_COLUMNS
-  );
+  const backgroundHeight = width / EXPLORE_BACKGROUND_ASPECT_RATIO;
   const isEmpty =
     !exploreQuery.isInitialLoading && !exploreQuery.isError && groups.length === 0;
+  const scrollAnim = useRef(new Animated.Value(0)).current;
+  const overlayOpacity = scrollAnim.interpolate({
+    inputRange: [0, 30],
+    outputRange: [0, 1],
+    extrapolate: 'clamp',
+  });
 
   return (
     <View style={styles.screen}>
-      <SafeAreaView edges={['top']} style={styles.safeArea}>
-        <View style={styles.header}>
-          <Text style={styles.heading}>Explore</Text>
-          <Pressable
-            accessibilityLabel="Search soundscapes"
-            accessibilityRole="button"
-            hitSlop={10}
-            onPress={() => router.push('/(tabs)/library' as Href)}
-            style={({ pressed }) => [styles.iconButton, pressed && styles.pressed]}>
-            <Ionicons color={HalcyonColors.textPrimary} name="search-outline" size={21} />
-          </Pressable>
-        </View>
-
-        <ScrollView
-          contentContainerStyle={[styles.content, { paddingBottom: bottomInset }]}
-          refreshControl={
-            <RefreshControl
-              colors={[HalcyonColors.accent]}
-              onRefresh={onRefresh}
-              refreshing={refreshing}
-              tintColor={HalcyonColors.accent}
-            />
-          }
-          showsVerticalScrollIndicator={false}>
-          <View>
-            <ScrollView
-              contentContainerStyle={styles.chipRow}
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              style={styles.horizontalScroll}>
-              {QUICK_FILTERS.map((option) => (
-                <FilterChip
-                  key={option.value}
-                  label={option.label}
-                  onPress={() => setFilter(option.value)}
-                  selected={filter === option.value}
-                />
-              ))}
-            </ScrollView>
+      <Animated.ScrollView
+        contentContainerStyle={[styles.content, { paddingBottom: bottomInset }]}
+        onScroll={Animated.event(
+          [{ nativeEvent: { contentOffset: { y: scrollAnim } } }],
+          { useNativeDriver: true }
+        )}
+        refreshControl={
+          <RefreshControl
+            colors={[HalcyonColors.accent]}
+            onRefresh={onRefresh}
+            refreshing={refreshing}
+            tintColor={HalcyonColors.accent}
+          />
+        }
+        scrollEventThrottle={16}
+        showsVerticalScrollIndicator={false}>
+        <View style={styles.scrollScene}>
+          <Image
+            contentFit="cover"
+            contentPosition="top center"
+            pointerEvents="none"
+            source={EXPLORE_BACKGROUND}
+            style={[styles.backgroundImage, { height: backgroundHeight, width }]}
+          />
+          <LinearGradient
+            colors={['rgba(2, 6, 10, 0.08)', 'rgba(2, 5, 8, 0.18)', 'rgba(0, 0, 0, 0.38)']}
+            locations={[0, 0.42, 1]}
+            pointerEvents="none"
+            style={[styles.backgroundImage, { height: backgroundHeight, width }]}
+          />
+          <View style={[styles.header, { paddingTop: insets.top + 12 }]}>
+            <Text style={styles.heading}>Explore</Text>
+            <Pressable
+              accessibilityLabel="Search soundscapes"
+              accessibilityRole="button"
+              hitSlop={10}
+              onPress={() => router.push('/(tabs)/library' as Href)}
+              style={({ pressed }) => [styles.iconButton, pressed && styles.pressed]}>
+              <Ionicons color="rgba(255, 255, 255, 0.7)" name="search-outline" size={21} />
+            </Pressable>
           </View>
-
+        </View>
           {exploreQuery.isInitialLoading ? (
-            <ExploreSkeleton gridWidth={gridWidth} situationWidth={situationWidth} />
+            <ExploreSkeleton />
           ) : exploreQuery.isError && groups.length === 0 ? (
             <ErrorState onRetry={() => void exploreQuery.refetch()} />
           ) : isEmpty ? (
             <View style={styles.emptyContent}>
               <EmptyState
-                actionLabel={filter === 'all' ? undefined : 'Show everything'}
                 icon="compass-outline"
-                message={
-                  filter === 'all'
-                    ? 'Curated collections arrive as the catalogue fills out.'
-                    : 'Nothing in this filter yet.'
-                }
-                onAction={filter === 'all' ? undefined : () => setFilter('all')}
+                message="Curated collections arrive as the catalogue fills out."
                 title="Nothing to explore yet"
               />
             </View>
@@ -178,12 +153,9 @@ export default function ExploreScreen() {
                     showsHorizontalScrollIndicator={false}
                     style={styles.horizontalScroll}>
                     {situation.collections.map((collection) => (
-                      <SituationTile
-                        collection={collection}
-                        key={collection.id}
-                        onPress={openCollection}
-                        width={situationWidth}
-                      />
+                      <View key={collection.id} style={styles.railCard}>
+                        <CollectionCard collection={collection} onPress={openCollection} />
+                      </View>
                     ))}
                   </ScrollView>
                 </View>
@@ -194,16 +166,16 @@ export default function ExploreScreen() {
                   <Text style={[styles.sectionTitle, styles.sectionTitleInset]}>
                     {EXPLORE_GROUP_TITLES.editorial}
                   </Text>
-                  <View style={styles.grid}>
+                  <ScrollView
+                    contentContainerStyle={styles.tileRow}
+                    horizontal
+                    showsHorizontalScrollIndicator={false}>
                     {editorial.collections.map((collection) => (
-                      <CollectionCard
-                        collection={collection}
-                        key={collection.id}
-                        onPress={openCollection}
-                        width={gridWidth}
-                      />
+                      <View key={collection.id} style={styles.railCard}>
+                        <CollectionCard collection={collection} onPress={openCollection} />
+                      </View>
                     ))}
-                  </View>
+                  </ScrollView>
                 </View>
               )}
 
@@ -226,8 +198,12 @@ export default function ExploreScreen() {
               ))}
             </>
           )}
-        </ScrollView>
-      </SafeAreaView>
+      </Animated.ScrollView>
+
+      <Animated.View
+        pointerEvents="none"
+        style={[styles.topOverlay, { height: insets.top, opacity: overlayOpacity }]}
+      />
     </View>
   );
 }
@@ -281,49 +257,7 @@ function FeaturedCard({
   );
 }
 
-function SituationTile({
-  collection,
-  onPress,
-  width,
-}: {
-  collection: Collection;
-  onPress: (collection: Collection) => void;
-  width: number;
-}) {
-  return (
-    <Pressable
-      accessibilityLabel={collection.title}
-      accessibilityRole="button"
-      onPress={() => onPress(collection)}
-      style={({ pressed }) => [styles.tile, { width }, pressed && styles.pressed]}>
-      {collection.cover_image_url ? (
-        <Image
-          contentFit="cover"
-          cachePolicy="memory-disk"
-          source={{ uri: collection.cover_image_url }}
-          style={StyleSheet.absoluteFill}
-          transition={200}
-        />
-      ) : null}
-      <LinearGradient
-        colors={HalcyonCardGradient as unknown as readonly [string, string, ...string[]]}
-        locations={HalcyonCardGradientLocations as unknown as readonly [number, number, ...number[]]}
-        style={StyleSheet.absoluteFill}
-      />
-      <Text numberOfLines={2} style={styles.tileLabel}>
-        {collection.title}
-      </Text>
-    </Pressable>
-  );
-}
-
-function ExploreSkeleton({
-  gridWidth,
-  situationWidth,
-}: {
-  gridWidth: number;
-  situationWidth: number;
-}) {
+function ExploreSkeleton() {
   return (
     <View>
       <View style={[styles.featured, styles.skeletonBlock]} />
@@ -336,10 +270,10 @@ function ExploreSkeleton({
           horizontal
           showsHorizontalScrollIndicator={false}
           style={styles.horizontalScroll}>
-          {Array.from({ length: SITUATION_COLUMNS }, (_, index) => (
+          {[0, 1, 2].map((index) => (
             <View
               key={index}
-              style={[styles.tile, styles.skeletonBlock, { width: situationWidth }]}
+              style={[styles.skeletonBlock, styles.gridSkeleton, { width: COLLECTION_CARD_WIDTH }]}
             />
           ))}
         </ScrollView>
@@ -348,68 +282,57 @@ function ExploreSkeleton({
         <View style={styles.skeletonHeading}>
           <View style={styles.skeletonLine} />
         </View>
-        <View style={styles.grid}>
-          {[0, 1, 2, 3].map((index) => (
+        <ScrollView
+          contentContainerStyle={styles.tileRow}
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          style={styles.horizontalScroll}>
+          {[0, 1, 2].map((index) => (
             <View
               key={index}
-              style={[styles.skeletonBlock, styles.gridSkeleton, { width: gridWidth }]}
+              style={[styles.skeletonBlock, styles.gridSkeleton, { width: COLLECTION_CARD_WIDTH }]}
             />
           ))}
-        </View>
+        </ScrollView>
       </View>
     </View>
   );
 }
 
-/**
- * Collections carry no mode column, so a mode chip matches on the text the API
- * does return. "New" leans on `created_at` when present and otherwise keeps the
- * API's own ordering, which is already sort_order then title.
- */
-function filterCollections(collections: Collection[], filter: QuickFilter): Collection[] {
-  if (filter === 'new') {
-    const cutoff = Date.now() - NEW_WINDOW_DAYS * 24 * 60 * 60 * 1000;
-    const dated = collections.filter((collection) => {
-      const createdAt = (collection as { created_at?: string }).created_at;
-      return !!createdAt && new Date(createdAt).getTime() >= cutoff;
-    });
-
-    return dated.length > 0 ? dated : collections;
-  }
-
-  const needle = filter.toLowerCase();
-  return collections.filter((collection) => {
-    const haystack = [collection.title, collection.description, collection.slug]
-      .filter(Boolean)
-      .join(' ')
-      .toLowerCase();
-    return haystack.includes(needle);
-  });
-}
-
 const styles = StyleSheet.create({
   screen: {
-    backgroundColor: HalcyonColors.background,
+    backgroundColor: '#000000',
     flex: 1,
   },
-  safeArea: {
-    flex: 1,
+  scrollScene: {
+    position: 'relative',
+  },
+  backgroundImage: {
+    left: 0,
+    position: 'absolute',
+    top: 0,
+  },
+  topOverlay: {
+    backgroundColor: '#000000',
+    left: 0,
+    position: 'absolute',
+    right: 0,
+    top: 0,
   },
   header: {
     alignItems: 'center',
     flexDirection: 'row',
     justifyContent: 'space-between',
+    paddingBottom: 16,
     paddingHorizontal: HalcyonSpacing.screenX,
-    paddingTop: 12,
   },
   heading: {
     ...Typography.screenHeading,
   },
   iconButton: {
     alignItems: 'center',
-    borderColor: HalcyonColors.border,
+    backgroundColor: 'rgba(255, 255, 255, 0.12)',
     borderRadius: 20,
-    borderWidth: 1,
     height: 40,
     justifyContent: 'center',
     width: 40,
@@ -419,19 +342,10 @@ const styles = StyleSheet.create({
   },
   content: {
     flexGrow: 1,
-    paddingTop: 16,
   },
   emptyContent: {
     flexGrow: 1,
     justifyContent: 'center',
-  },
-  chipRow: {
-    alignItems: 'center',
-    columnGap: 8,
-    flexDirection: 'row',
-    flexWrap: 'nowrap',
-    paddingBottom: 4,
-    paddingHorizontal: HalcyonSpacing.screenX,
   },
   horizontalScroll: {
     flexGrow: 0,
@@ -494,32 +408,8 @@ const styles = StyleSheet.create({
     flexWrap: 'nowrap',
     paddingHorizontal: HalcyonSpacing.screenX,
   },
-  tile: {
-    aspectRatio: 1,
-    backgroundColor: HalcyonColors.surface,
-    borderColor: HalcyonColors.border,
-    borderRadius: HalcyonRadius.artwork,
-    borderWidth: 1,
-    justifyContent: 'flex-end',
-    overflow: 'hidden',
-    padding: 10,
-  },
-  tileLabel: {
-    color: HalcyonColors.textPrimary,
-    fontFamily: AppFonts.sansMedium,
-    fontSize: 13,
-    fontWeight: '500',
-    lineHeight: 17,
-  },
   railCard: {
     width: COLLECTION_CARD_WIDTH,
-  },
-  grid: {
-    columnGap: CARD_GAP,
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    paddingHorizontal: HalcyonSpacing.screenX,
-    rowGap: 18,
   },
   skeletonBlock: {
     backgroundColor: HalcyonColors.surface,

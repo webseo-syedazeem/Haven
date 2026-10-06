@@ -20,6 +20,8 @@ import { emailIssue, parseAuthError } from '@/lib/auth/form-errors';
 import { forgotPassword } from '@/lib/haven-api';
 import { safeGoBack } from '@/lib/navigation';
 
+const background = require('@/assets/images/reset-password-moonlit-lake-background.webp');
+
 export default function ResetPasswordScreen() {
   const router = useRouter();
   const [email, setEmail] = useState('');
@@ -63,7 +65,12 @@ export default function ResetPasswordScreen() {
     <KeyboardAvoidingView
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       style={styles.keyboardView}>
-      <OnboardingScaffold contentContainerStyle={styles.scrollContent} footer={<AuthLegalFooter />} onBack={() => safeGoBack(router, '/login')}>
+      <OnboardingScaffold
+        backgroundImage={background}
+        backgroundOverlayColor="rgba(7, 11, 16, 0.30)"
+        contentContainerStyle={styles.scrollContent}
+        footer={<AuthLegalFooter />}
+        onBack={() => safeGoBack(router, '/login')}>
         <View style={styles.content}>
           <Text style={styles.heading}>Reset your password</Text>
           <Text style={styles.description}>
@@ -154,7 +161,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   helperText: {
-    color: 'rgba(255, 255, 255, 0.56)',
+    color: 'rgba(255, 255, 255, 0.72)',
     fontFamily: AppFonts.sansRegular,
     fontSize: 13,
     lineHeight: 19,

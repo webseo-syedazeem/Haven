@@ -1,4 +1,3 @@
-import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useLocalSearchParams, useRouter, type Href } from 'expo-router';
@@ -6,6 +5,7 @@ import { useCallback, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { OnboardingBackButton } from '@/components/onboarding/OnboardingBackButton';
 import { SectionRail } from '@/components/SectionRail';
 import { SoundscapeCard } from '@/components/SoundscapeCard';
 import {
@@ -68,14 +68,10 @@ export default function ModeHubScreen() {
             style={StyleSheet.absoluteFill}
           />
           <SafeAreaView edges={['top']} style={styles.heroSafeArea}>
-            <Pressable
-              accessibilityLabel="Go back"
-              accessibilityRole="button"
-              hitSlop={12}
+            <OnboardingBackButton
               onPress={() => router.back()}
-              style={({ pressed }) => [styles.backButton, pressed && styles.pressed]}>
-              <Ionicons color={HalcyonColors.textPrimary} name="chevron-back" size={20} />
-            </Pressable>
+              style={styles.backButton}
+            />
             <View style={styles.heroCopy}>
               <Text style={styles.heroTitle}>{mode.label.toUpperCase()}</Text>
               <Text style={styles.heroTagline}>{mode.tagline}</Text>
@@ -176,16 +172,8 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   backButton: {
-    alignItems: 'center',
-    backgroundColor: 'rgba(11,11,13,0.45)',
-    borderColor: HalcyonColors.border,
-    borderRadius: 18,
-    borderWidth: 1,
-    height: 36,
-    justifyContent: 'center',
     marginLeft: HalcyonSpacing.screenX,
     marginTop: 12,
-    width: 36,
   },
   pressed: {
     opacity: 0.82,
