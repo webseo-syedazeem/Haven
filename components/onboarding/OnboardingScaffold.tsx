@@ -1,11 +1,9 @@
 import { StatusBar } from 'expo-status-bar';
 import type { ReactNode } from 'react';
 import {
-  Image,
   ImageBackground,
   ScrollView,
   StyleSheet,
-  Text,
   View,
   type ImageSourcePropType,
   type LayoutChangeEvent,
@@ -14,11 +12,8 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { OnboardingBackButton } from '@/components/onboarding/OnboardingBackButton';
+import { OnboardingBrandHeader } from '@/components/onboarding/OnboardingBrandHeader';
 import { HalcyonColors } from '@/constants/design';
-import { AppFonts } from '@/constants/theme';
-
-const brandIcon = require('@/assets/images/passage-brand-assets/screens-icon.webp');
 
 type Props = {
   backgroundImage?: ImageSourcePropType;
@@ -46,26 +41,7 @@ export function OnboardingScaffold({
   scroll = true,
 }: Props) {
   const defaultHeader = (
-    <View style={styles.header}>
-      {/* Absolute centered Brand - locked to horizontal center */}
-      <View pointerEvents="none" style={styles.brandCenterAbsolute}>
-        <Image source={brandIcon} style={styles.brandIcon} />
-        <Text style={styles.brandText}>Passage</Text>
-      </View>
-
-      <View style={styles.headerSideSlot}>
-        {onBack ? (
-          <OnboardingBackButton
-            color={HalcyonColors.textPrimary}
-            onPress={onBack}
-          />
-        ) : null}
-      </View>
-
-      <View style={styles.headerSideSlot}>
-        {headerRight ? <View style={styles.headerRight}>{headerRight}</View> : null}
-      </View>
-    </View>
+    <OnboardingBrandHeader onBack={onBack} right={headerRight} />
   );
   const headerNode = header !== undefined ? header : defaultHeader;
   const content = scroll ? (
@@ -111,37 +87,6 @@ export function OnboardingScaffold({
 
 const styles = StyleSheet.create({
   background: { flex: 1 },
-  brandCenterAbsolute: {
-    alignItems: 'center',
-    bottom: 0,
-    flexDirection: 'row',
-    justifyContent: 'center',
-    left: 0,
-    position: 'absolute',
-    right: 0,
-    top: 0,
-    zIndex: 0,
-  },
-  headerSideSlot: {
-    alignItems: 'flex-start',
-    height: 40,
-    justifyContent: 'center',
-    width: 40,
-    zIndex: 1,
-  },
-  brandIcon: {
-    height: 38,
-    resizeMode: 'contain',
-    width: 58,
-  },
-  brandText: {
-    color: HalcyonColors.textPrimary,
-    fontFamily: AppFonts.sansBold,
-    fontSize: 20,
-    fontWeight: '700',
-    letterSpacing: -0.3,
-    marginLeft: -9,
-  },
   fixedContent: {
     flex: 1,
     paddingHorizontal: 20,
@@ -151,24 +96,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingTop: 12,
   },
-  header: {
-    alignItems: 'center',
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    minHeight: 52,
-    paddingLeft: 10,
-    paddingRight: 20,
-    position: 'relative',
-    width: '100%',
-  },
-  headerRight: {
-    alignItems: 'center',
-    flex: 1,
-    flexDirection: 'row',
-    justifyContent: 'flex-end',
-    marginLeft: 16,
-  },
-  headerSpacer: { height: 36, width: 36 },
   overlay: {
     ...StyleSheet.absoluteFillObject,
     backgroundColor: 'rgba(11,11,13,0.62)',

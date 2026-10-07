@@ -4,7 +4,6 @@ import type { Href } from 'expo-router';
 import { useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import {
-  Image,
   ImageBackground,
   Pressable,
   ScrollView,
@@ -14,7 +13,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { OnboardingBackButton } from '@/components/onboarding/OnboardingBackButton';
+import { OnboardingBrandHeader } from '@/components/onboarding/OnboardingBrandHeader';
 import { OnboardingContinueButton } from '@/components/onboarding/OnboardingContinueButton';
 import type { ModeId } from '@/constants/modes';
 import { DURATION_STEP_ENABLED } from '@/constants/onboarding';
@@ -25,7 +24,6 @@ import {
   saveOnboardingAnswers,
 } from '@/lib/onboarding';
 
-const brandIcon = require('@/assets/images/passage-brand-assets/screens-icon.webp');
 const focusBackground = require('@/assets/images/personalise-focus-background.webp');
 const sleepBackground = require('@/assets/images/personalise-sleep-background.webp');
 
@@ -163,21 +161,7 @@ export default function PersonaliseScreen() {
       />
 
       <SafeAreaView edges={['top', 'bottom']} style={styles.safeArea}>
-        {/* Header with back button and centered brand */}
-        <View style={styles.header}>
-          {/* Absolute centered Brand - locked to horizontal center */}
-          <View pointerEvents="none" style={styles.brandCenterAbsolute}>
-            <Image source={brandIcon} style={styles.brandIcon} />
-            <Text style={styles.brandText}>Passage</Text>
-          </View>
-
-          <OnboardingBackButton
-            onPress={() => safeGoBack(router)}
-            style={styles.backButtonLayer}
-          />
-
-          <View style={styles.headerSpacer} />
-        </View>
+        <OnboardingBrandHeader onBack={() => safeGoBack(router)} />
 
         <ScrollView
           contentContainerStyle={styles.scrollContent}
@@ -309,33 +293,6 @@ export default function PersonaliseScreen() {
 }
 
 const styles = StyleSheet.create({
-  backButtonLayer: {
-    zIndex: 1,
-  },
-  brandCenterAbsolute: {
-    alignItems: 'center',
-    bottom: 0,
-    flexDirection: 'row',
-    justifyContent: 'center',
-    left: 0,
-    position: 'absolute',
-    right: 0,
-    top: 0,
-    zIndex: 0,
-  },
-  brandIcon: {
-    height: 38,
-    resizeMode: 'contain',
-    width: 58,
-  },
-  brandText: {
-    color: '#FFFFFF',
-    fontFamily: AppFonts.sansBold,
-    fontSize: 20,
-    fontWeight: '700',
-    letterSpacing: -0.3,
-    marginLeft: -9,
-  },
   card: {
     borderWidth: 1,
     borderRadius: 14,
@@ -442,20 +399,6 @@ const styles = StyleSheet.create({
     gap: 12,
     justifyContent: 'space-between',
     marginTop: 20,
-  },
-  header: {
-    alignItems: 'center',
-    flexDirection: 'row',
-    height: 52,
-    justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    position: 'relative',
-    width: '100%',
-  },
-  headerSpacer: {
-    height: 40,
-    width: 40,
-    zIndex: 1,
   },
   safeArea: {
     flex: 1,

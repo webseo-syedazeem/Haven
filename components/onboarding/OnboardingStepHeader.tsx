@@ -1,9 +1,6 @@
-import { AppFonts } from '@/constants/theme';
-import { Image, StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 
-import { OnboardingBackButton } from '@/components/onboarding/OnboardingBackButton';
-
-const appIcon = require('@/assets/images/passage-brand-assets/screens-icon.webp');
+import { OnboardingBrandHeader } from '@/components/onboarding/OnboardingBrandHeader';
 
 type OnboardingStepHeaderProps = {
   accentColor?: string;
@@ -29,21 +26,7 @@ export function OnboardingStepHeader({
 
   return (
     <View style={styles.container}>
-      <View style={styles.topRow}>
-        {/* Absolute centered Brand - locked to horizontal center */}
-        <View pointerEvents="none" style={styles.brandCenterAbsolute}>
-          <Image resizeMode="contain" source={appIcon} style={styles.iconMark} />
-          <Text style={styles.brandTitle}>Passage</Text>
-        </View>
-
-        <View style={styles.sideSlot}>
-          {showBack && onBack ? (
-            <OnboardingBackButton onPress={onBack} />
-          ) : null}
-        </View>
-
-        <View style={styles.sideSlot} />
-      </View>
+      <OnboardingBrandHeader onBack={onBack} showBack={showBack} />
 
       {/* 4-Segment Progress Bar */}
       <View style={styles.progressRow}>
@@ -82,43 +65,9 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.6,
     shadowRadius: 3,
   },
-  brandCenterAbsolute: {
-    alignItems: 'center',
-    bottom: 0,
-    flexDirection: 'row',
-    justifyContent: 'center',
-    left: 0,
-    position: 'absolute',
-    right: 0,
-    top: 0,
-    zIndex: 0,
-  },
-  sideSlot: {
-    alignItems: 'flex-start',
-    height: 40,
-    justifyContent: 'center',
-    width: 40,
-    zIndex: 1,
-  },
-  brandTitle: {
-    color: '#FFFFFF',
-    fontFamily: AppFonts.sansBold,
-    fontSize: 20,
-    fontWeight: '700',
-    letterSpacing: -0.3,
-    marginLeft: -9,
-  },
   container: {
-    paddingLeft: 12,
-    paddingRight: 24,
-    paddingTop: 8,
     paddingBottom: 12,
     width: '100%',
-  },
-  iconMark: {
-    height: 38,
-    resizeMode: 'contain',
-    width: 58,
   },
   inactiveSegment: {
     backgroundColor: 'rgba(255, 255, 255, 0.22)',
@@ -126,20 +75,12 @@ const styles = StyleSheet.create({
   progressRow: {
     flexDirection: 'row',
     gap: 6,
-    marginTop: 14,
-    width: '100%',
+    marginHorizontal: 20,
+    marginTop: 10,
   },
   segment: {
     borderRadius: 2,
     flex: 1,
     height: 2.5,
-  },
-  topRow: {
-    alignItems: 'center',
-    flexDirection: 'row',
-    height: 40,
-    justifyContent: 'space-between',
-    position: 'relative',
-    width: '100%',
   },
 });

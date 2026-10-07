@@ -13,16 +13,14 @@ import {
   type ImageSourcePropType,
 } from 'react-native';
 
-import { OnboardingBackButton } from '@/components/onboarding/OnboardingBackButton';
+import { OnboardingBrandHeader } from '@/components/onboarding/OnboardingBrandHeader';
 import { OnboardingContinueButton } from '@/components/onboarding/OnboardingContinueButton';
 import { OnboardingScaffold } from '@/components/onboarding/OnboardingScaffold';
-import { HalcyonColors } from '@/constants/design';
 import type { ModeId } from '@/constants/modes';
 import { AppFonts } from '@/constants/theme';
 import { safeGoBack } from '@/lib/navigation';
 import { getOnboardingAnswers } from '@/lib/onboarding';
 
-const brandIcon = require('@/assets/images/passage-brand-assets/screens-icon.webp');
 const trustHeroDesk = require('@/assets/images/trust-hero-desk.webp');
 const trustFocusFullBackground = require('@/assets/images/trust-focus-full-background.webp');
 const mayaAvatar = require('@/assets/images/rating-person-3.webp');
@@ -133,35 +131,12 @@ export default function TrustScreen() {
   const customHeader = (
     <View
       style={[
-        styles.headerCentered,
+        styles.headerContainer,
         {
           paddingBottom: Math.max(5, scale(12)),
-          paddingTop: Math.max(4, scale(8)),
         },
       ]}>
-      <OnboardingBackButton
-        onPress={() => safeGoBack(router)}
-        style={styles.headerBackButton}
-      />
-      <View style={[styles.brandRow, { height: Math.max(30, scale(40)) }]}>
-        <Image
-          source={brandIcon}
-          style={[
-            styles.brandIcon,
-            { height: Math.max(28, scale(38)), width: Math.max(44, scale(58)) },
-          ]}
-        />
-        <Text
-          style={[
-            styles.brandText,
-            {
-              fontSize: Math.max(17, scale(20)),
-              marginLeft: -9,
-            },
-          ]}>
-          Passage
-        </Text>
-      </View>
+      <OnboardingBrandHeader onBack={() => safeGoBack(router)} />
       <View
         style={[
           styles.dashRow,
@@ -387,25 +362,6 @@ const styles = StyleSheet.create({
     resizeMode: 'cover',
     width: 68,
   },
-  brandIcon: {
-    height: 38,
-    resizeMode: 'contain',
-    width: 58,
-  },
-  brandRow: {
-    alignItems: 'center',
-    flexDirection: 'row',
-    height: 40,
-    justifyContent: 'center',
-  },
-  brandText: {
-    color: HalcyonColors.textPrimary,
-    fontFamily: AppFonts.sansBold,
-    fontSize: 20,
-    fontWeight: '700',
-    letterSpacing: -0.3,
-    marginLeft: -9,
-  },
   card: {
     alignItems: 'center',
     backgroundColor: '#0F1317',
@@ -513,17 +469,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     width: '100%',
   },
-  headerBackButton: {
-    left: 10,
-    position: 'absolute',
-    top: 8,
-    zIndex: 2,
-  },
-  headerCentered: {
+  headerContainer: {
     alignItems: 'center',
     justifyContent: 'center',
     paddingBottom: 12,
-    paddingTop: 8,
     position: 'relative',
     width: '100%',
     zIndex: 10,

@@ -1,19 +1,17 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useQuery } from '@tanstack/react-query';
 import { Image as ArtworkImage } from 'expo-image';
-import { useRouter } from 'expo-router';
+import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
-  Image,
   Pressable,
   StyleSheet,
   Text,
   View,
 } from 'react-native';
 
-import { useFocusEffect, useLocalSearchParams } from 'expo-router';
-import { OnboardingBackButton } from '@/components/onboarding/OnboardingBackButton';
+import { OnboardingBrandHeader } from '@/components/onboarding/OnboardingBrandHeader';
 import { OnboardingContinueButton } from '@/components/onboarding/OnboardingContinueButton';
 import { RelaxContinueButton } from '@/components/onboarding/RelaxContinueButton';
 import { OnboardingScaffold } from '@/components/onboarding/OnboardingScaffold';
@@ -39,8 +37,6 @@ import { resetToMainApp, safeGoBack } from '@/lib/navigation';
 import { toPreviewTrack } from '@/lib/player/types';
 import { useScopedPlayer } from '@/lib/player/useScopedPlayer';
 import { formatClock } from '@/lib/utils/duration';
-
-const brandIcon = require('@/assets/images/passage-brand-assets/screens-icon.webp');
 
 const PREVIEW_COUNT = 3;
 const PREVIEW_DURATION_SECONDS = 60;
@@ -232,13 +228,7 @@ export default function TryPassageScreen() {
     }
   };
 
-  const brandHeader = (
-    <View style={styles.headerCentered}>
-      <OnboardingBackButton onPress={handleBack} style={styles.headerBackButton} />
-      <Image source={brandIcon} style={styles.brandIcon} />
-      <Text style={styles.brandText}>Passage</Text>
-    </View>
-  );
+  const brandHeader = <OnboardingBrandHeader onBack={handleBack} />;
   const customHeader =
     modeReady && resolvedMode === 'relax' ? (
       <RelaxStepHeader currentStep={10} onBack={handleBack} />
@@ -427,19 +417,6 @@ export default function TryPassageScreen() {
 }
 
 const styles = StyleSheet.create({
-  brandIcon: {
-    height: 38,
-    resizeMode: 'contain',
-    width: 58,
-  },
-  brandText: {
-    color: HalcyonColors.textPrimary,
-    fontFamily: AppFonts.sansBold,
-    fontSize: 20,
-    fontWeight: '700',
-    letterSpacing: -0.3,
-    marginLeft: -9,
-  },
   card: {
     alignItems: 'center',
     backgroundColor: 'rgba(6,20,21,0.82)',
@@ -481,20 +458,6 @@ const styles = StyleSheet.create({
   footerContainer: {
     alignItems: 'center',
     width: '100%',
-  },
-  headerCentered: {
-    alignItems: 'center',
-    flexDirection: 'row',
-    justifyContent: 'center',
-    minHeight: 52,
-    paddingTop: 6,
-    position: 'relative',
-    width: '100%',
-  },
-  headerBackButton: {
-    left: 10,
-    position: 'absolute',
-    top: 8,
   },
   heading: {
     color: '#FFFFFF',

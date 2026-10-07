@@ -13,9 +13,9 @@ import { safeGoBack } from '@/lib/navigation';
 const heroImage = require('@/assets/images/why-passage-moonlit-window.webp');
 
 const FEATURES = [
-  'Specific places, not generic loops',
-  'Layered sound you can shape',
-  'Sessions built around an intention'
+  'Immersive binaural sounds',
+  'High-quality audio, carefully crafted',
+  'Designed for focus, sleep and relaxation',
 ];
 
 const CONTENT_TOP_PADDING = 8;
@@ -75,7 +75,7 @@ export default function WhyPassageScreen() {
           onLayout={(event) => setHeaderHeight(event.nativeEvent.layout.height)}
           style={styles.headerBlock}>
           <Text style={styles.heading}>
-            More than{'\n'}background noise.
+            Passage is the ultimate{'\n'}soundscape app.
           </Text>
         </View>
 
@@ -153,7 +153,7 @@ const styles = StyleSheet.create({
   },
   headerBlock: {
     alignItems: 'center',
-    paddingTop: 8,
+    paddingTop: 0,
     width: '100%',
   },
   heading: {
