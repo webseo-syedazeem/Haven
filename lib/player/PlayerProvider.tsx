@@ -255,40 +255,70 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
   }, [clearFade, clearTimerState, persistNow, refreshResumable]);
 
   const startFadeOut = useCallback(
-    (fadeSeconds: number) => {
-      clearFade();
-      setState((current) => ({ ...current, isFadingOut: true }));
-
-      const startedAt = Date.now();
-      fadeInterval.current = setInterval(() => {
-        const elapsed = (Date.now() - startedAt) / 1000;
-        const level = 1 - elapsed / fadeSeconds;
-
-        if (level <= 0) {
+    (fadeSeconds: number, endsAt: number) => {
+      const applyDeadlineVolume = () => {
+        const remainingMs = endsAt - Date.now();
+        if (remainingMs <= 0) {
+          timerRef.current = { ...timerRef.current, endsAt: null };
           void finishPlayback();
-          return;
+          return false;
         }
 
-        void engine.setVolume(level);
+        void engine.setVolume(Math.min(1, remainingMs / (fadeSeconds * 1000)));
+        return true;
+      };
+
+      if (fadeInterval.current) {
+        applyDeadlineVolume();
+        return;
+      }
+
+      setState((current) => ({ ...current, isFadingOut: true }));
+      if (!applyDeadlineVolume()) return;
+
+      fadeInterval.current = setInterval(() => {
+        applyDeadlineVolume();
       }, FADE_STEP_MS);
     },
-    [clearFade, finishPlayback]
+    [finishPlayback]
   );
 
   const handleTimerEnd = useCallback(() => {
     const config = getTimerConfig(soundscapeRef.current?.mode);
 
-    if (config.ending.type === 'fade') {
-      startFadeOut(config.ending.fadeSeconds);
-      return;
-    }
-
     // Focus: a silent stop unless the listener asked for the gentle end tone.
-    if (endToneRef.current) {
+    if (config.ending.type === 'silent' && endToneRef.current) {
       void engine.playEndTone();
     }
     void finishPlayback();
-  }, [finishPlayback, startFadeOut]);
+  }, [finishPlayback]);
+
+  const reconcileTimer = useCallback(() => {
+    const endsAt = timerRef.current.endsAt;
+    if (!endsAt) return;
+
+    const remainingMs = endsAt - Date.now();
+    const remainingSeconds = Math.max(0, Math.ceil(remainingMs / 1000));
+    setProgress((current) =>
+      current.timerRemainingSeconds === remainingSeconds
+        ? current
+        : { ...current, timerRemainingSeconds: remainingSeconds }
+    );
+
+    if (remainingMs <= 0) {
+      timerRef.current = { ...timerRef.current, endsAt: null };
+      handleTimerEnd();
+      return;
+    }
+
+    const config = getTimerConfig(soundscapeRef.current?.mode);
+    if (
+      config.ending.type === 'fade' &&
+      remainingMs <= config.ending.fadeSeconds * 1000
+    ) {
+      startFadeOut(config.ending.fadeSeconds, endsAt);
+    }
+  }, [handleTimerEnd, startFadeOut]);
 
   // ---------------------------------------------------------------- engine wiring
 
@@ -374,36 +404,24 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (!state.timerSelection || state.timerSelection === UNTIL_I_STOP) return;
 
-    const interval = setInterval(() => {
-      const endsAt = timerRef.current.endsAt;
-      if (!endsAt) return;
-
-      const remaining = Math.max(0, Math.round((endsAt - Date.now()) / 1000));
-      setProgress((current) =>
-        current.timerRemainingSeconds === remaining
-          ? current
-          : { ...current, timerRemainingSeconds: remaining }
-      );
-
-      if (remaining <= 0) {
-        timerRef.current = { ...timerRef.current, endsAt: null };
-        handleTimerEnd();
-      }
-    }, 1000);
+    reconcileTimer();
+    const interval = setInterval(reconcileTimer, 1000);
 
     return () => clearInterval(interval);
-  }, [handleTimerEnd, state.timerSelection]);
+  }, [reconcileTimer, state.timerSelection]);
 
   // Save on the way to the background, where a debounce may never fire.
   useEffect(() => {
     const subscription = AppState.addEventListener('change', (status) => {
-      if (status !== 'active' && soundscapeRef.current) {
+      if (status === 'active') {
+        reconcileTimer();
+      } else if (soundscapeRef.current) {
         void persistNow();
       }
     });
 
     return () => subscription.remove();
-  }, [persistNow]);
+  }, [persistNow, reconcileTimer]);
 
   // Anything saved by a previous session becomes the resume offer on Home.
   useEffect(() => {
@@ -492,7 +510,7 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
         position: startAt,
         duration: soundscape.duration_seconds ?? 0,
         timerRemainingSeconds: timerRef.current.endsAt
-          ? Math.max(0, Math.round((timerRef.current.endsAt - Date.now()) / 1000))
+          ? Math.max(0, Math.ceil((timerRef.current.endsAt - Date.now()) / 1000))
           : null,
       });
 
@@ -516,7 +534,7 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
         // A queue change must not cancel an active sleep-timer fade or restart
         // its deadline. The fade interval keeps controlling the same engine.
         if (!fadeInterval.current) await engine.setVolume(1);
-        await engine.load(track, startAt);
+        await engine.load(track, startAt, queue.length);
         await engine.play();
       } catch (error) {
         console.warn('[player] playback failed', error);
@@ -579,7 +597,7 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
     if (!engine.hasSource()) {
       const track = toPlayableTrack(soundscape);
       if (!track || !(await engine.setup())) return;
-      await engine.load(track, positionRef.current);
+      await engine.load(track, positionRef.current, queueRef.current.length);
     }
 
     await engine.setVolume(1);
@@ -649,7 +667,7 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
       setState((current) => ({ ...current, timerSelection: selection, isFadingOut: false }));
       setProgress((current) => ({
         ...current,
-        timerRemainingSeconds: endsAt ? Math.round((endsAt - Date.now()) / 1000) : null,
+        timerRemainingSeconds: endsAt ? Math.ceil((endsAt - Date.now()) / 1000) : null,
       }));
       schedulePersist();
     },
@@ -689,7 +707,7 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
     if (!resumable) return;
 
     await playSoundscape(resumable.soundscape, {
-      queue: resumable.queue,
+      queue: [resumable.soundscape],
       startAt: resumable.positionSeconds,
     });
     if (typeof resumable.timerMinutes === 'number' && resumable.timerMinutes > 0) {

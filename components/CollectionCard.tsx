@@ -1,7 +1,7 @@
-import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
+import { CoverImage } from '@/components/CoverImage';
 import {
   HalcyonCardGradient,
   HalcyonCardGradientLocations,
@@ -33,15 +33,7 @@ export function CollectionCard({
       accessibilityRole="button"
       onPress={() => onPress?.(collection)}
       style={({ pressed }) => [styles.card, { width }, pressed && styles.cardPressed]}>
-      {collection.cover_image_url ? (
-        <Image
-          contentFit="cover"
-          cachePolicy="memory-disk"
-          source={{ uri: collection.cover_image_url }}
-          style={StyleSheet.absoluteFill}
-          transition={200}
-        />
-      ) : null}
+      <CoverImage size="md" style={StyleSheet.absoluteFill} uri={collection.cover_image_url} />
       <LinearGradient
         colors={HalcyonCardGradient as unknown as readonly [string, string, ...string[]]}
         locations={HalcyonCardGradientLocations as unknown as readonly [number, number, ...number[]]}

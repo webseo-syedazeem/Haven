@@ -38,6 +38,7 @@ import {
   migrateGuestOnboardingAfterAuth,
   resetGuestOnboardingState,
 } from '@/lib/onboarding';
+import { recoverAbandonedOnboardingReplay } from '@/lib/onboarding-replay';
 import { queryClient } from '@/lib/query-client';
 
 const welcomeBackground = require('@/assets/images/first-onboarding.webp');
@@ -72,6 +73,12 @@ export default function FirstPageScreen() {
     let active = true;
 
     void (async () => {
+      // Undoes any dev "Replay onboarding" run that never reached its final
+      // submit (system back out of the first replay screen, or the app was
+      // killed mid-replay) before any routing decision below reads local
+      // onboarding progress.
+      await recoverAbandonedOnboardingReplay();
+
       if (reset === '1') {
         await resetGuestOnboardingState();
         await setGuestModeActive(false);

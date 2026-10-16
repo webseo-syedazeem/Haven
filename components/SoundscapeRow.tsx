@@ -1,8 +1,8 @@
 import { Ionicons } from '@expo/vector-icons';
-import { Image } from 'expo-image';
 import type { ReactNode } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
+import { CoverImage } from '@/components/CoverImage';
 import { HalcyonColors, HalcyonSpacing } from '@/constants/design';
 import { AppFonts } from '@/constants/theme';
 import type { Soundscape } from '@/lib/api/home';
@@ -69,17 +69,7 @@ export function SoundscapeRow({
         hitSlop={6}
         onPress={() => onPlay?.(soundscape)}
         style={styles.artworkFrame}>
-        {soundscape.artwork_url ? (
-          <Image
-            contentFit="cover"
-            cachePolicy="memory-disk"
-            source={{ uri: soundscape.artwork_url }}
-            style={styles.artwork}
-            transition={180}
-          />
-        ) : (
-          <View style={[styles.artwork, styles.artworkFallback]} />
-        )}
+        <CoverImage size="sm" style={styles.artwork} uri={soundscape.artwork_url} />
         {!!onPlay && (
           <View style={styles.playScrim}>
             <Ionicons

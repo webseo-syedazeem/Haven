@@ -1,8 +1,8 @@
 import { Ionicons } from '@expo/vector-icons';
-import { Image } from 'expo-image';
 import { useRouter, type Href } from 'expo-router';
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
 
+import { CoverImage } from '@/components/CoverImage';
 import { HalcyonColors } from '@/constants/design';
 import { getModeLabel } from '@/constants/modes';
 import { AppFonts } from '@/constants/theme';
@@ -40,17 +40,7 @@ export function MiniPlayer() {
 
       <View style={styles.row}>
         <View style={styles.artworkFrame}>
-          {soundscape.artwork_url ? (
-            <Image
-              contentFit="cover"
-              cachePolicy="memory-disk"
-              source={{ uri: soundscape.artwork_url }}
-              style={styles.artwork}
-              transition={160}
-            />
-          ) : (
-            <View style={[styles.artwork, styles.artworkFallback]} />
-          )}
+          <CoverImage size="sm" style={styles.artwork} uri={soundscape.artwork_url} />
         </View>
 
         <View style={styles.copy}>

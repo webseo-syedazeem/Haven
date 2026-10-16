@@ -72,6 +72,8 @@ export type LocalDownload = {
   one_line_description: string | null;
   mode: SoundscapeMode | null;
   duration_seconds: number | null;
+  /** Optional on disk so manifests written before loop metadata remain readable. */
+  is_loop?: boolean;
   quality: 'standard' | 'high';
   /** The remote source, kept so a failed entry can be retried later. */
   file_url: string | null;
@@ -348,7 +350,11 @@ function fileHasBytes(uri: string): boolean {
  */
 function reconcile(entries: LocalDownload[]): LocalDownload[] {
   return entries.map((raw) => {
-    const entry: LocalDownload = { ...raw, owner_user_id: raw.owner_user_id ?? null };
+    const entry: LocalDownload = {
+      ...raw,
+      owner_user_id: raw.owner_user_id ?? null,
+      is_loop: raw.is_loop ?? true,
+    };
 
     if (entry.status === 'completed') {
       if (entry.file_uri && fileHasBytes(entry.file_uri)) return entry;
@@ -458,6 +464,7 @@ function entryFor(
     one_line_description: soundscape.one_line_description ?? null,
     mode: soundscape.mode ?? null,
     duration_seconds: soundscape.duration_seconds ?? null,
+    is_loop: soundscape.is_loop ?? true,
     quality,
     file_url: soundscape.file_url?.trim() || null,
     file_uri: null,
@@ -658,6 +665,7 @@ export function soundscapeFromLocalDownload(entry: LocalDownload): Soundscape {
     file_url: entry.file_url,
     mode: entry.mode,
     duration_seconds: entry.duration_seconds,
+    is_loop: entry.is_loop ?? true,
     file_size_bytes: entry.file_size_bytes,
   };
 }

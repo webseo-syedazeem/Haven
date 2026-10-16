@@ -1,5 +1,4 @@
 import { Ionicons } from '@expo/vector-icons';
-import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useLocalSearchParams, useRouter, type Href } from 'expo-router';
 import { useCallback, useMemo, useState } from 'react';
@@ -14,6 +13,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { CoverImage } from '@/components/CoverImage';
 import { EmptyState, ErrorState } from '@/components/EmptyState';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
 import { SoundscapeRow, SoundscapeRowSkeletonList } from '@/components/SoundscapeRow';
@@ -147,7 +147,7 @@ export default function CollectionScreen() {
     ({ item }: { item: Soundscape }) => (
       <SoundscapeRow
         isFavourite={favouriteIds.has(item.id)}
-        onPlay={(picked) => void playSoundscape(picked, { queue: soundscapes })}
+        onPlay={(picked) => void playSoundscape(picked)}
         onPress={(picked) => router.push(`/soundscape/${picked.id}` as Href)}
         onToggleFavourite={toggleFavourite}
         showFavourite
@@ -155,7 +155,7 @@ export default function CollectionScreen() {
         variant="saved"
       />
     ),
-    [favouriteIds, playSoundscape, router, soundscapes, toggleFavourite]
+    [favouriteIds, playSoundscape, router, toggleFavourite]
   );
 
   return (
@@ -194,15 +194,7 @@ export default function CollectionScreen() {
           <View style={styles.detailContent}>
             <View>
                 <View style={styles.hero}>
-                  {collection.cover_image_url ? (
-                    <Image
-                      contentFit="cover"
-                      cachePolicy="memory-disk"
-                      source={{ uri: collection.cover_image_url }}
-                      style={StyleSheet.absoluteFill}
-                      transition={220}
-                    />
-                  ) : null}
+                  <CoverImage size="md" style={StyleSheet.absoluteFill} uri={collection.cover_image_url} />
                   <LinearGradient
                     colors={HalcyonCardGradient as unknown as readonly [string, string, ...string[]]}
                     locations={
@@ -290,10 +282,14 @@ export default function CollectionScreen() {
               }
             contentContainerStyle={{ paddingBottom: bottomInset + 32 }}
             data={soundscapes}
+            initialNumToRender={8}
             keyExtractor={(item) => item.id}
+            maxToRenderPerBatch={8}
+            removeClippedSubviews
             renderItem={renderRow}
             showsVerticalScrollIndicator={false}
             style={styles.soundscapeList}
+            windowSize={7}
           />
           </View>
         )}

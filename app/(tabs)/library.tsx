@@ -107,7 +107,7 @@ export default function LibraryScreen() {
     ({ item }: { item: Soundscape }) => (
       <SoundscapeRow
         isFavourite={favouriteIds.has(item.id)}
-        onPlay={(picked) => void playSoundscape(picked, { queue: results })}
+        onPlay={(picked) => void playSoundscape(picked)}
         onPress={openSoundscape}
         onToggleFavourite={toggleFavourite}
         showFavourite
@@ -115,7 +115,7 @@ export default function LibraryScreen() {
         variant={'saved'}
       />
     ),
-    [favouriteIds, openSoundscape, playSoundscape, results, toggleFavourite]
+    [favouriteIds, openSoundscape, playSoundscape, toggleFavourite]
   );
 
   const countLabel = isLoading
@@ -326,10 +326,14 @@ export default function LibraryScreen() {
           <FlatList
             contentContainerStyle={{ paddingBottom: bottomInset }}
             data={results}
+            initialNumToRender={8}
             keyExtractor={(item) => item.id}
             keyboardShouldPersistTaps="handled"
+            maxToRenderPerBatch={8}
+            removeClippedSubviews
             renderItem={renderRow}
             showsVerticalScrollIndicator={false}
+            windowSize={7}
           />
         )}
         </SafeAreaView>

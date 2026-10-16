@@ -117,6 +117,7 @@ const soundscape = (id) => ({
   title: 'Soundscape ' + id,
   file_url: 'https://example.test/' + id + '.mp3',
   artwork_url: 'https://example.test/' + id + '.jpg',
+  is_loop: true,
 });
 
 const USER_A = 'auth-user-a';
@@ -131,6 +132,8 @@ test('a download belongs to the account that made it and follows it back', async
   const saved = await api.saveSoundscapeOffline(soundscape('rain'));
   assert.equal(saved.owner_user_id, USER_A);
   assert.equal(saved.status, 'completed');
+  assert.equal(saved.is_loop, true);
+  assert.equal(api.soundscapeFromLocalDownload(saved).is_loop, true);
   assert.ok(api.isLocallyAvailable('rain'));
   assert.equal(api.hasPlayableDownloads(), true);
 
@@ -229,6 +232,9 @@ test('a row written before ownership existed is shown to nobody', async () => {
   );
 
   await api.hydrateLocalDownloads();
+  const legacyEntry = api.getLocalDownloadsSnapshot().entries[0];
+  assert.equal(legacyEntry.is_loop, true);
+  assert.equal(api.soundscapeFromLocalDownload(legacyEntry).is_loop, true);
 
   for (const user of [USER_A, USER_B]) {
     await api.setActiveDownloadUser(user);
@@ -242,6 +248,7 @@ test('a row written before ownership existed is shown to nobody', async () => {
   const stored = JSON.parse(fileSystem.files.get('/doc/soundscapes/manifest.json'));
   assert.equal(stored.entries.length, 1);
   assert.equal(stored.entries[0].owner_user_id, null);
+  assert.equal(stored.entries[0].is_loop, true);
 });
 
 test('a server-known download with no file on this device is not playable here', async () => {

@@ -51,8 +51,12 @@ const IDLE_TIMEOUT_MS = 1500;
 const STALL_TIMEOUT_MS = 4000;
 /** Real buffering on a slow connection takes a while, so only this long counts as stuck. */
 const BUFFERING_TIMEOUT_MS = 10_000;
-/** Automatic reloads per failure before the listeners are told playback failed. */
-const MAX_RECOVERY_ATTEMPTS = 2;
+/**
+ * The first two recovery reloads happen as soon as the watchdog declares the
+ * source stuck. Later reloads back off so a long offline spell does not hammer
+ * the network, while still keeping the listener's play request alive.
+ */
+const RECOVERY_BACKOFF_MS = [0, 0, 5_000, 10_000, 20_000, 30_000] as const;
 /** Unbroken playback this long closes a failure, restoring the full retry budget. */
 const RECOVERY_RESET_MS = 20_000;
 /** Movement smaller than this is rounding, not progress. */
@@ -124,6 +128,8 @@ export function createPlayerEngine(options: EngineOptions = {}): PlayerEngine {
   let hasSource = false;
   /** The loaded track, kept so a stalled source can be reloaded. */
   let currentTrack: PlayableTrack | null = null;
+  /** Native looping is only enabled for a loopable track in a one-item queue. */
+  let nativeLoopEnabled = false;
   /** Bumped on every source swap and teardown, so work queued for an old source is dropped. */
   let sourceGeneration = 0;
   /**
@@ -163,6 +169,8 @@ export function createPlayerEngine(options: EngineOptions = {}): PlayerEngine {
   /** When the current run of unbroken progress began, or 0 while not moving. */
   let movingSince = 0;
   let recoveryAttempts = 0;
+  /** Earliest time another recovery reload may run after repeated failures. */
+  let nextRecoveryAt = 0;
 
   const listenerSets = new Set<EngineListeners>();
 
@@ -315,6 +323,23 @@ export function createPlayerEngine(options: EngineOptions = {}): PlayerEngine {
     }
 
     if (phase === 'playing') {
+      const loopWrapped =
+        nativeLoopEnabled &&
+        knownDuration > 0 &&
+        watchedPosition > knownDuration * 0.75 &&
+        position < knownDuration * 0.25;
+
+      if (loopWrapped) {
+        // Native looping moves straight from the end to zero. Treat that jump as
+        // healthy progress and make the new cycle the recovery/resume baseline.
+        seekCheck = null;
+        resumeTarget = position;
+        watchedPosition = position;
+        lastMovedAt = now;
+        movingSince = now;
+        return;
+      }
+
       if (Math.abs(position - watchedPosition) > PROGRESS_EPSILON_SECONDS) {
         if (seekCheck && !seekLanded(seekCheck, position, now)) {
           handleStall('did not resume at the seek position');
@@ -325,7 +350,10 @@ export function createPlayerEngine(options: EngineOptions = {}): PlayerEngine {
         watchedPosition = position;
         lastMovedAt = now;
         if (!movingSince) movingSince = now;
-        if (now - movingSince >= RECOVERY_RESET_MS) recoveryAttempts = 0;
+        if (now - movingSince >= RECOVERY_RESET_MS) {
+          recoveryAttempts = 0;
+          nextRecoveryAt = 0;
+        }
         return;
       }
 
@@ -341,17 +369,17 @@ export function createPlayerEngine(options: EngineOptions = {}): PlayerEngine {
     }
   }
 
-  /** Reloads a stuck source where it should be, or gives up once the budget is spent. */
+  /** Reloads a stuck source where it should be, backing off but never abandoning playback. */
   function handleStall(reason: string) {
-    if (recoveryAttempts >= MAX_RECOVERY_ATTEMPTS) {
-      void giveUp(reason);
-      return;
-    }
+    const now = Date.now();
+    if (now < nextRecoveryAt) return;
 
     recoveryAttempts += 1;
+    const backoffIndex = Math.min(recoveryAttempts, RECOVERY_BACKOFF_MS.length - 1);
+    nextRecoveryAt = now + RECOVERY_BACKOFF_MS[backoffIndex];
     console.warn(
       `[player] playback ${reason}; reloading at ${Math.round(resumeTarget)}s ` +
-        `(attempt ${recoveryAttempts} of ${MAX_RECOVERY_ATTEMPTS})`
+        `(attempt ${recoveryAttempts}; automatic retries remain enabled)`
     );
     reload(resumeTarget);
   }
@@ -369,6 +397,7 @@ export function createPlayerEngine(options: EngineOptions = {}): PlayerEngine {
     try {
       current.pause();
       current.replace(track.url);
+      current.loop = nativeLoopEnabled;
     } catch (error) {
       console.warn('[player] reload failed', error);
       void giveUp('could not be reloaded');
@@ -390,7 +419,7 @@ export function createPlayerEngine(options: EngineOptions = {}): PlayerEngine {
     emit('onProgress', { position: pendingSeek, duration: knownDuration });
   }
 
-  /** Out of retries: say so, show where a retry would resume, and release the dead player. */
+  /** A native reload call itself failed, so release that unusable player. */
   async function giveUp(reason: string) {
     console.warn(`[player] playback ${reason} and could not be recovered`);
 
@@ -482,7 +511,7 @@ export function createPlayerEngine(options: EngineOptions = {}): PlayerEngine {
       emit('onProgress', { position, duration });
     }
 
-    if (status.didJustFinish && !completionFired) {
+    if (status.didJustFinish && !nativeLoopEnabled && !completionFired) {
       completionFired = true;
       wantsPlayback = false;
       stopWatching();
@@ -502,6 +531,7 @@ export function createPlayerEngine(options: EngineOptions = {}): PlayerEngine {
   function resetBookkeeping() {
     hasSource = false;
     currentTrack = null;
+    nativeLoopEnabled = false;
     completionFired = false;
     sourceOpen = false;
     pendingSeek = null;
@@ -511,6 +541,7 @@ export function createPlayerEngine(options: EngineOptions = {}): PlayerEngine {
     resumeTarget = 0;
     knownDuration = 0;
     recoveryAttempts = 0;
+    nextRecoveryAt = 0;
     lastPosition = -1;
     lastDuration = -1;
     lastIsPlaying = false;
@@ -633,7 +664,7 @@ export function createPlayerEngine(options: EngineOptions = {}): PlayerEngine {
     isAvailable: () => true,
     hasSource: () => hasSource,
 
-    load: async (track: PlayableTrack, startAtSeconds = 0) => {
+    load: async (track: PlayableTrack, startAtSeconds = 0, queueSize = 1) => {
       if (!(await setup())) return;
 
       const current = ensurePlayer();
@@ -648,6 +679,7 @@ export function createPlayerEngine(options: EngineOptions = {}): PlayerEngine {
       resumeTarget = Math.max(0, startAtSeconds);
       knownDuration = safeSeconds(track.duration);
       recoveryAttempts = 0;
+      nextRecoveryAt = 0;
       wantsPlayback = false;
       stopWatching();
       lastPosition = -1;
@@ -657,6 +689,8 @@ export function createPlayerEngine(options: EngineOptions = {}): PlayerEngine {
       // decides when playback starts, so pause first and let it call `play`.
       current.pause();
       current.replace(track.url);
+      nativeLoopEnabled = track.isLoop === true && queueSize === 1;
+      current.loop = nativeLoopEnabled;
       hasSource = true;
 
       if (lockScreen) {
@@ -708,6 +742,7 @@ export function createPlayerEngine(options: EngineOptions = {}): PlayerEngine {
 
       // Asked for by the listener, so an earlier failure starts over with a full budget.
       recoveryAttempts = 0;
+      nextRecoveryAt = 0;
       wantsPlayback = true;
       restartWatch(lastPosition >= 0 ? lastPosition : resumeTarget);
       startWatching();
@@ -762,6 +797,7 @@ export function createPlayerEngine(options: EngineOptions = {}): PlayerEngine {
       resumeTarget = target;
       // Asked for by the listener, so it gets a full recovery budget.
       recoveryAttempts = 0;
+      nextRecoveryAt = 0;
 
       if (!sourceOpen) {
         // AVPlayer throws on a seek before its item is ready to play, so the

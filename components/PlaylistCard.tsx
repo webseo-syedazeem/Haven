@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
-import { Image } from 'expo-image';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
+import { CoverImage } from '@/components/CoverImage';
 import { HalcyonColors, HalcyonRadius } from '@/constants/design';
 import { AppFonts } from '@/constants/theme';
 import type { Playlist } from '@/lib/api/playlists';
@@ -26,23 +26,15 @@ export function PlaylistCard({ playlist, collage = [], onPress, width }: Playlis
       style={({ pressed }) => [{ width }, pressed && styles.pressed]}>
       <View style={[styles.artworkFrame, { height: width, width }]}>
         {playlist.cover_image_url ? (
-          <Image
-            contentFit="cover"
-            cachePolicy="memory-disk"
-            source={{ uri: playlist.cover_image_url }}
-            style={styles.cover}
-            transition={200}
-          />
+          <CoverImage size="md" style={styles.cover} uri={playlist.cover_image_url} />
         ) : tiles.length > 0 ? (
           <View style={styles.collage}>
             {tiles.map((uri, index) => (
-              <Image
-                contentFit="cover"
+              <CoverImage
                 key={`${uri}-${index}`}
-                cachePolicy="memory-disk"
-                source={{ uri }}
+                size="sm"
                 style={[styles.tile, tiles.length === 1 && styles.tileSolo]}
-                transition={180}
+                uri={uri}
               />
             ))}
           </View>

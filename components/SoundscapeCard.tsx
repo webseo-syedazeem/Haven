@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
-import { Image } from 'expo-image';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
+import { CoverImage } from '@/components/CoverImage';
 import { HalcyonColors, HalcyonRadius } from '@/constants/design';
 import { AppFonts } from '@/constants/theme';
 import type { Soundscape } from '@/lib/api/home';
@@ -40,17 +40,7 @@ export function SoundscapeCard({
       onPress={() => onPress?.(soundscape)}
       style={({ pressed }) => [styles.card, pressed && styles.cardPressed]}>
       <View style={styles.artworkFrame}>
-        {soundscape.artwork_url ? (
-          <Image
-            contentFit="cover"
-            cachePolicy="memory-disk"
-            source={{ uri: soundscape.artwork_url }}
-            style={styles.artwork}
-            transition={200}
-          />
-        ) : (
-          <View style={[styles.artwork, styles.artworkFallback]} />
-        )}
+        <CoverImage size="sm" style={styles.artwork} uri={soundscape.artwork_url} />
         <Pressable
           accessibilityLabel={`Play ${title}`}
           accessibilityRole="button"

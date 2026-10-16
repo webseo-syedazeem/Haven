@@ -1,5 +1,6 @@
+import { Image as ExpoImage } from 'expo-image';
 import { useRouter, type Href } from 'expo-router';
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   Animated,
   Dimensions,
@@ -35,9 +36,55 @@ import {
 import { useGuestModeActive, useHasSession } from '@/hooks/useSession';
 import { useUser } from '@/hooks/useUser';
 import type { Collection, Soundscape } from '@/lib/api/home';
+import { coverUrl } from '@/lib/image-url';
 import { usePlayerActions, usePlayerState } from '@/lib/player/PlayerProvider';
 import { getFirstName } from '@/lib/api/user';
 import { getTimeOfDay } from '@/lib/utils/greeting';
+
+/**
+ * First-load fix: as soon as each rail's data arrives, warm expo-image's cache with the exact
+ * sm/md variant URLs those cards are about to request, so the fade-in on scroll-into-view is
+ * near instant instead of racing a cold network fetch. Capped and deduplicated — this prefetch
+ * fires once per data change and never blocks rendering (the rails render immediately either
+ * way; this only pre-warms what the device fetches next).
+ */
+const HOME_PREFETCH_PER_RAIL = 6;
+const HOME_PREFETCH_MAX_TOTAL = 24;
+
+function prefetchHomeCovers(options: {
+  continueSoundscape?: Soundscape | null;
+  soundscapeRails: (Soundscape[] | undefined)[];
+  collections?: Collection[];
+}) {
+  const seen = new Set<string>();
+  const urls: string[] = [];
+
+  const addUrl = (raw: string | null | undefined, size: 'sm' | 'md') => {
+    if (urls.length >= HOME_PREFETCH_MAX_TOTAL) return;
+    const url = coverUrl(raw, size);
+    if (url && !seen.has(url)) {
+      seen.add(url);
+      urls.push(url);
+    }
+  };
+
+  if (options.continueSoundscape) addUrl(options.continueSoundscape.artwork_url, 'sm');
+
+  for (const rail of options.soundscapeRails) {
+    for (const item of (rail ?? []).slice(0, HOME_PREFETCH_PER_RAIL)) {
+      addUrl(item.artwork_url, 'sm');
+    }
+  }
+
+  // Popular Collections renders CollectionCard at the `md` size, so the prefetch must warm
+  // that exact variant URL — prefetching `sm` here would never be reused by the real request.
+  for (const collection of (options.collections ?? []).slice(0, HOME_PREFETCH_PER_RAIL)) {
+    addUrl(collection.cover_image_url, 'md');
+  }
+
+  if (urls.length === 0) return;
+  void ExpoImage.prefetch(urls, { cachePolicy: 'memory-disk' });
+}
 
 const heroBackground = require('@/assets/images/home-top-moonlit-lake-cabin-bg.webp');
 const brandIcon = require('@/assets/images/passage-brand-assets/screens-icon.webp');
@@ -121,6 +168,31 @@ export default function HomeScreen() {
   const apiContinueItem = continueListening.data;
   const isBootstrapping = userQuery.isInitialLoading;
 
+  // Fire-and-forget: warms the cache for whatever is about to render, without gating the
+  // rails themselves (which already render immediately from their own loading states above).
+  useEffect(() => {
+    prefetchHomeCovers({
+      continueSoundscape: resumable?.soundscape ?? apiContinueItem?.soundscape ?? null,
+      soundscapeRails: [
+        recommended.data,
+        recentlyPlayed.data,
+        favourites.soundscapes,
+        newToHalcyon.data,
+        shortSessions.data,
+      ],
+      collections: popularCollections.data,
+    });
+  }, [
+    apiContinueItem?.soundscape,
+    favourites.soundscapes,
+    newToHalcyon.data,
+    popularCollections.data,
+    recentlyPlayed.data,
+    recommended.data,
+    resumable?.soundscape,
+    shortSessions.data,
+  ]);
+
   // Saved player state wins over the history rail: it is the position this
   // device actually stopped at.
   const continueEntry = resumable
@@ -143,11 +215,10 @@ export default function HomeScreen() {
         }
       : null;
 
-  /** Cards play in the context of their own rail, so next/previous stay useful. */
   const renderCard = useCallback(
-    (soundscape: Soundscape, queue: Soundscape[]) => (
+    (soundscape: Soundscape) => (
       <SoundscapeCard
-        onPlay={(picked) => void playSoundscape(picked, { queue })}
+        onPlay={(picked) => void playSoundscape(picked)}
         onPress={openSoundscape}
         soundscape={soundscape}
       />
@@ -256,7 +327,7 @@ export default function HomeScreen() {
             isLoading={recommended.isInitialLoading}
             keyExtractor={soundscapeKey}
             onSeeAll={() => router.push('/(tabs)/explore' as Href)}
-            renderItem={(soundscape) => renderCard(soundscape, recommended.data ?? [])}
+            renderItem={renderCard}
             title="Recommendation for you"
           />
 
@@ -282,7 +353,7 @@ export default function HomeScreen() {
             isLoading={recentlyPlayed.isInitialLoading}
             keyExtractor={soundscapeKey}
             onSeeAll={() => router.push('/(tabs)/saved' as Href)}
-            renderItem={(soundscape) => renderCard(soundscape, recentlyPlayed.data ?? [])}
+            renderItem={renderCard}
             title="Recently Played"
           />
 
@@ -298,7 +369,7 @@ export default function HomeScreen() {
             isLoading={favourites.isInitialLoading}
             keyExtractor={soundscapeKey}
             onSeeAll={() => router.push('/(tabs)/saved' as Href)}
-            renderItem={(soundscape) => renderCard(soundscape, favourites.soundscapes)}
+            renderItem={renderCard}
             title="Your Favourites"
           />
 
@@ -308,7 +379,7 @@ export default function HomeScreen() {
             isLoading={newToHalcyon.isInitialLoading}
             keyExtractor={soundscapeKey}
             onSeeAll={() => router.push('/(tabs)/library' as Href)}
-            renderItem={(soundscape) => renderCard(soundscape, newToHalcyon.data ?? [])}
+            renderItem={renderCard}
             title="New to Passage"
           />
 
@@ -318,7 +389,7 @@ export default function HomeScreen() {
             isLoading={shortSessions.isInitialLoading}
             keyExtractor={soundscapeKey}
             onSeeAll={() => router.push('/(tabs)/library' as Href)}
-            renderItem={(soundscape) => renderCard(soundscape, shortSessions.data ?? [])}
+            renderItem={renderCard}
             title="Short Sessions"
           />
 

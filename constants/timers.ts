@@ -1,3 +1,4 @@
+import { SHOW_DEV_TIMER_PRESETS } from '@/config/dev-flags';
 import type { ModeId } from '@/constants/modes';
 
 /**
@@ -29,9 +30,14 @@ const minutes = (value: number, label: string): TimerPreset => ({ value, label }
 
 const UNTIL_I_STOP_PRESET: TimerPreset = { value: UNTIL_I_STOP, label: 'Until I Stop' };
 
+const DEV_TIMER_PRESETS: readonly TimerPreset[] = [
+  minutes(5, 'Test · 5 min'),
+  minutes(10, 'Test · 10 min'),
+];
+
 export const FADE_OUT_SECONDS = 60;
 
-export const MODE_TIMERS: Record<ModeId, ModeTimerConfig> = {
+const PRODUCTION_MODE_TIMERS: Record<ModeId, ModeTimerConfig> = {
   sleep: {
     presets: [
       minutes(30, '30 min'),
@@ -65,6 +71,50 @@ export const MODE_TIMERS: Record<ModeId, ModeTimerConfig> = {
     ending: { type: 'silent', offerEndTone: true },
   },
 };
+
+function addMissingDevPresets(
+  presets: readonly TimerPreset[],
+  includeDevPresets: boolean
+): readonly TimerPreset[] {
+  if (!includeDevPresets) return presets;
+
+  const existingValues = new Set(presets.map((preset) => preset.value));
+  const missingDevPresets = DEV_TIMER_PRESETS.filter(
+    (preset) => !existingValues.has(preset.value)
+  );
+  return missingDevPresets.length > 0 ? [...presets, ...missingDevPresets] : presets;
+}
+
+/** Builds the runtime list without ever placing DEV entries in release data. */
+export function buildModeTimers(
+  includeDevPresets: boolean
+): Record<ModeId, ModeTimerConfig> {
+  return {
+    sleep: {
+      ...PRODUCTION_MODE_TIMERS.sleep,
+      presets: addMissingDevPresets(
+        PRODUCTION_MODE_TIMERS.sleep.presets,
+        includeDevPresets
+      ),
+    },
+    relax: {
+      ...PRODUCTION_MODE_TIMERS.relax,
+      presets: addMissingDevPresets(
+        PRODUCTION_MODE_TIMERS.relax.presets,
+        includeDevPresets
+      ),
+    },
+    focus: {
+      ...PRODUCTION_MODE_TIMERS.focus,
+      presets: addMissingDevPresets(
+        PRODUCTION_MODE_TIMERS.focus.presets,
+        includeDevPresets
+      ),
+    },
+  };
+}
+
+export const MODE_TIMERS = buildModeTimers(SHOW_DEV_TIMER_PRESETS);
 
 /** Focus is the only mode that offers an end tone, and it is off until asked for. */
 export const END_TONE_DEFAULT = false;

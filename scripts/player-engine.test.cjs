@@ -11,7 +11,7 @@ const plain = (value) => JSON.parse(JSON.stringify(value));
 const track = (id) => ({
   id, title: 'Soundscape ' + id, artist: 'Passage',
   url: 'https://example.test/' + id + '.mp3',
-  artwork: 'https://example.test/' + id + '.jpg', duration: 180,
+  artwork: 'https://example.test/' + id + '.jpg', duration: 180, isLoop: false,
 });
 
 // An hour-long soundscape and the Android (ExoPlayer) states it moves through.
@@ -66,7 +66,7 @@ function createEngineHarness({ artworkCache = null } = {}) {
         return fn(...args);
       };
       const player = {
-        source, options, calls, live, volume: 1, seekError: null, released: false, failing: new Set(),
+        source, options, calls, live, volume: 1, loop: false, seekError: null, released: false, failing: new Set(),
         get currentTime() { attached(); return live.currentTime; },
         set currentTime(value) { live.currentTime = value; },
         get duration() { attached(); return live.duration; },
@@ -222,6 +222,51 @@ test('resume seeks after loading and track completion fires once per source', as
   await engine.load(track('b'));
   native.emit({ ...status, currentTime: 180, didJustFinish: true });
   assert.equal(ended, 2);
+});
+
+test('native loop is enabled only for a loopable track in a one-item queue', async () => {
+  const { engine, players } = createEngineHarness();
+  const loopable = { ...track('loopable'), isLoop: true };
+
+  await engine.load(loopable, 0, 1);
+  assert.equal(players[0].loop, true);
+
+  await engine.load(loopable, 0, 2);
+  assert.equal(players[0].loop, false);
+
+  await engine.load(track('single-pass'), 0, 1);
+  assert.equal(players[0].loop, false);
+});
+
+test('a native loop wrap is healthy progress and does not trigger watchdog recovery', async () => {
+  const { engine, players, warnings, advance } = createEngineHarness();
+  await engine.load({ ...hour, isLoop: true }, 0, 1);
+  await engine.play();
+  const native = players[0];
+
+  native.emit(playingAt(3599));
+  await advance(1000);
+  native.emit(playingAt(0.2));
+  await advance(1000);
+
+  assert.equal(named(native.calls, 'replace').length, 1);
+  assert.deepEqual(warnings, []);
+});
+
+test('didJustFinish is ignored while native loop is enabled', async () => {
+  const { engine, players } = createEngineHarness();
+  let ended = 0;
+  engine.subscribe({ onTrackEnd: () => ended++ });
+  await engine.load({ ...track('loopable'), isLoop: true }, 0, 1);
+
+  players[0].emit({
+    ...playingAt(0),
+    duration: 180,
+    didJustFinish: true,
+  });
+
+  assert.equal(ended, 0);
+  assert.equal(players[0].loop, true);
 });
 
 test('background setup remains enabled and reset releases media controls and audio session', async () => {
@@ -483,7 +528,10 @@ test('a seek that leaves the native player idle is reloaded at the seek target a
   assert.deepEqual(plain(named(native.calls, 'replace')), [['replace', hour.url], ['replace', hour.url]]);
   assert.deepEqual(seen.changes.at(-1), { isPlaying: false, isBuffering: true });
   assert.deepEqual(seen.progress.at(-1), { position: 1200, duration: 3600 });
-  assert.match(harness.warnings[0], /went idle; reloading at 1200s \(attempt 1 of 2\)/);
+  assert.match(
+    harness.warnings[0],
+    /went idle; reloading at 1200s \(attempt 1; automatic retries remain enabled\)/
+  );
 
   // The fresh source opens: the target lands first, and only then does it play.
   const reloaded = native.calls.length;
@@ -517,7 +565,7 @@ test('a player that reports playing but never moves is reloaded where it stood',
   assert.match(harness.warnings[0], /stopped moving while playing; reloading at 40s/);
 });
 
-test('recovery is bounded: after two failed reloads the failure is reported once and the player released', async () => {
+test('recovery keeps retrying with backoff and resumes when the source becomes available', async () => {
   const harness = createEngineHarness();
   const native = await startPlaying(harness);
   const seen = watch(harness.engine);
@@ -529,31 +577,30 @@ test('recovery is bounded: after two failed reloads the failure is reported once
   native.emit(idleAt(0));
   await harness.advance(2000);
   native.emit(idleAt(0));
+  await harness.advance(4000);
+
+  // After the second quick retry, the next one is held until its 5s backoff.
+  assert.equal(named(native.calls, 'replace').length, 3);
   assert.equal(seen.failures, 0);
+  assert.equal(harness.engine.hasSource(), true);
+  assert.equal(native.released, false);
+  await harness.advance(1000);
+  assert.equal(named(native.calls, 'replace').length, 4);
+  assert.match(harness.warnings.at(-1), /attempt 3; automatic retries remain enabled/);
+
+  // Connectivity returns while that reload is opening. It seeks back to the
+  // saved position and starts without another listener action.
+  native.emit(pausedAt(0));
+  await harness.flush();
+  assert.deepEqual(plain(native.calls.slice(-2)), [['seek', 1200], ['play']]);
+  native.emit(playingAt(1201));
   await harness.advance(2000);
 
-  assert.equal(seen.failures, 1);
-  assert.equal(harness.engine.hasSource(), false);
-  // The load and two reloads. The teardown releasing the dead player replaces nothing.
-  assert.deepEqual(plain(named(native.calls, 'replace')),
-    [['replace', hour.url], ['replace', hour.url], ['replace', hour.url]]);
-  assert.deepEqual(plain(native.calls.slice(-2)), [['remove'], ['release']]);
-  assert.equal(native.released, true);
-  // The bar shows where a retry resumes rather than a frozen or runaway position.
-  assert.deepEqual(seen.progress.at(-1), { position: 1200, duration: 3600 });
-  assert.deepEqual(seen.changes.at(-1), { isPlaying: false, isBuffering: false });
-  assert.match(harness.warnings.at(-1), /went idle and could not be recovered/);
-
-  // Nothing keeps retrying afterwards.
-  const settled = native.calls.length;
-  await harness.advance(60_000);
-  assert.equal(native.calls.length, settled);
-  assert.equal(seen.failures, 1);
+  assert.equal(seen.failures, 0);
+  assert.equal(harness.engine.hasSource(), true);
+  assert.equal(native.released, false);
+  assert.deepEqual(seen.changes.at(-1), { isPlaying: true, isBuffering: false });
   assert.equal(harness.players.length, 1);
-
-  // A later play or load starts over on a fresh native player.
-  await harness.engine.load(hour, 1200);
-  assert.equal(harness.players.length, 2);
 });
 
 test('slow buffering after a seek is given time rather than treated as a failure', async () => {
@@ -741,7 +788,7 @@ test('the onboarding preview plays preview_url, falls back to file_url, and the 
   };
   const full = {
     id: 's1', url: 'https://example.test/s1.mp3', title: 'Rain', artist: 'Passage',
-    artwork: 'https://example.test/s1.jpg', duration: 3600,
+    isLoop: false, artwork: 'https://example.test/s1.jpg', duration: 3600,
   };
 
   // The clip plays, and the full soundscape's hour is not claimed as its length.
@@ -757,6 +804,7 @@ test('the onboarding preview plays preview_url, falls back to file_url, and the 
 
   // The app-wide player is untouched: the full file, or the download when there is one.
   assert.deepEqual(plain(toPlayableTrack(row)), full);
+  assert.equal(toPlayableTrack({ ...row, is_loop: true }).isLoop, true);
   setLocalSourceResolver(() => ({ url: 'file:///saved/s1.mp3' }));
   assert.equal(toPlayableTrack(row).url, 'file:///saved/s1.mp3');
   assert.equal(toPreviewTrack(row).url, 'https://example.test/s1-clip.mp3');

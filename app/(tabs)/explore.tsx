@@ -20,6 +20,7 @@ import {
   COLLECTION_CARD_HEIGHT,
   COLLECTION_CARD_WIDTH,
 } from '@/components/CollectionCard';
+import { CoverImage } from '@/components/CoverImage';
 import { EmptyState, ErrorState } from '@/components/EmptyState';
 import {
   HalcyonCardGradient,
@@ -223,15 +224,7 @@ function FeaturedCard({
       accessibilityRole="button"
       onPress={() => onPress(collection)}
       style={({ pressed }) => [styles.featured, pressed && styles.pressed]}>
-      {collection.cover_image_url ? (
-        <Image
-          contentFit="cover"
-          cachePolicy="memory-disk"
-          source={{ uri: collection.cover_image_url }}
-          style={StyleSheet.absoluteFill}
-          transition={220}
-        />
-      ) : null}
+      <CoverImage size="md" style={StyleSheet.absoluteFill} uri={collection.cover_image_url} />
       <LinearGradient
         colors={HalcyonCardGradient as unknown as readonly [string, string, ...string[]]}
         locations={HalcyonCardGradientLocations as unknown as readonly [number, number, ...number[]]}

@@ -3,14 +3,16 @@ import { Image } from 'expo-image';
 import type { Href } from 'expo-router';
 import { useRouter } from 'expo-router';
 import { useQuery } from '@tanstack/react-query';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
+import { CoverImage } from '@/components/CoverImage';
 import { OnboardingContinueButton } from '@/components/onboarding/OnboardingContinueButton';
 import { OnboardingScaffold } from '@/components/onboarding/OnboardingScaffold';
 import { HalcyonColors, HalcyonRadius } from '@/constants/design';
 import { AppFonts } from '@/constants/theme';
 import { useSinglePress } from '@/hooks/useSinglePress';
+import { coverUrl } from '@/lib/image-url';
 import type { Soundscape } from '@/lib/api/home';
 import {
   finishOnboardingForAppEntry,
@@ -30,6 +32,20 @@ export default function FirstRecommendationsScreen() {
   });
   const best = query.data?.best_match ?? null;
   const alternatives = query.data?.alternatives ?? [];
+
+  // The very first screen a new user sees after onboarding — prefetch its covers (sm variant,
+  // matching what these small cards actually render at) as soon as the data arrives, so they
+  // are already decoded by the time the fade-in transition would otherwise show them loading.
+  useEffect(() => {
+    const recommendations = query.data;
+    if (!recommendations) return;
+
+    const urls = [recommendations.best_match, ...recommendations.alternatives]
+      .map((item) => coverUrl(item?.artwork_url, 'sm'))
+      .filter((url): url is string => !!url);
+    if (urls.length === 0) return;
+    void Image.prefetch(urls, { cachePolicy: 'memory-disk' });
+  }, [query.data]);
 
   // Neither button marks onboarding complete here: guest mode is only ever
   // entered from the explicit "Continue as guest" tap on /welcome, so the
@@ -118,11 +134,7 @@ export default function FirstRecommendationsScreen() {
 function FeaturedCard({ soundscape }: { soundscape: Soundscape }) {
   return (
     <View style={styles.featured}>
-      {soundscape.artwork_url ? (
-        <Image contentFit="cover" source={{ uri: soundscape.artwork_url }} style={styles.featuredImage} />
-      ) : (
-        <View style={[styles.featuredImage, styles.imageFallback]} />
-      )}
+      <CoverImage size="md" style={styles.featuredImage} uri={soundscape.artwork_url} />
       <View style={styles.featuredScrim} />
       <View style={styles.featuredCopy}>
         <View style={styles.featuredText}>
@@ -140,11 +152,7 @@ function FeaturedCard({ soundscape }: { soundscape: Soundscape }) {
 function AlternativeCard({ soundscape }: { soundscape: Soundscape }) {
   return (
     <View style={styles.alternative}>
-      {soundscape.artwork_url ? (
-        <Image contentFit="cover" source={{ uri: soundscape.artwork_url }} style={styles.thumb} />
-      ) : (
-        <View style={[styles.thumb, styles.imageFallback]} />
-      )}
+      <CoverImage size="sm" style={styles.thumb} uri={soundscape.artwork_url} />
       <View style={styles.alternativeCopy}>
         <Text numberOfLines={1} style={styles.alternativeTitle}>{soundscape.title}</Text>
         <Text numberOfLines={1} style={styles.meta}>{metaFor(soundscape)}</Text>

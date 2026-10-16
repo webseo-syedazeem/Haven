@@ -6,6 +6,7 @@ export type PlayableTrack = {
   url: string;
   title: string;
   artist: string;
+  isLoop: boolean;
   artwork?: string;
   duration?: number;
 };
@@ -35,7 +36,7 @@ export type PlayerEngine = {
   setup: () => Promise<boolean>;
   isAvailable: () => boolean;
   hasSource: () => boolean;
-  load: (track: PlayableTrack, startAtSeconds?: number) => Promise<void>;
+  load: (track: PlayableTrack, startAtSeconds?: number, queueSize?: number) => Promise<void>;
   play: () => Promise<void>;
   pause: () => Promise<void>;
   stop: () => Promise<void>;
@@ -130,6 +131,7 @@ export function toPlayableTrack(soundscape: Soundscape): PlayableTrack | null {
     url,
     title: soundscape.title,
     artist: 'Passage',
+    isLoop: soundscape.is_loop ?? false,
     artwork: local?.artwork ?? (remoteArtwork || undefined),
     duration: soundscape.duration_seconds ?? undefined,
   };
@@ -152,6 +154,7 @@ export function toPreviewTrack(soundscape: Soundscape): PlayableTrack | null {
     url,
     title: soundscape.title,
     artist: 'Passage',
+    isLoop: false,
     artwork: artwork || undefined,
     // `duration_seconds` is the full soundscape's length, so it only describes
     // the fallback. A clip's own length comes from the player once it loads.

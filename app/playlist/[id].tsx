@@ -222,7 +222,10 @@ function PlaylistScreenContent() {
             }
             contentContainerStyle={{ paddingBottom: bottomInset + 32 }}
             data={order}
+            initialNumToRender={8}
             keyExtractor={(item) => item.soundscape_id}
+            maxToRenderPerBatch={8}
+            removeClippedSubviews
             renderItem={({ item, index }) =>
               item.soundscape ? (
                 <SoundscapeRow
@@ -263,7 +266,7 @@ function PlaylistScreenContent() {
                       </Pressable>
                     </View>
                   }
-                  onPlay={(picked) => void playSoundscape(picked, { queue: tracks })}
+                  onPlay={(picked) => void playSoundscape(picked)}
                   onPress={(picked) => router.push(`/soundscape/${picked.id}` as Href)}
                   soundscape={item.soundscape}
                   variant={'saved'}
@@ -285,6 +288,7 @@ function PlaylistScreenContent() {
               ) : null
             }
             showsVerticalScrollIndicator={false}
+            windowSize={7}
           />
         )}
       </SafeAreaView>

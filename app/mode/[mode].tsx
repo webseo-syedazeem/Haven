@@ -119,7 +119,7 @@ export default function ModeHubScreen() {
                 onSeeAll={section.items.length > 2 ? () => toggleExpanded(section.key) : undefined}
                 renderItem={(soundscape) => (
                   <SoundscapeCard
-                    onPlay={(item) => void playSoundscape(item, { queue: section.items })}
+                    onPlay={(item) => void playSoundscape(item)}
                     onPress={openSoundscape}
                     soundscape={soundscape}
                   />

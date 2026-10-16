@@ -1,6 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useQuery } from '@tanstack/react-query';
-import { Image as ArtworkImage } from 'expo-image';
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
@@ -11,6 +10,7 @@ import {
   View,
 } from 'react-native';
 
+import { CoverImage } from '@/components/CoverImage';
 import { OnboardingBrandHeader } from '@/components/onboarding/OnboardingBrandHeader';
 import { OnboardingContinueButton } from '@/components/onboarding/OnboardingContinueButton';
 import { RelaxContinueButton } from '@/components/onboarding/RelaxContinueButton';
@@ -31,6 +31,7 @@ import {
   getIncompleteOnboardingRoute,
   getOnboardingAnswers,
 } from '@/lib/onboarding';
+import { endOnboardingReplay, isOnboardingReplayActive } from '@/lib/onboarding-replay';
 import { setIntroSeen } from '@/lib/auth/intro-flag';
 import { hasActiveSession, isGuestModeActive } from '@/lib/auth/session-state';
 import { resetToMainApp, safeGoBack } from '@/lib/navigation';
@@ -213,6 +214,7 @@ export default function TryPassageScreen() {
 
       await finishOnboardingForAppEntry();
       await setIntroSeen();
+      if (isOnboardingReplayActive()) await endOnboardingReplay();
       if (hasActiveSession() || isGuestModeActive()) {
         // Signed in or already chosen as guest on the account screen, so there is
         // nothing left to choose.
@@ -244,7 +246,6 @@ export default function TryPassageScreen() {
     const total = isActive ? player.duration || PREVIEW_DURATION_SECONDS : 0;
     const progress = total > 0 ? Math.min(1, player.position / total) : 0;
     const listedDuration = clipDurations[item.id] ?? PREVIEW_DURATION_SECONDS;
-    const artwork = item.artwork_url?.trim();
 
     return (
       <Pressable
@@ -257,16 +258,7 @@ export default function TryPassageScreen() {
           styles.card,
           isActive ? { borderColor: accentColor } : null,
         ]}>
-        {artwork ? (
-          <ArtworkImage
-            cachePolicy="memory-disk"
-            contentFit="cover"
-            source={{ uri: artwork }}
-            style={styles.cardImage}
-          />
-        ) : (
-          <View style={[styles.cardImage, styles.skeletonBlock]} />
-        )}
+        <CoverImage size="sm" style={styles.cardImage} uri={item.artwork_url} />
 
         <View style={styles.cardRight}>
           <Text numberOfLines={1} style={styles.cardTitle}>

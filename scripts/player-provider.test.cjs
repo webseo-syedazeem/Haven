@@ -9,7 +9,7 @@ const ts = require('typescript');
 const root = path.resolve(__dirname, '..');
 const track = (id, mode = 'focus') => ({
   id, title: 'Sound ' + id, artwork_url: 'https://example.test/' + id + '.jpg',
-  file_url: 'https://example.test/' + id + '.mp3', duration_seconds: 180, mode,
+  file_url: 'https://example.test/' + id + '.mp3', duration_seconds: 180, mode, is_loop: false,
 });
 const tracks = ['a', 'b', 'c'].map((id) => track(id));
 
@@ -77,9 +77,9 @@ function createPlayer({ saved = null, catalogue = tracks, hasSession = false, se
     setup: async () => { calls.setups++; return true; },
     hasSource: () => sourceLoaded,
     subscribe: (listener) => { calls.subscribes++; listeners.add(listener); return () => listeners.delete(listener); },
-    load: async (value, startAt) => {
+    load: async (value, startAt, queueSize) => {
       sourceLoaded = true;
-      calls.loads.push({ track: value, startAt });
+      calls.loads.push({ track: value, startAt, queueSize });
       emit('onProgress', { position: startAt, duration: value.duration });
     },
     play: async () => emit('onPlaybackChange', { isPlaying: true, isBuffering: false }),
@@ -111,6 +111,12 @@ function createPlayer({ saved = null, catalogue = tracks, hasSession = false, se
       saveState: async (value) => { calls.saves.push(value); },
       addPlayHistory: async (...args) => { calls.history.push(args); },
     } },
+    '@/lib/query-client': {
+      queryClient: {
+        cancelQueries: async () => {},
+        setQueryData: () => {},
+      },
+    },
   };
   function load(file) {
     if (cache.has(file)) return cache.get(file);
@@ -179,6 +185,8 @@ function createPlayer({ saved = null, catalogue = tracks, hasSession = false, se
     async act(action, ...args) { await provider.usePlayerActions()[action](...args); await settle(); },
     async event(event, value) { emit(event, value); await settle(); },
     async background() { background?.('background'); await settle(); },
+    async active() { background?.('active'); await settle(); },
+    async elapse(milliseconds) { now += milliseconds; await settle(); },
     async advance(milliseconds) {
       const until = now + milliseconds;
       for (;;) {
@@ -198,7 +206,7 @@ function createPlayer({ saved = null, catalogue = tracks, hasSession = false, se
 }
 const ids = (queue) => Array.from(queue, (item) => item.id);
 
-test('a standalone soundscape cannot skip or restart even after three seconds', async () => {
+test('a single-track tap produces a one-item queue and cannot skip', async () => {
   const player = createPlayer();
   await player.act('playSoundscape', tracks[1]);
   await player.event('onProgress', { position: 20, duration: 180 });
@@ -209,15 +217,17 @@ test('a standalone soundscape cannot skip or restart even after three seconds', 
   assert.equal(player.state.hasPrevious, false);
   assert.equal(player.progress.position, 20);
   assert.equal(player.calls.loads.length, 1);
+  assert.equal(player.calls.loads[0].queueSize, 1);
   assert.equal(player.calls.seeks.length, 0);
 });
 
-test('context starts at the picked item and skips in order without wrapping', async () => {
+test('a Play All-style full queue keeps every track and advances without wrapping', async () => {
   const player = createPlayer();
   await player.act('playSoundscape', tracks[1], { queue: tracks });
   assert.equal(player.state.queueIndex, 1);
   assert.equal(player.state.hasPrevious, true);
   assert.equal(player.state.hasNext, true);
+  assert.equal(player.calls.loads[0].queueSize, 3);
   await player.event('onProgress', { position: 20, duration: 180 });
   await player.act('skipPrevious');
   assert.equal(player.state.soundscape.id, 'a');
@@ -248,7 +258,7 @@ test('queue is a stable snapshot, deduplicates history, and contains the picked 
   assert.deepEqual(ids(player.state.queue), ['c', 'a', 'b']);
 });
 
-test('save, pause, stop and in-session resume preserve the queue and position', async () => {
+test('save and stop preserve progress, while resume restores a one-item queue and timer', async () => {
   const player = createPlayer({ hasSession: true });
   await player.settle();
   await player.act('playSoundscape', tracks[1], { queue: tracks });
@@ -263,13 +273,15 @@ test('save, pause, stop and in-session resume preserve the queue and position', 
   assert.equal(player.state.soundscape, null);
   await player.act('resume');
   assert.equal(player.state.soundscape.id, 'b');
-  assert.equal(player.state.queueIndex, 1);
+  assert.deepEqual(ids(player.state.queue), ['b']);
+  assert.equal(player.state.queueIndex, 0);
+  assert.equal(player.calls.loads.at(-1).queueSize, 1);
   assert.equal(player.calls.loads.at(-1).startAt, 12);
   assert.equal(player.state.timerSelection, 10);
   await player.act('skipNext');
   await player.background();
-  assert.equal(player.calls.saves.at(-1).soundscape_id, 'c');
-  assert.equal(player.calls.saves.at(-1).position_seconds, 0);
+  assert.equal(player.calls.saves.at(-1).soundscape_id, 'b');
+  assert.equal(player.calls.saves.at(-1).position_seconds, 12);
 });
 
 test('cold resume restores saved queue order, removes missing tracks and finds current index', async () => {
@@ -280,11 +292,13 @@ test('cold resume restores saved queue order, removes missing tracks and finds c
   await player.settle();
   assert.deepEqual(ids(player.state.resumable.queue), ['a', 'b', 'c']);
   await player.act('resume');
-  assert.equal(player.state.queueIndex, 1);
+  assert.deepEqual(ids(player.state.queue), ['b']);
+  assert.equal(player.state.queueIndex, 0);
+  assert.equal(player.calls.loads.at(-1).queueSize, 1);
   assert.equal(player.progress.position, 25);
   assert.equal(player.state.timerSelection, 10);
   await player.act('skipNext');
-  assert.equal(player.state.soundscape.id, 'c');
+  assert.equal(player.state.soundscape.id, 'b');
 });
 
 test('natural completion advances, then stops at the end without wrapping', async () => {
@@ -313,20 +327,52 @@ test('queue changes preserve the timer deadline and Focus end tone', async () =>
   assert.equal(player.state.timerSelection, null);
 });
 
-test('an active Sleep fade continues across Next and ends playback', async () => {
+test('an active Sleep fade starts one minute before the deadline, continues across Next, and ends on time', async () => {
   const sleepTracks = ['sleep-a', 'sleep-b'].map((id) => track(id, 'sleep'));
   const player = createPlayer();
   await player.act('playSoundscape', sleepTracks[0], { queue: sleepTracks });
-  await player.act('setTimer', 1);
-  await player.advance(61000);
+  await player.act('setTimer', 2);
+  await player.advance(59000);
+  assert.equal(player.state.isFadingOut, false);
+  await player.advance(1000);
   assert.equal(player.state.isFadingOut, true);
   const volumeCount = player.calls.volumes.length;
   await player.act('skipNext');
   assert.equal(player.state.isFadingOut, true);
   assert.equal(player.calls.volumes.length, volumeCount, 'Next must not reset the fade volume');
-  await player.advance(59000);
+  await player.advance(60000);
   assert.equal(player.calls.stop, 1);
   assert.equal(player.state.isPlaying, false);
+  assert.equal(player.state.isFadingOut, false);
+});
+
+test('a five-minute Sleep timer fades only during its final minute and stops at the deadline', async () => {
+  const player = createPlayer();
+  await player.act('playSoundscape', track('sleep-timer', 'sleep'));
+  await player.act('setTimer', 5);
+
+  await player.advance(239000);
+  assert.equal(player.state.isFadingOut, false);
+  await player.advance(1000);
+  assert.equal(player.state.isFadingOut, true);
+  assert.equal(player.progress.timerRemainingSeconds, 60);
+  await player.advance(60000);
+  assert.equal(player.calls.stop, 1);
+  assert.equal(player.state.timerSelection, null);
+});
+
+test('an expired timer is finalised immediately when AppState becomes active', async () => {
+  const player = createPlayer();
+  await player.act('playSoundscape', track('background-sleep', 'sleep'));
+  await player.act('setTimer', 5);
+
+  await player.background();
+  await player.elapse(301000);
+  assert.equal(player.calls.stop, 0);
+  await player.active();
+
+  assert.equal(player.calls.stop, 1);
+  assert.equal(player.state.timerSelection, null);
   assert.equal(player.state.isFadingOut, false);
 });
 

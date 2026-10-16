@@ -190,11 +190,14 @@ function FavouritesPanel({
     <FlatList
       contentContainerStyle={{ paddingBottom: bottomInset }}
       data={soundscapes}
+      initialNumToRender={8}
       keyExtractor={(item) => item.id}
+      maxToRenderPerBatch={8}
+      removeClippedSubviews
       renderItem={({ item }) => (
         <SoundscapeRow
           isFavourite
-          onPlay={(picked) => void playSoundscape(picked, { queue: soundscapes })}
+          onPlay={(picked) => void playSoundscape(picked)}
           onPress={(picked) => router.push(`/soundscape/${picked.id}` as Href)}
           onToggleFavourite={(picked) => {
             toggleFavourite(picked, true);
@@ -206,6 +209,7 @@ function FavouritesPanel({
         />
       )}
       showsVerticalScrollIndicator={false}
+      windowSize={7}
     />
   );
 }
@@ -406,7 +410,10 @@ function DownloadsPanel({
       }
       contentContainerStyle={{ paddingBottom: bottomInset }}
       data={rows}
+      initialNumToRender={8}
       keyExtractor={(item) => item.soundscape_id}
+      maxToRenderPerBatch={8}
+      removeClippedSubviews
       renderItem={({ item }) => (
         <DownloadRow
           download={item}
@@ -420,6 +427,7 @@ function DownloadsPanel({
         />
       )}
       showsVerticalScrollIndicator={false}
+      windowSize={7}
     />
   );
 }
@@ -515,8 +523,6 @@ function RecentPanel({ bottomInset }: { bottomInset: number }) {
     [history.data]
   );
 
-  const queue = useMemo(() => entries.map((entry) => entry.soundscape), [entries]);
-
   if (history.isInitialLoading) return <SoundscapeRowSkeletonList />;
   if (history.isError && entries.length === 0) {
     return <ErrorState onRetry={() => void history.refetch()} />;
@@ -536,10 +542,13 @@ function RecentPanel({ bottomInset }: { bottomInset: number }) {
     <FlatList
       contentContainerStyle={{ paddingBottom: bottomInset }}
       data={entries}
+      initialNumToRender={8}
       keyExtractor={(item) => item.id}
+      maxToRenderPerBatch={8}
+      removeClippedSubviews
       renderItem={({ item }) => (
         <SoundscapeRow
-          onPlay={(picked) => void playSoundscape(picked, { queue })}
+          onPlay={(picked) => void playSoundscape(picked)}
           onPress={(picked) => router.push(`/soundscape/${picked.id}` as Href)}
           soundscape={item.soundscape}
           subtitle={formatPlayedAt(item.played_at)}
@@ -549,7 +558,7 @@ function RecentPanel({ bottomInset }: { bottomInset: number }) {
               accessibilityLabel={`Resume ${item.soundscape.title}`}
               accessibilityRole="button"
               hitSlop={8}
-              onPress={() => void playSoundscape(item.soundscape, { queue })}
+              onPress={() => void playSoundscape(item.soundscape)}
               style={styles.resumeButton}>
               <Ionicons color={HalcyonColors.accent} name="play" size={16} />
             </Pressable>
@@ -557,6 +566,7 @@ function RecentPanel({ bottomInset }: { bottomInset: number }) {
         />
       )}
       showsVerticalScrollIndicator={false}
+      windowSize={7}
     />
   );
 }

@@ -62,11 +62,10 @@ export default function SaveYourSpaceScreen() {
     enabled: wantsTrack,
   });
   const best = recommendationsQuery.data?.best_match ?? null;
-  const alternatives = recommendationsQuery.data?.alternatives ?? [];
 
   const enterMainApp = async () => {
     if (wantsTrack && best) {
-      await playSoundscape(best, { queue: [best, ...alternatives] });
+      await playSoundscape(best);
       resetToMainPlayer(router);
       return;
     }

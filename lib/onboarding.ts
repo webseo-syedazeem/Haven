@@ -435,6 +435,20 @@ export async function getOnboardingAnswers(): Promise<GuestOnboardingAnswers> {
   return stored;
 }
 
+/**
+ * Writes back a previously read answer set verbatim, bypassing the merge and
+ * mode-switch-clearing rules `saveGuestOnboardingAnswers` applies to a patch.
+ * Used only to restore a snapshot taken before an abandoned re-run of
+ * onboarding (see lib/onboarding-replay.ts).
+ */
+export async function restoreGuestOnboardingAnswers(
+  answers: GuestOnboardingAnswers
+): Promise<void> {
+  const next = normaliseAnswers(answers);
+  await setLocalSetting(GUEST_ONBOARDING_STORAGE_KEYS.answers, toStoredAnswers(next));
+  authenticatedOnboardingAnswers = next;
+}
+
 export async function saveOnboardingAnswers(
   patch: GuestOnboardingAnswersPatch
 ): Promise<GuestOnboardingAnswers> {

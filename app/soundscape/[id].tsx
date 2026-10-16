@@ -1,5 +1,4 @@
 import { Ionicons } from '@expo/vector-icons';
-import { Image } from 'expo-image';
 import * as Linking from 'expo-linking';
 import { useLocalSearchParams, useRouter, type Href } from 'expo-router';
 import { useCallback, useState, type ReactNode } from 'react';
@@ -15,6 +14,7 @@ import {
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { CoverImage } from '@/components/CoverImage';
 import { OnboardingBackButton } from '@/components/onboarding/OnboardingBackButton';
 import { PlaylistPickerSheet } from '@/components/PlaylistPickerSheet';
 import { SectionRail } from '@/components/SectionRail';
@@ -193,17 +193,7 @@ export default function SoundscapeDetailScreen() {
     return (
       <>
         <View style={styles.artworkFrame}>
-          {soundscape.artwork_url ? (
-            <Image
-              contentFit="cover"
-              cachePolicy="memory-disk"
-              source={{ uri: soundscape.artwork_url }}
-              style={styles.artwork}
-              transition={240}
-            />
-          ) : (
-            <View style={[styles.artwork, styles.artworkFallback]} />
-          )}
+          <CoverImage size="md" style={styles.artwork} uri={soundscape.artwork_url} />
         </View>
 
         <Text style={styles.title}>{soundscape.title}</Text>
@@ -331,7 +321,7 @@ export default function SoundscapeDetailScreen() {
           keyExtractor={(item, index) => item.id ?? `${index}`}
           renderItem={(item) => (
             <SoundscapeCard
-              onPlay={(picked) => void playSoundscape(picked, { queue: similar.data ?? [picked] })}
+              onPlay={(picked) => void playSoundscape(picked)}
               onPress={openSoundscape}
               soundscape={item}
             />

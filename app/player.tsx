@@ -1,6 +1,5 @@
 import Slider from '@react-native-community/slider';
 import { Ionicons } from '@expo/vector-icons';
-import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as Linking from 'expo-linking';
 import { useRouter, type Href } from 'expo-router';
@@ -18,6 +17,7 @@ import {
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { CoverImage } from '@/components/CoverImage';
 import { PlaylistPickerSheet } from '@/components/PlaylistPickerSheet';
 import { TimerSheet } from '@/components/TimerSheet';
 import { Toast, useToast } from '@/components/Toast';
@@ -133,15 +133,7 @@ export default function PlayerScreen() {
 
   return (
     <View style={styles.screen}>
-      {soundscape.artwork_url ? (
-        <Image
-          contentFit="cover"
-          cachePolicy="memory-disk"
-          source={{ uri: soundscape.artwork_url }}
-          style={StyleSheet.absoluteFill}
-          transition={260}
-        />
-      ) : null}
+      <CoverImage size="lg" style={StyleSheet.absoluteFill} uri={soundscape.artwork_url} />
       <LinearGradient
         colors={['rgba(11,11,13,0.72)', 'rgba(11,11,13,0.86)', 'rgba(8,8,10,0.97)']}
         locations={[0, 0.45, 1]}
@@ -188,17 +180,7 @@ export default function PlayerScreen() {
           showsVerticalScrollIndicator={false}
           style={styles.scroll}>
           <View style={styles.artworkFrame}>
-            {soundscape.artwork_url ? (
-              <Image
-                contentFit="cover"
-                cachePolicy="memory-disk"
-                source={{ uri: soundscape.artwork_url }}
-                style={styles.artwork}
-                transition={260}
-              />
-            ) : (
-              <View style={[styles.artwork, styles.artworkFallback]} />
-            )}
+            <CoverImage size="lg" style={styles.artwork} uri={soundscape.artwork_url} />
           </View>
 
           <View style={styles.copy}>

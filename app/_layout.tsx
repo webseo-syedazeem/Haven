@@ -18,6 +18,7 @@ import { queryClient } from '@/lib/query-client';
 import { PlayerProvider } from '@/lib/player/PlayerProvider';
 import { AccountRequiredPromptProvider } from '@/components/auth/AccountRequiredPrompt';
 import { DevResetButton } from '@/components/dev/DevResetButton';
+import { DevOnboardingReplayButton } from '@/components/dev/DevOnboardingReplayButton';
 
 void SplashScreen.preventAutoHideAsync();
 
@@ -124,6 +125,7 @@ export default function RootLayout() {
                 {/* `light` means light bar content, i.e. white navigation arrows. */}
                 <SystemBars style={{ navigationBar: 'light', statusBar: 'light' }} />
                 <DevResetButton />
+                <DevOnboardingReplayButton />
               </PlayerProvider>
             </AccountRequiredPromptProvider>
           </PersistQueryClientProvider>
