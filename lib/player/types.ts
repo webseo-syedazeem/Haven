@@ -74,12 +74,16 @@ export type LocalSource = { url: string; artwork?: string };
 let resolveLocalSource: ((soundscapeId: string) => LocalSource | null) | null = null;
 
 /**
- * Registered once by `lib/local-downloads.ts` when it loads.
+ * Nothing registers a resolver any more — the permanent-downloads feature that
+ * used to call this from `lib/local-downloads.ts` has been removed — so the
+ * player always streams. The hook stays because removing it would mean
+ * reworking `toPlayableTrack` below and the error-message branching in
+ * `PlayerProvider.tsx` that still calls `hasLocalSource`, for a code path that
+ * is already fully inert.
  *
  * Injected rather than imported so the player never pulls `expo-file-system`
  * into its module graph — the engine and provider tests load these files in a
- * bare VM with no native modules. With no resolver registered (tests, web) the
- * player simply streams, exactly as it did before downloads existed.
+ * bare VM with no native modules.
  */
 export function setLocalSourceResolver(
   resolver: ((soundscapeId: string) => LocalSource | null) | null
@@ -98,9 +102,9 @@ export type ArtworkCache = {
 let artworkCache: ArtworkCache | null = null;
 
 /**
- * Registered once by `lib/offline-audio.ts`, for the same reason as the local
- * source resolver: the engine loads in a bare VM in tests. With none registered
- * the lock screen is given the remote URL, exactly as before.
+ * Registered once by `lib/startup-cleanup.ts` when it loads, for the same
+ * reason as the local source resolver: the engine loads in a bare VM in tests.
+ * With none registered the lock screen is given the remote URL.
  */
 export function setArtworkCache(cache: ArtworkCache | null) {
   artworkCache = cache;

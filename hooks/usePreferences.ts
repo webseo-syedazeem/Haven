@@ -6,7 +6,6 @@ import { useHasSession } from '@/hooks/useSession';
 import {
   preferencesApi,
   type DevicePlatform,
-  type DownloadSettings,
   type NotificationSettings,
   type PlaybackSettings,
   type SoundPreferences,
@@ -14,11 +13,11 @@ import {
 
 /**
  * Every settings screen reads and writes through here, so one cache holds the
- * four preference rows and a toggle flipped on one screen is already correct on
- * the next.
+ * three preference rows and a toggle flipped on one screen is already correct
+ * on the next.
  *
- * The playback, download and notification toggles write straight through in the
- * same shape as `useToggleFavourite`: patch the cache, roll back on failure, and
+ * The playback and notification toggles write straight through in the same
+ * shape as `useToggleFavourite`: patch the cache, roll back on failure, and
  * let the caller show a toast from `onError`. The API merges partial bodies
  * server side, so those mutations only ever send the fields they changed.
  *
@@ -28,7 +27,6 @@ import {
 export const PREFERENCES_QUERY_KEYS = {
   sound: ['preferences', 'sound'] as const,
   playback: ['preferences', 'playback'] as const,
-  downloads: ['preferences', 'downloads'] as const,
   notifications: ['preferences', 'notifications'] as const,
 };
 
@@ -277,49 +275,6 @@ export function useUpdatePlaybackSettings() {
     },
     onSuccess: (settings) => {
       queryClient.setQueryData(PREFERENCES_QUERY_KEYS.playback, settings);
-    },
-  });
-}
-
-// ── Download settings (R-06) ─────────────────────────────────────────────────
-
-export function useDownloadSettings() {
-  const hasSession = useHasSession();
-
-  return useQuery({
-    queryKey: PREFERENCES_QUERY_KEYS.downloads,
-    queryFn: preferencesApi.getDownloads,
-    enabled: hasSession,
-  });
-}
-
-export function useUpdateDownloadSettings() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: (patch: Partial<DownloadSettings>) => preferencesApi.updateDownloads(patch),
-    onMutate: async (patch: Partial<DownloadSettings>) => {
-      await queryClient.cancelQueries({ queryKey: PREFERENCES_QUERY_KEYS.downloads });
-      const previous = queryClient.getQueryData<DownloadSettings>(
-        PREFERENCES_QUERY_KEYS.downloads
-      );
-
-      if (previous) {
-        queryClient.setQueryData<DownloadSettings>(PREFERENCES_QUERY_KEYS.downloads, {
-          ...previous,
-          ...patch,
-        });
-      }
-
-      return { previous };
-    },
-    onError: (_error, _patch, context) => {
-      if (context?.previous) {
-        queryClient.setQueryData(PREFERENCES_QUERY_KEYS.downloads, context.previous);
-      }
-    },
-    onSuccess: (settings) => {
-      queryClient.setQueryData(PREFERENCES_QUERY_KEYS.downloads, settings);
     },
   });
 }

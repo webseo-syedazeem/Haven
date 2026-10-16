@@ -89,8 +89,7 @@ function GuestAuthGate({
 }
 
 /**
- * The same check on its own, for a screen that gates only part of itself — the
- * Saved tab keeps its Downloads segment usable while the rest is behind this.
+ * The same check on its own, for a screen that gates only part of itself.
  */
 export function useRequireAuth(): { hasSession: boolean; isRestoring: boolean } {
   return { hasSession: useHasSession(), isRestoring: useSessionRestoring() };

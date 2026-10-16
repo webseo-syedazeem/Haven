@@ -51,8 +51,6 @@ export async function completeSupabaseAuth(session: Session): Promise<MeApiRespo
     queryFn: userApi.get,
     staleTime: 0,
   });
-  // Caching the profile is also what points the downloads manifest at this
-  // account, so anything they saved on this device before is theirs again.
   await cacheProfile(me);
   return me;
 }

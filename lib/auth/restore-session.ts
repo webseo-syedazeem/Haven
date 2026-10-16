@@ -3,7 +3,7 @@ import { Platform } from 'react-native';
 
 import { ME_QUERY_KEY } from '@/hooks/useUser';
 import { isAuthFailure, isNetworkError } from '@/lib/api/errors';
-import { getAuthUserId, userApi } from '@/lib/api/user';
+import { userApi } from '@/lib/api/user';
 import {
   cacheProfile,
   markLoggedIn,
@@ -16,7 +16,6 @@ import {
   hydrateGuestMode,
   isGuestModeActive,
 } from '@/lib/auth/session-state';
-import { setActiveDownloadUser } from '@/lib/local-downloads';
 import { clearAuthTokens, refreshSession, setAccessToken, setAuthTokens } from '@/lib/haven-api';
 import { queryClient } from '@/lib/query-client';
 
@@ -110,11 +109,6 @@ async function runRestore(): Promise<SessionRestoreStatus> {
     const cached = await readCachedProfile();
     if (cached) {
       queryClient.setQueryData(ME_QUERY_KEY, cached);
-      // The only sign-in path that never reaches `cacheProfile`: an offline
-      // launch has no `/api/me` to cache, so the pointer is re-asserted from
-      // the copy on disk. The manifest already carries it across launches;
-      // this covers an install whose manifest predates ownership.
-      await setActiveDownloadUser(getAuthUserId(cached));
     }
 
     if (!accessToken) {
@@ -169,7 +163,7 @@ async function runRestore(): Promise<SessionRestoreStatus> {
     clearAuthTokens();
     queryClient.removeQueries({ queryKey: ME_QUERY_KEY });
     // A reachable server refused the credentials, so this is a sign out in
-    // everything but name — `markLoggedOut` drops the downloads pointer too.
+    // everything but name.
     await markLoggedOut();
     await Promise.all([
       deleteStoredItem(ACCESS_TOKEN_KEY),

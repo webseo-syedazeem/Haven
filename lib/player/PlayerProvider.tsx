@@ -547,7 +547,7 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
           // the user what to do about it.
           error: hasLocalSource(soundscape.id)
             ? LOCAL_FAILURE_MESSAGE
-            : 'This one needs a connection. Download it to play offline.',
+            : 'This one needs a connection. Try again once you are back online.',
           canRetry: true,
         }));
         return;

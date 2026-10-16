@@ -27,7 +27,6 @@ const TOKEN_REQUIRED_PATH_PREFIXES = [
   '/api/player/state',
   '/api/playlists',
   '/api/preferences',
-  '/api/downloads',
   '/api/account',
   '/api/onboarding',
   '/api/notifications',

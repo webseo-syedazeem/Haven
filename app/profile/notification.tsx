@@ -28,8 +28,8 @@ import {
  *
  * This screen previously called `/api/notifications` for both the read and the
  * write. No such route exists — notification settings are served by the
- * Notifications controller under the `/api/preferences` prefix, alongside sound,
- * playback and download settings.
+ * Notifications controller under the `/api/preferences` prefix, alongside sound
+ * and playback settings.
  *
  * `user_notification_settings` has no column for the reminder time, so the hour
  * is kept on the device and drives the locally scheduled reminder. The server

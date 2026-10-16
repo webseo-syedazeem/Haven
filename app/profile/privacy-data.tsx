@@ -128,7 +128,7 @@ function PrivacyDataContent() {
       </SettingsGroup>
 
       <SettingsGroup
-        footnote="Your export is a JSON file containing your account, favourites, playlists, downloads, listening history, preferences and support requests.">
+        footnote="Your export is a JSON file containing your account, favourites, playlists, listening history, preferences and support requests.">
         <SettingsRow
           busy={exportData.isPending}
           description="Everything Passage stores for you, as a file."

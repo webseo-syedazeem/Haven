@@ -18,7 +18,7 @@ type SoundscapeRowProps = {
   showFavourite?: boolean;
   isFavourite?: boolean;
   onToggleFavourite?: (soundscape: Soundscape, isFavourite: boolean) => void;
-  /** Replaces the heart — used by playlist detail and downloads. */
+  /** Replaces the heart — used by playlist detail and the Saved tab's rows. */
   trailing?: ReactNode;
   /** Drag handle or index, shown before the thumbnail. */
   leading?: ReactNode;

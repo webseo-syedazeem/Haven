@@ -25,11 +25,9 @@ import {
   profileNeedsOnboarding,
   resetToAuthenticatedOnboarding,
 } from '@/lib/auth/onboarding-routing';
-import { readCachedOnboardingCompleted } from '@/lib/auth/offline-session';
 import { restoreSession } from '@/lib/auth/restore-session';
 import { hasSeenIntro, setIntroSeen } from '@/lib/auth/intro-flag';
 import { isGuestModeActive, setGuestModeActive } from '@/lib/auth/session-state';
-import { hasPlayableDownloads, hydrateLocalDownloads } from '@/lib/local-downloads';
 import {
   getGuestOnboardingAnswers,
   getOnboardingResumeRoute,
@@ -139,18 +137,6 @@ export default function FirstPageScreen() {
         if (profileNeedsOnboarding(cachedMe)) {
           await resetToAuthenticatedOnboarding(router);
           return;
-        }
-
-        const cachedOnboardingCompleted = await readCachedOnboardingCompleted();
-
-        if (cachedOnboardingCompleted === true) {
-          await hydrateLocalDownloads();
-          if (!active) return;
-
-          if (hasPlayableDownloads()) {
-            router.replace('/(tabs)/saved?segment=downloads');
-            return;
-          }
         }
       }
 

@@ -88,7 +88,7 @@ function AccountSettingContent() {
             confirmLabel="Sign out"
             icon="log-out-outline"
             loading={busy}
-            message="You can sign back in at any time. Downloads stay on this device."
+            message="You can sign back in at any time."
             onCancel={() => setSignOutVisible(false)}
             onConfirm={() => void confirmSignOut()}
             showCancel={false}

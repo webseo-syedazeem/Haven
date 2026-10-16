@@ -14,7 +14,7 @@
  * copy the client approved.
  */
 
-export const LEGAL_LAST_UPDATED = 'Last updated: 5 September 2026';
+export const LEGAL_LAST_UPDATED = 'Last updated: 16 October 2026';
 
 export const PRIVACY_POLICY = `Passage is a soundscape app for sleep, relaxation and focus. This policy explains what we collect, why, and what you can do about it.
 
@@ -23,8 +23,8 @@ Passage is free to use. There is no subscription, no in-app purchase and no paym
 ## 1. Information we collect
 
 - Account details: your name, your email address, and your profile picture if you add one. If you sign in with Google or Apple, we receive the basic profile information that sign-in provides.
-- What you listen to: your play history, where you paused, your favourites, your playlists, and the soundscapes you download.
-- Your preferences: preferred environments and sounds, sounds you have asked us to avoid, detail and session-length preferences, and your playback, download and notification settings.
+- What you listen to: your play history, where you paused, your favourites, and your playlists.
+- Your preferences: preferred environments and sounds, sounds you have asked us to avoid, detail and session-length preferences, and your playback and notification settings.
 - Support messages: anything you send us through Contact Support, a problem report, or a soundscape request, including the email address you give us if you are not signed in.
 - Device notification token: only if you turn a notification on, so we have somewhere to send it.
 
@@ -91,7 +91,7 @@ export const TERMS_OF_SERVICE = `These terms cover your use of Passage. By creat
 
 ## 1. About Passage
 
-Passage is a soundscape app for sleep, relaxation and focus. It offers a catalogue of soundscapes, playlists, downloads for offline listening, a sleep timer, and preferences that shape what is recommended to you.
+Passage is a soundscape app for sleep, relaxation and focus. It offers a catalogue of soundscapes, playlists, a sleep timer, and preferences that shape what is recommended to you.
 
 ## 2. Passage is free
 
@@ -124,22 +124,18 @@ When you send a support message, a problem report or a soundscape request, you g
 
 We work to keep Passage available, but we cannot promise it will always be uninterrupted or error-free. Soundscapes may be added, changed or retired, and features may change over time. We may suspend or end access to an account that breaks these terms.
 
-## 9. Downloads
-
-Downloaded soundscapes are stored on your device for offline listening only. Removing the app, or removing your downloads in Download settings, deletes them from the device.
-
-## 10. Ending your use
+## 9. Ending your use
 
 You can stop using Passage at any time and delete your account from Account → Delete Account. Deleting your account permanently removes your account, library, listening history and preferences.
 
-## 11. Liability
+## 10. Liability
 
 To the extent the law allows, Passage is provided "as is" and we are not liable for indirect or consequential loss arising from your use of it. Nothing in these terms limits liability that cannot lawfully be limited.
 
-## 12. Changes to these terms
+## 11. Changes to these terms
 
 If we change these terms we will update the date at the top of this screen and, where the change is significant, tell you in the app. Continuing to use Passage after a change means you accept the updated terms.
 
-## 13. Contact
+## 12. Contact
 
 Questions about these terms can be sent from Profile → Contact Support.`;

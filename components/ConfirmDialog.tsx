@@ -25,8 +25,8 @@ type ConfirmDialogProps = {
 
 /**
  * The black opal confirm dialog. Anything that cannot be undone — deleting an
- * account, clearing every download, signing out — goes through this rather than
- * a platform `Alert`, so the moment of decision looks like the rest of the app.
+ * account, deleting a playlist, signing out — goes through this rather than a
+ * platform `Alert`, so the moment of decision looks like the rest of the app.
  */
 export function ConfirmDialog({
   visible,

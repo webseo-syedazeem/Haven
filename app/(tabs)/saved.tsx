@@ -2,8 +2,6 @@ import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter, type Href } from 'expo-router';
 import { useCallback, useMemo, useState } from 'react';
 import {
-  ActivityIndicator,
-  Alert,
   FlatList,
   Image,
   Pressable,
@@ -19,46 +17,27 @@ import { EmptyState, ErrorState } from '@/components/EmptyState';
 import { FilterChip } from '@/components/FilterChip';
 import { PlaylistCard } from '@/components/PlaylistCard';
 import { PlaylistFormSheet } from '@/components/PlaylistFormSheet';
-import { RequireAuth, useRequireAuth } from '@/components/RequireAuth';
+import { RequireAuth } from '@/components/RequireAuth';
 import { SoundscapeRow, SoundscapeRowSkeletonList } from '@/components/SoundscapeRow';
 import { Toast, useToast } from '@/components/Toast';
 import { HalcyonColors, HalcyonRadius, HalcyonSpacing, Typography } from '@/constants/design';
-import { AppFonts } from '@/constants/theme';
 import { useTabContentInset } from '@/hooks/use-bottom-safe-spacing';
-import {
-  getDownloadBlockNotice,
-  useDownloads,
-  useDownloadSoundscape,
-  useDownloadsStorage,
-  useRemoveAllDownloads,
-  useRemoveDownload,
-} from '@/hooks/useDownloads';
 import { useFavouriteSoundscapes, useToggleFavourite } from '@/hooks/useFavourites';
-import { usePlayHistory, usePlaySoundscapeById } from '@/hooks/usePlayHistory';
+import { usePlayHistory } from '@/hooks/usePlayHistory';
 import { useCreatePlaylist, usePlaylists } from '@/hooks/usePlaylists';
 import type { Soundscape } from '@/lib/api/home';
 import type { PlaylistPayload } from '@/lib/api/playlists';
-import {
-  remoteSourceFromLocalDownload,
-  soundscapeFromLocalDownload,
-  type LocalDownload,
-  type LocalDownloadStatus,
-} from '@/lib/local-downloads';
 import { usePlayerActions } from '@/lib/player/PlayerProvider';
 
-type SavedSegment = 'favourites' | 'playlists' | 'downloads' | 'recent';
+type SavedSegment = 'favourites' | 'playlists' | 'recent';
 
 const SEGMENTS: readonly { value: SavedSegment; label: string }[] = [
   { value: 'favourites', label: 'Favourites' },
   { value: 'playlists', label: 'Playlists' },
-  { value: 'downloads', label: 'Downloads' },
   { value: 'recent', label: 'Recently Played' },
 ];
 
 export default function SavedScreen() {
-  // An offline launch with downloads on disk lands here on `?segment=downloads`,
-  // so the user opens straight onto the only content that works without a
-  // connection. Any other value falls back to the usual first tab.
   const { segment: requested } = useLocalSearchParams<{ segment?: string }>();
   const [segment, setSegment] = useState<SavedSegment>(() =>
     SEGMENTS.some((option) => option.value === requested)
@@ -75,13 +54,6 @@ export default function SavedScreen() {
           source={require('@/assets/images/saved-dark-alpine-lake-bg.webp')}
           resizeMode="cover"
           style={styles.favouritesBackground}
-        />
-      )}
-      {segment === 'downloads' && (
-        <Image
-          source={require('@/assets/images/downloads-empty-cool-alpine-lake-bg.webp')}
-          resizeMode="cover"
-          style={styles.downloadsBackground}
         />
       )}
       {segment === 'recent' && (
@@ -112,12 +84,9 @@ export default function SavedScreen() {
         </ScrollView>
 
         {/* Each segment mounts only when selected, so it fetches on first view.
-            Three of the four live on the account, so without a session they are
-            not rendered at all and the prompt takes their place — the panels'
-            queries never mount, so nothing is asked of the server first.
-            Downloads is the exception: it reads the on-device manifest, which
-            is meaningful with or without a session, and shows an empty list
-            rather than a prompt when nobody is signed in. */}
+            All three live on the account, so without a session they are not
+            rendered at all and the prompt takes their place — the panels'
+            queries never mount, so nothing is asked of the server first. */}
         {segment === 'favourites' && (
           <RequireAuth
             message="Log in and the soundscapes you have hearted will be waiting here."
@@ -135,9 +104,6 @@ export default function SavedScreen() {
             waiting={<SoundscapeRowSkeletonList />}>
             <PlaylistsPanel bottomInset={bottomInset} onNotice={showToast} />
           </RequireAuth>
-        )}
-        {segment === 'downloads' && (
-          <DownloadsPanel bottomInset={bottomInset} onNotice={showToast} />
         )}
         {segment === 'recent' && (
           <RequireAuth
@@ -309,205 +275,6 @@ function PlaylistsPanel({
   );
 }
 
-/* ------------------------------------------------------------------ S-06 */
-
-/**
- * S-06. Everything here comes from the on-device manifest, so the list, the
- * sizes and the play buttons are all correct with no connection — which is the
- * one thing a downloads screen has to get right.
- */
-function DownloadsPanel({
-  bottomInset,
-  onNotice,
-}: {
-  bottomInset: number;
-  onNotice: (message: string) => void;
-}) {
-  const { hasSession } = useRequireAuth();
-  const downloads = useDownloads();
-  const storage = useDownloadsStorage();
-  const { removeDownload } = useRemoveDownload();
-  const { removeAllDownloads, isRemoving } = useRemoveAllDownloads();
-  const { download } = useDownloadSoundscape();
-  const playById = usePlaySoundscapeById();
-
-  const rows = downloads.data;
-  const totalBytes = storage.data.total_bytes;
-
-  const retry = useCallback(
-    (entry: LocalDownload) => {
-      void download(remoteSourceFromLocalDownload(entry))
-        .then(() => onNotice('Saved for offline listening.'))
-        .catch((error) => {
-          const notice = getDownloadBlockNotice(error);
-          if (notice) {
-            Alert.alert(notice.title, notice.message);
-          } else {
-            onNotice('Download failed. Try again.');
-          }
-        });
-    },
-    [download, onNotice]
-  );
-
-  const confirmRemoveAll = useCallback(() => {
-    Alert.alert('Remove all downloads?', 'Every soundscape you have saved will be removed from this device.', [
-      { text: 'Cancel', style: 'cancel' },
-      {
-        text: 'Remove all',
-        style: 'destructive',
-        onPress: () => {
-          void removeAllDownloads()
-            .then(() => onNotice('Downloads removed.'))
-            .catch(() => onNotice('Could not remove downloads.'));
-        },
-      },
-    ]);
-  }, [onNotice, removeAllDownloads]);
-
-  // No error branch: the manifest is a local file, so there is nothing here
-  // that a lost connection can fail.
-  if (downloads.isInitialLoading) return <SoundscapeRowSkeletonList />;
-
-  if (rows.length === 0) {
-    return (
-      <EmptyState
-        icon="cloud-download-outline"
-        message={
-          hasSession
-            ? 'Download a soundscape to listen offline.'
-            : 'Downloads are saved to your account. Log in to see yours, or to save something new.'
-        }
-        title={hasSession ? 'No downloads yet' : 'Nothing downloaded here'}
-      />
-    );
-  }
-
-  return (
-    <FlatList
-      ListHeaderComponent={
-        <View style={styles.storageBlock}>
-          <View style={styles.storageRow}>
-            <Text style={styles.storageLabel}>
-              {formatBytes(totalBytes)} used · {rows.length}{' '}
-              {rows.length === 1 ? 'download' : 'downloads'}
-            </Text>
-            <Pressable
-              accessibilityLabel="Remove all downloads"
-              accessibilityRole="button"
-              disabled={isRemoving}
-              hitSlop={8}
-              onPress={confirmRemoveAll}>
-              <Text style={styles.storageAction}>Remove all</Text>
-            </Pressable>
-          </View>
-          {/* Relative bar: the API reports usage but no device quota. */}
-          <View style={styles.storageTrack}>
-            <View style={[styles.storageFill, { flex: Math.min(1, totalBytes / GB) }]} />
-            <View style={{ flex: Math.max(0, 1 - Math.min(1, totalBytes / GB)) }} />
-          </View>
-        </View>
-      }
-      contentContainerStyle={{ paddingBottom: bottomInset }}
-      data={rows}
-      initialNumToRender={8}
-      keyExtractor={(item) => item.soundscape_id}
-      maxToRenderPerBatch={8}
-      removeClippedSubviews
-      renderItem={({ item }) => (
-        <DownloadRow
-          download={item}
-          onPlay={() => void playById(item.soundscape_id)}
-          onRemove={() => {
-            void removeDownload(item.soundscape_id)
-              .then(() => onNotice('Download removed.'))
-              .catch(() => onNotice('Could not remove that download.'));
-          }}
-          onRetry={() => retry(item)}
-        />
-      )}
-      showsVerticalScrollIndicator={false}
-      windowSize={7}
-    />
-  );
-}
-
-const GB = 1024 * 1024 * 1024;
-
-function DownloadRow({
-  download,
-  onPlay,
-  onRemove,
-  onRetry,
-}: {
-  download: LocalDownload;
-  onPlay: () => void;
-  onRemove: () => void;
-  onRetry: () => void;
-}) {
-  // The manifest carries the title, cover, mode and duration, so the row draws
-  // in full without the catalogue endpoint.
-  const soundscape = soundscapeFromLocalDownload(download);
-
-  return (
-    <SoundscapeRow
-      // Only a verified file is playable; anything else would open nothing.
-      onPlay={download.status === 'completed' ? onPlay : undefined}
-      soundscape={soundscape}
-      subtitle={downloadSubtitle(download)}
-      variant={'saved'}
-      trailing={
-        <View style={styles.downloadTrailing}>
-          {download.status === 'failed' ? (
-            <Pressable
-              accessibilityLabel={`Retry ${soundscape.title}`}
-              accessibilityRole="button"
-              hitSlop={8}
-              onPress={onRetry}>
-              <Ionicons color={HalcyonColors.accent} name="refresh-outline" size={18} />
-            </Pressable>
-          ) : (
-            <DownloadStatusIcon status={download.status} />
-          )}
-          <Pressable
-            accessibilityLabel={`Remove ${soundscape.title}`}
-            accessibilityRole="button"
-            hitSlop={8}
-            onPress={onRemove}>
-            <Ionicons color={HalcyonColors.textSecondary} name="trash-outline" size={18} />
-          </Pressable>
-        </View>
-      }
-    />
-  );
-}
-
-/**
- * `SoundscapeRow` appends the duration itself, so this line carries only what
- * the duration does not say: the size once saved, the real progress before.
- */
-function downloadSubtitle(download: LocalDownload): string {
-  switch (download.status) {
-    case 'completed':
-      return download.file_size_bytes ? formatBytes(download.file_size_bytes) : '';
-    case 'downloading':
-      return `Downloading · ${download.progress_percent}%`;
-    case 'queued':
-      return 'Queued';
-    default:
-      return 'Download failed — tap to retry';
-  }
-}
-
-function DownloadStatusIcon({ status }: { status: LocalDownloadStatus }) {
-  if (status === 'completed') {
-    return <Ionicons color={HalcyonColors.accent} name="checkmark-circle" size={19} />;
-  }
-  // queued and downloading: the percentage is on the subtitle line, so this
-  // stays a simple activity mark rather than a second progress readout.
-  return <ActivityIndicator color={HalcyonColors.textSecondary} size="small" />;
-}
-
 /* ------------------------------------------------------------------ S-07 */
 
 function RecentPanel({ bottomInset }: { bottomInset: number }) {
@@ -590,25 +357,12 @@ function formatPlayedAt(value?: string): string {
   return new Date(value).toLocaleDateString();
 }
 
-function formatBytes(bytes: number): string {
-  if (!bytes || bytes <= 0) return '0 MB';
-  const mb = bytes / (1024 * 1024);
-  if (mb < 1) return `${Math.max(1, Math.round(bytes / 1024))} KB`;
-  if (mb < 1024) return `${mb.toFixed(mb < 10 ? 1 : 0)} MB`;
-  return `${(mb / 1024).toFixed(1)} GB`;
-}
-
 const styles = StyleSheet.create({
   screen: {
     backgroundColor: HalcyonColors.background,
     flex: 1,
   },
   favouritesBackground: {
-    ...StyleSheet.absoluteFillObject,
-    height: undefined,
-    width: undefined,
-  },
-  downloadsBackground: {
     ...StyleSheet.absoluteFillObject,
     height: undefined,
     width: undefined,
@@ -687,42 +441,6 @@ const styles = StyleSheet.create({
   },
   fabPressed: {
     backgroundColor: HalcyonColors.accentPressed,
-  },
-  storageBlock: {
-    paddingBottom: 14,
-    paddingHorizontal: HalcyonSpacing.screenX,
-    paddingTop: 18,
-  },
-  storageRow: {
-    alignItems: 'center',
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 10,
-  },
-  storageLabel: {
-    ...Typography.muted,
-  },
-  storageAction: {
-    color: HalcyonColors.accent,
-    fontFamily: AppFonts.sansMedium,
-    fontSize: 13,
-    fontWeight: '500',
-    lineHeight: 18,
-  },
-  storageTrack: {
-    backgroundColor: HalcyonColors.skeleton,
-    borderRadius: 3,
-    flexDirection: 'row',
-    height: 5,
-    overflow: 'hidden',
-  },
-  storageFill: {
-    backgroundColor: HalcyonColors.accent,
-  },
-  downloadTrailing: {
-    alignItems: 'center',
-    columnGap: 14,
-    flexDirection: 'row',
   },
   resumeButton: {
     alignItems: 'center',

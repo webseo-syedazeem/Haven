@@ -30,7 +30,6 @@ const SETTINGS_ROWS = [
   { label: 'Sound Preferences', icon: 'musical-notes-outline', route: '/profile/sound-preferences' },
   { label: 'Sounds to Avoid', icon: 'ban-outline', route: '/profile/sounds-to-avoid' },
   { label: 'Playback', icon: 'play-circle-outline', route: '/profile/playback-settings' },
-  { label: 'Downloads', icon: 'download-outline', route: '/profile/download-settings' },
   { label: 'Notifications', icon: 'notifications-outline', route: '/profile/notification' },
   { label: 'Privacy & Data', icon: 'lock-closed-outline', route: '/profile/privacy-data' },
 ] as const;
@@ -228,7 +227,7 @@ export default function ProfileScreen() {
           confirmLabel="Sign out"
           icon="log-out-outline"
           loading={signingOut}
-          message="You can sign back in at any time. Downloads stay on this device."
+          message="You can sign back in at any time."
           onCancel={() => setSignOutVisible(false)}
           onConfirm={() => void confirmSignOut()}
           showCancel={false}

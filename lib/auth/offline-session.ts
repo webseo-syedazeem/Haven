@@ -3,7 +3,6 @@ import { Platform } from 'react-native';
 
 import type { MeApiResponse } from '@/lib/api/user';
 import { setGuestModeActive } from '@/lib/auth/session-state';
-import { setActiveDownloadUser } from '@/lib/local-downloads';
 
 /**
  * What the app knows about the signed-in user without asking the server.
@@ -18,20 +17,15 @@ import { setActiveDownloadUser } from '@/lib/local-downloads';
  *   `onboarding_completed`, so launch can make the offline exception without
  *   waiting on a request that cannot finish.
  *
- * This is also where the downloads manifest is told who is using the device.
- * Every route into the app — email, Google, Apple, a token refresh, a launch
- * time restore — ends by caching a fresh `/api/me` here, and every route out
- * ends at `markLoggedOut`, so hanging the pointer off these two is the only
- * way to be sure no sign-in path is left showing the last user's library. The
- * id is read inline rather than imported from `lib/api/user` because that
+ * The id is read inline rather than imported from `lib/api/user` because that
  * module reaches back to `lib/haven-api`, which imports this one.
  *
  * Tokens are NOT here and never will be: they stay in SecureStore, which is
  * what `lib/haven-api.ts` and `lib/api/client.ts` already use. This file holds
  * only what is safe to keep in the clear.
  *
- * Storage is a small JSON file in the app-private document directory (the same
- * sandbox the downloads manifest uses), with `localStorage` standing in on web.
+ * Storage is a small JSON file in the app-private document directory, with
+ * `localStorage` standing in on web.
  * AsyncStorage would have been the conventional home for this, but it is not a
  * dependency of this project and adding a native module would force a new dev
  * client build; a file in the app's own sandbox is equally durable and needs
@@ -131,22 +125,10 @@ export async function markLoggedIn(): Promise<void> {
  */
 export async function markLoggedOut(): Promise<void> {
   await write({ isLogged: false, profile: null, updatedAt: new Date().toISOString() });
-  // The downloads stay on disk; they just stop belonging to anybody on this
-  // device, which is what takes them out of the UI straight away.
-  await setActiveDownloadUser(null);
-}
-
-/** The account's stable id — what the server calls `req.user.id`. */
-function authUserIdOf(profile: MeApiResponse): string | null {
-  const id = profile?.data?.user?.id ?? profile?.data?.profile?.auth_user_id;
-  return typeof id === 'string' && id.trim() ? id.trim() : null;
 }
 
 export async function cacheProfile(profile: MeApiResponse): Promise<void> {
   await patch({ profile });
-  // Whoever `/api/me` just came back as owns this device's downloads now. Their
-  // own rows become visible again; nobody else's do.
-  await setActiveDownloadUser(authUserIdOf(profile));
 }
 
 export async function readCachedProfile(): Promise<MeApiResponse | null> {

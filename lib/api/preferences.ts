@@ -42,13 +42,6 @@ export type PlaybackSettings = {
   updated_at?: string | null;
 };
 
-export type DownloadSettings = {
-  user_id?: string | number;
-  wifi_only: boolean;
-  quality: Quality;
-  updated_at?: string | null;
-};
-
 export type NotificationSettings = {
   user_id?: string | number;
   reminders_enabled: boolean;
@@ -76,11 +69,6 @@ export const PLAYBACK_SETTING_DEFAULTS: PlaybackSettings = {
   end_behaviour: 'silent',
   quality: 'standard',
   autoplay_next: false,
-};
-
-export const DOWNLOAD_SETTING_DEFAULTS: DownloadSettings = {
-  wifi_only: true,
-  quality: 'standard',
 };
 
 /** Both notification toggles are off until the user asks for them. */
@@ -131,21 +119,6 @@ export const preferencesApi = {
       { method: 'PUT', body: JSON.stringify(patch) }
     );
     return { ...PLAYBACK_SETTING_DEFAULTS, ...(res.data?.settings ?? {}) };
-  },
-
-  getDownloads: async (): Promise<DownloadSettings> => {
-    const res = await apiClient<Envelope<{ settings: DownloadSettings }>>(
-      '/api/preferences/downloads'
-    );
-    return { ...DOWNLOAD_SETTING_DEFAULTS, ...(res.data?.settings ?? {}) };
-  },
-
-  updateDownloads: async (patch: Partial<DownloadSettings>): Promise<DownloadSettings> => {
-    const res = await apiClient<Envelope<{ settings: DownloadSettings }>>(
-      '/api/preferences/downloads',
-      { method: 'PUT', body: JSON.stringify(patch) }
-    );
-    return { ...DOWNLOAD_SETTING_DEFAULTS, ...(res.data?.settings ?? {}) };
   },
 
   /**

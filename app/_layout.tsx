@@ -12,7 +12,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { PersistQueryClientProvider } from '@tanstack/react-query-persist-client';
 import { restoreSession } from '@/lib/auth/restore-session';
-import { hydrateOfflineAudio } from '@/lib/offline-audio';
+import { runStartupCleanup } from '@/lib/startup-cleanup';
 import { persistOptions } from '@/lib/query-persist';
 import { queryClient } from '@/lib/query-client';
 import { PlayerProvider } from '@/lib/player/PlayerProvider';
@@ -41,9 +41,8 @@ export default function RootLayout() {
     // Runs once per launch, whatever route the app was opened on, so screens
     // deep linked past the entry screen still get their session restored.
     void restoreSession();
-    // Reads permanent downloads before anything asks what is saved and removes
-    // files left by the retired automatic recents-audio cache.
-    void hydrateOfflineAudio();
+    // Removes files left by retired features (recents audio, downloads).
+    void runStartupCleanup();
   }, []);
 
   useEffect(() => {

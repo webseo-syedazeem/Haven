@@ -1,16 +1,13 @@
 import Slider from '@react-native-community/slider';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import * as Linking from 'expo-linking';
 import { useRouter, type Href } from 'expo-router';
 import { useState } from 'react';
 import {
   ActivityIndicator,
-  Alert,
   Modal,
   Pressable,
   ScrollView,
-  Share,
   StyleSheet,
   Text,
   View,
@@ -30,11 +27,6 @@ import {
 import { getModeLabel } from '@/constants/modes';
 import { formatTimerLabel, UNTIL_I_STOP } from '@/constants/timers';
 import { AppFonts } from '@/constants/theme';
-import {
-  getDownloadBlockNotice,
-  useDownloadSoundscape,
-  useDownloadStatus,
-} from '@/hooks/useDownloads';
 import { useIsFavourite, useToggleFavourite } from '@/hooks/useFavourites';
 import { usePlayer } from '@/lib/player/PlayerProvider';
 import { formatClock, formatDuration } from '@/lib/utils/duration';
@@ -73,8 +65,6 @@ export default function PlayerScreen() {
 
   const isFavourite = useIsFavourite(soundscape?.id);
   const { toggleFavourite } = useToggleFavourite();
-  const downloadState = useDownloadStatus(soundscape?.id);
-  const { download, isDownloading } = useDownloadSoundscape();
 
   if (!soundscape) {
     return (
@@ -98,38 +88,6 @@ export default function PlayerScreen() {
   const modeLabel = getModeLabel(soundscape.mode);
   const durationLabel = formatDuration(total);
   const meta = [modeLabel, durationLabel].filter(Boolean).join(' · ');
-  const isDownloaded = downloadState?.status === 'completed';
-  const downloadInFlight =
-    isDownloading || downloadState?.status === 'queued' || downloadState?.status === 'downloading';
-
-  const handleShare = async () => {
-    try {
-      await Share.share({
-        message: `${soundscape.title} on Passage — ${Linking.createURL(`/soundscape/${soundscape.id}`)}`,
-      });
-    } catch {
-      showToast('Could not open the share sheet.');
-    }
-  };
-
-  const handleDownload = async () => {
-    if (isDownloaded) {
-      showToast('Already saved to this device.');
-      return;
-    }
-
-    try {
-      await download(soundscape);
-      showToast('Saved for offline listening.');
-    } catch (error) {
-      const notice = getDownloadBlockNotice(error);
-      if (notice) {
-        Alert.alert(notice.title, notice.message);
-      } else {
-        showToast('Download failed. Try again.');
-      }
-    }
-  };
 
   return (
     <View style={styles.screen}>
@@ -303,18 +261,10 @@ export default function PlayerScreen() {
               onPress={() => setTimerVisible(true)}
             />
             <ActionButton
-              busy={downloadInFlight}
-              icon={isDownloaded ? 'checkmark-circle-outline' : 'download-outline'}
-              label={isDownloaded ? 'Saved' : 'Download'}
-              active={isDownloaded}
-              onPress={() => void handleDownload()}
-            />
-            <ActionButton
               icon="list-outline"
               label="Playlist"
               onPress={() => setPlaylistSheetVisible(true)}
             />
-            <ActionButton icon="share-outline" label="Share" onPress={() => void handleShare()} />
           </View>
 
           <View style={styles.outputSection}>
@@ -359,14 +309,6 @@ export default function PlayerScreen() {
             onPress={() => {
               setMenuVisible(false);
               router.push(`/soundscape/${soundscape.id}` as Href);
-            }}
-          />
-          <MenuRow
-            icon="share-outline"
-            label="Share"
-            onPress={() => {
-              setMenuVisible(false);
-              void handleShare();
             }}
           />
           <MenuRow

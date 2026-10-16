@@ -6,8 +6,8 @@ type Envelope<T> = { success: boolean; data: T };
 /**
  * `GET /api/account/export` returns everything Halcyon stores for the caller as
  * one JSON document — the account row, favourites, playlists with their items,
- * downloads, play history, all four preference rows, support requests,
- * onboarding, player state and device tokens.
+ * play history, all three preference rows, support requests, onboarding,
+ * player state and device tokens.
  *
  * The shape is wide and the screen only shows a summary, so it is typed loosely
  * on purpose: the file the user saves is the API's response, untouched.
@@ -17,14 +17,12 @@ export type AccountExport = {
   account: Record<string, unknown> | null;
   favourites: unknown[];
   playlists: unknown[];
-  downloads: unknown[];
   play_history: { entries: unknown[] };
   onboarding: Record<string, unknown> | null;
   player_state: Record<string, unknown> | null;
   device_tokens: unknown[];
   sound_preferences: Record<string, unknown> | null;
   playback_settings: Record<string, unknown> | null;
-  download_settings: Record<string, unknown> | null;
   notification_settings: Record<string, unknown> | null;
   support_requests: unknown[];
 };

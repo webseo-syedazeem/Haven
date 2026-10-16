@@ -18,7 +18,6 @@ export default function ProfileLayout() {
       <Stack.Screen name="sound-preferences" />
       <Stack.Screen name="sounds-to-avoid" />
       <Stack.Screen name="playback-settings" />
-      <Stack.Screen name="download-settings" />
       <Stack.Screen name="notification" />
       <Stack.Screen name="privacy-data" />
       <Stack.Screen name="privacy-policy" />

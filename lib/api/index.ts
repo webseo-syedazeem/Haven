@@ -10,7 +10,6 @@ export { helpApi } from './help';
 export type { HelpArticle, HelpCategory } from './help';
 export { preferencesApi } from './preferences';
 export type {
-  DownloadSettings,
   NotificationSettings,
   PlaybackSettings,
   SoundPreferences,

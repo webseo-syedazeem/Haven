@@ -22,9 +22,9 @@ const MAX_AGE_MS = 1000 * 60 * 60 * 24;
 
 /**
  * Query key roots worth keeping on disk: the read-heavy catalogue screens and
- * the profile. Everything else — downloads (which have their own manifest),
- * mutations, one-off lookups — is left out so the file stays small and nothing
- * device-specific is restored from a stale snapshot.
+ * the profile. Everything else — mutations, one-off lookups — is left out so
+ * the file stays small and nothing device-specific is restored from a stale
+ * snapshot.
  */
 const PERSISTED_KEY_ROOTS = new Set([
   'home', // continue-listening, recommended, play-history, favourites, new, short sessions, popular collections

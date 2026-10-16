@@ -1,13 +1,10 @@
 import { Ionicons } from '@expo/vector-icons';
-import * as Linking from 'expo-linking';
 import { useLocalSearchParams, useRouter, type Href } from 'expo-router';
 import { useCallback, useState, type ReactNode } from 'react';
 import {
   ActivityIndicator,
-  Alert,
   Pressable,
   ScrollView,
-  Share,
   StyleSheet,
   Text,
   View,
@@ -24,11 +21,6 @@ import { HalcyonColors, HalcyonRadius, HalcyonSpacing } from '@/constants/design
 import { getModeLabel } from '@/constants/modes';
 import { AppFonts } from '@/constants/theme';
 import { useSimilarSoundscapes } from '@/hooks/useCatalogue';
-import {
-  getDownloadBlockNotice,
-  useDownloadSoundscape,
-  useDownloadStatus,
-} from '@/hooks/useDownloads';
 import { useIsFavourite, useToggleFavourite } from '@/hooks/useFavourites';
 import { useSoundscape } from '@/hooks/useHome';
 import type { Soundscape } from '@/lib/api/home';
@@ -49,8 +41,6 @@ export default function SoundscapeDetailScreen() {
   const isFavourite = useIsFavourite(id);
   const { toggleFavourite } = useToggleFavourite();
   const { playSoundscape } = usePlayerActions();
-  const downloadState = useDownloadStatus(id);
-  const { download, isDownloading } = useDownloadSoundscape();
 
   const openSoundscape = useCallback(
     (item: Soundscape) => router.push(`/soundscape/${item.id}` as Href),
@@ -62,37 +52,6 @@ export default function SoundscapeDetailScreen() {
     await playSoundscape(soundscape);
     router.push('/player');
   }, [playSoundscape, router, soundscape]);
-
-  const handleShare = useCallback(async () => {
-    if (!soundscape) return;
-    try {
-      await Share.share({
-        message: `${soundscape.title} on Passage — ${Linking.createURL(`/soundscape/${soundscape.id}`)}`,
-      });
-    } catch {
-      showToast('Could not open the share sheet.');
-    }
-  }, [showToast, soundscape]);
-
-  const handleDownload = useCallback(async () => {
-    if (!soundscape) return;
-    if (downloadState?.status === 'completed') {
-      showToast('Already saved to this device.');
-      return;
-    }
-
-    try {
-      await download(soundscape);
-      showToast('Saved for offline listening.');
-    } catch (error) {
-      const notice = getDownloadBlockNotice(error);
-      if (notice) {
-        Alert.alert(notice.title, notice.message);
-      } else {
-        showToast('Download failed. Try again.');
-      }
-    }
-  }, [download, downloadState?.status, showToast, soundscape]);
 
   // A 404 from the API surfaces as an error; treat it as "not found" rather
   // than a connection problem so the copy matches what happened.
@@ -130,11 +89,6 @@ export default function SoundscapeDetailScreen() {
     const soundSources = soundscape.sound_sources?.filter(Boolean) ?? [];
     const animals = soundscape.animals?.filter(Boolean) ?? [];
     const instruments = soundscape.instruments?.filter(Boolean) ?? [];
-    const isDownloaded = downloadState?.status === 'completed';
-    const downloadInFlight =
-      isDownloading ||
-      downloadState?.status === 'queued' ||
-      downloadState?.status === 'downloading';
 
     const profileFacts: { label: string; value: string }[] = [];
     if (soundscape.detail_level) {
@@ -225,18 +179,10 @@ export default function SoundscapeDetailScreen() {
             onPress={() => toggleFavourite(soundscape, isFavourite)}
           />
           <IconAction
-            active={isDownloaded}
-            busy={downloadInFlight}
-            icon={isDownloaded ? 'checkmark-circle-outline' : 'download-outline'}
-            label={isDownloaded ? 'Saved' : 'Download'}
-            onPress={() => void handleDownload()}
-          />
-          <IconAction
             icon="list-outline"
             label="Playlist"
             onPress={() => setPlaylistSheetVisible(true)}
           />
-          <IconAction icon="share-outline" label="Share" onPress={() => void handleShare()} />
           <IconAction
             icon="alert-circle-outline"
             label="Report"
