@@ -13,7 +13,13 @@ export type PlayableTrack = {
 
 export type EngineListeners = {
   onPlaybackChange?: (state: { isPlaying: boolean; isBuffering: boolean }) => void;
-  onProgress?: (progress: { position: number; duration: number }) => void;
+  /**
+   * `trackId` is the track this position was captured for — null for an event
+   * that is not about any one track (e.g. a full reset). A listener that
+   * tracks "the current track" should drop a non-null id that does not match
+   * it, since an event can still be in flight when a newer track is loaded.
+   */
+  onProgress?: (progress: { position: number; duration: number; trackId: string | null }) => void;
   onTrackEnd?: () => void;
   /**
    * The source stopped and automatic reloads could not revive it. The engine
@@ -36,13 +42,15 @@ export type PlayerEngine = {
   setup: () => Promise<boolean>;
   isAvailable: () => boolean;
   hasSource: () => boolean;
-  load: (track: PlayableTrack, startAtSeconds?: number, queueSize?: number) => Promise<void>;
+  load: (track: PlayableTrack, startAtSeconds?: number) => Promise<void>;
   play: () => Promise<void>;
   pause: () => Promise<void>;
   stop: () => Promise<void>;
   reset: () => Promise<void>;
   seekTo: (seconds: number) => Promise<void>;
   setVolume: (level: number) => Promise<void>;
+  /** The "Continuous loop" preference. Applies live to the active player with no restart. */
+  setLoopEnabled: (enabled: boolean) => void;
   getProgress: () => Promise<{ position: number; duration: number }>;
   subscribe: (listeners: EngineListeners) => () => void;
   /** One short chime for the Focus end-of-timer option. */

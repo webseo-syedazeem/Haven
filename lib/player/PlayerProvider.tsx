@@ -10,7 +10,12 @@ import {
 } from 'react';
 import { AppState, Platform } from 'react-native';
 
-import { getTimerConfig, UNTIL_I_STOP, type TimerSelection } from '@/constants/timers';
+import {
+  getTimerConfig,
+  PAUSED_TIMER_EXPIRY_MS,
+  UNTIL_I_STOP,
+  type TimerSelection,
+} from '@/constants/timers';
 import { useHasSession } from '@/hooks/useSession';
 import { homeApi, type Soundscape } from '@/lib/api/home';
 import {
@@ -18,6 +23,12 @@ import {
   PLAY_HISTORY_QUERY_KEY,
   type PlayHistoryRow,
 } from '@/lib/api/player';
+import {
+  getLocalSetting,
+  setLocalSetting,
+  LOCAL_SETTING_KEYS,
+  LOOP_ENABLED_DEFAULT,
+} from '@/lib/local-settings';
 import { queryClient } from '@/lib/query-client';
 import { engine } from './engine';
 import { hasLocalSource, toPlayableTrack } from './types';
@@ -33,6 +44,9 @@ const UNAVAILABLE_MESSAGE =
 const STALLED_MESSAGE = 'Playback stopped unexpectedly. Check your connection and try again.';
 const LOCAL_FAILURE_MESSAGE = 'This soundscape could not be played.';
 const PLAY_HISTORY_LIMIT = 50;
+
+const LOOP_NOTICE_ENABLED = 'Loop turned on so your timer can finish.';
+const LOOP_NOTICE_WILL_STOP = 'Playback will stop when this track ends.';
 
 let optimisticPlaySequence = 0;
 
@@ -103,6 +117,10 @@ export type PlayerStateValue = {
   isFadingOut: boolean;
   endToneEnabled: boolean;
   resumable: ResumableState | null;
+  /** The "Continuous loop" (repeat-one) preference; persists across launches. */
+  loopEnabled: boolean;
+  /** A one-shot message for the UI to toast, e.g. when a timer auto-enables loop. */
+  loopNotice: { text: string; at: number } | null;
 };
 
 export type PlayerProgressValue = {
@@ -123,6 +141,7 @@ export type PlayerActions = {
   skipPrevious: () => Promise<void>;
   setTimer: (selection: TimerSelection | null) => void;
   setEndToneEnabled: (enabled: boolean) => void;
+  setLoopEnabled: (enabled: boolean) => void;
   /** `forgetResumable` also drops the Continue card, for a sign out: it belongs to the account. */
   stop: (options?: { forgetResumable?: boolean }) => Promise<void>;
   resume: () => Promise<void>;
@@ -142,6 +161,8 @@ const INITIAL_STATE: PlayerStateValue = {
   isFadingOut: false,
   endToneEnabled: false,
   resumable: null,
+  loopEnabled: LOOP_ENABLED_DEFAULT,
+  loopNotice: null,
 };
 
 const INITIAL_PROGRESS: PlayerProgressValue = {
@@ -166,11 +187,24 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
   const indexRef = useRef(-1);
   const positionRef = useRef(0);
   const durationRef = useRef(0);
-  const timerRef = useRef<{ selection: TimerSelection | null; endsAt: number | null }>({
+  const timerRef = useRef<{
+    selection: TimerSelection | null;
+    /** The active deadline while playing; null while off, "Until I Stop", or frozen. */
+    endsAt: number | null;
+    /** Set while paused: the time left when playback stopped, to recompute a deadline on resume. */
+    pausedRemainingMs: number | null;
+    /** When the freeze started, so a long pause can expire the timer outright. */
+    pausedAt: number | null;
+  }>({
     selection: null,
     endsAt: null,
+    pausedRemainingMs: null,
+    pausedAt: null,
   });
   const endToneRef = useRef(false);
+  const loopEnabledRef = useRef(LOOP_ENABLED_DEFAULT);
+  /** True only while loop is on because a timer auto-enabled it, never a user choice; session-only. */
+  const loopAutoEnabledRef = useRef(false);
   const isPlayingRef = useRef(false);
   const resumableRef = useRef<ResumableState | null>(null);
   const skipNextRef = useRef<PlayerActions['skipNext'] | undefined>(undefined);
@@ -237,22 +271,45 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
+  /** Loop auto-enabled by a timer is session-only: never the user's saved preference. */
+  const revertAutoLoop = useCallback(() => {
+    if (!loopAutoEnabledRef.current) return;
+
+    loopAutoEnabledRef.current = false;
+    loopEnabledRef.current = false;
+    engine.setLoopEnabled(false);
+    setState((current) => ({ ...current, loopEnabled: false }));
+  }, []);
+
   const clearTimerState = useCallback(() => {
-    timerRef.current = { selection: null, endsAt: null };
+    revertAutoLoop();
+    timerRef.current = { selection: null, endsAt: null, pausedRemainingMs: null, pausedAt: null };
     setState((current) => ({ ...current, timerSelection: null, isFadingOut: false }));
     setProgress((current) => ({ ...current, timerRemainingSeconds: null }));
-  }, []);
+  }, [revertAutoLoop]);
 
   const finishPlayback = useCallback(async () => {
     clearFade();
     isPlayingRef.current = false;
-    await engine.stop();
-    await engine.setVolume(1);
+    // Timer expiry and natural completion update the controls immediately;
+    // releasing the native player can finish without holding the UI behind it.
     setState((current) => ({ ...current, isPlaying: false, isFadingOut: false }));
     clearTimerState();
+    await engine.stop();
+    await engine.setVolume(1);
     refreshResumable();
     void persistNow();
   }, [clearFade, clearTimerState, persistNow, refreshResumable]);
+
+  const handleTimerEnd = useCallback(() => {
+    const config = getTimerConfig(soundscapeRef.current?.mode);
+
+    // Modes that offer it play the optional gentle tone after their normal ending.
+    if (config.ending.offerEndTone && endToneRef.current) {
+      void engine.playEndTone();
+    }
+    void finishPlayback();
+  }, [finishPlayback]);
 
   const startFadeOut = useCallback(
     (fadeSeconds: number, endsAt: number) => {
@@ -260,7 +317,7 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
         const remainingMs = endsAt - Date.now();
         if (remainingMs <= 0) {
           timerRef.current = { ...timerRef.current, endsAt: null };
-          void finishPlayback();
+          handleTimerEnd();
           return false;
         }
 
@@ -280,21 +337,81 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
         applyDeadlineVolume();
       }, FADE_STEP_MS);
     },
-    [finishPlayback]
+    [handleTimerEnd]
   );
 
-  const handleTimerEnd = useCallback(() => {
-    const config = getTimerConfig(soundscapeRef.current?.mode);
+  // -------------------------------------------------------- timer pause/resume
 
-    // Focus: a silent stop unless the listener asked for the gentle end tone.
-    if (config.ending.type === 'silent' && endToneRef.current) {
-      void engine.playEndTone();
+  /**
+   * Pausing (for any reason — the user, a call, a headset unplugged, the lock
+   * screen) freezes an active timer: its deadline/fade are cancelled and the
+   * remaining time is banked, so the old deadline can never fire on its own.
+   */
+  const freezeTimer = useCallback(() => {
+    const { endsAt, pausedRemainingMs } = timerRef.current;
+    if (pausedRemainingMs !== null || endsAt === null) return;
+
+    clearFade();
+    const remainingMs = Math.max(0, endsAt - Date.now());
+    timerRef.current = {
+      ...timerRef.current,
+      endsAt: null,
+      pausedRemainingMs: remainingMs,
+      pausedAt: Date.now(),
+    };
+    setState((current) => (current.isFadingOut ? { ...current, isFadingOut: false } : current));
+    setProgress((current) => {
+      const remainingSeconds = Math.ceil(remainingMs / 1000);
+      return current.timerRemainingSeconds === remainingSeconds
+        ? current
+        : { ...current, timerRemainingSeconds: remainingSeconds };
+    });
+  }, [clearFade]);
+
+  /**
+   * Resuming recomputes the deadline from the banked remaining time and
+   * reschedules the fade/stop exactly as the normal flow would. Returns
+   * whether a frozen timer was actually resumed.
+   */
+  const unfreezeTimer = useCallback((): boolean => {
+    const { pausedRemainingMs } = timerRef.current;
+    if (pausedRemainingMs === null) return false;
+
+    const endsAt = Date.now() + pausedRemainingMs;
+    timerRef.current = {
+      ...timerRef.current,
+      endsAt,
+      pausedRemainingMs: null,
+      pausedAt: null,
+    };
+    setProgress((current) => ({
+      ...current,
+      timerRemainingSeconds: Math.ceil(pausedRemainingMs / 1000),
+    }));
+
+    const config = getTimerConfig(soundscapeRef.current?.mode);
+    if (config.ending.type === 'fade' && pausedRemainingMs <= config.ending.fadeSeconds * 1000) {
+      // Already inside the fade window: this starts the fade at the volume
+      // that matches what is left, so there is no pop back up to full first.
+      startFadeOut(config.ending.fadeSeconds, endsAt);
+    } else {
+      void engine.setVolume(1);
     }
-    void finishPlayback();
-  }, [finishPlayback]);
+    return true;
+  }, [startFadeOut]);
 
   const reconcileTimer = useCallback(() => {
-    const endsAt = timerRef.current.endsAt;
+    const { endsAt, pausedRemainingMs, pausedAt } = timerRef.current;
+
+    if (pausedRemainingMs !== null) {
+      // Frozen: nothing to count down. A pause this long drops the timer
+      // outright rather than let it resume for a track that has moved on.
+      if (pausedAt !== null && Date.now() - pausedAt >= PAUSED_TIMER_EXPIRY_MS) {
+        clearTimerState();
+      }
+      return;
+    }
+
     if (!endsAt) return;
 
     const remainingMs = endsAt - Date.now();
@@ -318,14 +435,24 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
     ) {
       startFadeOut(config.ending.fadeSeconds, endsAt);
     }
-  }, [handleTimerEnd, startFadeOut]);
+  }, [clearTimerState, handleTimerEnd, startFadeOut]);
 
   // ---------------------------------------------------------------- engine wiring
 
   useEffect(() => {
     const unsubscribe = engine.subscribe({
       onPlaybackChange: ({ isPlaying, isBuffering }) => {
+        const wasPlaying = isPlayingRef.current;
         isPlayingRef.current = isPlaying;
+        // Covers every pause/resume source, not just the in-app toggle: the
+        // lock screen, a call interruption, a headset unplugged. An action
+        // that already updated the ref itself (toggling, a failure) makes
+        // this a no-op, since `wasPlaying` already matches.
+        if (isPlaying && !wasPlaying) {
+          unfreezeTimer();
+        } else if (!isPlaying && wasPlaying) {
+          freezeTimer();
+        }
         setState((current) => {
           // Sound is flowing again, so an earlier failure message no longer applies.
           const clearError = isPlaying && current.canRetry;
@@ -344,7 +471,13 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
           };
         });
       },
-      onProgress: ({ position, duration }) => {
+      onProgress: ({ position, duration, trackId }) => {
+        // An event already in flight when a newer track was loaded still
+        // carries the track it was captured for; one that does not match the
+        // track now playing can never be applied, however it was captured —
+        // a stale status update, a recovery reload, a queued seek.
+        if (trackId !== null && trackId !== soundscapeRef.current?.id) return;
+
         positionRef.current = position;
         if (duration > 0) durationRef.current = duration;
 
@@ -373,6 +506,7 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
         // The engine's own reloads could not revive the source and it has released
         // the player, so the next play loads afresh from the position it reported.
         isPlayingRef.current = false;
+        freezeTimer();
         const soundscape = soundscapeRef.current;
         setState((current) => ({
           ...current,
@@ -398,7 +532,26 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
       // expected to run this JS cleanup after a swipe-close.
       void engine.reset();
     };
-  }, [finishPlayback, persistNow, refreshResumable]);
+  }, [finishPlayback, freezeTimer, persistNow, refreshResumable, unfreezeTimer]);
+
+  // The loop preference is read once per app launch; missing or unreadable
+  // storage keeps the safe default of off.
+  useEffect(() => {
+    let cancelled = false;
+
+    void (async () => {
+      const saved = await getLocalSetting(LOCAL_SETTING_KEYS.loopEnabled, LOOP_ENABLED_DEFAULT);
+      if (cancelled) return;
+
+      loopEnabledRef.current = saved;
+      engine.setLoopEnabled(saved);
+      setState((current) => ({ ...current, loopEnabled: saved }));
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   // Countdown tick for an active timer.
   useEffect(() => {
@@ -509,9 +662,12 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
       setProgress({
         position: startAt,
         duration: soundscape.duration_seconds ?? 0,
-        timerRemainingSeconds: timerRef.current.endsAt
-          ? Math.max(0, Math.ceil((timerRef.current.endsAt - Date.now()) / 1000))
-          : null,
+        timerRemainingSeconds:
+          timerRef.current.pausedRemainingMs !== null
+            ? Math.ceil(timerRef.current.pausedRemainingMs / 1000)
+            : timerRef.current.endsAt
+              ? Math.max(0, Math.ceil((timerRef.current.endsAt - Date.now()) / 1000))
+              : null,
       });
 
       if (!track) {
@@ -534,7 +690,7 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
         // A queue change must not cancel an active sleep-timer fade or restart
         // its deadline. The fade interval keeps controlling the same engine.
         if (!fadeInterval.current) await engine.setVolume(1);
-        await engine.load(track, startAt, queue.length);
+        await engine.load(track, startAt);
         await engine.play();
       } catch (error) {
         console.warn('[player] playback failed', error);
@@ -562,6 +718,15 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
     [schedulePersist]
   );
 
+  /** A different soundscape/queue cancels the timer; it belongs to the session, not a single tap. */
+  const cancelTimerForNewStart = useCallback(() => {
+    if (timerRef.current.selection === null) return;
+
+    clearFade();
+    void engine.setVolume(1);
+    clearTimerState();
+  }, [clearFade, clearTimerState]);
+
   const playSoundscape = useCallback<PlayerActions['playSoundscape']>(
     async (soundscape, options = {}) => {
       // Snapshot the displayed list so later filtering/reordering cannot move
@@ -575,9 +740,18 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
         queue[index] = soundscape;
       }
 
+      // Re-tapping the same soundscape in the same queue (or toggling play/pause
+      // on it) must not cancel the timer — only a genuinely different track or
+      // queue, which starting a new listening session, does.
+      const isSameSession =
+        soundscapeRef.current?.id === soundscape.id &&
+        queueRef.current.length === queue.length &&
+        queueRef.current.every((item, i) => item.id === queue[i].id);
+      if (!isSameSession) cancelTimerForNewStart();
+
       await loadAndPlay(soundscape, queue, index, Math.max(0, options.startAt ?? 0));
     },
-    [loadAndPlay]
+    [cancelTimerForNewStart, loadAndPlay]
   );
 
   const togglePlayPause = useCallback(async () => {
@@ -585,10 +759,23 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
     if (!soundscape) return;
 
     if (isPlayingRef.current) {
-      clearFade();
+      // Freezes an active timer (remaining = deadline - now) and cancels any
+      // scheduled fade/stop; resuming reschedules from the banked remainder.
+      freezeTimer();
       isPlayingRef.current = false;
-      await engine.pause();
+      // Optimistic UI: swap Pause to Play before the native command resolves.
       setState((current) => ({ ...current, isPlaying: false, isFadingOut: false }));
+      try {
+        await engine.pause();
+      } catch (error) {
+        // A rejected pause means audio may still be flowing, so restore both
+        // the icon and any timer that was frozen for the attempted pause.
+        isPlayingRef.current = true;
+        unfreezeTimer();
+        setState((current) => ({ ...current, isPlaying: true }));
+        console.warn('[player] pause failed', error);
+        return;
+      }
       refreshResumable();
       void persistNow();
       return;
@@ -597,20 +784,35 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
     if (!engine.hasSource()) {
       const track = toPlayableTrack(soundscape);
       if (!track || !(await engine.setup())) return;
-      await engine.load(track, positionRef.current, queueRef.current.length);
+      await engine.load(track, positionRef.current);
     }
 
-    await engine.setVolume(1);
+    const timerResumed = unfreezeTimer();
     isPlayingRef.current = true;
-    await engine.play();
-    // Playing again is also how a failure is retried, so its message goes.
+    // Optimistic UI: show Pause at once while the native player resumes.
     setState((current) => ({
       ...current,
       isPlaying: true,
       ...(current.canRetry ? { error: null, canRetry: false } : null),
     }));
+    try {
+      if (!timerResumed) await engine.setVolume(1);
+      await engine.play();
+    } catch (error) {
+      freezeTimer();
+      isPlayingRef.current = false;
+      setState((current) => ({
+        ...current,
+        isPlaying: false,
+        isBuffering: false,
+        error: 'Unable to start playback. Try again.',
+        canRetry: true,
+      }));
+      console.warn('[player] play failed', error);
+      return;
+    }
     schedulePersist();
-  }, [clearFade, persistNow, refreshResumable, schedulePersist]);
+  }, [freezeTimer, persistNow, refreshResumable, schedulePersist, unfreezeTimer]);
 
   const seek = useCallback(
     async (seconds: number) => {
@@ -661,13 +863,45 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
         return;
       }
 
-      const endsAt = selection === UNTIL_I_STOP ? null : Date.now() + selection * 60_000;
-      timerRef.current = { selection, endsAt };
+      const timerDurationMs = selection === UNTIL_I_STOP ? null : selection * 60_000;
+      const startsNow = timerDurationMs !== null && isPlayingRef.current;
+      const endsAt = startsNow ? Date.now() + timerDurationMs : null;
+      const pausedRemainingMs = timerDurationMs !== null && !startsNow ? timerDurationMs : null;
+      timerRef.current = {
+        selection,
+        endsAt,
+        pausedRemainingMs,
+        pausedAt: pausedRemainingMs !== null ? Date.now() : null,
+      };
 
-      setState((current) => ({ ...current, timerSelection: selection, isFadingOut: false }));
+      // A timer that outlasts the current track would otherwise end playback
+      // early. Only a loopable track can be kept going, and only while the
+      // listener has not already chosen to loop. This auto-enable is
+      // session-only: it is never written to the saved preference, and it
+      // reverts on its own once the timer is cancelled or ends.
+      let notice: PlayerStateValue['loopNotice'] = null;
+      if (!loopEnabledRef.current && soundscapeRef.current?.is_loop) {
+        const remainingMs = Math.max(0, durationRef.current - positionRef.current) * 1000;
+        const timerMs = timerDurationMs ?? Infinity;
+        if (timerMs > remainingMs) {
+          loopEnabledRef.current = true;
+          loopAutoEnabledRef.current = true;
+          engine.setLoopEnabled(true);
+          notice = { text: LOOP_NOTICE_ENABLED, at: Date.now() };
+        }
+      }
+
+      setState((current) => ({
+        ...current,
+        timerSelection: selection,
+        isFadingOut: false,
+        loopEnabled: loopEnabledRef.current,
+        loopNotice: notice ?? current.loopNotice,
+      }));
       setProgress((current) => ({
         ...current,
-        timerRemainingSeconds: endsAt ? Math.ceil((endsAt - Date.now()) / 1000) : null,
+        timerRemainingSeconds:
+          timerDurationMs === null ? null : Math.ceil(timerDurationMs / 1000),
       }));
       schedulePersist();
     },
@@ -679,28 +913,54 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
     setState((current) => ({ ...current, endToneEnabled: enabled }));
   }, []);
 
+  const setLoopEnabled = useCallback((enabled: boolean) => {
+    // An explicit choice, even to turn it back off, is a real preference from
+    // here on — no longer subject to being auto-reverted with the timer.
+    loopAutoEnabledRef.current = false;
+    loopEnabledRef.current = enabled;
+    engine.setLoopEnabled(enabled);
+    void setLocalSetting(LOCAL_SETTING_KEYS.loopEnabled, enabled);
+
+    // Turning loop off is allowed even with a timer still running longer than
+    // the track has left; this hints that playback will end before the timer does.
+    let notice: PlayerStateValue['loopNotice'] = null;
+    if (!enabled && timerRef.current.selection !== null) {
+      const remainingMs = Math.max(0, durationRef.current - positionRef.current) * 1000;
+      const endsAt = timerRef.current.endsAt;
+      const timerMs = endsAt ? endsAt - Date.now() : Infinity;
+      if (timerMs > remainingMs) {
+        notice = { text: LOOP_NOTICE_WILL_STOP, at: Date.now() };
+      }
+    }
+
+    setState((current) => ({ ...current, loopEnabled: enabled, loopNotice: notice }));
+  }, []);
+
   const stop = useCallback(async (options?: { forgetResumable?: boolean }) => {
     const forgetResumable = options?.forgetResumable === true;
     clearFade();
+    isPlayingRef.current = false;
     await persistNow();
     if (!forgetResumable) refreshResumable();
     await engine.reset();
     await engine.setVolume(1);
+    revertAutoLoop();
 
     soundscapeRef.current = null;
     queueRef.current = [];
     indexRef.current = -1;
     positionRef.current = 0;
     durationRef.current = 0;
-    timerRef.current = { selection: null, endsAt: null };
+    timerRef.current = { selection: null, endsAt: null, pausedRemainingMs: null, pausedAt: null };
 
     setState((current) => ({
       ...INITIAL_STATE,
       resumable: forgetResumable ? null : current.resumable,
       endToneEnabled: current.endToneEnabled,
+      loopEnabled: loopEnabledRef.current,
     }));
     setProgress(INITIAL_PROGRESS);
-  }, [clearFade, persistNow, refreshResumable]);
+  }, [clearFade, persistNow, refreshResumable, revertAutoLoop]);
 
   const resume = useCallback(async () => {
     const resumable = resumableRef.current;
@@ -724,6 +984,7 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
       skipPrevious,
       setTimer,
       setEndToneEnabled,
+      setLoopEnabled,
       stop,
       resume,
     }),
@@ -735,6 +996,7 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
       skipPrevious,
       setTimer,
       setEndToneEnabled,
+      setLoopEnabled,
       stop,
       resume,
     ]

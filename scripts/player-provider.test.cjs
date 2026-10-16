@@ -15,12 +15,19 @@ const tracks = ['a', 'b', 'c'].map((id) => track(id));
 
 // Run the actual provider with deterministic hooks, audio events and time.
 // This needs no native runtime, test-renderer package, network, or real timers.
-function createPlayer({ saved = null, catalogue = tracks, hasSession = false, seekError = null } = {}) {
+function createPlayer({
+  saved = null, catalogue = tracks, hasSession = false, seekError = null,
+  storedLoopEnabled, localSettingsFail = false, playStarts = true,
+} = {}) {
   const hooks = [];
   const timers = new Map();
   const listeners = new Set();
   const warnings = [];
-  const calls = { loads: [], seeks: [], saves: [], history: [], volumes: [], stop: 0, reset: 0, tones: 0, subscribes: 0, setups: 0 };
+  const calls = {
+    loads: [], seeks: [], saves: [], history: [], volumes: [], stop: 0, reset: 0, tones: 0,
+    subscribes: 0, setups: 0, loopEnabled: [], localSettingWrites: [],
+  };
+  let storedLoop = storedLoopEnabled;
   let hookIndex = 0;
   let dirty = true;
   let now = 100000;
@@ -73,25 +80,36 @@ function createPlayer({ saved = null, catalogue = tracks, hasSession = false, se
     },
   };
   const emit = (event, value) => { for (const listener of listeners) listener[event]?.(value); };
+  let currentTrackId = null;
   const engine = {
     setup: async () => { calls.setups++; return true; },
     hasSource: () => sourceLoaded,
     subscribe: (listener) => { calls.subscribes++; listeners.add(listener); return () => listeners.delete(listener); },
-    load: async (value, startAt, queueSize) => {
+    load: async (value, startAt) => {
       sourceLoaded = true;
-      calls.loads.push({ track: value, startAt, queueSize });
-      emit('onProgress', { position: startAt, duration: value.duration });
+      currentTrackId = value.id;
+      calls.loads.push({ track: value, startAt });
+      emit('onProgress', { position: startAt, duration: value.duration, trackId: currentTrackId });
     },
-    play: async () => emit('onPlaybackChange', { isPlaying: true, isBuffering: false }),
+    play: async () => emit('onPlaybackChange', playStarts
+      ? { isPlaying: true, isBuffering: false }
+      : { isPlaying: false, isBuffering: true }),
     pause: async () => emit('onPlaybackChange', { isPlaying: false, isBuffering: false }),
     stop: async () => { calls.stop++; sourceLoaded = false; emit('onPlaybackChange', { isPlaying: false, isBuffering: false }); },
-    reset: async () => { calls.reset++; sourceLoaded = false; emit('onPlaybackChange', { isPlaying: false, isBuffering: false }); emit('onProgress', { position: 0, duration: 0 }); },
+    reset: async () => {
+      calls.reset++;
+      sourceLoaded = false;
+      currentTrackId = null;
+      emit('onPlaybackChange', { isPlaying: false, isBuffering: false });
+      emit('onProgress', { position: 0, duration: 0, trackId: null });
+    },
     seekTo: async (seconds) => {
       calls.seeks.push(seconds);
       if (seekError) throw seekError;
-      emit('onProgress', { position: seconds, duration: 180 });
+      emit('onProgress', { position: seconds, duration: 180, trackId: currentTrackId });
     },
     setVolume: async (level) => { calls.volumes.push(level); },
+    setLoopEnabled: (enabled) => { calls.loopEnabled.push(enabled); },
     playEndTone: async () => { calls.tones++; },
   };
   const cache = new Map();
@@ -116,6 +134,19 @@ function createPlayer({ saved = null, catalogue = tracks, hasSession = false, se
         cancelQueries: async () => {},
         setQueryData: () => {},
       },
+    },
+    '@/lib/local-settings': {
+      getLocalSetting: async (key, fallback) => {
+        if (localSettingsFail || storedLoop === undefined) return fallback;
+        return key === 'loop_enabled' ? storedLoop : fallback;
+      },
+      setLocalSetting: async (key, value) => {
+        calls.localSettingWrites.push({ key, value });
+        if (localSettingsFail) return;
+        if (key === 'loop_enabled') storedLoop = value;
+      },
+      LOCAL_SETTING_KEYS: { loopEnabled: 'loop_enabled' },
+      LOOP_ENABLED_DEFAULT: false,
     },
   };
   function load(file) {
@@ -174,7 +205,7 @@ function createPlayer({ saved = null, catalogue = tracks, hasSession = false, se
     settle,
     /** The engine's give-up, in its order: the resume position, the failure, then the released player. */
     async failPlayback(position) {
-      emit('onProgress', { position, duration: 180 });
+      emit('onProgress', { position, duration: 180, trackId: currentTrackId });
       emit('onPlaybackFailed');
       sourceLoaded = false;
       emit('onPlaybackChange', { isPlaying: false, isBuffering: false });
@@ -209,7 +240,7 @@ const ids = (queue) => Array.from(queue, (item) => item.id);
 test('a single-track tap produces a one-item queue and cannot skip', async () => {
   const player = createPlayer();
   await player.act('playSoundscape', tracks[1]);
-  await player.event('onProgress', { position: 20, duration: 180 });
+  await player.event('onProgress', { position: 20, duration: 180, trackId: 'b' });
   await player.act('skipNext');
   await player.act('skipPrevious');
   assert.deepEqual(ids(player.state.queue), ['b']);
@@ -217,7 +248,6 @@ test('a single-track tap produces a one-item queue and cannot skip', async () =>
   assert.equal(player.state.hasPrevious, false);
   assert.equal(player.progress.position, 20);
   assert.equal(player.calls.loads.length, 1);
-  assert.equal(player.calls.loads[0].queueSize, 1);
   assert.equal(player.calls.seeks.length, 0);
 });
 
@@ -227,8 +257,7 @@ test('a Play All-style full queue keeps every track and advances without wrappin
   assert.equal(player.state.queueIndex, 1);
   assert.equal(player.state.hasPrevious, true);
   assert.equal(player.state.hasNext, true);
-  assert.equal(player.calls.loads[0].queueSize, 3);
-  await player.event('onProgress', { position: 20, duration: 180 });
+  await player.event('onProgress', { position: 20, duration: 180, trackId: 'b' });
   await player.act('skipPrevious');
   assert.equal(player.state.soundscape.id, 'a');
   assert.equal(player.progress.position, 0);
@@ -275,7 +304,6 @@ test('save and stop preserve progress, while resume restores a one-item queue an
   assert.equal(player.state.soundscape.id, 'b');
   assert.deepEqual(ids(player.state.queue), ['b']);
   assert.equal(player.state.queueIndex, 0);
-  assert.equal(player.calls.loads.at(-1).queueSize, 1);
   assert.equal(player.calls.loads.at(-1).startAt, 12);
   assert.equal(player.state.timerSelection, 10);
   await player.act('skipNext');
@@ -294,7 +322,6 @@ test('cold resume restores saved queue order, removes missing tracks and finds c
   await player.act('resume');
   assert.deepEqual(ids(player.state.queue), ['b']);
   assert.equal(player.state.queueIndex, 0);
-  assert.equal(player.calls.loads.at(-1).queueSize, 1);
   assert.equal(player.progress.position, 25);
   assert.equal(player.state.timerSelection, 10);
   await player.act('skipNext');
@@ -386,7 +413,7 @@ test('the engine wiring mounts once and is never torn down by re-renders, playba
 
   await player.act('playSoundscape', tracks[0], { queue: tracks });
   for (let second = 1; second <= 60; second++) {
-    await player.event('onProgress', { position: second, duration: 180 });
+    await player.event('onProgress', { position: second, duration: 180, trackId: 'a' });
     await player.event('onPlaybackChange', { isPlaying: second % 2 === 0, isBuffering: second % 2 === 1 });
     await player.advance(1000);
   }
@@ -454,3 +481,403 @@ test('errors that retrying cannot fix are not offered a retry', async () => {
   assert.equal(player.state.error, 'This soundscape has no audio file yet.');
   assert.equal(player.state.canRetry, false);
 });
+
+// ------------------------------------------------------------------- loop
+
+const loopable = (base) => ({ ...base, is_loop: true });
+
+test('the loop preference defaults to off and is applied to the engine on mount', async () => {
+  const player = createPlayer();
+  await player.settle();
+  assert.equal(player.state.loopEnabled, false);
+  assert.equal(player.calls.loopEnabled.at(-1), false);
+});
+
+test('a loop preference saved from a previous launch is restored on mount', async () => {
+  const player = createPlayer({ storedLoopEnabled: true });
+  await player.settle();
+  assert.equal(player.state.loopEnabled, true);
+  assert.equal(player.calls.loopEnabled.at(-1), true);
+});
+
+test('a saved loop preference that cannot be read falls back to off', async () => {
+  const player = createPlayer({ storedLoopEnabled: true, localSettingsFail: true });
+  await player.settle();
+  assert.equal(player.state.loopEnabled, false);
+});
+
+test('setLoopEnabled updates state, applies to the engine live, and persists the choice', async () => {
+  const player = createPlayer();
+  await player.act('playSoundscape', tracks[0]);
+  const loadCount = player.calls.loads.length;
+
+  await player.act('setLoopEnabled', true);
+  assert.equal(player.state.loopEnabled, true);
+  assert.equal(player.calls.loopEnabled.at(-1), true);
+  assert.equal(player.calls.loads.length, loadCount, 'toggling the preference must never reload the source');
+  assert.deepEqual(player.calls.localSettingWrites.at(-1), { key: 'loop_enabled', value: true });
+
+  await player.act('setLoopEnabled', false);
+  assert.equal(player.state.loopEnabled, false);
+  assert.deepEqual(player.calls.localSettingWrites.at(-1), { key: 'loop_enabled', value: false });
+});
+
+test('the loop preference survives stop, unlike the rest of playback state', async () => {
+  const player = createPlayer();
+  await player.act('playSoundscape', tracks[0]);
+  await player.act('setLoopEnabled', true);
+  await player.act('stop');
+  assert.equal(player.state.soundscape, null);
+  assert.equal(player.state.loopEnabled, true);
+});
+
+test('a timer longer than the remaining loopable track auto-enables loop and notices the listener', async () => {
+  const player = createPlayer();
+  await player.act('playSoundscape', loopable(tracks[1]));
+  await player.event('onProgress', { position: 170, duration: 180, trackId: 'b' });
+
+  await player.act('setTimer', 60);
+  assert.equal(player.state.loopEnabled, true);
+  assert.match(player.state.loopNotice.text, /loop turned on/i);
+  assert.equal(player.calls.loopEnabled.at(-1), true);
+});
+
+test('a timer shorter than the remaining track leaves the loop preference untouched', async () => {
+  const player = createPlayer();
+  await player.act('playSoundscape', loopable(tracks[1]));
+  await player.event('onProgress', { position: 10, duration: 180, trackId: 'b' });
+
+  await player.act('setTimer', 1);
+  assert.equal(player.state.loopEnabled, false);
+  assert.equal(player.state.loopNotice, null);
+});
+
+test('a long timer on a non-loopable track does not touch the loop preference', async () => {
+  const player = createPlayer();
+  await player.act('playSoundscape', tracks[1]);
+  await player.event('onProgress', { position: 170, duration: 180, trackId: 'b' });
+
+  await player.act('setTimer', 60);
+  assert.equal(player.state.loopEnabled, false);
+  assert.equal(player.state.loopNotice, null);
+});
+
+test('turning loop off with a timer that will outlast the track hints that playback will stop early', async () => {
+  const player = createPlayer();
+  await player.act('playSoundscape', loopable(tracks[1]));
+  await player.act('setLoopEnabled', true);
+  await player.act('setTimer', 60);
+  await player.event('onProgress', { position: 170, duration: 180, trackId: 'b' });
+
+  await player.act('setLoopEnabled', false);
+  assert.equal(player.state.loopEnabled, false, 'turning it off is allowed, not blocked');
+  assert.match(player.state.loopNotice.text, /stop when this track ends/i);
+});
+
+test('turning loop off is silent when the running timer does not outlast the track', async () => {
+  const player = createPlayer();
+  await player.act('playSoundscape', loopable(tracks[1]));
+  await player.act('setLoopEnabled', true);
+  await player.act('setTimer', 1);
+  await player.event('onProgress', { position: 10, duration: 180, trackId: 'b' });
+
+  await player.act('setLoopEnabled', false);
+  assert.equal(player.state.loopEnabled, false);
+  assert.equal(player.state.loopNotice, null);
+});
+
+// -------------------------------------------------------- bug 1: track resets
+
+test("a new track always starts at position 0, never the previous track's position", async () => {
+  const player = createPlayer();
+  await player.act('playSoundscape', tracks[0]);
+  await player.event('onProgress', { position: 600, duration: 180, trackId: 'a' });
+  assert.equal(player.progress.position, 600);
+
+  await player.act('playSoundscape', tracks[1]);
+  assert.equal(player.progress.position, 0);
+  assert.equal(player.calls.loads.at(-1).startAt, 0);
+
+  // A stale progress event for the old track — e.g. a network-recovery reload
+  // that was already in flight when the new track was requested — must not
+  // be allowed to move the new track off zero.
+  await player.event('onProgress', { position: 600, duration: 180, trackId: 'a' });
+  assert.equal(player.progress.position, 0);
+  assert.equal(player.state.soundscape.id, 'b');
+});
+
+test('rapid A -> B -> C taps each start at 0, and a stale event for an earlier tap never lands', async () => {
+  const player = createPlayer();
+  await player.act('playSoundscape', tracks[0]);
+  await player.event('onProgress', { position: 600, duration: 180, trackId: 'a' });
+
+  await player.act('playSoundscape', tracks[1]);
+  await player.event('onProgress', { position: 45, duration: 180, trackId: 'b' });
+
+  await player.act('playSoundscape', tracks[2]);
+  assert.equal(player.state.soundscape.id, 'c');
+  assert.equal(player.progress.position, 0);
+
+  await player.event('onProgress', { position: 600, duration: 180, trackId: 'a' });
+  await player.event('onProgress', { position: 45, duration: 180, trackId: 'b' });
+  assert.equal(player.progress.position, 0);
+  assert.deepEqual(player.calls.loads.map((call) => call.track.id), ['a', 'b', 'c']);
+});
+
+// ------------------------------------------------ bug 2: timer cancel rules
+
+test('starting a different soundscape cancels an active timer and restores volume', async () => {
+  const player = createPlayer();
+  await player.act('playSoundscape', tracks[0], { queue: tracks });
+  await player.act('setTimer', 10);
+  assert.equal(player.state.timerSelection, 10);
+
+  await player.act('playSoundscape', tracks[2]);
+  assert.equal(player.state.timerSelection, null);
+  assert.equal(player.progress.timerRemainingSeconds, null);
+  assert.equal(player.calls.volumes.at(-1), 1);
+});
+
+test('starting a different queue (Play All) cancels the timer even when it begins on the same track', async () => {
+  const player = createPlayer();
+  await player.act('playSoundscape', tracks[0]);
+  await player.act('setTimer', 10);
+  assert.equal(player.state.timerSelection, 10);
+
+  // A different queue context, even one that happens to start on the same track.
+  await player.act('playSoundscape', tracks[0], { queue: tracks });
+  assert.equal(player.state.timerSelection, null);
+});
+
+test("the old timer's deadline never fires on the new track once cancelled", async () => {
+  const player = createPlayer();
+  await player.act('playSoundscape', tracks[0], { queue: tracks });
+  await player.act('setTimer', 5);
+  await player.act('playSoundscape', tracks[2]);
+
+  const stopsBefore = player.calls.stop;
+  await player.advance(5 * 60 * 1000 + 5000);
+  assert.equal(player.calls.stop, stopsBefore, 'the cancelled deadline must never fire on the new track');
+  assert.equal(player.state.isPlaying, true);
+  assert.equal(player.state.timerSelection, null);
+});
+
+test('re-tapping the same soundscape and queue does not cancel the timer', async () => {
+  const player = createPlayer();
+  await player.act('playSoundscape', tracks[1], { queue: tracks });
+  await player.act('setTimer', 10);
+  await player.act('playSoundscape', tracks[1], { queue: tracks });
+  assert.equal(player.state.timerSelection, 10);
+});
+
+test('toggling play/pause on the current track does not cancel the timer', async () => {
+  const player = createPlayer();
+  await player.act('playSoundscape', tracks[0]);
+  await player.act('setTimer', 10);
+  await player.act('togglePlayPause');
+  await player.act('togglePlayPause');
+  assert.equal(player.state.timerSelection, 10);
+});
+
+test('explicit Next and Previous within the same queue do not cancel the timer', async () => {
+  const player = createPlayer();
+  await player.act('playSoundscape', tracks[1], { queue: tracks });
+  await player.act('setTimer', 10);
+  await player.act('skipNext');
+  assert.equal(player.state.timerSelection, 10);
+  await player.act('skipPrevious');
+  assert.equal(player.state.timerSelection, 10);
+  await player.act('skipPrevious');
+  assert.equal(player.state.timerSelection, 10);
+});
+
+test('loop auto-enabled by a timer is never persisted, and reverts when a different track cancels the timer', async () => {
+  const player = createPlayer();
+  await player.act('playSoundscape', loopable(tracks[1]));
+  await player.event('onProgress', { position: 170, duration: 180, trackId: 'b' });
+  await player.act('setTimer', 60);
+  assert.equal(player.state.loopEnabled, true);
+  assert.equal(
+    player.calls.localSettingWrites.some((write) => write.key === 'loop_enabled'),
+    false,
+    'auto-enabling loop for a timer must never be saved as the user preference'
+  );
+
+  await player.act('playSoundscape', tracks[2]);
+  assert.equal(player.state.loopEnabled, false, 'the session-only auto-enable reverts with the timer');
+  assert.equal(player.calls.loopEnabled.at(-1), false);
+});
+
+// -------------------------------------------------- bug 3: pause freezes timer
+
+test('a timer selected during initial buffering waits for actual playback before counting down', async () => {
+  const player = createPlayer({ playStarts: false });
+  await player.act('playSoundscape', tracks[0]);
+  assert.equal(player.state.isPlaying, false);
+  assert.equal(player.state.isBuffering, true);
+
+  await player.act('setTimer', 5);
+  assert.equal(player.progress.timerRemainingSeconds, 300);
+  await player.advance(30000);
+  assert.equal(player.progress.timerRemainingSeconds, 300, 'buffering time is not timer time');
+
+  await player.event('onPlaybackChange', { isPlaying: true, isBuffering: false });
+  await player.advance(10000);
+  assert.equal(player.progress.timerRemainingSeconds, 290);
+});
+
+test('pausing freezes the remaining time, and resuming reschedules the deadline from there', async () => {
+  const player = createPlayer();
+  await player.act('playSoundscape', tracks[0], { queue: tracks });
+  await player.act('setTimer', 10);
+  await player.advance(60000);
+  assert.equal(player.progress.timerRemainingSeconds, 540);
+
+  await player.act('togglePlayPause');
+  assert.equal(player.state.isPlaying, false);
+  assert.equal(player.state.timerSelection, 10, 'the timer stays visible, just paused');
+  assert.equal(player.progress.timerRemainingSeconds, 540);
+
+  // Real time passing while paused must not count against the timer.
+  await player.advance(20000);
+  assert.equal(player.progress.timerRemainingSeconds, 540);
+
+  await player.act('togglePlayPause');
+  assert.equal(player.state.isPlaying, true);
+  assert.equal(player.progress.timerRemainingSeconds, 540);
+
+  await player.advance(10000);
+  assert.equal(player.progress.timerRemainingSeconds, 530);
+});
+
+test('pausing cancels a scheduled fade, and resuming inside the fade window resumes at the matching volume with no pop', async () => {
+  const player = createPlayer();
+  const sleepTrack = track('sleep-pause', 'sleep');
+  await player.act('playSoundscape', sleepTrack);
+  await player.act('setTimer', 5);
+
+  // Enter the final minute, where Sleep/Relax fades (FADE_OUT_SECONDS = 60).
+  await player.advance(239000);
+  assert.equal(player.state.isFadingOut, false);
+  await player.advance(1000);
+  assert.equal(player.state.isFadingOut, true);
+  assert.equal(player.progress.timerRemainingSeconds, 60);
+
+  // 30s further into the fade: volume should be about half.
+  await player.advance(30000);
+  assert.equal(player.progress.timerRemainingSeconds, 30);
+
+  const volumeCallsAtPause = player.calls.volumes.length;
+  await player.act('togglePlayPause');
+  assert.equal(player.state.isFadingOut, false, 'a frozen timer is not shown as fading');
+  assert.equal(player.progress.timerRemainingSeconds, 30);
+
+  // Nothing fades further, and the deadline cannot fire, while paused.
+  await player.advance(120000);
+  assert.equal(player.calls.volumes.length, volumeCallsAtPause, 'a paused timer must not keep fading');
+  assert.equal(player.calls.stop, 0);
+
+  await player.act('togglePlayPause');
+  assert.equal(player.calls.volumes.at(-1), 0.5, '30s left of a 60s fade resumes at half volume, not a pop to full first');
+  assert.equal(player.state.isFadingOut, true);
+
+  await player.advance(30000);
+  assert.equal(player.calls.stop, 1);
+  assert.equal(player.state.timerSelection, null);
+});
+
+test('a timer frozen by pausing for more than 30 minutes is dropped outright', async () => {
+  const player = createPlayer();
+  await player.act('playSoundscape', tracks[0], { queue: tracks });
+  await player.act('setTimer', 10);
+  await player.act('togglePlayPause');
+  assert.equal(player.state.timerSelection, 10);
+
+  await player.advance(30 * 60 * 1000 + 1000);
+  assert.equal(player.state.timerSelection, null, 'a timer paused this long is cancelled outright');
+  assert.equal(player.progress.timerRemainingSeconds, null);
+  assert.equal(player.calls.stop, 0, 'cancelling a frozen timer is not the same as stopping playback');
+
+  await player.act('togglePlayPause');
+  assert.equal(player.state.isPlaying, true);
+  assert.equal(player.state.timerSelection, null, 'playing again after the expiry starts with no timer');
+});
+
+test('the 5-minute Test timer (DEV preset) survives a pause and resume', async () => {
+  const player = createPlayer();
+  await player.act('playSoundscape', tracks[0]);
+  await player.act('setTimer', 5);
+  await player.advance(60000);
+  assert.equal(player.progress.timerRemainingSeconds, 240);
+
+  await player.act('togglePlayPause');
+  await player.advance(10000);
+  assert.equal(player.progress.timerRemainingSeconds, 240, 'frozen while paused');
+
+  await player.act('togglePlayPause');
+  await player.advance(239000);
+  assert.equal(player.calls.stop, 0);
+  await player.advance(1000);
+  assert.equal(player.calls.stop, 1);
+});
+
+test('Focus fades during its final minute, survives pause/resume, and keeps its optional end tone', async () => {
+  const player = createPlayer();
+  await player.act('playSoundscape', track('focus-timer', 'focus'));
+  await player.act('setEndToneEnabled', true);
+  await player.act('setTimer', 2);
+
+  await player.advance(59000);
+  assert.equal(player.state.isFadingOut, false);
+  await player.advance(1000);
+  assert.equal(player.state.isFadingOut, true);
+  assert.equal(player.progress.timerRemainingSeconds, 60);
+
+  await player.advance(30000);
+  assert.equal(player.progress.timerRemainingSeconds, 30);
+
+  await player.act('togglePlayPause');
+  assert.equal(player.state.isFadingOut, false);
+  assert.equal(player.progress.timerRemainingSeconds, 30);
+  await player.advance(30000);
+  assert.equal(player.calls.stop, 0);
+
+  await player.act('togglePlayPause');
+  assert.equal(player.state.isFadingOut, true);
+
+  await player.advance(30000);
+  assert.equal(player.calls.stop, 1);
+  assert.equal(player.calls.tones, 1);
+});
+
+test('a timer frozen by pausing never fires across an AppState background/foreground cycle', async () => {
+  const player = createPlayer();
+  await player.act('playSoundscape', tracks[0], { queue: tracks });
+  await player.act('setTimer', 5);
+  await player.act('togglePlayPause');
+
+  await player.background();
+  await player.elapse(6 * 60 * 1000);
+  assert.equal(player.calls.stop, 0);
+  await player.active();
+  assert.equal(player.calls.stop, 0, 'a frozen timer must not fire just because the app came back');
+  assert.equal(player.state.timerSelection, 5);
+});
+
+test('an external pause (lock screen, a call, a headset) freezes the timer exactly like the in-app toggle', async () => {
+  const player = createPlayer();
+  await player.act('playSoundscape', tracks[0], { queue: tracks });
+  await player.act('setTimer', 10);
+  await player.advance(60000);
+  assert.equal(player.progress.timerRemainingSeconds, 540);
+
+  // Not through `togglePlayPause` — the engine itself reports playback stopped.
+  await player.event('onPlaybackChange', { isPlaying: false, isBuffering: false });
+  await player.advance(30000);
+  assert.equal(player.progress.timerRemainingSeconds, 540, 'frozen the same way an in-app pause would freeze it');
+
+  await player.event('onPlaybackChange', { isPlaying: true, isBuffering: false });
+  await player.advance(10000);
+  assert.equal(player.progress.timerRemainingSeconds, 530);
+});
+

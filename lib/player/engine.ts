@@ -128,7 +128,9 @@ export function createPlayerEngine(options: EngineOptions = {}): PlayerEngine {
   let hasSource = false;
   /** The loaded track, kept so a stalled source can be reloaded. */
   let currentTrack: PlayableTrack | null = null;
-  /** Native looping is only enabled for a loopable track in a one-item queue. */
+  /** The listener's "Continuous loop" preference, set by `setLoopEnabled` and survives a teardown. */
+  let loopEnabled = false;
+  /** What the native player actually loops on: the preference, gated by the loaded track supporting it. */
   let nativeLoopEnabled = false;
   /** Bumped on every source swap and teardown, so work queued for an old source is dropped. */
   let sourceGeneration = 0;
@@ -229,7 +231,7 @@ export function createPlayerEngine(options: EngineOptions = {}): PlayerEngine {
 
       lastPosition = position;
       lastDuration = duration;
-      emit('onProgress', { position, duration });
+      emit('onProgress', { position, duration, trackId: currentTrack?.id ?? null });
     } catch {
       // The player can be torn down between reads; the next status update recovers.
     }
@@ -249,6 +251,15 @@ export function createPlayerEngine(options: EngineOptions = {}): PlayerEngine {
       return current.isLoaded;
     } catch {
       return false;
+    }
+  }
+
+  /** The native player's own position now, never a status event's possibly stale payload. */
+  function liveCurrentTime(current: AudioPlayer): number {
+    try {
+      return safeSeconds(current.currentTime);
+    } catch {
+      return 0;
     }
   }
 
@@ -416,7 +427,7 @@ export function createPlayerEngine(options: EngineOptions = {}): PlayerEngine {
     reportPlayback(false, true);
     lastPosition = pendingSeek;
     lastDuration = knownDuration;
-    emit('onProgress', { position: pendingSeek, duration: knownDuration });
+    emit('onProgress', { position: pendingSeek, duration: knownDuration, trackId: currentTrack?.id ?? null });
   }
 
   /** A native reload call itself failed, so release that unusable player. */
@@ -425,10 +436,11 @@ export function createPlayerEngine(options: EngineOptions = {}): PlayerEngine {
 
     const position = resumeTarget;
     const duration = knownDuration;
+    const trackId = currentTrack?.id ?? null;
     wantsPlayback = false;
     stopWatching();
 
-    emit('onProgress', { position, duration });
+    emit('onProgress', { position, duration, trackId });
     emit('onPlaybackFailed');
     // A fresh native player is the likeliest to work on the next attempt, and a
     // dead one must not keep holding the lock screen and the audio session.
@@ -502,13 +514,22 @@ export function createPlayerEngine(options: EngineOptions = {}): PlayerEngine {
       return;
     }
 
-    const position = safeSeconds(status.currentTime);
+    if (!sourceOpen) {
+      // An event queued just before `load`/`replace` can still describe the
+      // source it swapped out — its position belongs to the previous track,
+      // not this one, so nothing is reported until the swap is confirmed.
+      return;
+    }
+
+    // Read live rather than trust the event's own payload: a status object
+    // can be delivered after the source it describes was already replaced.
+    const position = player ? liveCurrentTime(player) : safeSeconds(status.currentTime);
     if (isPlaying && !seekCheck) resumeTarget = position;
 
     if (position !== lastPosition || duration !== lastDuration) {
       lastPosition = position;
       lastDuration = duration;
-      emit('onProgress', { position, duration });
+      emit('onProgress', { position, duration, trackId: currentTrack?.id ?? null });
     }
 
     if (status.didJustFinish && !nativeLoopEnabled && !completionFired) {
@@ -621,7 +642,8 @@ export function createPlayerEngine(options: EngineOptions = {}): PlayerEngine {
     resetBookkeeping();
     emit('onPlaybackChange', { isPlaying: false, isBuffering: false });
     if (emitResetProgress) {
-      emit('onProgress', { position: 0, duration: 0 });
+      // Not about any one track, so a listener comparing ids never drops it.
+      emit('onProgress', { position: 0, duration: 0, trackId: null });
     }
   }
 
@@ -664,7 +686,7 @@ export function createPlayerEngine(options: EngineOptions = {}): PlayerEngine {
     isAvailable: () => true,
     hasSource: () => hasSource,
 
-    load: async (track: PlayableTrack, startAtSeconds = 0, queueSize = 1) => {
+    load: async (track: PlayableTrack, startAtSeconds = 0) => {
       if (!(await setup())) return;
 
       const current = ensurePlayer();
@@ -689,7 +711,7 @@ export function createPlayerEngine(options: EngineOptions = {}): PlayerEngine {
       // decides when playback starts, so pause first and let it call `play`.
       current.pause();
       current.replace(track.url);
-      nativeLoopEnabled = track.isLoop === true && queueSize === 1;
+      nativeLoopEnabled = loopEnabled && track.isLoop === true;
       current.loop = nativeLoopEnabled;
       hasSource = true;
 
@@ -733,6 +755,7 @@ export function createPlayerEngine(options: EngineOptions = {}): PlayerEngine {
       emit('onProgress', {
         position: resumeTarget,
         duration: knownDuration,
+        trackId: track.id,
       });
     },
 
@@ -809,7 +832,7 @@ export function createPlayerEngine(options: EngineOptions = {}): PlayerEngine {
           current.pause();
         }
         lastPosition = target;
-        emit('onProgress', { position: target, duration: knownDuration });
+        emit('onProgress', { position: target, duration: knownDuration, trackId: currentTrack?.id ?? null });
         return;
       }
 
@@ -835,6 +858,15 @@ export function createPlayerEngine(options: EngineOptions = {}): PlayerEngine {
       if (!ready || !player) return;
       // A property write, so the sleep timer's fade steps never reload the source.
       player.volume = Math.min(1, Math.max(0, level));
+    },
+
+    setLoopEnabled: (enabled: boolean) => {
+      loopEnabled = enabled;
+      if (!player || !currentTrack) return;
+
+      // A property write on the live player, so toggling never restarts playback.
+      nativeLoopEnabled = enabled && currentTrack.isLoop === true;
+      player.loop = nativeLoopEnabled;
     },
 
     getProgress: async () => {

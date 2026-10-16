@@ -199,7 +199,7 @@ test('queue loads replace audio, lock-screen metadata and progress on the same n
       { title: item.title, artist: item.artist, artworkUrl: item.artwork },
       ...(index === 0 ? [{ showSeekForward: true, showSeekBackward: true }] : []),
     ]);
-    assert.deepEqual(progress.at(-1), { position: 0, duration: 180 });
+    assert.deepEqual(progress.at(-1), { position: 0, duration: 180, trackId: item.id });
     assert.deepEqual(native.calls.at(-1), ['play']);
   }
   assert.equal(named(players[0].calls, 'lockScreen').length, 1,
@@ -224,23 +224,111 @@ test('resume seeks after loading and track completion fires once per source', as
   assert.equal(ended, 2);
 });
 
-test('native loop is enabled only for a loopable track in a one-item queue', async () => {
+// --------------------------------------------------------- track-change races
+
+const readyAt = (currentTime) => ({
+  playing: true, isLoaded: true, isBuffering: false, playbackState: 'ready', currentTime, duration: 180,
+});
+
+test('a stale event about the previous track cannot report its position for a freshly loaded one', async () => {
+  const { engine, players } = createEngineHarness();
+  const progress = [];
+  engine.subscribe({ onProgress: (value) => progress.push(plain(value)) });
+
+  // Soundscape A, ten minutes in.
+  await engine.load(track('a'));
+  await engine.play();
+  const native = players[0];
+  native.emit(readyAt(600));
+  assert.deepEqual(progress.at(-1), { position: 600, duration: 180, trackId: 'a' });
+
+  // The listener taps soundscape B. `replace` swaps the source, which this
+  // harness (like the native players) reports as opening, not yet loaded.
+  await engine.load(track('b'));
+  await engine.play();
+
+  // An event describing A, already in flight over the bridge when `replace`
+  // was called, is delivered now — without this engine's live state moving,
+  // exactly like a real stale event. It must not be shown as B's position.
+  native.deliver(readyAt(600));
+  assert.notDeepEqual(progress.at(-1), { position: 600, duration: 180, trackId: 'b' });
+
+  // B's real open lands: now progress reports its own position, from zero.
+  native.emit(readyAt(0));
+  assert.deepEqual(progress.at(-1), { position: 0, duration: 180, trackId: 'b' });
+});
+
+test('rapid A -> B -> C taps never let an earlier track leak into the latest one, including after it opens', async () => {
+  const { engine, players } = createEngineHarness();
+  const progress = [];
+  engine.subscribe({ onProgress: (value) => progress.push(plain(value)) });
+
+  await engine.load(track('a'));
+  await engine.play();
+  const native = players[0];
+  native.emit(readyAt(600));
+
+  // Two more taps land before anything about B is ever confirmed open.
+  await engine.load(track('b'));
+  await engine.play();
+  await engine.load(track('c'));
+  await engine.play();
+
+  // Stale events for both A and B arrive after C was requested.
+  const beforeStaleEvents = progress.length;
+  native.deliver(readyAt(600));
+  native.deliver(readyAt(15));
+  assert.equal(progress.length, beforeStaleEvents, 'a stale event must not add any progress report');
+
+  // C's own open lands at zero, and only then does progress move again.
+  native.emit(readyAt(0));
+  assert.deepEqual(progress.at(-1), { position: 0, duration: 180, trackId: 'c' });
+  assert.equal(native.source, track('c').url);
+});
+
+test('native loop is off by default and only applies to a loopable track', async () => {
   const { engine, players } = createEngineHarness();
   const loopable = { ...track('loopable'), isLoop: true };
 
-  await engine.load(loopable, 0, 1);
+  await engine.load(loopable);
+  assert.equal(players[0].loop, false, 'loop defaults to off until the listener turns it on');
+
+  engine.setLoopEnabled(true);
+  await engine.load(loopable);
   assert.equal(players[0].loop, true);
 
-  await engine.load(loopable, 0, 2);
-  assert.equal(players[0].loop, false);
+  await engine.load(track('single-pass'));
+  assert.equal(players[0].loop, false, 'a non-loopable track never loops, even with the preference on');
+});
 
-  await engine.load(track('single-pass'), 0, 1);
+test('toggling the loop preference while playing applies live, with no replace and no restart', async () => {
+  const { engine, players } = createEngineHarness();
+  await engine.load({ ...track('loopable'), isLoop: true });
+  await engine.play();
+  const native = players[0];
+  const before = native.calls.length;
+
+  engine.setLoopEnabled(true);
+  assert.equal(native.loop, true);
+  assert.deepEqual(native.calls.slice(before), [], 'a live toggle is a property write, not a reload');
+
+  engine.setLoopEnabled(false);
+  assert.equal(native.loop, false);
+  assert.deepEqual(native.calls.slice(before), []);
+});
+
+test('the loop preference has no effect on a track that cannot loop', async () => {
+  const { engine, players } = createEngineHarness();
+  await engine.load(track('single-pass'));
+
+  engine.setLoopEnabled(true);
   assert.equal(players[0].loop, false);
 });
 
 test('a native loop wrap is healthy progress and does not trigger watchdog recovery', async () => {
   const { engine, players, warnings, advance } = createEngineHarness();
-  await engine.load({ ...hour, isLoop: true }, 0, 1);
+  engine.setLoopEnabled(true);
+  await engine.load({ ...hour, isLoop: true });
   await engine.play();
   const native = players[0];
 
@@ -253,11 +341,24 @@ test('a native loop wrap is healthy progress and does not trigger watchdog recov
   assert.deepEqual(warnings, []);
 });
 
-test('didJustFinish is ignored while native loop is enabled', async () => {
+test('a watchdog reload re-applies the current loop preference to the recreated player', async () => {
+  const harness = createEngineHarness();
+  const { engine } = harness;
+  engine.setLoopEnabled(true);
+  const native = await startPlaying(harness, 5, { ...hour, isLoop: true });
+
+  native.emit(idleAt(5));
+  await harness.advance(2000);
+  assert.equal(named(native.calls, 'replace').length, 2, 'one replace from the load, one from the reload');
+  assert.equal(native.loop, true, 'the reload carries the loop preference over to the fresh source');
+});
+
+test('didJustFinish is ignored while the loop preference is on, and fires once per source while off', async () => {
   const { engine, players } = createEngineHarness();
   let ended = 0;
   engine.subscribe({ onTrackEnd: () => ended++ });
-  await engine.load({ ...track('loopable'), isLoop: true }, 0, 1);
+  engine.setLoopEnabled(true);
+  await engine.load({ ...track('loopable'), isLoop: true });
 
   players[0].emit({
     ...playingAt(0),
@@ -267,6 +368,14 @@ test('didJustFinish is ignored while native loop is enabled', async () => {
 
   assert.equal(ended, 0);
   assert.equal(players[0].loop, true);
+
+  engine.setLoopEnabled(false);
+  players[0].emit({
+    ...playingAt(0),
+    duration: 180,
+    didJustFinish: true,
+  });
+  assert.equal(ended, 1, 'turning the preference off lets the next finish advance normally');
 });
 
 test('background setup remains enabled and reset releases media controls and audio session', async () => {
@@ -286,7 +395,7 @@ test('background setup remains enabled and reset releases media controls and aud
     ['removeListener', 'playbackStatusUpdate'], ['pause'], ['remove'], ['release'],
   ]);
   assert.deepEqual(audioActive, [true, false]);
-  assert.deepEqual(progress.at(-1), { position: 0, duration: 0 });
+  assert.deepEqual(progress.at(-1), { position: 0, duration: 0, trackId: null });
   await engine.load(track('b'));
   assert.equal(players.length, 2);
   assert.equal(players[1].source, track('b').url);
@@ -306,7 +415,7 @@ test('stop preserves resume progress and volume fade does not replace the active
   assert.equal(players[0].volume, 0);
   assert.equal(players[0].calls.filter(([name]) => name === 'replace').length, replacements);
   await engine.stop();
-  assert.deepEqual(progress.at(-1), { position: 42, duration: 180 });
+  assert.deepEqual(progress.at(-1), { position: 42, duration: 180, trackId: 'a' });
   assert.equal(engine.hasSource(), false);
 });
 
@@ -340,7 +449,7 @@ test('a scoped engine keeps its own player and listeners and leaves the lock scr
   await scoped.play();
   assert.equal(players.length, 1);
   assert.equal(players[0].source, track('a').url);
-  assert.deepEqual(scopedProgress.at(-1), { position: 0, duration: 180 });
+  assert.deepEqual(scopedProgress.at(-1), { position: 0, duration: 180, trackId: 'a' });
   assert.deepEqual(appProgress, []);
   await scoped.reset();
   const names = players[0].calls.map(([name]) => name);
@@ -471,8 +580,8 @@ test('native config retains background audio and Android swipe-close service tea
 // ------------------------------------------------------------ stall recovery
 
 /** Loads the hour-long track and has it open and playing at `at` seconds. */
-async function startPlaying(harness, at = 5) {
-  await harness.engine.load(hour);
+async function startPlaying(harness, at = 5, trackToLoad = hour) {
+  await harness.engine.load(trackToLoad);
   await harness.engine.play();
   const native = harness.players[0];
   native.emit(playingAt(at));
@@ -497,7 +606,7 @@ test('a normal seek lands natively at once, with no reload and no extra native c
 
   await harness.engine.seekTo(1200);
   assert.deepEqual(native.calls.slice(before), [['seek', 1200]]);
-  assert.deepEqual(seen.progress.at(-1), { position: 1200, duration: 3600 });
+  assert.deepEqual(seen.progress.at(-1), { position: 1200, duration: 3600, trackId: 'hour' });
 
   // ExoPlayer rebuffers briefly at the new offset, then plays on from it.
   native.emit(bufferingAt(1200));
@@ -527,7 +636,7 @@ test('a seek that leaves the native player idle is reloaded at the seek target a
   await harness.advance(1000);
   assert.deepEqual(plain(named(native.calls, 'replace')), [['replace', hour.url], ['replace', hour.url]]);
   assert.deepEqual(seen.changes.at(-1), { isPlaying: false, isBuffering: true });
-  assert.deepEqual(seen.progress.at(-1), { position: 1200, duration: 3600 });
+  assert.deepEqual(seen.progress.at(-1), { position: 1200, duration: 3600, trackId: 'hour' });
   assert.match(
     harness.warnings[0],
     /went idle; reloading at 1200s \(attempt 1; automatic retries remain enabled\)/
@@ -561,7 +670,7 @@ test('a player that reports playing but never moves is reloaded where it stood',
   assert.equal(named(native.calls, 'replace').length, 1);
   await harness.advance(1000);
   assert.equal(named(native.calls, 'replace').length, 2);
-  assert.deepEqual(seen.progress.at(-1), { position: 40, duration: 3600 });
+  assert.deepEqual(seen.progress.at(-1), { position: 40, duration: 3600, trackId: 'hour' });
   assert.match(harness.warnings[0], /stopped moving while playing; reloading at 40s/);
 });
 
@@ -672,7 +781,7 @@ test('a seek before the source is ready waits for it to open, even past a stale 
   await harness.engine.seekTo(60);
   // Held back, and playback with it, while the target is already on screen.
   assert.deepEqual(native.calls.slice(before), [['pause']]);
-  assert.deepEqual(seen.progress.at(-1), { position: 60, duration: 180 });
+  assert.deepEqual(seen.progress.at(-1), { position: 60, duration: 180, trackId: 'a' });
 
   // iOS: an event about the previous item arrives after the swap. The live item
   // is still opening, so the seek must keep waiting.
@@ -719,7 +828,7 @@ test('play on a source that failed while paused reloads it at the last position 
 
   await harness.engine.play();
   assert.equal(named(native.calls, 'replace').length, 2);
-  assert.deepEqual(seen.progress.at(-1), { position: 30, duration: 3600 });
+  assert.deepEqual(seen.progress.at(-1), { position: 30, duration: 3600, trackId: 'hour' });
   const reloaded = native.calls.length;
   native.emit(pausedAt(0));
   await harness.flush();
