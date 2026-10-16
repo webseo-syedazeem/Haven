@@ -110,6 +110,7 @@ export function PlaylistFormSheet({
               styles.sheet,
               { paddingBottom: keyboardVisible ? 20 : insets.bottom + 18 },
             ]}>
+          <View style={styles.grabber} />
           <View style={styles.header}>
             <Text style={styles.title}>{playlist ? 'Edit playlist' : 'New playlist'}</Text>
             <Pressable
@@ -200,12 +201,21 @@ const styles = StyleSheet.create({
   },
   sheet: {
     backgroundColor: HalcyonColors.surface,
-    borderTopColor: HalcyonColors.border,
+    borderTopColor: 'rgba(255,255,255,0.035)',
     borderTopLeftRadius: HalcyonRadius.sheet,
     borderTopRightRadius: HalcyonRadius.sheet,
-    borderTopWidth: 1,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    overflow: 'hidden',
     paddingHorizontal: HalcyonSpacing.screenX,
-    paddingTop: 16,
+    paddingTop: 10,
+  },
+  grabber: {
+    alignSelf: 'center',
+    backgroundColor: 'rgba(255,255,255,0.16)',
+    borderRadius: 3,
+    height: 4,
+    marginBottom: 16,
+    width: 42,
   },
   header: {
     alignItems: 'center',

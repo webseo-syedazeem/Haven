@@ -111,19 +111,21 @@ export function PlaylistPickerSheet({
         statusBarTranslucent
         transparent
         visible={visible}>
-        <Pressable accessibilityLabel="Close" onPress={onClose} style={styles.backdrop} />
+        <View style={styles.container}>
+          <Pressable accessibilityLabel="Close" onPress={onClose} style={styles.backdrop} />
 
-        <View style={[styles.sheet, { paddingBottom: insets.bottom + 12 }]}>
-          <View style={styles.header}>
-            <Text style={styles.title}>Add to playlist</Text>
-            <Pressable
-              accessibilityLabel="Close"
-              accessibilityRole="button"
-              hitSlop={10}
-              onPress={onClose}>
-              <Ionicons color={HalcyonColors.textPrimary} name="close" size={22} />
-            </Pressable>
-          </View>
+          <View style={[styles.sheet, { paddingBottom: insets.bottom + 12 }]}>
+            <View style={styles.grabber} />
+            <View style={styles.header}>
+              <Text style={styles.title}>Add to playlist</Text>
+              <Pressable
+                accessibilityLabel="Close"
+                accessibilityRole="button"
+                hitSlop={10}
+                onPress={onClose}>
+                <Ionicons color={HalcyonColors.textPrimary} name="close" size={22} />
+              </Pressable>
+            </View>
 
           {!!soundscape && (
             <Text numberOfLines={1} style={styles.subject}>
@@ -193,7 +195,8 @@ export function PlaylistPickerSheet({
             )}
           </ScrollView>
 
-          {!!error && <Text style={styles.error}>{error}</Text>}
+            {!!error && <Text style={styles.error}>{error}</Text>}
+          </View>
         </View>
       </Modal>
 
@@ -208,19 +211,32 @@ export function PlaylistPickerSheet({
 }
 
 const styles = StyleSheet.create({
-  backdrop: {
-    backgroundColor: HalcyonModal.backdrop,
+  container: {
     flex: 1,
+    justifyContent: 'flex-end',
+  },
+  backdrop: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: HalcyonModal.backdrop,
   },
   sheet: {
     backgroundColor: HalcyonColors.surface,
-    borderTopColor: HalcyonColors.border,
+    borderTopColor: 'rgba(255,255,255,0.035)',
     borderTopLeftRadius: HalcyonRadius.sheet,
     borderTopRightRadius: HalcyonRadius.sheet,
-    borderTopWidth: 1,
+    borderTopWidth: StyleSheet.hairlineWidth,
     maxHeight: '72%',
+    overflow: 'hidden',
     paddingHorizontal: HalcyonSpacing.screenX,
-    paddingTop: 16,
+    paddingTop: 10,
+  },
+  grabber: {
+    alignSelf: 'center',
+    backgroundColor: 'rgba(255,255,255,0.16)',
+    borderRadius: 3,
+    height: 4,
+    marginBottom: 16,
+    width: 42,
   },
   header: {
     alignItems: 'center',
