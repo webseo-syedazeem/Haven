@@ -1,7 +1,15 @@
 import { SHOW_DEV_ONBOARDING_REPLAY_BUTTON } from '@/config/dev-flags';
 import { useRouter, useSegments } from 'expo-router';
-import { useState } from 'react';
-import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
+import { useRef, useState } from 'react';
+import {
+  ActivityIndicator,
+  Animated,
+  PanResponder,
+  Pressable,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native';
 
 import { useSinglePress } from '@/hooks/useSinglePress';
 import { beginOnboardingReplay } from '@/lib/onboarding-replay';
@@ -37,6 +45,36 @@ export function DevOnboardingReplayButton() {
   const router = useRouter();
   const { stop } = usePlayerActions();
   const [busy, setBusy] = useState(false);
+  const pan = useRef(new Animated.ValueXY({ x: 0, y: 0 })).current;
+  const isDragging = useRef(false);
+
+  const panResponder = useRef(
+    PanResponder.create({
+      onStartShouldSetPanResponder: () => true,
+      onMoveShouldSetPanResponder: (_, gestureState) =>
+        Math.abs(gestureState.dx) > 5 || Math.abs(gestureState.dy) > 5,
+      onPanResponderGrant: () => {
+        isDragging.current = false;
+        // @ts-ignore — _value is internal but stable and matches the reset control.
+        pan.setOffset({ x: pan.x._value, y: pan.y._value });
+        pan.setValue({ x: 0, y: 0 });
+      },
+      onPanResponderMove: (_, gestureState) => {
+        if (Math.abs(gestureState.dx) > 6 || Math.abs(gestureState.dy) > 6) {
+          isDragging.current = true;
+        }
+        Animated.event([null, { dx: pan.x, dy: pan.y }], {
+          useNativeDriver: false,
+        })(_, gestureState);
+      },
+      onPanResponderRelease: () => {
+        pan.flattenOffset();
+      },
+      onPanResponderTerminate: () => {
+        pan.flattenOffset();
+      },
+    })
+  ).current;
 
   // `segments[0]` is undefined on the launch screen ('/') — nothing to
   // replay from there, so that counts as hidden too.
@@ -47,6 +85,7 @@ export function DevOnboardingReplayButton() {
     HIDDEN_ON_FIRST_SEGMENTS.has(firstSegment);
 
   const handlePress = useSinglePress(() => {
+    if (isDragging.current) return;
     if (busy) return;
     setBusy(true);
     void (async () => {
@@ -64,7 +103,9 @@ export function DevOnboardingReplayButton() {
   if (hidden) return null;
 
   return (
-    <View style={styles.wrapper}>
+    <Animated.View
+      {...panResponder.panHandlers}
+      style={[styles.wrapper, { transform: pan.getTranslateTransform() }]}>
       <Pressable
         disabled={busy}
         onPress={handlePress}
@@ -78,7 +119,7 @@ export function DevOnboardingReplayButton() {
           </View>
         )}
       </Pressable>
-    </View>
+    </Animated.View>
   );
 }
 

@@ -4,7 +4,7 @@ import { Platform } from 'react-native';
 /**
  * Small key/value store for preferences the backend has no column for.
  *
- * Everything here is device-local and never leaves the phone. It exists for two
+ * Everything here is device-local and never leaves the phone. It exists for
  * settings the API cannot hold today:
  *
  * - `analytics_opt_out` — there is no analytics preference on the server
@@ -13,6 +13,8 @@ import { Platform } from 'react-native';
  * - `reminder_time` — `user_notification_settings` stores `reminders_enabled`
  *   but no time, so the chosen hour lives here and drives the locally
  *   scheduled reminder.
+ * - `loop_enabled` — the player's "Continuous loop" toggle has no server column,
+ *   so the preference lives here and is read once on provider mount.
  *
  * Storage mirrors `lib/api/client.ts`: SecureStore on device, localStorage on
  * web. Reads never throw — a missing or corrupt value falls back to the
@@ -85,6 +87,8 @@ export const LOCAL_SETTING_KEYS = {
   reminderTime: 'reminder_time',
   /** Legacy guest flag, read once when migrating older installs to AsyncStorage. */
   guestModeActive: 'guest_mode_active',
+  /** The player's "Continuous loop" (repeat-one) toggle. */
+  loopEnabled: 'loop_enabled',
 } as const;
 
 export const GUEST_MODE_ACTIVE_DEFAULT = false;
@@ -92,3 +96,6 @@ export const GUEST_MODE_ACTIVE_DEFAULT = false;
 /** Analytics is opt-in: nothing is sent until the user turns it on. */
 export const ANALYTICS_ENABLED_DEFAULT = false;
 export const REMINDER_TIME_DEFAULT = '21:30';
+
+/** Off by default: a track only repeats once the listener asks for it. */
+export const LOOP_ENABLED_DEFAULT = false;

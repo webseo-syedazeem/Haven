@@ -1,8 +1,9 @@
 import Slider from '@react-native-community/slider';
 import { Ionicons } from '@expo/vector-icons';
+import * as Haptics from 'expo-haptics';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter, type Href } from 'expo-router';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   Modal,
@@ -11,6 +12,7 @@ import {
   StyleSheet,
   Text,
   View,
+  useWindowDimensions,
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -25,15 +27,17 @@ import {
   HalcyonSpacing,
 } from '@/constants/design';
 import { getModeLabel } from '@/constants/modes';
-import { formatTimerLabel, UNTIL_I_STOP } from '@/constants/timers';
+import { formatTimerCountdown, formatTimerLabel, UNTIL_I_STOP } from '@/constants/timers';
 import { AppFonts } from '@/constants/theme';
 import { useIsFavourite, useToggleFavourite } from '@/hooks/useFavourites';
 import { usePlayer } from '@/lib/player/PlayerProvider';
-import { formatClock, formatDuration } from '@/lib/utils/duration';
+import { formatPlaybackClock } from '@/lib/utils/duration';
 
 export default function PlayerScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const { width, height } = useWindowDimensions();
+  const compact = height < 740 || width < 360;
   const { notice, showToast } = useToast();
 
   const {
@@ -47,6 +51,8 @@ export default function PlayerScreen() {
     timerSelection,
     isFadingOut,
     endToneEnabled,
+    loopEnabled,
+    loopNotice,
     position,
     duration,
     timerRemainingSeconds,
@@ -56,6 +62,7 @@ export default function PlayerScreen() {
     skipPrevious,
     setTimer,
     setEndToneEnabled,
+    setLoopEnabled,
   } = usePlayer();
 
   const [scrubValue, setScrubValue] = useState<number | null>(null);
@@ -66,9 +73,20 @@ export default function PlayerScreen() {
   const isFavourite = useIsFavourite(soundscape?.id);
   const { toggleFavourite } = useToggleFavourite();
 
+  useEffect(() => {
+    if (loopNotice) showToast(loopNotice.text);
+  }, [loopNotice, showToast]);
+
+  const toggleLoop = () => {
+    if (process.env.EXPO_OS === 'ios') {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    }
+    setLoopEnabled(!loopEnabled);
+  };
+
   if (!soundscape) {
     return (
-      <View style={[styles.screen, styles.emptyScreen]}>
+      <SafeAreaView style={[styles.screen, styles.emptyScreen]}>
         <Text style={styles.emptyTitle}>Nothing is playing</Text>
         <Text style={styles.emptyBody}>Choose a soundscape and it will appear here.</Text>
         <Pressable
@@ -78,23 +96,39 @@ export default function PlayerScreen() {
           style={({ pressed }) => [styles.emptyButton, pressed && styles.pressed]}>
           <Text style={styles.emptyButtonLabel}>Close</Text>
         </Pressable>
-      </View>
+      </SafeAreaView>
     );
   }
 
   const total = duration || soundscape.duration_seconds || 0;
   const sliderValue = scrubValue ?? Math.min(position, total || position);
-  const remaining = Math.max(0, total - sliderValue);
   const modeLabel = getModeLabel(soundscape.mode);
-  const durationLabel = formatDuration(total);
-  const meta = [modeLabel, durationLabel].filter(Boolean).join(' · ');
+  const hasTimerCountdown =
+    timerSelection !== null &&
+    timerSelection !== UNTIL_I_STOP &&
+    timerRemainingSeconds !== null;
+  const timerLoading = isBuffering && !isPlaying && hasTimerCountdown;
+  const timerPaused = !isBuffering && !isPlaying && hasTimerCountdown;
+  const timerLabel = timerLoading
+    ? `Loading, ${formatTimerCountdown(timerRemainingSeconds)} left`
+    : timerPaused
+      ? `Paused, ${formatTimerCountdown(timerRemainingSeconds)} left`
+      : isFadingOut
+        ? timerRemainingSeconds === null
+          ? 'Fading out'
+          : `Fading out, ${formatTimerCountdown(timerRemainingSeconds)} left`
+        : timerSelection === null
+          ? 'Off'
+          : timerSelection === UNTIL_I_STOP || timerRemainingSeconds === null
+            ? formatTimerLabel(timerSelection)
+            : `${formatTimerCountdown(timerRemainingSeconds)} left`;
 
   return (
     <View style={styles.screen}>
       <CoverImage size="lg" style={StyleSheet.absoluteFill} uri={soundscape.artwork_url} />
       <LinearGradient
-        colors={['rgba(11,11,13,0.72)', 'rgba(11,11,13,0.86)', 'rgba(8,8,10,0.97)']}
-        locations={[0, 0.45, 1]}
+        colors={['rgba(3,10,18,0.25)', 'rgba(3,10,18,0.08)', 'rgba(3,10,18,0.78)', '#030A12']}
+        locations={[0, 0.3, 0.62, 1]}
         style={StyleSheet.absoluteFill}
       />
 
@@ -106,7 +140,7 @@ export default function PlayerScreen() {
             hitSlop={10}
             onPress={() => router.back()}
             style={({ pressed }) => [styles.iconButton, pressed && styles.pressed]}>
-            <Ionicons color={HalcyonColors.textPrimary} name="chevron-down" size={22} />
+            <Ionicons color={HalcyonColors.textPrimary} name="chevron-down" size={28} />
           </Pressable>
 
           <View style={styles.topBarRight}>
@@ -119,7 +153,7 @@ export default function PlayerScreen() {
               <Ionicons
                 color={isFavourite ? HalcyonColors.accent : HalcyonColors.textPrimary}
                 name={isFavourite ? 'heart' : 'heart-outline'}
-                size={21}
+                size={26}
               />
             </Pressable>
             <Pressable
@@ -134,150 +168,169 @@ export default function PlayerScreen() {
         </View>
 
         <ScrollView
-          contentContainerStyle={[styles.body, { paddingBottom: insets.bottom + 24 }]}
+          contentContainerStyle={[styles.body, { paddingBottom: insets.bottom + 16 }]}
+          bounces={false}
           showsVerticalScrollIndicator={false}
           style={styles.scroll}>
-          <View style={styles.artworkFrame}>
-            <CoverImage size="lg" style={styles.artwork} uri={soundscape.artwork_url} />
-          </View>
-
-          <View style={styles.copy}>
-            <Text numberOfLines={2} style={styles.title}>
-              {soundscape.title}
-            </Text>
-            {!!meta && <Text style={styles.meta}>{meta}</Text>}
-            {!!error && <Text style={styles.error}>{error}</Text>}
-            {canRetry && (
-              <Pressable
-                accessibilityLabel="Try playing again"
-                accessibilityRole="button"
-                hitSlop={10}
-                onPress={() => void togglePlayPause()}
-                style={({ pressed }) => [styles.retryButton, pressed && styles.pressed]}>
-                <Ionicons color={HalcyonColors.accent} name="refresh" size={14} />
-                <Text style={styles.retryLabel}>Try again</Text>
-              </Pressable>
-            )}
-          </View>
-
-          <View style={styles.progressBlock}>
-            <Slider
-              maximumTrackTintColor="rgba(255,255,255,0.16)"
-              maximumValue={Math.max(total, 1)}
-              minimumTrackTintColor={HalcyonColors.accent}
-              minimumValue={0}
-              onSlidingComplete={(value) => {
-                setScrubValue(null);
-                void seek(value);
-              }}
-              onSlidingStart={() => setScrubValue(sliderValue)}
-              onValueChange={(value) => setScrubValue(value)}
-              step={1}
-              style={styles.slider}
-              thumbTintColor={HalcyonColors.accent}
-              value={sliderValue}
-            />
-            <View style={styles.timeRow}>
-              <Text style={styles.time}>{formatClock(sliderValue)}</Text>
-              <Text style={styles.time}>{total > 0 ? `-${formatClock(remaining)}` : ''}</Text>
-            </View>
-          </View>
-
-          <View style={styles.transportRow}>
-            <Pressable
-              accessibilityLabel="Previous"
-              accessibilityRole="button"
-              accessibilityState={{ disabled: !hasPrevious }}
-              disabled={!hasPrevious}
-              hitSlop={10}
-              onPress={() => void skipPrevious()}
-              style={({ pressed }) => [
-                styles.transportButton,
-                !hasPrevious && styles.transportButtonDisabled,
-                pressed && styles.pressed,
-              ]}>
-              <Ionicons
-                color={hasPrevious ? HalcyonColors.textPrimary : HalcyonColors.textSecondary}
-                name="play-skip-back"
-                size={26}
-              />
-            </Pressable>
-
-            <Pressable
-              accessibilityLabel={isPlaying ? 'Pause' : 'Play'}
-              accessibilityRole="button"
-              onPress={() => void togglePlayPause()}
-              style={({ pressed }) => [styles.playButton, pressed && styles.playButtonPressed]}>
-              {isBuffering && !isPlaying ? (
-                <ActivityIndicator color={HalcyonColors.background} />
-              ) : (
-                <Ionicons
-                  color={HalcyonColors.background}
-                  name={isPlaying ? 'pause' : 'play'}
-                  size={34}
-                  style={isPlaying ? undefined : styles.playIcon}
-                />
-              )}
-            </Pressable>
-
-            <Pressable
-              accessibilityLabel="Next"
-              accessibilityRole="button"
-              accessibilityState={{ disabled: !hasNext }}
-              disabled={!hasNext}
-              hitSlop={10}
-              onPress={() => void skipNext()}
-              style={({ pressed }) => [
-                styles.transportButton,
-                !hasNext && styles.transportButtonDisabled,
-                pressed && styles.pressed,
-              ]}>
-              <Ionicons
-                color={hasNext ? HalcyonColors.textPrimary : HalcyonColors.textSecondary}
-                name="play-skip-forward"
-                size={26}
-              />
-            </Pressable>
-          </View>
-
-          {(timerSelection !== null || isFadingOut) && (
-            <View style={styles.timerPill}>
-              <Ionicons color={HalcyonColors.accent} name="moon-outline" size={14} />
-              <Text style={styles.timerPillLabel}>
-                {isFadingOut
-                  ? 'Fading out'
-                  : timerSelection === UNTIL_I_STOP || timerRemainingSeconds === null
-                    ? formatTimerLabel(timerSelection)
-                    : `${formatClock(timerRemainingSeconds)} left`}
+          <View style={[styles.artworkSpace, { minHeight: compact ? 48 : 120 }]} />
+          <View style={styles.controls}>
+            <View style={styles.copy}>
+              {!!modeLabel && <Text style={styles.category}>{modeLabel.toUpperCase()}</Text>}
+              <Text style={[styles.title, compact && styles.titleCompact]}>
+                {soundscape.title}
               </Text>
+              {!!error && <Text style={styles.error}>{error}</Text>}
+              {canRetry && (
+                <Pressable
+                  accessibilityLabel="Try playing again"
+                  accessibilityRole="button"
+                  hitSlop={10}
+                  onPress={() => void togglePlayPause()}
+                  style={({ pressed }) => [styles.retryButton, pressed && styles.pressed]}>
+                  <Ionicons color={HalcyonColors.accent} name="refresh" size={14} />
+                  <Text style={styles.retryLabel}>Try again</Text>
+                </Pressable>
+              )}
             </View>
-          )}
 
-          <View style={styles.actionRow}>
-            <ActionButton
-              icon="timer-outline"
-              label="Timer"
-              active={timerSelection !== null}
-              onPress={() => setTimerVisible(true)}
-            />
-            <ActionButton
-              icon="list-outline"
-              label="Playlist"
+            <View style={styles.progressBlock}>
+              <Slider
+                accessibilityLabel="Playback position"
+                maximumTrackTintColor="rgba(245,239,228,0.3)"
+                maximumValue={Math.max(total, 1)}
+                minimumTrackTintColor={PLAYER_GOLD}
+                minimumValue={0}
+                onSlidingComplete={(value) => {
+                  setScrubValue(null);
+                  void seek(value);
+                }}
+                onSlidingStart={() => setScrubValue(sliderValue)}
+                onValueChange={(value) => setScrubValue(value)}
+                step={1}
+                style={styles.slider}
+                thumbTintColor={PLAYER_GOLD}
+                value={sliderValue}
+              />
+              <View style={styles.timeRow}>
+                <Text style={styles.time}>{formatPlaybackClock(sliderValue)}</Text>
+                <Text style={styles.time}>{formatPlaybackClock(total)}</Text>
+              </View>
+            </View>
+
+            <View style={styles.transportRow}>
+              <Pressable
+                accessibilityLabel="Previous"
+                accessibilityRole="button"
+                accessibilityState={{ disabled: !hasPrevious }}
+                disabled={!hasPrevious}
+                hitSlop={10}
+                onPress={() => void skipPrevious()}
+                style={({ pressed }) => [
+                  styles.transportButton,
+                  !hasPrevious && styles.transportButtonDisabled,
+                  pressed && styles.pressed,
+                ]}>
+                <Ionicons
+                  color={hasPrevious ? HalcyonColors.textPrimary : HalcyonColors.textSecondary}
+                  name="play-skip-back"
+                  size={26}
+                />
+              </Pressable>
+
+              <Pressable
+                accessibilityLabel={isPlaying ? 'Pause' : 'Play'}
+                accessibilityRole="button"
+                onPress={() => void togglePlayPause()}
+                style={({ pressed }) => [styles.playButton, pressed && styles.playButtonPressed]}>
+                {isBuffering && !isPlaying ? (
+                  <ActivityIndicator color={HalcyonColors.background} />
+                ) : (
+                  <Ionicons
+                    color={HalcyonColors.background}
+                    name={isPlaying ? 'pause' : 'play'}
+                    size={34}
+                    style={isPlaying ? undefined : styles.playIcon}
+                  />
+                )}
+              </Pressable>
+
+              <Pressable
+                accessibilityLabel="Next"
+                accessibilityRole="button"
+                accessibilityState={{ disabled: !hasNext }}
+                disabled={!hasNext}
+                hitSlop={10}
+                onPress={() => void skipNext()}
+                style={({ pressed }) => [
+                  styles.transportButton,
+                  !hasNext && styles.transportButtonDisabled,
+                  pressed && styles.pressed,
+                ]}>
+                <Ionicons
+                  color={hasNext ? HalcyonColors.textPrimary : HalcyonColors.textSecondary}
+                  name="play-skip-forward"
+                  size={26}
+                />
+              </Pressable>
+            </View>
+
+            <View style={styles.actionRow}>
+              <Pressable
+                accessibilityLabel={`Timer, ${timerLabel}`}
+                accessibilityRole="button"
+                onPress={() => setTimerVisible(true)}
+                style={({ pressed }) => [styles.settingPill, pressed && styles.pressed]}>
+                <Ionicons color={HalcyonColors.textPrimary} name="stopwatch-outline" size={22} />
+                <View style={styles.pillCopy}>
+                  <Text numberOfLines={1} style={styles.pillLabel}>Timer</Text>
+                  <Text
+                    adjustsFontSizeToFit
+                    minimumFontScale={0.78}
+                    numberOfLines={1}
+                    style={styles.pillDetail}>
+                    {timerLabel}
+                  </Text>
+                </View>
+                <Ionicons color={HalcyonColors.textSecondary} name="chevron-forward" size={16} />
+              </Pressable>
+              <Pressable
+                accessibilityLabel="Continuous loop"
+                accessibilityRole="switch"
+                accessibilityState={{ checked: loopEnabled }}
+                onPress={toggleLoop}
+                style={({ pressed }) => [styles.settingPill, pressed && styles.pressed]}>
+                <Ionicons color={HalcyonColors.textPrimary} name="repeat" size={22} />
+                <View style={styles.pillCopy}>
+                  <Text
+                    adjustsFontSizeToFit
+                    minimumFontScale={0.82}
+                    numberOfLines={1}
+                    style={styles.pillLabel}>
+                    Continuous loop
+                  </Text>
+                  <Text numberOfLines={1} style={styles.pillDetail}>
+                    {loopEnabled ? 'On' : 'Off'}
+                  </Text>
+                </View>
+                <View style={[styles.loopIndicator, loopEnabled && styles.loopIndicatorOn]} />
+              </Pressable>
+            </View>
+            <Pressable
+              accessibilityLabel="Playlist"
+              accessibilityRole="button"
               onPress={() => setPlaylistSheetVisible(true)}
-            />
-          </View>
-
-          <View style={styles.outputSection}>
-            <View style={styles.outputRow}>
-              <Ionicons color={HalcyonColors.textSecondary} name="volume-medium-outline" size={15} />
-              <Text style={styles.outputLabel}>Playing on this device</Text>
-            </View>
+              style={({ pressed }) => [styles.playlistButton, pressed && styles.pressed]}>
+              <Ionicons color={HalcyonColors.textPrimary} name="list-outline" size={26} />
+              <Text style={styles.playlistLabel}>Playlist</Text>
+            </Pressable>
           </View>
         </ScrollView>
       </SafeAreaView>
 
       <TimerSheet
         endToneEnabled={endToneEnabled}
+        isLoading={timerLoading}
+        isPaused={timerPaused}
         mode={soundscape.mode}
         onClose={() => setTimerVisible(false)}
         onSelect={(selection) => {
@@ -285,6 +338,7 @@ export default function PlayerScreen() {
           setTimerVisible(false);
         }}
         onToggleEndTone={setEndToneEnabled}
+        remainingSeconds={timerRemainingSeconds}
         selection={timerSelection}
         visible={timerVisible}
       />
@@ -343,39 +397,6 @@ export default function PlayerScreen() {
   );
 }
 
-function ActionButton({
-  icon,
-  label,
-  onPress,
-  active,
-  busy,
-}: {
-  icon: keyof typeof Ionicons.glyphMap;
-  label: string;
-  onPress: () => void;
-  active?: boolean;
-  busy?: boolean;
-}) {
-  return (
-    <Pressable
-      accessibilityLabel={label}
-      accessibilityRole="button"
-      onPress={onPress}
-      style={({ pressed }) => [styles.actionButton, pressed && styles.pressed]}>
-      {busy ? (
-        <ActivityIndicator color={HalcyonColors.accent} size="small" />
-      ) : (
-        <Ionicons
-          color={active ? HalcyonColors.accent : HalcyonColors.textPrimary}
-          name={icon}
-          size={20}
-        />
-      )}
-      <Text style={[styles.actionLabel, active && styles.actionLabelActive]}>{label}</Text>
-    </Pressable>
-  );
-}
-
 function MenuRow({
   icon,
   label,
@@ -396,6 +417,8 @@ function MenuRow({
     </Pressable>
   );
 }
+
+const PLAYER_GOLD = '#E2BB88';
 
 const styles = StyleSheet.create({
   screen: {
@@ -452,7 +475,7 @@ const styles = StyleSheet.create({
   },
   topBarRight: {
     columnGap: 6,
-    flexDirection: 'row',
+    flexDirection: 'row-reverse',
   },
   iconButton: {
     alignItems: 'center',
@@ -469,41 +492,18 @@ const styles = StyleSheet.create({
     paddingHorizontal: HalcyonSpacing.screenX,
     paddingTop: 20,
   },
-  artworkFrame: {
-    alignSelf: 'center',
-    aspectRatio: 1,
-    borderColor: HalcyonColors.border,
-    borderRadius: 24,
-    borderWidth: 1,
-    marginBottom: 26,
-    maxWidth: 340,
-    overflow: 'hidden',
-    width: '86%',
-  },
-  artwork: {
-    height: '100%',
-    width: '100%',
-  },
-  artworkFallback: {
-    backgroundColor: HalcyonColors.surfaceRaised,
-  },
-  copy: {
-    marginBottom: 14,
+  artworkSpace: { flexGrow: 1 },
+  controls: { alignSelf: 'center', maxWidth: 520, width: '100%' },
+  copy: { alignItems: 'center', marginBottom: 12 },
+  category: {
+    color: '#D4D0C8', fontFamily: AppFonts.sansMedium, fontSize: 11,
+    letterSpacing: 3.5, lineHeight: 18, marginBottom: 4, textAlign: 'center',
   },
   title: {
-    color: HalcyonColors.textPrimary,
-    fontFamily: AppFonts.displaySemiBold,
-    fontSize: 30,
-    fontWeight: '600',
-    lineHeight: 38,
+    color: '#F6F0E6', fontFamily: AppFonts.displayRegular,
+    fontSize: 44, lineHeight: 46, textAlign: 'center',
   },
-  meta: {
-    color: HalcyonColors.textSecondary,
-    fontFamily: AppFonts.sansRegular,
-    fontSize: 13,
-    lineHeight: 18,
-    marginTop: 4,
-  },
+  titleCompact: { fontSize: 36, lineHeight: 38 },
   error: {
     color: HalcyonColors.accent,
     fontFamily: AppFonts.sansRegular,
@@ -513,7 +513,7 @@ const styles = StyleSheet.create({
   },
   retryButton: {
     alignItems: 'center',
-    alignSelf: 'flex-start',
+    alignSelf: 'center',
     borderColor: HalcyonColors.accent,
     borderRadius: HalcyonRadius.pill,
     borderWidth: 1,
@@ -550,7 +550,7 @@ const styles = StyleSheet.create({
   },
   transportRow: {
     alignItems: 'center',
-    columnGap: 34,
+    columnGap: 30,
     flexDirection: 'row',
     justifyContent: 'center',
     marginTop: 14,
@@ -566,11 +566,11 @@ const styles = StyleSheet.create({
   },
   playButton: {
     alignItems: 'center',
-    backgroundColor: HalcyonColors.accent,
-    borderRadius: 40,
-    height: 80,
+    backgroundColor: PLAYER_GOLD,
+    borderRadius: 42,
+    height: 84,
     justifyContent: 'center',
-    width: 80,
+    width: 84,
   },
   playButtonPressed: {
     backgroundColor: HalcyonColors.accentPressed,
@@ -578,60 +578,30 @@ const styles = StyleSheet.create({
   playIcon: {
     marginLeft: 4,
   },
-  timerPill: {
-    alignItems: 'center',
-    alignSelf: 'center',
-    borderColor: HalcyonColors.border,
-    borderRadius: HalcyonRadius.pill,
-    borderWidth: 1,
-    columnGap: 7,
-    flexDirection: 'row',
-    marginTop: 18,
-    paddingHorizontal: 14,
-    paddingVertical: 7,
+  actionRow: { flexDirection: 'row', gap: 8, marginTop: 18 },
+  settingPill: {
+    flex: 1, flexDirection: 'row', alignItems: 'center', gap: 6,
+    minHeight: 52, paddingHorizontal: 9, paddingVertical: 7,
+    borderRadius: 32, borderWidth: 1, borderColor: 'rgba(240,232,217,0.26)',
+    backgroundColor: 'rgba(7,16,24,0.32)',
   },
-  timerPillLabel: {
-    color: HalcyonColors.textPrimary,
-    fontFamily: AppFonts.sansMedium,
-    fontSize: 12,
-    fontWeight: '500',
-    lineHeight: 16,
+  pillCopy: { flex: 1, minWidth: 0 },
+  pillLabel: {
+    color: '#F6F0E6', fontFamily: AppFonts.sansRegular, fontSize: 11, lineHeight: 15,
   },
-  actionRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginTop: 24,
+  pillDetail: {
+    color: '#B7B6B4', fontFamily: AppFonts.sansRegular, fontSize: 10, lineHeight: 14,
   },
-  actionButton: {
-    alignItems: 'center',
-    flex: 1,
-    rowGap: 6,
+  loopIndicator: {
+    width: 7, height: 7, borderRadius: 4, backgroundColor: 'rgba(240,232,217,0.2)',
   },
-  actionLabel: {
-    color: HalcyonColors.textSecondary,
-    fontFamily: AppFonts.sansRegular,
-    fontSize: 11,
-    lineHeight: 15,
+  loopIndicatorOn: { backgroundColor: PLAYER_GOLD },
+  playlistButton: {
+    alignSelf: 'center', alignItems: 'center', gap: 4, marginTop: 22,
+    paddingVertical: 8, paddingHorizontal: 20, minHeight: 48,
   },
-  actionLabelActive: {
-    color: HalcyonColors.accent,
-  },
-  outputSection: {
-    flexGrow: 1,
-    justifyContent: 'flex-end',
-    paddingTop: 32,
-  },
-  outputRow: {
-    alignItems: 'center',
-    columnGap: 7,
-    flexDirection: 'row',
-    justifyContent: 'center',
-  },
-  outputLabel: {
-    color: HalcyonColors.textSecondary,
-    fontFamily: AppFonts.sansRegular,
-    fontSize: 12,
-    lineHeight: 16,
+  playlistLabel: {
+    color: '#E6E0D6', fontFamily: AppFonts.sansRegular, fontSize: 13, lineHeight: 18,
   },
   menuContainer: {
     flex: 1,

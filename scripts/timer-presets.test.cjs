@@ -96,3 +96,14 @@ test('Test timer presets are isolated from server default timer preferences', ()
   assert.doesNotMatch(settingsSource, /Test ·/);
   assert.doesNotMatch(settingsSource, /buildModeTimers|MODE_TIMERS/);
 });
+
+test('all listening modes fade during the final minute and Focus keeps its optional end tone', () => {
+  const { buildModeTimers, FADE_OUT_SECONDS } = loadTimers(false);
+  const timers = buildModeTimers(false);
+
+  for (const mode of ['sleep', 'relax', 'focus']) {
+    assert.equal(timers[mode].ending.type, 'fade');
+    assert.equal(timers[mode].ending.fadeSeconds, FADE_OUT_SECONDS);
+  }
+  assert.equal(timers.focus.ending.offerEndTone, true);
+});

@@ -25,6 +25,13 @@ export function formatClock(seconds?: number | null): string {
   return `${minutes}:${paddedSecs}`;
 }
 
+/** Player display: total minutes, including durations longer than an hour. */
+export function formatPlaybackClock(seconds?: number | null): string {
+  const safe = typeof seconds === 'number' && Number.isFinite(seconds)
+    ? Math.max(0, Math.floor(seconds)) : 0;
+  return `${String(Math.floor(safe / 60)).padStart(2, '0')}:${String(safe % 60).padStart(2, '0')}`;
+}
+
 /** "1.2k plays" style counts for the soundscape detail meta row. */
 export function formatCount(value?: number | null): string {
   if (value === null || value === undefined || value < 0) return '';

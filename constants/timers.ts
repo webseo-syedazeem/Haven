@@ -16,8 +16,8 @@ export type TimerPreset = {
 };
 
 export type TimerEnding =
-  /** Volume ramps to silence over `fadeSeconds`, then playback stops. Nothing else. */
-  | { type: 'fade'; fadeSeconds: number }
+  /** Volume ramps to silence over `fadeSeconds`, then playback stops. */
+  | { type: 'fade'; fadeSeconds: number; offerEndTone?: boolean }
   /** Playback stops outright; an optional soft tone can be switched on by the user. */
   | { type: 'silent'; offerEndTone: true };
 
@@ -36,6 +36,9 @@ const DEV_TIMER_PRESETS: readonly TimerPreset[] = [
 ];
 
 export const FADE_OUT_SECONDS = 60;
+
+/** How long a timer may sit frozen while paused before it is dropped outright. */
+export const PAUSED_TIMER_EXPIRY_MS = 30 * 60 * 1000;
 
 const PRODUCTION_MODE_TIMERS: Record<ModeId, ModeTimerConfig> = {
   sleep: {
@@ -68,7 +71,7 @@ const PRODUCTION_MODE_TIMERS: Record<ModeId, ModeTimerConfig> = {
       minutes(120, '2 hr'),
       UNTIL_I_STOP_PRESET,
     ],
-    ending: { type: 'silent', offerEndTone: true },
+    ending: { type: 'fade', fadeSeconds: FADE_OUT_SECONDS, offerEndTone: true },
   },
 };
 
@@ -130,4 +133,18 @@ export function formatTimerLabel(value: TimerSelection | null): string {
   if (value < 60) return `${value} min`;
   const hours = value / 60;
   return Number.isInteger(hours) ? `${hours} hr` : `${(value / 60).toFixed(1)} hr`;
+}
+
+function clockFromSeconds(seconds: number): string {
+  const safe = Math.max(0, Math.floor(seconds));
+  const hours = Math.floor(safe / 3600);
+  const minutes = Math.floor((safe % 3600) / 60);
+  const secs = String(safe % 60).padStart(2, '0');
+  return hours > 0 ? `${hours}:${String(minutes).padStart(2, '0')}:${secs}` : `${minutes}:${secs}`;
+}
+
+/** Long timers use hours:minutes; short timers keep the seconds countdown. */
+export function formatTimerCountdown(seconds: number): string {
+  const clock = clockFromSeconds(seconds);
+  return seconds >= 3600 ? `${clock.slice(0, -3)} hr` : clock;
 }

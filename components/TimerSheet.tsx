@@ -11,6 +11,7 @@ import {
 } from '@/constants/design';
 import { getModeLabel, type ModeId } from '@/constants/modes';
 import {
+  formatTimerCountdown,
   getTimerConfig,
   UNTIL_I_STOP,
   type TimerSelection,
@@ -22,6 +23,12 @@ type TimerSheetProps = {
   mode?: ModeId | string | null;
   selection: TimerSelection | null;
   endToneEnabled: boolean;
+  /** True while audio is buffering and a numeric timer is waiting to start. */
+  isLoading?: boolean;
+  /** True while playback is paused and a numeric timer is frozen, not ticking. */
+  isPaused?: boolean;
+  /** The frozen (while paused) or live countdown, in seconds. */
+  remainingSeconds?: number | null;
   onSelect: (selection: TimerSelection | null) => void;
   onToggleEndTone: (enabled: boolean) => void;
   onClose: () => void;
@@ -33,6 +40,9 @@ export function TimerSheet({
   mode,
   selection,
   endToneEnabled,
+  isLoading = false,
+  isPaused = false,
+  remainingSeconds = null,
   onSelect,
   onToggleEndTone,
   onClose,
@@ -43,8 +53,18 @@ export function TimerSheet({
 
   const endingNote =
     config.ending.type === 'fade'
-      ? `${modeLabel} sessions fade out over the last minute, then end in silence.`
+      ? config.ending.offerEndTone
+        ? `${modeLabel} sessions fade out over the last minute, then stop.`
+        : `${modeLabel} sessions fade out over the last minute, then end in silence.`
       : `${modeLabel} sessions stop quietly when the time is up.`;
+  const statusNote =
+    remainingSeconds === null
+      ? null
+      : isLoading
+        ? `Loading, ${formatTimerCountdown(remainingSeconds)} left`
+        : isPaused
+          ? `Paused, ${formatTimerCountdown(remainingSeconds)} left`
+          : null;
 
   return (
     <Modal
@@ -54,87 +74,96 @@ export function TimerSheet({
       statusBarTranslucent
       transparent
       visible={visible}>
-      <Pressable accessibilityLabel="Close timer" onPress={onClose} style={styles.backdrop} />
-      <View style={[styles.sheet, { paddingBottom: insets.bottom + 20 }]}>
-        <View style={styles.grabber} />
-        <View style={styles.header}>
-          <Text style={styles.title}>Timer</Text>
-          <Pressable
-            accessibilityLabel="Close"
-            accessibilityRole="button"
-            hitSlop={10}
-            onPress={onClose}>
-            <Ionicons color={HalcyonColors.textSecondary} name="close" size={20} />
-          </Pressable>
-        </View>
-
-        <View style={styles.options}>
-          {config.presets.map((preset) => {
-            const isSelected = selection === preset.value;
-
-            return (
-              <Pressable
-                accessibilityLabel={preset.label}
-                accessibilityRole="button"
-                accessibilityState={isSelected ? { selected: true } : {}}
-                key={String(preset.value)}
-                onPress={() => onSelect(preset.value)}
-                style={({ pressed }) => [
-                  styles.option,
-                  preset.value === UNTIL_I_STOP && styles.optionWide,
-                  isSelected && styles.optionSelected,
-                  pressed && styles.optionPressed,
-                ]}>
-                <Text style={[styles.optionLabel, isSelected && styles.optionLabelSelected]}>
-                  {preset.label}
-                </Text>
-              </Pressable>
-            );
-          })}
-        </View>
-
-        {config.ending.type === 'silent' && (
-          <View style={styles.toneRow}>
-            <View style={styles.toneCopy}>
-              <Text style={styles.toneLabel}>Play a gentle end tone</Text>
-              <Text style={styles.toneHint}>One soft chime instead of a silent stop.</Text>
-            </View>
-            <Switch
-              onValueChange={onToggleEndTone}
-              thumbColor={endToneEnabled ? HalcyonColors.accent : '#3A3840'}
-              trackColor={{ false: 'rgba(255,255,255,0.12)', true: 'rgba(195,161,122,0.35)' }}
-              value={endToneEnabled}
-            />
+      <View style={styles.container}>
+        <Pressable accessibilityLabel="Close timer" onPress={onClose} style={styles.backdrop} />
+        <View style={[styles.sheet, { paddingBottom: insets.bottom + 20 }]}>
+          <View style={styles.grabber} />
+          <View style={styles.header}>
+            <Text style={styles.title}>Timer</Text>
+            <Pressable
+              accessibilityLabel="Close"
+              accessibilityRole="button"
+              hitSlop={10}
+              onPress={onClose}>
+              <Ionicons color={HalcyonColors.textSecondary} name="close" size={20} />
+            </Pressable>
           </View>
-        )}
 
-        <Text style={styles.note}>{endingNote}</Text>
+          {!!statusNote && <Text style={styles.pausedNote}>{statusNote}</Text>}
 
-        {selection !== null && (
-          <Pressable
-            accessibilityLabel="Turn timer off"
-            accessibilityRole="button"
-            onPress={() => onSelect(null)}
-            style={({ pressed }) => [styles.clearButton, pressed && styles.optionPressed]}>
-            <Text style={styles.clearLabel}>Turn timer off</Text>
-          </Pressable>
-        )}
+          <View style={styles.options}>
+            {config.presets.map((preset) => {
+              const isSelected = selection === preset.value;
+
+              return (
+                <Pressable
+                  accessibilityLabel={preset.label}
+                  accessibilityRole="button"
+                  accessibilityState={isSelected ? { selected: true } : {}}
+                  key={String(preset.value)}
+                  onPress={() => onSelect(preset.value)}
+                  style={({ pressed }) => [
+                    styles.option,
+                    preset.value === UNTIL_I_STOP && styles.optionWide,
+                    isSelected && styles.optionSelected,
+                    pressed && styles.optionPressed,
+                  ]}>
+                  <Text style={[styles.optionLabel, isSelected && styles.optionLabelSelected]}>
+                    {preset.label}
+                  </Text>
+                </Pressable>
+              );
+            })}
+          </View>
+
+          {config.ending.offerEndTone && (
+            <View style={styles.toneRow}>
+              <View style={styles.toneCopy}>
+                <Text style={styles.toneLabel}>Play a gentle end tone</Text>
+                <Text style={styles.toneHint}>One soft chime instead of a silent stop.</Text>
+              </View>
+              <Switch
+                onValueChange={onToggleEndTone}
+                thumbColor={endToneEnabled ? HalcyonColors.accent : '#3A3840'}
+                trackColor={{ false: 'rgba(255,255,255,0.12)', true: 'rgba(195,161,122,0.35)' }}
+                value={endToneEnabled}
+              />
+            </View>
+          )}
+
+          <Text style={styles.note}>{endingNote}</Text>
+
+          {selection !== null && (
+            <Pressable
+              accessibilityLabel="Turn timer off"
+              accessibilityRole="button"
+              onPress={() => onSelect(null)}
+              style={({ pressed }) => [styles.clearButton, pressed && styles.optionPressed]}>
+              <Text style={styles.clearLabel}>Turn timer off</Text>
+            </Pressable>
+          )}
+        </View>
       </View>
     </Modal>
   );
 }
 
 const styles = StyleSheet.create({
-  backdrop: {
-    backgroundColor: HalcyonModal.backdrop,
+  container: {
     flex: 1,
+    justifyContent: 'flex-end',
+  },
+  backdrop: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: HalcyonModal.backdrop,
   },
   sheet: {
     backgroundColor: HalcyonColors.surface,
-    borderTopColor: HalcyonColors.border,
+    borderTopColor: 'rgba(255,255,255,0.035)',
     borderTopLeftRadius: HalcyonRadius.sheet,
     borderTopRightRadius: HalcyonRadius.sheet,
-    borderTopWidth: 1,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    overflow: 'hidden',
     paddingHorizontal: HalcyonSpacing.screenX,
     paddingTop: 10,
   },
@@ -154,6 +183,14 @@ const styles = StyleSheet.create({
   },
   title: {
     ...Typography.sectionHeading,
+  },
+  pausedNote: {
+    color: HalcyonColors.accent,
+    fontFamily: AppFonts.sansMedium,
+    fontSize: 13,
+    fontWeight: '500',
+    lineHeight: 18,
+    marginBottom: 14,
   },
   options: {
     columnGap: 10,
