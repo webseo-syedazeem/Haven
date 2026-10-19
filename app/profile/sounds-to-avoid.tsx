@@ -100,7 +100,7 @@ function SoundsToAvoidContent() {
 
   return (
     <SettingsScreen
-      backgroundImage={require('@/assets/images/sound-preferences-compact-moonlit-mountains-bg.webp')}
+      backgroundImage={require('@/assets/images/sound-preferences-top-forest-realistic-final.webp')}
       overlay={<Toast bottom={72} notice={notice} />}
       subtitle="Anything you would rather never hear."
       title="Sounds to Avoid">

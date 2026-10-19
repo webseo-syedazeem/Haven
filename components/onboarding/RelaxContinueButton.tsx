@@ -36,6 +36,5 @@ export function RelaxContinueButton({
 const styles = StyleSheet.create({
   button: {
     minHeight: RELAX_ONBOARDING.button.height,
-    opacity: 1,
   },
 });

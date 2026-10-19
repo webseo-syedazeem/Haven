@@ -28,7 +28,7 @@ import { usePlayerActions } from '@/lib/player/PlayerProvider';
 const appleIcon = require('@/assets/icons/apple icon.png');
 const googleIcon = require('@/assets/icons/google icon.png');
 const emailIcon = require('@/assets/icons/email.png');
-const background = require('@/assets/images/save-your-space-twilight-lake-background.webp');
+const background = require('@/assets/images/auth-save-space-oak-meadow-v2.webp');
 
 type Provider = 'apple' | 'email' | 'google' | 'guest' | null;
 

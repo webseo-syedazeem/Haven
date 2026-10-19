@@ -34,7 +34,7 @@ import { resetToMainApp, safeGoBack } from '@/lib/navigation';
 
 const appleIcon = require('@/assets/icons/apple icon.png');
 const googleIcon = require('@/assets/icons/google icon.png');
-const background = require('@/assets/images/welcome-back-moonlit-lake-background.webp');
+const background = require('@/assets/images/auth-login-oak-blue-hour-v6.webp');
 
 export default function LoginScreen() {
   const router = useRouter();
@@ -171,7 +171,7 @@ export default function LoginScreen() {
       style={styles.keyboardView}>
       <OnboardingScaffold
         backgroundImage={background}
-        backgroundOverlayColor="rgba(7, 11, 16, 0.30)"
+        backgroundOverlayColor="rgba(7, 11, 16, 0.32)"
         contentContainerStyle={styles.scrollContent}
         footer={<AuthLegalFooter />}
         onBack={goBack}>

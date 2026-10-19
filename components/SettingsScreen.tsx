@@ -1,4 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { useRef, type ReactNode } from 'react';
 import {
@@ -30,6 +31,8 @@ type SettingsScreenProps = {
   bottomExtra?: number;
   /** Scenic backdrop for this screen only — falls back to the flat ground when omitted. */
   backgroundImage?: ImageSourcePropType;
+  /** Optional screen-specific tint layered over the scenic backdrop. */
+  backgroundOverlayColor?: string;
   /**
    * Scroll the backdrop with the body and fade in a black status-bar cover as
    * it moves, matching the main Profile screen. Needs `backgroundImage`.
@@ -51,6 +54,7 @@ export function SettingsScreen({
   overlay,
   bottomExtra = 32,
   backgroundImage,
+  backgroundOverlayColor,
   scrollingBackground = false,
 }: SettingsScreenProps) {
   const router = useRouter();
@@ -72,7 +76,7 @@ export function SettingsScreen({
         hitSlop={12}
         onPress={() => router.back()}
         style={({ pressed }) => [styles.backButton, pressed && styles.pressed]}>
-        <Ionicons color={HalcyonColors.textPrimary} name="chevron-back" size={28} />
+        <Ionicons color="#FFFFFF" name="chevron-back" size={28} />
       </Pressable>
       <Text style={styles.title}>{title}</Text>
       {!!subtitle && <Text style={styles.subtitle}>{subtitle}</Text>}
@@ -113,6 +117,18 @@ export function SettingsScreen({
               styles.scrollScene,
               { paddingBottom: bottomInset, paddingTop: insets.top + 6 },
             ]}>
+            <LinearGradient
+              colors={['rgba(0,0,0,0.52)', 'rgba(0,0,0,0.20)', 'rgba(0,0,0,0)']}
+              locations={[0, 0.3, 0.55]}
+              pointerEvents="none"
+              style={StyleSheet.absoluteFill}
+            />
+            {!!backgroundOverlayColor && (
+              <View
+                pointerEvents="none"
+                style={[StyleSheet.absoluteFill, { backgroundColor: backgroundOverlayColor }]}
+              />
+            )}
             {header}
             {children}
           </ImageBackground>
@@ -130,6 +146,18 @@ export function SettingsScreen({
   if (backgroundImage) {
     return (
       <ImageBackground resizeMode="cover" source={backgroundImage} style={styles.screen}>
+        <LinearGradient
+          colors={['rgba(0,0,0,0.52)', 'rgba(0,0,0,0.20)', 'rgba(0,0,0,0)']}
+          locations={[0, 0.3, 0.55]}
+          pointerEvents="none"
+          style={StyleSheet.absoluteFill}
+        />
+        {!!backgroundOverlayColor && (
+          <View
+            pointerEvents="none"
+            style={[StyleSheet.absoluteFill, { backgroundColor: backgroundOverlayColor }]}
+          />
+        )}
         {body}
         {overlay}
       </ImageBackground>
@@ -205,6 +233,10 @@ const styles = StyleSheet.create({
   },
   backButton: {
     alignItems: 'center',
+    backgroundColor: 'rgba(0,0,0,0.34)',
+    borderColor: 'rgba(255,255,255,0.22)',
+    borderRadius: 24,
+    borderWidth: 1,
     height: 48,
     justifyContent: 'center',
     marginBottom: 10,
@@ -215,12 +247,18 @@ const styles = StyleSheet.create({
   },
   title: {
     ...Typography.screenHeading,
-    color: HalcyonColors.textPrimary,
+    color: '#FFFFFF',
+    textShadowColor: 'rgba(0,0,0,0.95)',
+    textShadowOffset: { width: 0, height: 2 },
+    textShadowRadius: 8,
   },
   subtitle: {
     ...Typography.body,
-    color: HalcyonColors.textSecondary,
+    color: 'rgba(255,255,255,0.94)',
     marginTop: 6,
+    textShadowColor: 'rgba(0,0,0,0.95)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 6,
   },
   primaryButton: {
     alignItems: 'center',

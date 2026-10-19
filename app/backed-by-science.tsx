@@ -19,8 +19,8 @@ import { AppFonts } from '@/constants/theme';
 import { safeGoBack } from '@/lib/navigation';
 import { getOnboardingAnswers } from '@/lib/onboarding';
 
-const focusScienceBackground = require('@/assets/images/science-focus-mountain-lake-blurred.webp');
-const sleepScienceBackground = require('@/assets/images/science-mountain-lake-blurred.webp');
+const focusScienceBackground = require('@/assets/images/science-focus-audio-studio-v2.webp');
+const sleepScienceBackground = require('@/assets/images/science-sleep-bedroom-speaker-v2.webp');
 
 export default function BackedByScienceScreen() {
   const router = useRouter();

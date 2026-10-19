@@ -10,7 +10,7 @@ import { AppFonts } from '@/constants/theme';
 import { isGuestModeActive, setGuestModeActive } from '@/lib/auth/session-state';
 import { safeGoBack } from '@/lib/navigation';
 
-const heroImage = require('@/assets/images/why-passage-moonlit-window.webp');
+const heroImage = require('@/assets/images/why-passage-field-recording-v2.webp');
 
 const FEATURES = [
   'Immersive binaural sounds',

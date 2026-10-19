@@ -8,9 +8,9 @@ import { OnboardingStepHeader } from '@/components/onboarding/OnboardingStepHead
 import { AppFonts } from '@/constants/theme';
 import { safeGoBack } from '@/lib/navigation';
 
-const focusImage = require('@/assets/images/focus-mode.webp');
-const calmImage = require('@/assets/images/relax-mode.webp');
-const sleepImage = require('@/assets/images/sleep-mode.webp');
+const focusImage = require('@/assets/images/focus-mode-realistic-v2.webp');
+const calmImage = require('@/assets/images/relax-mode-realistic-v2.webp');
+const sleepImage = require('@/assets/images/sleep-mode-realistic-v2.webp');
 
 type GoalCard = {
   id: 'focus' | 'calm' | 'sleep';

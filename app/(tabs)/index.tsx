@@ -1,8 +1,10 @@
 import { Image as ExpoImage } from 'expo-image';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter, type Href } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   Animated,
+  AppState,
   Dimensions,
   Image,
   RefreshControl,
@@ -21,6 +23,7 @@ import { ModeCard, ModeCardSkeleton } from '@/components/ModeCard';
 import { ProfileAvatar } from '@/components/profile/ProfileAvatar';
 import { SectionRail } from '@/components/SectionRail';
 import { SoundscapeCard } from '@/components/SoundscapeCard';
+import { SHOW_DEV_HOME_SCENE_REVIEW_BUTTON } from '@/config/dev-flags';
 import { HALCYON_TAB_BAR_HEIGHT, HalcyonColors, HalcyonSpacing, Typography } from '@/constants/design';
 import { AppFonts } from '@/constants/theme';
 import { MODES, type ModeConfig } from '@/constants/modes';
@@ -39,7 +42,13 @@ import type { Collection, Soundscape } from '@/lib/api/home';
 import { coverUrl } from '@/lib/image-url';
 import { usePlayerActions, usePlayerState } from '@/lib/player/PlayerProvider';
 import { getFirstName } from '@/lib/api/user';
-import { getTimeOfDay } from '@/lib/utils/greeting';
+import {
+  getUkGreeting,
+  getUkTimeOfDay,
+  getUkWeekday,
+  type TimeOfDay,
+  type UkWeekday,
+} from '@/lib/utils/greeting';
 
 /**
  * First-load fix: as soon as each rail's data arrives, warm expo-image's cache with the exact
@@ -86,15 +95,86 @@ function prefetchHomeCovers(options: {
   void ExpoImage.prefetch(urls, { cachePolicy: 'memory-disk' });
 }
 
-const heroBackground = require('@/assets/images/home-top-moonlit-lake-cabin-bg.webp');
+const HERO_BACKGROUNDS: Record<UkWeekday, Record<TimeOfDay, number>> = {
+  monday: {
+    morning: require('@/assets/images/home-mon-morning-coastal-cliff-v1.webp'),
+    afternoon: require('@/assets/images/home-mon-afternoon-glasshouse-v1.webp'),
+    evening: require('@/assets/images/home-mon-evening-viaduct-v1.webp'),
+    night: require('@/assets/images/home-mon-night-rooftops-v1.webp'),
+  },
+  tuesday: {
+    morning: require('@/assets/images/home-tue-morning-dew-meadow-v1.webp'),
+    afternoon: require('@/assets/images/home-tue-afternoon-workshop-v1.webp'),
+    evening: require('@/assets/images/home-tue-evening-canal-lock-v1.webp'),
+    night: require('@/assets/images/home-tue-night-observatory-v1.webp'),
+  },
+  wednesday: {
+    morning: require('@/assets/images/home-wed-morning-kitchen-tea-v1.webp'),
+    afternoon: require('@/assets/images/home-wed-afternoon-sand-dunes-v1.webp'),
+    evening: require('@/assets/images/home-wed-evening-harbour-v1.webp'),
+    night: require('@/assets/images/home-wed-night-fireplace-library-v1.webp'),
+  },
+  thursday: {
+    morning: require('@/assets/images/home-thu-morning-upland-tarn-v1.webp'),
+    afternoon: require('@/assets/images/home-thu-afternoon-wheat-fields-v1.webp'),
+    evening: require('@/assets/images/home-thu-evening-forest-stream-v1.webp'),
+    night: require('@/assets/images/home-thu-night-sleeper-train-v1.webp'),
+  },
+  friday: {
+    morning: require('@/assets/images/home-fri-morning-potting-greenhouse-v1.webp'),
+    afternoon: require('@/assets/images/home-fri-afternoon-chalk-cliffs-v1.webp'),
+    evening: require('@/assets/images/home-fri-evening-moor-shelter-v1.webp'),
+    night: require('@/assets/images/home-fri-night-cobbled-lane-v1.webp'),
+  },
+  saturday: {
+    morning: require('@/assets/images/home-sat-morning-reading-nook-v1.webp'),
+    afternoon: require('@/assets/images/home-sat-afternoon-apple-orchard-v1.webp'),
+    evening: require('@/assets/images/home-sat-evening-boathouse-v1.webp'),
+    night: require('@/assets/images/home-sat-night-pine-trail-v1.webp'),
+  },
+  sunday: {
+    morning: require('@/assets/images/home-sun-morning-sheep-pasture-v1.webp'),
+    afternoon: require('@/assets/images/home-sun-afternoon-abbey-garden-v1.webp'),
+    evening: require('@/assets/images/home-sun-evening-highland-road-v1.webp'),
+    night: require('@/assets/images/home-sun-night-music-room-v1.webp'),
+  },
+};
 const brandIcon = require('@/assets/images/passage-brand-assets/screens-icon.webp');
-const HERO_BACKGROUND_ASPECT_RATIO = 941 / 1672;
+const HERO_BACKGROUND_ASPECT_RATIO = 940 / 1672;
+const HOME_SCENE_REVIEW_ORDER: ReadonlyArray<{
+  timeOfDay: TimeOfDay;
+  weekday: UkWeekday;
+}> = [
+  'monday',
+  'tuesday',
+  'wednesday',
+  'thursday',
+  'friday',
+  'saturday',
+  'sunday',
+].flatMap((weekday) =>
+  (['morning', 'afternoon', 'evening', 'night'] as const).map((timeOfDay) => ({
+    timeOfDay,
+    weekday: weekday as UkWeekday,
+  }))
+);
+
+function getHomeTimeState() {
+  const now = new Date();
+  return {
+    greeting: getUkGreeting(now),
+    timeOfDay: getUkTimeOfDay(now),
+    weekday: getUkWeekday(now),
+  };
+}
 
 export default function HomeScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { width: screenWidth } = useWindowDimensions();
   const [refreshing, setRefreshing] = useState(false);
+  const [homeTime, setHomeTime] = useState(getHomeTimeState);
+  const [sceneReviewIndex, setSceneReviewIndex] = useState<number | null>(null);
   const hasSession = useHasSession();
   const guestModeActive = useGuestModeActive();
   const { playSoundscape, resume } = usePlayerActions();
@@ -112,6 +192,19 @@ export default function HomeScreen() {
   const newToHalcyon = useNewToHalcyon();
   const shortSessions = useShortSessions();
   const popularCollections = usePopularCollections();
+
+  useEffect(() => {
+    const syncWithLondonTime = () => setHomeTime(getHomeTimeState());
+    const interval = setInterval(syncWithLondonTime, 60_000);
+    const appStateSubscription = AppState.addEventListener('change', (state) => {
+      if (state === 'active') syncWithLondonTime();
+    });
+
+    return () => {
+      clearInterval(interval);
+      appStateSubscription.remove();
+    };
+  }, []);
 
   const openSoundscape = useCallback(
     (soundscape: Soundscape) => router.push(`/soundscape/${soundscape.id}` as Href),
@@ -229,6 +322,23 @@ export default function HomeScreen() {
   const bottomInset =
     insets.bottom + HALCYON_TAB_BAR_HEIGHT + (currentTrack ? MINI_PLAYER_HEIGHT : 0) + 36;
   const backgroundHeight = screenWidth / HERO_BACKGROUND_ASPECT_RATIO;
+  const reviewedScene = sceneReviewIndex === null
+    ? null
+    : HOME_SCENE_REVIEW_ORDER[sceneReviewIndex];
+  const displayedHomeTime = reviewedScene
+    ? {
+        greeting: `Good ${reviewedScene.timeOfDay}`,
+        ...reviewedScene,
+      }
+    : homeTime;
+  const heroBackground =
+    HERO_BACKGROUNDS[displayedHomeTime.weekday][displayedHomeTime.timeOfDay];
+
+  const showNextReviewScene = () => {
+    setSceneReviewIndex((current) =>
+      current === null ? 0 : (current + 1) % HOME_SCENE_REVIEW_ORDER.length
+    );
+  };
 
   const scrollAnim = useRef(new Animated.Value(0)).current;
   const overlayOpacity = scrollAnim.interpolate({
@@ -262,6 +372,12 @@ export default function HomeScreen() {
             source={heroBackground}
             style={[styles.backgroundImage, { width: screenWidth, height: backgroundHeight }]}
           />
+          <LinearGradient
+            colors={['rgba(0, 0, 0, 0.52)', 'rgba(0, 0, 0, 0.36)', 'rgba(0, 0, 0, 0.60)']}
+            locations={[0, 0.42, 1]}
+            pointerEvents="none"
+            style={[styles.backgroundImage, { width: screenWidth, height: backgroundHeight }]}
+          />
           {/* Hero Header — paddingTop pushes content below status bar */}
           <View style={[styles.hero, { paddingTop: insets.top + 14, minHeight: 260 + insets.top }]}>
             {/* Top bar: brand left, avatar right */}
@@ -285,7 +401,7 @@ export default function HomeScreen() {
             </View>
             {/* Greeting + subtitle */}
             <View style={styles.heroBottom}>
-              <Text style={styles.greetingLine}>{`Good ${getTimeOfDay()},`}</Text>
+              <Text style={styles.greetingLine}>{`${displayedHomeTime.greeting},`}</Text>
               {isBootstrapping ? (
                 <View style={styles.greetingNameSkeleton} />
               ) : (
@@ -414,6 +530,33 @@ export default function HomeScreen() {
         pointerEvents="none"
         style={[styles.topOverlay, { height: insets.top, opacity: overlayOpacity }]}
       />
+      {SHOW_DEV_HOME_SCENE_REVIEW_BUTTON ? (
+        <TouchableOpacity
+          accessibilityHint="Cycles through all 28 weekday and time-of-day Home backgrounds"
+          accessibilityLabel="Show next Home scene"
+          accessibilityRole="button"
+          activeOpacity={0.82}
+          onPress={showNextReviewScene}
+          style={[
+            styles.sceneReviewButton,
+            {
+              bottom:
+                insets.bottom +
+                HALCYON_TAB_BAR_HEIGHT +
+                (currentTrack ? MINI_PLAYER_HEIGHT : 0) +
+                12,
+            },
+          ]}>
+          <Text style={styles.sceneReviewNext}>NEXT SCENE</Text>
+          <Text style={styles.sceneReviewLabel}>
+            {reviewedScene
+              ? `${reviewedScene.weekday.slice(0, 3).toUpperCase()}  ${reviewedScene.timeOfDay
+                  .slice(0, 2)
+                  .toUpperCase()}  ${sceneReviewIndex! + 1}/28`
+              : 'START  28'}
+          </Text>
+        </TouchableOpacity>
+      ) : null}
     </View>
   );
 }
@@ -442,6 +585,38 @@ const styles = StyleSheet.create({
     position: 'absolute',
     right: 0,
     top: 0,
+  },
+  sceneReviewButton: {
+    alignItems: 'center',
+    backgroundColor: 'rgba(112, 76, 182, 0.94)',
+    borderColor: 'rgba(255, 255, 255, 0.22)',
+    borderRadius: 18,
+    borderWidth: 1,
+    elevation: 8,
+    justifyContent: 'center',
+    left: 16,
+    minHeight: 52,
+    paddingHorizontal: 13,
+    position: 'absolute',
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.4,
+    shadowRadius: 6,
+    zIndex: 9999,
+  },
+  sceneReviewLabel: {
+    color: '#FFFFFF',
+    fontFamily: AppFonts.sansBold,
+    fontSize: 10,
+    letterSpacing: 0.5,
+    lineHeight: 13,
+  },
+  sceneReviewNext: {
+    color: 'rgba(255, 255, 255, 0.76)',
+    fontFamily: AppFonts.sansBold,
+    fontSize: 7,
+    letterSpacing: 0.7,
+    lineHeight: 10,
   },
   content: {
     flexGrow: 1,

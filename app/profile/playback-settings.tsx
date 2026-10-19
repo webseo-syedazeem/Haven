@@ -141,7 +141,7 @@ function PlaybackSettingsContent() {
 
   return (
     <SettingsScreen
-      backgroundImage={require('@/assets/images/playback-top-moonlit-mountains-bg.webp')}
+      backgroundImage={require('@/assets/images/playback-top-lake-realistic-final.webp')}
       overlay={<Toast bottom={72} notice={notice} />}
       subtitle="How Passage behaves while something is playing."
       title="Playback">

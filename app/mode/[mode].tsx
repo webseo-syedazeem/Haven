@@ -1,5 +1,4 @@
 import { Image } from 'expo-image';
-import { LinearGradient } from 'expo-linear-gradient';
 import { useLocalSearchParams, useRouter, type Href } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
@@ -9,8 +8,6 @@ import { OnboardingBackButton } from '@/components/onboarding/OnboardingBackButt
 import { SectionRail } from '@/components/SectionRail';
 import { SoundscapeCard } from '@/components/SoundscapeCard';
 import {
-  HalcyonCardGradient,
-  HalcyonCardGradientLocations,
   HalcyonColors,
   HalcyonRadius,
   HalcyonSpacing,
@@ -43,6 +40,14 @@ export default function ModeHubScreen() {
     [router]
   );
 
+  const playFromMode = useCallback(
+    async (soundscape: Soundscape) => {
+      await playSoundscape(soundscape);
+      router.push('/player' as Href);
+    },
+    [playSoundscape, router]
+  );
+
   const toggleExpanded = useCallback(
     (key: string) => setExpanded((current) => ({ ...current, [key]: !current[key] })),
     []
@@ -50,23 +55,14 @@ export default function ModeHubScreen() {
 
   return (
     <View style={styles.screen}>
+      <Image
+        contentFit="cover"
+        source={mode.detailArtwork}
+        style={styles.backgroundImage}
+        transition={220}
+      />
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         <View style={styles.hero}>
-          <LinearGradient colors={mode.gradient} style={StyleSheet.absoluteFill} />
-          <Image
-            contentFit="cover"
-            contentPosition={mode.artworkPosition ?? 'center'}
-            source={mode.artwork}
-            style={StyleSheet.absoluteFill}
-            transition={220}
-          />
-          <LinearGradient
-            colors={HalcyonCardGradient as unknown as readonly [string, string, ...string[]]}
-            locations={
-              HalcyonCardGradientLocations as unknown as readonly [number, number, ...number[]]
-            }
-            style={StyleSheet.absoluteFill}
-          />
           <SafeAreaView edges={['top']} style={styles.heroSafeArea}>
             <OnboardingBackButton
               onPress={() => router.back()}
@@ -119,7 +115,7 @@ export default function ModeHubScreen() {
                 onSeeAll={section.items.length > 2 ? () => toggleExpanded(section.key) : undefined}
                 renderItem={(soundscape) => (
                   <SoundscapeCard
-                    onPlay={(item) => void playSoundscape(item)}
+                    onPlay={(item) => void playFromMode(item)}
                     onPress={openSoundscape}
                     soundscape={soundscape}
                   />
@@ -154,6 +150,14 @@ function HubSectionSkeleton() {
 }
 
 const styles = StyleSheet.create({
+  backgroundImage: {
+    aspectRatio: 941 / 1672,
+    left: 0,
+    position: 'absolute',
+    right: 0,
+    top: 0,
+    width: '100%',
+  },
   screen: {
     backgroundColor: HalcyonColors.background,
     flex: 1,

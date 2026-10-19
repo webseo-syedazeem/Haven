@@ -6,6 +6,7 @@ import { AppFonts } from '@/constants/theme';
 
 type EmptyStateProps = {
   icon: keyof typeof Ionicons.glyphMap;
+  iconColor?: string;
   title: string;
   message?: string;
   actionLabel?: string;
@@ -13,10 +14,10 @@ type EmptyStateProps = {
 };
 
 /** The shared "nothing here" block — a faint glyph, a line, and a way out. */
-export function EmptyState({ icon, title, message, actionLabel, onAction }: EmptyStateProps) {
+export function EmptyState({ icon, iconColor, title, message, actionLabel, onAction }: EmptyStateProps) {
   return (
     <View style={styles.wrapper}>
-      <Ionicons color={HalcyonColors.skeleton} name={icon} size={64} />
+      <Ionicons color={iconColor ?? HalcyonColors.skeleton} name={icon} size={64} />
       <Text style={styles.title}>{title}</Text>
       {!!message && <Text style={styles.message}>{message}</Text>}
       {!!actionLabel && !!onAction && (

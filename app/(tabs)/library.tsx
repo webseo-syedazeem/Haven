@@ -37,7 +37,7 @@ import { useLibraryResults, useSearchSuggestions } from '@/hooks/useLibrary';
 import type { Soundscape } from '@/lib/api/home';
 import { usePlayerActions } from '@/lib/player/PlayerProvider';
 
-const libraryBackground = require('@/assets/images/library-compact-moonlit-lake-bg.webp');
+const libraryBackground = require('@/assets/images/library-glasshouse-v3.webp');
 
 export default function LibraryScreen() {
   const router = useRouter();
@@ -129,7 +129,7 @@ export default function LibraryScreen() {
         source={libraryBackground}
         style={styles.background}>
         <LinearGradient
-          colors={['rgba(2, 6, 10, 0.08)', 'rgba(2, 5, 8, 0.18)', 'rgba(0, 0, 0, 0.38)']}
+          colors={['rgba(2, 6, 10, 0.50)', 'rgba(2, 5, 8, 0.62)', 'rgba(0, 0, 0, 0.78)']}
           locations={[0, 0.42, 1]}
           pointerEvents="none"
           style={StyleSheet.absoluteFillObject}

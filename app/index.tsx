@@ -39,7 +39,7 @@ import {
 import { recoverAbandonedOnboardingReplay } from '@/lib/onboarding-replay';
 import { queryClient } from '@/lib/query-client';
 
-const welcomeBackground = require('@/assets/images/first-onboarding.webp');
+const welcomeBackground = require('@/assets/images/first-onboarding-cedar-trail-v2.webp');
 
 type LaunchState = 'checking' | 'welcome';
 

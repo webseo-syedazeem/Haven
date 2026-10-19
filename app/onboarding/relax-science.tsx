@@ -10,7 +10,7 @@ import { RELAX_ONBOARDING } from '@/constants/relax-onboarding';
 import { AppFonts } from '@/constants/theme';
 import { safeGoBack } from '@/lib/navigation';
 
-const background = require('@/assets/images/relax-science-bg.webp');
+const background = require('@/assets/images/relax-science-greenhouse-v2.webp');
 
 const FINDINGS = [
   {

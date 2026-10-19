@@ -46,21 +46,27 @@ export default function SavedScreen() {
   );
   const bottomInset = useTabContentInset();
   const { notice, showToast } = useToast();
-
   return (
     <View style={styles.screen}>
       {segment === 'favourites' && (
         <Image
-          source={require('@/assets/images/saved-dark-alpine-lake-bg.webp')}
+          source={require('@/assets/images/saved-favourites-birch-v7.webp')}
           resizeMode="cover"
           style={styles.favouritesBackground}
         />
       )}
       {segment === 'recent' && (
         <Image
-          source={require('@/assets/images/recently-played-dark-alpine-lake-bg.webp')}
+          source={require('@/assets/images/saved-recent-atlantic-cliff-v7.webp')}
           resizeMode={'cover'}
           style={styles.recentBackground}
+        />
+      )}
+      {segment === 'playlists' && (
+        <Image
+          source={require('@/assets/images/saved-playlists-moon-desert-v8.webp')}
+          resizeMode="cover"
+          style={styles.playlistsBackground}
         />
       )}
       <SafeAreaView edges={['top']} style={styles.safeArea}>
@@ -146,6 +152,7 @@ function FavouritesPanel({
     return (
       <EmptyState
         icon="heart-outline"
+        iconColor={HalcyonColors.textPrimary}
         message="Tap the heart on any soundscape to save it here."
         title="No favourites yet"
       />
@@ -214,11 +221,6 @@ function PlaylistsPanel({
 
   return (
     <View style={styles.panel}>
-      <Image
-        source={require('@/assets/images/playlists-empty-dark-alpine-valley-bg.webp')}
-        resizeMode="cover"
-        style={styles.playlistsBackground}
-      />
       {playlists.isInitialLoading ? (
         <View style={styles.gridSkeleton}>
           {[0, 1, 2, 3].map((index) => (
@@ -234,6 +236,7 @@ function PlaylistsPanel({
         <EmptyState
           actionLabel="New playlist"
           icon="albums-outline"
+          iconColor={HalcyonColors.textPrimary}
           message="Create a playlist to group your favourite soundscapes."
           onAction={() => setFormVisible(true)}
           title="No playlists yet"
@@ -299,6 +302,7 @@ function RecentPanel({ bottomInset }: { bottomInset: number }) {
     return (
       <EmptyState
         icon="time-outline"
+        iconColor={HalcyonColors.textPrimary}
         message="The soundscapes you play will show up here."
         title="Nothing played yet"
       />

@@ -24,8 +24,8 @@ import {
   saveOnboardingAnswers,
 } from '@/lib/onboarding';
 
-const focusBackground = require('@/assets/images/what-breaks-your-focus.webp');
-const sleepBackground = require('@/assets/images/what-gets-in-the-way-of-sleep.webp');
+const focusBackground = require('@/assets/images/situation-focus-coworking-v2.webp');
+const sleepBackground = require('@/assets/images/situation-sleep-bedroom-v2.webp');
 
 const FOCUS_DISTRACTIONS = [
   'Background noise',

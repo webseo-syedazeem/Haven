@@ -6,3 +6,4 @@
 export const SHOW_DEV_RESET_BUTTON = true;
 export const SHOW_DEV_TIMER_PRESETS = true;
 export const SHOW_DEV_ONBOARDING_REPLAY_BUTTON = true;
+export const SHOW_DEV_HOME_SCENE_REVIEW_BUTTON = true;

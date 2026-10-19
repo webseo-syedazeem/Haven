@@ -24,29 +24,29 @@ import {
   saveOnboardingAnswers,
 } from '@/lib/onboarding';
 
-const focusBackground = require('@/assets/images/personalise-focus-background.webp');
-const sleepBackground = require('@/assets/images/personalise-sleep-background.webp');
+const focusBackground = require('@/assets/images/personalise-focus-reading-room-v2.webp');
+const sleepBackground = require('@/assets/images/personalise-sleep-bedroom-v2.webp');
 
 const FOCUS_CONTEXTS = [
   {
     id: 'desk',
     label: 'At a desk',
-    image: require('@/assets/images/personalise-desk.webp'),
+    image: require('@/assets/images/personalise-desk-realistic-v2.webp'),
   },
   {
     id: 'studying',
     label: 'Studying',
-    image: require('@/assets/images/personalise-study.webp'),
+    image: require('@/assets/images/personalise-study-realistic-v2.webp'),
   },
   {
     id: 'creative',
     label: 'Creative work',
-    image: require('@/assets/images/personalise-creative.webp'),
+    image: require('@/assets/images/personalise-creative-realistic-v2.webp'),
   },
   {
     id: 'move',
     label: 'On the move',
-    image: require('@/assets/images/personalise-move.webp'),
+    image: require('@/assets/images/personalise-move-realistic-v2.webp'),
   },
 ] as const;
 
@@ -54,22 +54,22 @@ const SLEEP_CONTEXTS = [
   {
     id: 'falling-asleep',
     label: 'Falling asleep',
-    image: require('@/assets/images/personalise-falling-asleep.webp'),
+    image: require('@/assets/images/personalise-falling-asleep-realistic-v2.webp'),
   },
   {
     id: 'after-late-work',
     label: 'After late work',
-    image: require('@/assets/images/personalise-late-work.webp'),
+    image: require('@/assets/images/personalise-late-work-realistic-v2.webp'),
   },
   {
     id: 'during-travel',
     label: 'During travel',
-    image: require('@/assets/images/personalise-travel.webp'),
+    image: require('@/assets/images/personalise-travel-realistic-v2.webp'),
   },
   {
     id: 'after-waking',
     label: 'After waking',
-    image: require('@/assets/images/personalise-waking.webp'),
+    image: require('@/assets/images/personalise-waking-realistic-v2.webp'),
   },
 ] as const;
 
@@ -157,6 +157,16 @@ export default function PersonaliseScreen() {
       <ImageBackground
         resizeMode="cover"
         source={isSleep ? sleepBackground : focusBackground}
+        style={StyleSheet.absoluteFill}
+      />
+      <LinearGradient
+        colors={
+          isSleep
+            ? ['rgba(10, 11, 13, 0.32)', 'rgba(10, 11, 13, 0.52)', 'rgba(10, 11, 13, 0.76)']
+            : ['rgba(10, 11, 13, 0.42)', 'rgba(10, 11, 13, 0.54)', 'rgba(10, 11, 13, 0.74)']
+        }
+        locations={[0, 0.48, 1]}
+        pointerEvents="none"
         style={StyleSheet.absoluteFill}
       />
 

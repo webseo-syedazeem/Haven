@@ -11,9 +11,9 @@ import { RELAX_ONBOARDING } from '@/constants/relax-onboarding';
 import { AppFonts } from '@/constants/theme';
 import { safeGoBack } from '@/lib/navigation';
 
-const background = require('@/assets/images/relax-questions-bg.webp');
-const sophieAvatar = require('@/assets/images/rating-person-4.webp');
-const jamesAvatar = require('@/assets/images/rating-person-1.webp');
+const background = require('@/assets/images/trust-relax-interior-v2.webp');
+const sophieAvatar = require('@/assets/images/trust-sophie-portrait-v2.webp');
+const jamesAvatar = require('@/assets/images/trust-james-portrait-v2.webp');
 const featuredPublications = require('@/assets/images/relax-featured-publications.webp');
 
 const STAR_COLOR = '#FFC400';

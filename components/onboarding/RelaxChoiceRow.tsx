@@ -7,6 +7,7 @@ import { RELAX_ONBOARDING } from '@/constants/relax-onboarding';
 import { AppFonts } from '@/constants/theme';
 
 type RelaxChoiceRowProps = {
+  disabled?: boolean;
   icon: ReactNode;
   label: string;
   onPress: () => void;
@@ -15,6 +16,7 @@ type RelaxChoiceRowProps = {
 
 /** Shared option row for the three Relax question screens. */
 export function RelaxChoiceRow({
+  disabled = false,
   icon,
   label,
   onPress,
@@ -23,12 +25,14 @@ export function RelaxChoiceRow({
   return (
     <Pressable
       accessibilityRole="button"
-      accessibilityState={{ selected }}
+      accessibilityState={{ selected, disabled }}
+      disabled={disabled}
       onPress={onPress}
       style={({ pressed }) => [
         styles.row,
         selected && styles.rowSelected,
-        pressed && styles.pressed,
+        disabled && styles.rowDisabled,
+        pressed && !disabled && styles.pressed,
       ]}>
       <View style={styles.icon}>{icon}</View>
       <Text style={styles.label}>{label}</Text>
@@ -71,6 +75,9 @@ const styles = StyleSheet.create({
   },
   pressed: {
     opacity: 0.76,
+  },
+  rowDisabled: {
+    opacity: 0.32,
   },
   row: {
     alignItems: 'center',

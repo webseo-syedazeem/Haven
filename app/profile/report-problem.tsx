@@ -125,7 +125,8 @@ function ReportProblemContent() {
   if (sent) {
     return (
       <SettingsScreen
-        backgroundImage={require('@/assets/images/contact-support-top-moonlit-lake-bg.webp')}
+        backgroundImage={require('@/assets/images/support-top-lake-realistic-final.webp')}
+        scrollingBackground
         title="Report a Problem">
         <SupportSuccess
           message="Thank you. We will listen back and fix what we find."
@@ -139,7 +140,8 @@ function ReportProblemContent() {
 
   return (
     <SettingsScreen
-      backgroundImage={require('@/assets/images/contact-support-top-moonlit-lake-bg.webp')}
+      backgroundImage={require('@/assets/images/support-top-lake-realistic-final.webp')}
+      scrollingBackground
       subtitle="Tell us what went wrong and we will listen back."
       title="Report a Problem">
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined}>

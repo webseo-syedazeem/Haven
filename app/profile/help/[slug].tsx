@@ -71,7 +71,7 @@ export default function HelpArticleScreen() {
 
   return (
     <SettingsScreen
-      backgroundImage={require('@/assets/images/contact-support-top-moonlit-lake-bg.webp')}
+      backgroundImage={require('@/assets/images/help-ocean-coast-v2.webp')}
       title={article?.title ?? 'Help'}>
       {renderBody()}
     </SettingsScreen>

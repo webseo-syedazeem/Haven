@@ -85,7 +85,7 @@ function RequestSoundscapeContent() {
   if (sent) {
     return (
       <SettingsScreen
-        backgroundImage={require('@/assets/images/contact-support-top-moonlit-lake-bg.webp')}
+        backgroundImage={require('@/assets/images/support-top-lake-realistic-final.webp')}
         title="Request a Soundscape">
         <SupportSuccess
           message="Thank you. We read every request when we plan what to record next."
@@ -99,7 +99,7 @@ function RequestSoundscapeContent() {
 
   return (
     <SettingsScreen
-      backgroundImage={require('@/assets/images/contact-support-top-moonlit-lake-bg.webp')}
+      backgroundImage={require('@/assets/images/support-top-lake-realistic-final.webp')}
       title="Request a Soundscape">
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <Text style={styles.intro}>

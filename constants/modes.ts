@@ -17,6 +17,8 @@ export type ModeConfig = {
   description: string;
   benefits: { icon: string; label: string }[];
   artwork: ImageSourcePropType;
+  /** Portrait scene used behind the full mode hub, fading to black below the hero. */
+  detailArtwork: ImageSourcePropType;
   /**
    * CSS `object-position` style crop, so the landscape mode card lands on the
    * most atmospheric band of a portrait image instead of the middle.
@@ -41,7 +43,8 @@ export const MODES: readonly ModeConfig[] = [
       { icon: 'notifications-off-outline', label: 'Minimise distractions' },
       { icon: 'infinite-outline', label: 'Sustain deep work' },
     ],
-    artwork: require('@/assets/images/focus-mode-card-background.webp'),
+    artwork: require('@/assets/images/mode-focus-stone-study-v2.webp'),
+    detailArtwork: require('@/assets/images/mode-focus-detail-stone-study-v2.webp'),
     gradient: ['#1B2430', '#0B0B0D'],
     ringColor: 'rgba(200, 165, 122, 0.55)',
   },
@@ -57,7 +60,8 @@ export const MODES: readonly ModeConfig[] = [
       { icon: 'volume-low-outline', label: 'Mask background noise' },
       { icon: 'sunny-outline', label: 'Wake up rested' },
     ],
-    artwork: require('@/assets/images/sleep-mode-card-background.webp'),
+    artwork: require('@/assets/images/mode-sleep-snow-cottage-v2.webp'),
+    detailArtwork: require('@/assets/images/mode-sleep-detail-snow-cottage-v2.webp'),
     gradient: ['#101828', '#0B0B0D'],
     ringColor: 'rgba(142, 167, 199, 0.55)',
   },
@@ -73,7 +77,8 @@ export const MODES: readonly ModeConfig[] = [
       { icon: 'water-outline', label: 'Quieten a busy mind' },
       { icon: 'flower-outline', label: 'Unwind anywhere' },
     ],
-    artwork: require('@/assets/images/relax-mode-card-background.webp'),
+    artwork: require('@/assets/images/mode-relax-woodland-bench-v2.webp'),
+    detailArtwork: require('@/assets/images/mode-relax-detail-woodland-bench-v2.webp'),
     gradient: ['#241C16', '#0B0B0D'],
     ringColor: 'rgba(107, 191, 123, 0.55)',
   },

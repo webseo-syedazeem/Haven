@@ -22,7 +22,7 @@ import {
   type GuestOnboardingAnswers,
 } from '@/lib/onboarding';
 
-const fitBanner = require('@/assets/images/relax-your-fit-banner.webp');
+const fitBanner = require('@/assets/images/relax-your-fit-countryside-v2.webp');
 
 const BANNER_MARGIN_TOP = 8;
 const BANNER_MAX_HEIGHT = 150;

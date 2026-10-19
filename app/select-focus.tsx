@@ -16,9 +16,9 @@ import {
   saveOnboardingAnswers,
 } from '@/lib/onboarding';
 
-const focusImage = require('@/assets/images/focus-mode.webp');
-const relaxImage = require('@/assets/images/relax-mode.webp');
-const sleepImage = require('@/assets/images/sleep-mode.webp');
+const focusImage = require('@/assets/images/focus-mode-realistic-v2.webp');
+const relaxImage = require('@/assets/images/relax-mode-realistic-v2.webp');
+const sleepImage = require('@/assets/images/sleep-mode-realistic-v2.webp');
 
 type FocusOption = {
   id: 'focus' | 'relax' | 'sleep';

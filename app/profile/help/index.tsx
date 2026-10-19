@@ -75,7 +75,8 @@ export default function HelpCentreScreen() {
 
   return (
     <SettingsScreen
-      backgroundImage={require('@/assets/images/contact-support-top-moonlit-lake-bg.webp')}
+      backgroundImage={require('@/assets/images/help-ocean-coast-v2.webp')}
+      scrollingBackground
       subtitle="Answers to the things people ask most."
       title="Help Centre">
       <View style={styles.searchBar}>

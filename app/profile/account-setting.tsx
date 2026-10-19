@@ -81,7 +81,9 @@ function AccountSettingContent() {
 
   return (
     <SettingsScreen
-      backgroundImage={require('@/assets/images/account-compact-dusk-mountains-bg.webp')}
+      backgroundImage={require('@/assets/images/account-snow-window-v2.webp')}
+      backgroundOverlayColor="rgba(0,0,0,0.18)"
+      scrollingBackground
       overlay={
         <>
           <ConfirmDialog

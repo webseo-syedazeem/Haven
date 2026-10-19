@@ -27,7 +27,7 @@ function ChangeEmailContent() {
 
   return (
     <SettingsScreen
-      backgroundImage={require('@/assets/images/email-compact-dusk-mountains-bg.webp')}
+      backgroundImage={require('@/assets/images/email-rural-lane-daylight-v2.webp')}
       subtitle="The address your account signs in with."
       title="Email">
       <SettingsField

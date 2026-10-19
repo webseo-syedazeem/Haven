@@ -18,7 +18,7 @@ import {
 import { safeGoBack } from '@/lib/navigation';
 import { supabase } from '@/lib/supabase';
 
-const background = require('@/assets/images/check-inbox-moonlit-alpine-background.webp');
+const background = require('@/assets/images/auth-verify-meadow-realistic.webp');
 
 const RESEND_COOLDOWN_SECONDS = 30;
 

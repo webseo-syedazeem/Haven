@@ -190,7 +190,7 @@ function NotificationContent() {
 
   return (
     <SettingsScreen
-      backgroundImage={require('@/assets/images/notifications-top-dusk-mountains-bg.webp')}
+      backgroundImage={require('@/assets/images/notifications-top-woodland-realistic-final.webp')}
       overlay={<Toast bottom={72} notice={notice} />}
       subtitle="Nothing arrives unless you ask for it."
       title="Notifications">

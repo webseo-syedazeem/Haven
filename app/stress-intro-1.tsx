@@ -9,7 +9,7 @@ import { RELAX_ONBOARDING } from '@/constants/relax-onboarding';
 import { AppFonts } from '@/constants/theme';
 import { safeGoBack } from '@/lib/navigation';
 
-const background = require('@/assets/images/relax-intro-1-bg.webp');
+const background = require('@/assets/images/relax-intro-1-bg-realistic.webp');
 
 export default function StressIntroOneScreen() {
   const router = useRouter();

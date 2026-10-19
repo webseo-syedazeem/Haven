@@ -143,7 +143,7 @@ function PlaylistScreenContent() {
   return (
     <View style={styles.screen}>
       <Image
-        source={require('@/assets/images/playlist-detail-dark-cinematic-bg.webp')}
+        source={require('@/assets/images/playlist-detail-moon-valley-v4.webp')}
         resizeMode="cover"
         style={styles.background}
       />

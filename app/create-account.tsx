@@ -26,7 +26,7 @@ import {
 import { signUp } from '@/lib/haven-api';
 import { safeGoBack } from '@/lib/navigation';
 
-const background = require('@/assets/images/create-account-moonlit-lake-background.webp');
+const background = require('@/assets/images/auth-create-account-forest-realistic.webp');
 
 function firstParam(value: string | string[] | undefined): string {
   return Array.isArray(value) ? value[0] ?? '' : value ?? '';

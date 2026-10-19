@@ -10,6 +10,8 @@ import { routeAfterSignIn } from '@/lib/auth/onboarding-routing';
 import { resetToMainApp } from '@/lib/navigation';
 import { supabase } from '@/lib/supabase';
 
+const background = require('@/assets/images/auth-verified-clearing-realistic.webp');
+
 export default function VerifiedScreen() {
   const router = useRouter();
   const params = useLocalSearchParams<{ confirmed?: string | string[] }>();
@@ -83,7 +85,11 @@ export default function VerifiedScreen() {
 
   if (checking) {
     return (
-      <OnboardingScaffold contentContainerStyle={styles.content} scroll={false}>
+      <OnboardingScaffold
+        backgroundImage={background}
+        backgroundOverlayColor="rgba(7, 11, 16, 0.30)"
+        contentContainerStyle={styles.content}
+        scroll={false}>
         <ActivityIndicator color={HalcyonColors.accent} size="small" />
       </OnboardingScaffold>
     );
@@ -91,7 +97,11 @@ export default function VerifiedScreen() {
 
   if (checkError) {
     return (
-      <OnboardingScaffold contentContainerStyle={styles.content} scroll={false}>
+      <OnboardingScaffold
+        backgroundImage={background}
+        backgroundOverlayColor="rgba(7, 11, 16, 0.30)"
+        contentContainerStyle={styles.content}
+        scroll={false}>
         <Text style={styles.heading}>Your email is confirmed</Text>
         <Text accessibilityLiveRegion="polite" style={styles.body}>
           {checkError}
@@ -106,7 +116,11 @@ export default function VerifiedScreen() {
   }
 
   return (
-    <OnboardingScaffold contentContainerStyle={styles.content} scroll={false}>
+    <OnboardingScaffold
+      backgroundImage={background}
+      backgroundOverlayColor="rgba(7, 11, 16, 0.30)"
+      contentContainerStyle={styles.content}
+      scroll={false}>
       <Text style={styles.heading}>You&apos;re all set</Text>
       <Text style={styles.body}>Your email is confirmed.</Text>
       <OnboardingContinueButton

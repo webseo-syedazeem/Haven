@@ -21,12 +21,12 @@ import { AppFonts } from '@/constants/theme';
 import { safeGoBack } from '@/lib/navigation';
 import { getOnboardingAnswers } from '@/lib/onboarding';
 
-const trustHeroDesk = require('@/assets/images/trust-hero-desk.webp');
-const trustFocusFullBackground = require('@/assets/images/trust-focus-full-background.webp');
-const mayaAvatar = require('@/assets/images/rating-person-3.webp');
-const danielAvatar = require('@/assets/images/rating-person-2.webp');
-const sophieAvatar = require('@/assets/images/rating-person-4.webp');
-const jamesAvatar = require('@/assets/images/rating-person-1.webp');
+const trustHeroDesk = require('@/assets/images/trust-sleep-bedroom-v2.webp');
+const trustFocusFullBackground = require('@/assets/images/trust-focus-studio-v2.webp');
+const mayaAvatar = require('@/assets/images/trust-maya-portrait-v2.webp');
+const danielAvatar = require('@/assets/images/trust-daniel-portrait-v2.webp');
+const sophieAvatar = require('@/assets/images/trust-sophie-portrait-v2.webp');
+const jamesAvatar = require('@/assets/images/trust-james-portrait-v2.webp');
 
 type Testimonial = {
   quote: string;
@@ -129,34 +129,8 @@ export default function TrustScreen() {
   const usesFullScreenBackground = mode === 'focus';
 
   const customHeader = (
-    <View
-      style={[
-        styles.headerContainer,
-        {
-          paddingBottom: Math.max(5, scale(12)),
-        },
-      ]}>
+    <View style={styles.headerContainer}>
       <OnboardingBrandHeader onBack={() => safeGoBack(router)} />
-      <View
-        style={[
-          styles.dashRow,
-          {
-            gap: Math.max(4, scale(6)),
-            marginTop: Math.max(7, scale(14)),
-          },
-        ]}>
-        {Array.from({ length: 7 }).map((_, index) => (
-          <View
-            key={index}
-            style={[
-              styles.dash,
-              index === 6
-                ? [styles.dashActive, { backgroundColor: themeColor }]
-                : styles.dashInactive,
-            ]}
-          />
-        ))}
-      </View>
     </View>
   );
 
@@ -164,7 +138,7 @@ export default function TrustScreen() {
     <OnboardingScaffold
       backgroundImage={usesFullScreenBackground ? trustFocusFullBackground : undefined}
       backgroundOverlayColor={
-        usesFullScreenBackground ? 'rgba(11,11,13,0.08)' : undefined
+        usesFullScreenBackground ? 'rgba(11,11,13,0.28)' : undefined
       }
       contentContainerStyle={[
         styles.content,
@@ -201,7 +175,7 @@ export default function TrustScreen() {
           styles.heroContainer,
           {
             height: scale(370),
-            marginTop: -scale(96),
+            marginTop: -scale(76),
           },
         ]}>
         {!usesFullScreenBackground ? (
@@ -233,7 +207,7 @@ export default function TrustScreen() {
               fontSize: Math.max(29, scale(38)),
               left: isNarrow ? 24 : 30,
               lineHeight: Math.max(34, scale(44)),
-              top: scale(128),
+              top: scale(76) + 20,
             },
           ]}>
           {copy.heading}
@@ -402,29 +376,8 @@ const styles = StyleSheet.create({
     paddingBottom: 24,
     paddingTop: 0,
   },
-  dash: {
-    borderRadius: 1,
-    flex: 1,
-    height: 2,
-    maxWidth: 42,
-  },
-  dashActive: {
-    backgroundColor: '#F4B34C',
-  },
-  dashInactive: {
-    backgroundColor: '#383D43',
-  },
-  dashRow: {
-    alignItems: 'center',
-    flexDirection: 'row',
-    gap: 6,
-    justifyContent: 'center',
-    marginTop: 14,
-    paddingHorizontal: 16,
-    width: '100%',
-  },
   featuredBrand: {
-    color: '#9E9EA3',
+    color: '#FFFFFF',
     fontFamily: AppFonts.displayRegular,
     fontSize: 14,
     letterSpacing: 1.4,
@@ -443,7 +396,7 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   featuredLabel: {
-    color: '#8A8A8E',
+    color: '#FFFFFF',
     fontFamily: AppFonts.sansSemiBold,
     fontSize: 10,
     letterSpacing: 2,
@@ -469,19 +422,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     width: '100%',
   },
-  headerContainer: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingBottom: 12,
-    position: 'relative',
-    width: '100%',
-    zIndex: 10,
-  },
   heroContainer: {
     alignSelf: 'stretch',
     height: 370,
     marginHorizontal: -20,
-    marginTop: -96,
+    marginTop: -76,
     overflow: 'visible',
     position: 'relative',
   },
@@ -496,7 +441,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     right: 24,
     textAlign: 'left',
-    top: 128,
+    top: 96,
     zIndex: 10,
   },
   heroImage: {
@@ -512,5 +457,10 @@ const styles = StyleSheet.create({
     right: 0,
     top: -24,
     zIndex: 2,
+  },
+  headerContainer: {
+    position: 'relative',
+    width: '100%',
+    zIndex: 10,
   },
 });

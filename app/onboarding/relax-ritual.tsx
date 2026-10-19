@@ -9,7 +9,7 @@ import { RELAX_ONBOARDING } from '@/constants/relax-onboarding';
 import { AppFonts } from '@/constants/theme';
 import { safeGoBack } from '@/lib/navigation';
 
-const background = require('@/assets/images/relax-ritual-bg.webp');
+const background = require('@/assets/images/relax-ritual-bg-realistic.webp');
 
 export default function RelaxRitualScreen() {
   const router = useRouter();

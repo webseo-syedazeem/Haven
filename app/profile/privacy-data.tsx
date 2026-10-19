@@ -95,6 +95,7 @@ function PrivacyDataContent() {
 
   return (
     <SettingsScreen
+      scrollingBackground
       overlay={
         <>
           <ConfirmDialog
@@ -111,7 +112,7 @@ function PrivacyDataContent() {
           <Toast bottom={72} notice={notice} />
         </>
       }
-      backgroundImage={require('@/assets/images/notifications-top-dusk-mountains-bg.webp')}
+      backgroundImage={require('@/assets/images/notifications-top-woodland-realistic-final.webp')}
       subtitle="What we hold, and what you can do with it."
       title="Privacy & Data">
       <SettingsGroup title="Policies">

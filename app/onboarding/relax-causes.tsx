@@ -87,12 +87,19 @@ export default function RelaxCausesScreen() {
 
   const toggle = (option: CauseOption) => {
     setSaveError('');
-    setSelected((current) =>
-      current.includes(option)
-        ? current.filter((item) => item !== option)
-        : [...current, option]
-    );
+    if (option === 'Other') {
+      setSelected((current) =>
+        current.includes('Other') ? [] : ['Other']
+      );
+    } else {
+      setSelected((current) =>
+        current.includes(option)
+          ? current.filter((item) => item !== option)
+          : [...current.filter((item) => item !== 'Other'), option]
+      );
+    }
   };
+
 
   const continueFlow = async () => {
     if (hydrating || selected.length === 0 || saving) return;

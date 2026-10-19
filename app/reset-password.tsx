@@ -20,7 +20,7 @@ import { emailIssue, parseAuthError } from '@/lib/auth/form-errors';
 import { forgotPassword } from '@/lib/haven-api';
 import { safeGoBack } from '@/lib/navigation';
 
-const background = require('@/assets/images/reset-password-moonlit-lake-background.webp');
+const background = require('@/assets/images/auth-reset-pond-realistic.webp');
 
 export default function ResetPasswordScreen() {
   const router = useRouter();

@@ -10,7 +10,7 @@ import { RELAX_ONBOARDING } from '@/constants/relax-onboarding';
 import { AppFonts } from '@/constants/theme';
 import { safeGoBack } from '@/lib/navigation';
 
-const background = require('@/assets/images/relax-intro-2-bg.webp');
+const background = require('@/assets/images/relax-intro-2-bg-realistic.webp');
 
 const BENEFITS = [
   { icon: 'waves', label: 'Reduce stress and anxiety' },

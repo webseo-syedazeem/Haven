@@ -13,9 +13,9 @@ import { safeGoBack } from '@/lib/navigation';
 import { getOnboardingAnswers, type GuestOnboardingAnswers } from '@/lib/onboarding';
 
 const FIT_BANNER = {
-  focus: require('@/assets/images/your-fit-focus.webp'),
-  relax: require('@/assets/images/your-fit-banner.webp'),
-  sleep: require('@/assets/images/your-fit-sleep.webp'),
+  focus: require('@/assets/images/your-fit-focus-designer-v2.webp'),
+  relax: require('@/assets/images/relax-your-fit-countryside-v2.webp'),
+  sleep: require('@/assets/images/your-fit-sleep-rest-v2.webp'),
 } as const;
 
 type FitQuote = {

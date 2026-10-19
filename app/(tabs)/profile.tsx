@@ -1,4 +1,5 @@
 import { useQueryClient } from '@tanstack/react-query';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter, type Href } from 'expo-router';
 import { useRef, useState } from 'react';
 import { Animated, ImageBackground, Pressable, StyleSheet, Text, View } from 'react-native';
@@ -135,8 +136,14 @@ export default function ProfileScreen() {
           showsVerticalScrollIndicator={false}>
           <ImageBackground
             resizeMode="cover"
-            source={require('@/assets/images/profile-compact-moonlit-alpine-bg.webp')}
+            source={require('@/assets/images/profile-autumn-compact-v3.webp')}
             style={[styles.scrollScene, { paddingBottom: bottomInset, paddingTop: insets.top + 18 }]}>
+            <LinearGradient
+              colors={['rgba(0,0,0,0.58)', 'rgba(0,0,0,0.28)', 'rgba(0,0,0,0)']}
+              locations={[0, 0.22, 0.38]}
+              pointerEvents="none"
+              style={StyleSheet.absoluteFill}
+            />
             <View style={styles.header}>
               <Pressable
                 accessibilityLabel="View profile picture"
@@ -145,7 +152,7 @@ export default function ProfileScreen() {
                 onPress={() => setAvatarPreviewVisible(true)}
                 style={({ pressed }) => pressed && styles.pressed}>
                 <ProfileAvatar
-                  iconColor={HalcyonColors.textSecondary}
+                  iconColor="#FFFFFF"
                   imageUrl={profileImageUrl}
                   placeholderBackgroundColor={HalcyonColors.surfaceRaised}
                   size={96}
@@ -266,7 +273,7 @@ const styles = StyleSheet.create({
     marginBottom: 30,
   },
   avatar: {
-    borderColor: HalcyonColors.border,
+    borderColor: 'rgba(255,255,255,0.72)',
     borderWidth: 1,
   },
   pressed: {
@@ -274,13 +281,21 @@ const styles = StyleSheet.create({
   },
   name: {
     ...Typography.screenHeading,
+    color: '#FFFFFF',
     marginTop: 16,
     textAlign: 'center',
+    textShadowColor: 'rgba(0,0,0,0.95)',
+    textShadowOffset: { width: 0, height: 2 },
+    textShadowRadius: 8,
   },
   tagline: {
     ...Typography.muted,
+    color: 'rgba(255,255,255,0.94)',
     marginTop: 3,
     textAlign: 'center',
+    textShadowColor: 'rgba(0,0,0,0.95)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 6,
   },
   retry: {
     borderColor: HalcyonColors.border,
@@ -299,6 +314,7 @@ const styles = StyleSheet.create({
   },
   version: {
     ...Typography.muted,
+    color: 'rgba(255,255,255,0.72)',
     marginTop: 4,
     textAlign: 'center',
   },

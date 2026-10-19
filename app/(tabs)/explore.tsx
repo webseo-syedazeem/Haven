@@ -35,7 +35,7 @@ import { useTabContentInset } from '@/hooks/use-bottom-safe-spacing';
 import { EXPLORE_GROUP_TITLES, useExploreGroups } from '@/hooks/useExplore';
 import type { Collection } from '@/lib/api/home';
 
-const EXPLORE_BACKGROUND = require('@/assets/images/f96d5b3c-1856-4db7-ad2e-fcc7056d3aa1.webp');
+const EXPLORE_BACKGROUND = require('@/assets/images/explore-volcanic-highland-v4.webp');
 const EXPLORE_BACKGROUND_ASPECT_RATIO = 941 / 1672;
 
 const CARD_GAP = HalcyonSpacing.card;
@@ -112,7 +112,7 @@ export default function ExploreScreen() {
             style={[styles.backgroundImage, { height: backgroundHeight, width }]}
           />
           <LinearGradient
-            colors={['rgba(2, 6, 10, 0.08)', 'rgba(2, 5, 8, 0.18)', 'rgba(0, 0, 0, 0.38)']}
+            colors={['rgba(2, 6, 10, 0.34)', 'rgba(2, 5, 8, 0.30)', 'rgba(0, 0, 0, 0.52)']}
             locations={[0, 0.42, 1]}
             pointerEvents="none"
             style={[styles.backgroundImage, { height: backgroundHeight, width }]}
@@ -137,6 +137,7 @@ export default function ExploreScreen() {
             <View style={styles.emptyContent}>
               <EmptyState
                 icon="compass-outline"
+                iconColor={HalcyonColors.textPrimary}
                 message="Curated collections arrive as the catalogue fills out."
                 title="Nothing to explore yet"
               />
