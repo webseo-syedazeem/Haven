@@ -20,7 +20,7 @@ import { useUser } from '@/hooks/useUser';
 import { getDisplayName, getProfileEmail } from '@/lib/api/user';
 import { clearUserSession } from '@/lib/auth/clearSession';
 import { setIntroSeen } from '@/lib/auth/intro-flag';
-import { setGuestModeActive } from '@/lib/auth/session-state';
+import { beginExplicitSignOut, setGuestModeActive } from '@/lib/auth/session-state';
 import { resetGuestOnboardingState } from '@/lib/onboarding';
 import { resetToLogin } from '@/lib/navigation';
 import { usePlayerActions } from '@/lib/player/PlayerProvider';
@@ -98,6 +98,9 @@ export default function ProfileScreen() {
   // Choosing to sign in ends guest mode: with no back arrow on Login, backing out
   // exits the app, and the next launch must open Login again, not the guest app.
   async function leaveGuestForLogin() {
+    // Guard against the tabs layout's own "no session" redirect firing between
+    // setGuestModeActive(false) and resetToLogin — same race as clearUserSession.
+    beginExplicitSignOut();
     // Guest playback belongs to the guest session too. Tear down the native
     // player and notification before leaving so audio cannot continue on Login.
     await stop({ forgetResumable: true });

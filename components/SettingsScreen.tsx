@@ -233,10 +233,6 @@ const styles = StyleSheet.create({
   },
   backButton: {
     alignItems: 'center',
-    backgroundColor: 'rgba(0,0,0,0.34)',
-    borderColor: 'rgba(255,255,255,0.22)',
-    borderRadius: 24,
-    borderWidth: 1,
     height: 48,
     justifyContent: 'center',
     marginBottom: 10,

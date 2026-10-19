@@ -1,4 +1,3 @@
-import { Image } from 'expo-image';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useMemo, useState } from 'react';
 import {
@@ -12,6 +11,7 @@ import {
 } from 'react-native';
 
 import { ChipGroup, FilterChip } from '@/components/FilterChip';
+import { CoverImage } from '@/components/CoverImage';
 
 import { RequireAuth } from '@/components/RequireAuth';
 import { FieldError, SettingsField } from '@/components/SettingsField';
@@ -125,7 +125,7 @@ function ReportProblemContent() {
   if (sent) {
     return (
       <SettingsScreen
-        backgroundImage={require('@/assets/images/support-top-lake-realistic-final.webp')}
+        backgroundImage={require('@/assets/images/report-problem-audio-workbench-realistic-v2.webp')}
         scrollingBackground
         title="Report a Problem">
         <SupportSuccess
@@ -140,7 +140,7 @@ function ReportProblemContent() {
 
   return (
     <SettingsScreen
-      backgroundImage={require('@/assets/images/support-top-lake-realistic-final.webp')}
+      backgroundImage={require('@/assets/images/report-problem-audio-workbench-realistic-v2.webp')}
       scrollingBackground
       subtitle="Tell us what went wrong and we will listen back."
       title="Report a Problem">
@@ -148,12 +148,10 @@ function ReportProblemContent() {
         {selectedId ? (
           <View style={styles.soundscapeCard}>
             {soundscape?.artwork_url ? (
-              <Image
-                contentFit="cover"
-                cachePolicy="memory-disk"
-                source={{ uri: soundscape.artwork_url }}
+              <CoverImage
+                size="sm"
                 style={styles.artwork}
-                transition={200}
+                uri={soundscape.artwork_url}
               />
             ) : (
               <View style={[styles.artwork, styles.artworkFallback]} />
