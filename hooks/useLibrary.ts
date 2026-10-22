@@ -95,7 +95,7 @@ export function useSearchSuggestions(query: string, enabled: boolean) {
  * re-applied here, over the handful of rows a search returns.
  *
  * This mirrors `filter_soundscapes` as closely as the client can: OR within a
- * group, AND across groups, and Avoid as an absolute exclusion.
+ * group and AND across groups.
  */
 export function applyFiltersClientSide(
   soundscapes: Soundscape[],
@@ -110,32 +110,10 @@ export function applyFiltersClientSide(
     }
 
     if (filters.contains.length && !matchesAny(soundscape.contains, filters.contains)) return false;
-    if (filters.animals.length && !matchesAny(soundscape.animals, filters.animals)) return false;
-    if (filters.instruments.length && !matchesAny(soundscape.instruments, filters.instruments)) {
-      return false;
-    }
 
     // Environment is matched loosely server side, across several text columns.
     if (filters.environments.length && !matchesEnvironment(soundscape, filters.environments)) {
       return false;
-    }
-
-    // Avoid is absolute: every avoided term must be declared in the row's
-    // `does_not_contain`, exactly as the RPC requires.
-    if (filters.avoids.length) {
-      const declared = soundscape.does_not_contain ?? [];
-      const allDeclared = filters.avoids.every((avoided) =>
-        declared.some((value) => includesLoose(value, avoided))
-      );
-      if (!allDeclared) return false;
-    }
-
-    const duration = soundscape.duration_seconds ?? null;
-    if (filters.minMinutes !== null) {
-      if (duration === null || duration < filters.minMinutes * 60) return false;
-    }
-    if (filters.maxMinutes !== null) {
-      if (duration === null || duration > filters.maxMinutes * 60) return false;
     }
 
     return true;

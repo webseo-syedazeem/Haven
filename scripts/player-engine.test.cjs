@@ -402,6 +402,16 @@ test('background setup remains enabled and reset releases media controls and aud
   assert.deepEqual(audioActive, [true, false, true]);
 });
 
+test('background playback preference updates the active native audio mode', async () => {
+  const { engine, audioModes } = createEngineHarness();
+  await engine.setup();
+
+  await engine.setBackgroundPlayback(false);
+  await engine.setBackgroundPlayback(true);
+
+  assert.deepEqual(plain(audioModes.map((mode) => mode.shouldPlayInBackground)), [true, false, true]);
+});
+
 test('stop preserves resume progress and volume fade does not replace the active source', async () => {
   const { engine, players } = createEngineHarness();
   const progress = [];

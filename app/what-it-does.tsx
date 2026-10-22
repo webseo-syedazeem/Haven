@@ -19,7 +19,6 @@ type GoalCard = {
 };
 
 const PREVIEW_ACCENT_COLOR = '#FFFFFF';
-
 const GOAL_CARDS: readonly GoalCard[] = [
   {
     id: 'focus',
@@ -62,7 +61,7 @@ export default function WhatItDoesScreen() {
         {/* Heading */}
         <View style={styles.headerBlock}>
           <Text style={styles.heading}>
-            A place for{'\n'}the state you need.
+            A place for{'\n'}the state{'\n'}you need.
           </Text>
         </View>
 
@@ -82,15 +81,6 @@ export default function WhatItDoesScreen() {
           ))}
         </View>
 
-        {/* Subtitle / Explanatory Text */}
-        <View style={styles.copyBlock}>
-          <Text style={styles.subtitle}>
-            Choose a goal
-          </Text>
-          <Text style={styles.subtitle}>
-            Passage shapes the sound around it.
-          </Text>
-        </View>
       </View>
 
       {/* Footer Continue Button */}
@@ -131,14 +121,8 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
-    justifyContent: 'space-between',
     paddingHorizontal: 20,
     paddingTop: 8,
-  },
-  copyBlock: {
-    alignItems: 'center',
-    marginBottom: 8,
-    marginTop: 16,
   },
   footer: {
     paddingBottom: 14,
@@ -161,7 +145,6 @@ const styles = StyleSheet.create({
   },
   imageCard: {
     borderRadius: 14,
-    height: 360,
     overflow: 'hidden',
     position: 'relative',
     width: '100%',
@@ -169,16 +152,10 @@ const styles = StyleSheet.create({
   imageCardPreview: {
     borderColor: 'rgba(255, 255, 255, 0.1)',
     borderWidth: 1,
+    height: 360,
   },
   safeArea: {
     backgroundColor: '#0B0B0D',
     flex: 1,
-  },
-  subtitle: {
-    color: '#FFFFFF',
-    fontFamily: AppFonts.sansRegular,
-    fontSize: 16,
-    lineHeight: 24,
-    textAlign: 'center',
   },
 });

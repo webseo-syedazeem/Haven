@@ -35,7 +35,8 @@ const AccountRequiredPromptContext = createContext<AccountRequiredPromptValue>({
 });
 
 const DEFAULT_TITLE = 'Log in to continue';
-const DEFAULT_MESSAGE = 'Log in to use this account feature.';
+const DEFAULT_MESSAGE =
+  'To keep your guest details, please sign up or log in. Otherwise, your guest data will be removed when guest mode ends.';
 
 /** One app-wide, centered account prompt shared by every guest-only gate. */
 export function AccountRequiredPromptProvider({ children }: { children: ReactNode }) {
@@ -46,7 +47,7 @@ export function AccountRequiredPromptProvider({ children }: { children: ReactNod
   const showAccountRequiredPrompt = useCallback((options: PromptOptions = {}) => {
     setPrompt({
       title: options.title ?? DEFAULT_TITLE,
-      message: options.message ?? DEFAULT_MESSAGE,
+      message: DEFAULT_MESSAGE,
     });
   }, []);
 
@@ -98,7 +99,7 @@ export function AccountRequiredPromptProvider({ children }: { children: ReactNod
                 styles.loginButton,
                 pressed && styles.loginButtonPressed,
               ]}>
-              <Text style={styles.loginLabel}>Log in</Text>
+              <Text style={styles.loginLabel}>Sign up or log in</Text>
             </Pressable>
           </View>
         </View>

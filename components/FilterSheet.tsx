@@ -1,5 +1,4 @@
 import { Ionicons } from '@expo/vector-icons';
-import Slider from '@react-native-community/slider';
 import { useEffect, useMemo, useState } from 'react';
 import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -14,9 +13,6 @@ import {
 } from '@/constants/design';
 import {
   countActiveFilters,
-  DURATION_MAX_MINUTES,
-  DURATION_MIN_MINUTES,
-  DURATION_STEP_MINUTES,
   EMPTY_FILTERS,
   FILTER_GROUPS,
   getFilterLabel,
@@ -79,9 +75,6 @@ export function FilterSheet({ visible, filters, sort, onClose, onApply }: Filter
     }));
   };
 
-  const minMinutes = pending.minMinutes ?? DURATION_MIN_MINUTES;
-  const maxMinutes = pending.maxMinutes ?? DURATION_MAX_MINUTES;
-
   const showLabel = useMemo(() => {
     if (isLoading || isStale || count === null) return 'Show results';
     return `Show ${count} ${count === 1 ? 'result' : 'results'}`;
@@ -137,7 +130,6 @@ export function FilterSheet({ visible, filters, sort, onClose, onApply }: Filter
             <ChipGroup>
               {subView.values.map((value) => (
                 <FilterChip
-                  isExclusion={subView.isExclusion}
                   key={value}
                   label={getFilterLabel(subView.key, value)}
                   onPress={() => toggleValue(subView.key, value)}
@@ -189,7 +181,6 @@ export function FilterSheet({ visible, filters, sort, onClose, onApply }: Filter
                     <ChipGroup>
                       {visibleValues.map((value) => (
                         <FilterChip
-                          isExclusion={group.isExclusion}
                           key={value}
                           label={getFilterLabel(group.key, value)}
                           onPress={() => toggleValue(group.key, value)}
@@ -201,65 +192,6 @@ export function FilterSheet({ visible, filters, sort, onClose, onApply }: Filter
                 );
               })}
 
-              <Section
-                collapsed={!!collapsed.duration}
-                onToggle={() =>
-                  setCollapsed((current) => ({ ...current, duration: !current.duration }))
-                }
-                title="Duration">
-                <Text style={styles.durationValue}>
-                  {minMinutes} – {maxMinutes} min
-                </Text>
-
-                {/*
-                  Two stacked single-handle sliders rather than a true two-thumb
-                  control: @react-native-community/slider has one handle, and a
-                  gesture-driven range slider is not worth the risk here.
-                */}
-                <Text style={styles.sliderLabel}>Minimum</Text>
-                <Slider
-                  maximumTrackTintColor="rgba(255,255,255,0.16)"
-                  maximumValue={DURATION_MAX_MINUTES}
-                  minimumTrackTintColor={HalcyonColors.accent}
-                  minimumValue={DURATION_MIN_MINUTES}
-                  onValueChange={(value) =>
-                    setPending((current) => ({
-                      ...current,
-                      minMinutes: value <= DURATION_MIN_MINUTES ? null : value,
-                      maxMinutes:
-                        current.maxMinutes !== null && value > current.maxMinutes
-                          ? value
-                          : current.maxMinutes,
-                    }))
-                  }
-                  step={DURATION_STEP_MINUTES}
-                  style={styles.slider}
-                  thumbTintColor={HalcyonColors.accent}
-                  value={minMinutes}
-                />
-
-                <Text style={styles.sliderLabel}>Maximum</Text>
-                <Slider
-                  maximumTrackTintColor="rgba(255,255,255,0.16)"
-                  maximumValue={DURATION_MAX_MINUTES}
-                  minimumTrackTintColor={HalcyonColors.accent}
-                  minimumValue={DURATION_MIN_MINUTES}
-                  onValueChange={(value) =>
-                    setPending((current) => ({
-                      ...current,
-                      maxMinutes: value >= DURATION_MAX_MINUTES ? null : value,
-                      minMinutes:
-                        current.minMinutes !== null && value < current.minMinutes
-                          ? value
-                          : current.minMinutes,
-                    }))
-                  }
-                  step={DURATION_STEP_MINUTES}
-                  style={styles.slider}
-                  thumbTintColor={HalcyonColors.accent}
-                  value={maxMinutes}
-                />
-              </Section>
             </>
           )}
         </ScrollView>
@@ -430,24 +362,6 @@ const styles = StyleSheet.create({
     fontSize: 12,
     lineHeight: 16,
     marginBottom: 10,
-  },
-  durationValue: {
-    color: HalcyonColors.textPrimary,
-    fontFamily: AppFonts.sansMedium,
-    fontSize: 14,
-    fontWeight: '500',
-    lineHeight: 19,
-  },
-  sliderLabel: {
-    color: HalcyonColors.textSecondary,
-    fontFamily: AppFonts.sansRegular,
-    fontSize: 12,
-    lineHeight: 16,
-    marginTop: 10,
-  },
-  slider: {
-    height: 34,
-    width: '100%',
   },
   showButton: {
     alignItems: 'center',

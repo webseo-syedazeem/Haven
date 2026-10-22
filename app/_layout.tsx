@@ -95,10 +95,8 @@ export default function RootLayout() {
                 <Stack.Screen name="onboarding/relax-main-goal" options={{ headerShown: false }} />
                 <Stack.Screen name="onboarding/relax-causes" options={{ headerShown: false }} />
                 <Stack.Screen name="onboarding/relax-calming-moments" options={{ headerShown: false }} />
-                <Stack.Screen name="onboarding/relax-ritual" options={{ headerShown: false }} />
                 <Stack.Screen name="onboarding/relax-your-fit" options={{ headerShown: false }} />
                 <Stack.Screen name="onboarding/relax-trust" options={{ headerShown: false }} />
-                <Stack.Screen name="onboarding/the-ritual" options={{ headerShown: false }} />
                 <Stack.Screen name="onboarding/your-fit" options={{ headerShown: false }} />
                 <Stack.Screen name="onboarding/trust" options={{ headerShown: false }} />
                 <Stack.Screen name="onboarding/try-passage" options={{ headerShown: false }} />

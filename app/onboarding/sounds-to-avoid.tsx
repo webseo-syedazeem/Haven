@@ -5,16 +5,15 @@ import { useEffect, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
 import { ChoiceRow } from '@/components/onboarding/OnboardingChoices';
-import { OnboardingContinueButton } from '@/components/onboarding/OnboardingContinueButton';
 import { OnboardingScaffold } from '@/components/onboarding/OnboardingScaffold';
 import { HalcyonColors } from '@/constants/design';
-import { getFilterGroupValues } from '@/constants/filters';
+import { SOUNDS_TO_AVOID_VALUES } from '@/constants/filters';
 import { AppFonts } from '@/constants/theme';
 import { safeGoBack } from '@/lib/navigation';
 import { getOnboardingAnswers, saveOnboardingAnswers } from '@/lib/onboarding';
 import { OnboardingContinueButtonBlack } from '@/components/onboarding/OnboardingcontinueButtonBlack';
 
-const OPTIONS = getFilterGroupValues('avoids');
+const OPTIONS = SOUNDS_TO_AVOID_VALUES;
 
 export default function SoundsToAvoidScreen() {
   const router = useRouter();

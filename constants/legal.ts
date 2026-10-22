@@ -14,7 +14,7 @@
  * copy the client approved.
  */
 
-export const LEGAL_LAST_UPDATED = 'Last updated: 16 October 2026';
+export const LEGAL_LAST_UPDATED = 'Last updated: 20 October 2026';
 
 export const PRIVACY_POLICY = `Passage is a soundscape app for sleep, relaxation and focus. This policy explains what we collect, why, and what you can do about it.
 
@@ -40,15 +40,11 @@ We do not collect health data, location, contacts, or advertising identifiers.
 
 We do not use your information to diagnose, treat or make medical claims, and we do not sell it.
 
-## 3. Analytics is off unless you turn it on
-
-Passage does not send usage analytics by default. If you turn on "Share anonymous usage analytics" in Privacy & Data, the app records which features and soundscapes are used so we can improve the catalogue. Turning it off stops every send immediately. We never send the content of your support messages, and we do not track you across other apps or websites.
-
-## 4. Notifications
+## 3. Notifications
 
 All notifications are off by default. Turning one on registers this device with us so a notification can reach it. Turning notifications off, or signing out, means we stop sending them. Wind-down reminders are scheduled on your device.
 
-## 5. Who we share information with
+## 4. Who we share information with
 
 We do not sell your personal data. We share it only with the services needed to run Passage:
 
@@ -57,33 +53,31 @@ We do not sell your personal data. We share it only with the services needed to 
 
 We may also disclose information where the law requires it, or to protect the rights and safety of our users.
 
-## 6. How long we keep it
+## 5. How long we keep it
 
 We keep your account information while your account exists. Delete your account and we remove your account, your library, your listening history and your preferences. Support messages may be kept for a reasonable period so we can handle follow-up questions.
 
-## 7. Your choices
+## 6. Your choices
 
-- Export your data: Privacy & Data → Export my data gives you a file containing everything we hold for you.
 - Delete your account: Account → Delete Account, or Privacy & Data → Delete Account. This cannot be undone.
-- Turn analytics on or off at any time in Privacy & Data.
 - Turn notifications on or off at any time in Notifications.
 - Update your name, profile picture and password in Account.
 
 Depending on where you live, you may also have the right to access, correct or restrict the use of your information, and to complain to your data protection regulator.
 
-## 8. Children
+## 7. Children
 
 Passage is not intended for children under 13, and we do not knowingly collect information from them.
 
-## 9. Security
+## 8. Security
 
 Your data is held on managed infrastructure with encryption in transit. No system is perfect, so please use a strong, unique password and keep your sign-in details to yourself.
 
-## 10. Changes to this policy
+## 9. Changes to this policy
 
 If we change this policy we will update the date at the top of this screen and, where the change is significant, tell you in the app.
 
-## 11. Contact
+## 10. Contact
 
 Questions about your data, or about this policy, can be sent from Profile → Contact Support.`;
 

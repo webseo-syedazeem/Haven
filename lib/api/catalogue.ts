@@ -45,21 +45,30 @@ export type LibraryResult = {
   result_count: number;
 };
 
+/** API compatibility for catalogue fields that are not exposed in the Library UI. */
+type LibraryApiFilters = LibraryFilters & {
+  avoids?: string[];
+  animals?: string[];
+  instruments?: string[];
+  minMinutes?: number | null;
+  maxMinutes?: number | null;
+};
+
 /**
  * `/api/library` reads comma separated lists. Empty groups are omitted rather
  * than sent blank, because the RPC treats an empty array as "no filter" but a
  * stray `?contains=` would still round trip as one.
  */
-export function buildLibraryQuery(filters: LibraryFilters, sort: SortValue): string {
+export function buildLibraryQuery(filters: LibraryApiFilters, sort: SortValue): string {
   const params = new URLSearchParams();
 
   const lists: [string, string[]][] = [
     ['modes', filters.modes],
     ['contains', filters.contains],
-    ['avoids', filters.avoids],
+    ['avoids', filters.avoids ?? []],
     ['environments', filters.environments],
-    ['animals', filters.animals],
-    ['instruments', filters.instruments],
+    ['animals', filters.animals ?? []],
+    ['instruments', filters.instruments ?? []],
     ['detail_levels', filters.detail_levels],
   ];
 
@@ -68,8 +77,8 @@ export function buildLibraryQuery(filters: LibraryFilters, sort: SortValue): str
   }
 
   // The API takes seconds; the slider works in minutes.
-  if (filters.minMinutes !== null) params.set('min_duration', String(filters.minMinutes * 60));
-  if (filters.maxMinutes !== null) params.set('max_duration', String(filters.maxMinutes * 60));
+  if (filters.minMinutes != null) params.set('min_duration', String(filters.minMinutes * 60));
+  if (filters.maxMinutes != null) params.set('max_duration', String(filters.maxMinutes * 60));
 
   params.set('sort', sort);
 

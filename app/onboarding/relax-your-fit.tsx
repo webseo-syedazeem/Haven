@@ -119,7 +119,7 @@ export default function RelaxYourFitScreen() {
       onViewportLayout={(event) =>
         setViewportHeight(event.nativeEvent.layout.height)
       }
-      header={<RelaxStepHeader currentStep={8} onBack={() => safeGoBack(router)} />}>
+      header={<RelaxStepHeader currentStep={7} onBack={() => safeGoBack(router)} />}>
       <Text
         onLayout={(event) => setHeadingHeight(event.nativeEvent.layout.height)}
         style={styles.heading}>

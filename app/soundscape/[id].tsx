@@ -1,12 +1,14 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter, type Href } from 'expo-router';
-import { useCallback, useState, type ReactNode } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
+  type NativeSyntheticEvent,
   Pressable,
   ScrollView,
   StyleSheet,
   Text,
+  type TextLayoutEventData,
   View,
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -18,14 +20,12 @@ import { SectionRail } from '@/components/SectionRail';
 import { SoundscapeCard } from '@/components/SoundscapeCard';
 import { Toast, useToast } from '@/components/Toast';
 import { HalcyonColors, HalcyonRadius, HalcyonSpacing } from '@/constants/design';
-import { getModeLabel } from '@/constants/modes';
 import { AppFonts } from '@/constants/theme';
 import { useSimilarSoundscapes } from '@/hooks/useCatalogue';
 import { useIsFavourite, useToggleFavourite } from '@/hooks/useFavourites';
 import { useSoundscape } from '@/hooks/useHome';
 import type { Soundscape } from '@/lib/api/home';
 import { usePlayerActions } from '@/lib/player/PlayerProvider';
-import { formatDuration } from '@/lib/utils/duration';
 
 export default function SoundscapeDetailScreen() {
   const router = useRouter();
@@ -81,68 +81,8 @@ export default function SoundscapeDetailScreen() {
       );
     }
 
-    const modeLabel = getModeLabel(soundscape.mode);
-    const durationLabel = formatDuration(soundscape.duration_seconds);
-    const meta = [modeLabel, durationLabel].filter(Boolean).join(' · ');
-    const contains = soundscape.contains?.filter(Boolean) ?? [];
-    const doesNotContain = soundscape.does_not_contain?.filter(Boolean) ?? [];
-    const soundSources = soundscape.sound_sources?.filter(Boolean) ?? [];
-    const animals = soundscape.animals?.filter(Boolean) ?? [];
-    const instruments = soundscape.instruments?.filter(Boolean) ?? [];
-
-    const profileFacts: { label: string; value: string }[] = [];
-    if (soundscape.detail_level) {
-      profileFacts.push({ label: 'Detail', value: titleCase(soundscape.detail_level) });
-    }
-    if (typeof soundscape.intensity === 'number') {
-      profileFacts.push({ label: 'Intensity', value: `${soundscape.intensity} of 5` });
-    }
-    if (soundscape.movement) {
-      profileFacts.push({ label: 'Movement', value: titleCase(soundscape.movement) });
-    }
-    if (soundscape.perspective) {
-      profileFacts.push({ label: 'Perspective', value: titleCase(soundscape.perspective) });
-    }
-    if (typeof soundscape.human_presence === 'boolean') {
-      profileFacts.push({
-        label: 'Human presence',
-        value: soundscape.human_presence ? 'Present' : 'None',
-      });
-    }
-    if (soundSources.length) {
-      profileFacts.push({ label: 'Sound sources', value: soundSources.join(', ') });
-    }
-    if (animals.length) profileFacts.push({ label: 'Animals', value: animals.join(', ') });
-    if (instruments.length) {
-      profileFacts.push({ label: 'Instruments', value: instruments.join(', ') });
-    }
-
-    const productionFacts: { label: string; value: string }[] = [];
-    if (durationLabel) productionFacts.push({ label: 'Master length', value: durationLabel });
-    if (typeof soundscape.is_loop === 'boolean') {
-      productionFacts.push({
-        label: 'Loop',
-        value: soundscape.is_loop ? 'Seamless loop' : 'Single pass',
-      });
-    }
-    if (soundscape.qa_reviewer) {
-      productionFacts.push({ label: 'QA reviewer', value: soundscape.qa_reviewer });
-    }
-    if (soundscape.qa_passed_at) {
-      productionFacts.push({ label: 'QA passed', value: formatDate(soundscape.qa_passed_at) });
-    }
-    if (soundscape.rights_status) {
-      productionFacts.push({ label: 'Rights', value: titleCase(soundscape.rights_status) });
-    }
-    if (soundscape.catalogue_ref) {
-      productionFacts.push({ label: 'Catalogue ref', value: soundscape.catalogue_ref });
-    }
-    if (soundscape.file_size_bytes) {
-      productionFacts.push({
-        label: 'File size',
-        value: formatBytes(soundscape.file_size_bytes),
-      });
-    }
+    const detailDescription =
+      soundscape.detail_description?.trim() || soundscape.one_line_description?.trim() || '';
 
     return (
       <>
@@ -151,13 +91,8 @@ export default function SoundscapeDetailScreen() {
         </View>
 
         <Text style={styles.title}>{soundscape.title}</Text>
-        {!!meta && <Text style={styles.meta}>{meta}</Text>}
 
-        {!!soundscape.one_line_description && (
-          <Text style={styles.description}>{soundscape.one_line_description}</Text>
-        )}
-
-        <View style={styles.actionRow}>
+        <View style={styles.playRow}>
           <Pressable
             accessibilityLabel={`Play ${soundscape.title}`}
             accessibilityRole="button"
@@ -171,7 +106,11 @@ export default function SoundscapeDetailScreen() {
             />
             <Text style={styles.playLabel}>Play</Text>
           </Pressable>
+        </View>
 
+        {!!detailDescription && <EditorialDescription description={detailDescription} />}
+
+        <View style={styles.actionRow}>
           <IconAction
             active={isFavourite}
             icon={isFavourite ? 'heart' : 'heart-outline'}
@@ -191,75 +130,6 @@ export default function SoundscapeDetailScreen() {
             }
           />
         </View>
-
-        {!!soundscape.designed_for && (
-          <DetailSection title="Designed For">
-            <Text style={styles.sectionBody}>{soundscape.designed_for}</Text>
-          </DetailSection>
-        )}
-
-        {contains.length > 0 && (
-          <DetailSection title="Contains">
-            <View style={styles.chipWrap}>
-              {contains.map((item) => (
-                <View key={item} style={styles.chip}>
-                  <Text style={styles.chipLabel}>{titleCase(item)}</Text>
-                </View>
-              ))}
-            </View>
-          </DetailSection>
-        )}
-
-        {doesNotContain.length > 0 && (
-          <DetailSection title="Does Not Contain">
-            <View style={styles.chipWrap}>
-              {doesNotContain.map((item) => (
-                <View key={item} style={[styles.chip, styles.chipExcluded]}>
-                  <Ionicons
-                    color={HalcyonColors.accent}
-                    name="shield-checkmark-outline"
-                    size={13}
-                  />
-                  <Text style={[styles.chipLabel, styles.chipLabelExcluded]}>
-                    {titleCase(item)}
-                  </Text>
-                </View>
-              ))}
-            </View>
-            <Text style={styles.sectionNote}>
-              Checked during review, so you know what you will not hear.
-            </Text>
-          </DetailSection>
-        )}
-
-        {profileFacts.length > 0 && (
-          <DetailSection title="Sound Profile">
-            {profileFacts.map((fact) => (
-              <FactRow key={fact.label} label={fact.label} value={fact.value} />
-            ))}
-          </DetailSection>
-        )}
-
-        {!!soundscape.best_use && (
-          <DetailSection title="Best Experienced">
-            <Text style={styles.sectionBody}>{soundscape.best_use}</Text>
-          </DetailSection>
-        )}
-
-        {productionFacts.length > 0 && (
-          <DetailSection title="Production Information">
-            {productionFacts.map((fact) => (
-              <FactRow key={fact.label} label={fact.label} value={fact.value} />
-            ))}
-          </DetailSection>
-        )}
-
-        {!!soundscape.science_note && (
-          <DetailSection title={soundscape.science_label?.trim() || 'Why this works'}>
-            <Text style={styles.sectionBody}>{soundscape.science_note}</Text>
-          </DetailSection>
-        )}
-
         <SectionRail<Soundscape>
           data={similar.data}
           isError={similar.isError}
@@ -316,20 +186,82 @@ export default function SoundscapeDetailScreen() {
   );
 }
 
-function DetailSection({ title, children }: { title: string; children: ReactNode }) {
-  return (
-    <View style={styles.section}>
-      <Text style={styles.sectionTitle}>{title}</Text>
-      {children}
-    </View>
-  );
-}
+function EditorialDescription({ description }: { description: string }) {
+  const sentences = description.split(/(?<=[.!?])\s+/).filter(Boolean);
+  const firstParagraph = sentences.slice(0, 2).join(' ');
+  const secondParagraph = sentences.slice(2).join(' ');
+  const firstLetter = firstParagraph.charAt(0);
+  const openingWords = firstParagraph.slice(1).split(/\s+/).filter(Boolean);
+  const initialLeadWordCount = Math.min(8, openingWords.length);
+  const [leadWordCount, setLeadWordCount] = useState(initialLeadWordCount);
+  const maximumLeadWordCount = useRef(openingWords.length);
 
-function FactRow({ label, value }: { label: string; value: string }) {
+  useEffect(() => {
+    maximumLeadWordCount.current = openingWords.length;
+    setLeadWordCount(initialLeadWordCount);
+  }, [description, initialLeadWordCount, openingWords.length]);
+
+  const handleLeadLayout = useCallback(
+    (event: NativeSyntheticEvent<TextLayoutEventData>) => {
+      const lines = event.nativeEvent.lines;
+
+      if (lines.length > 2 && leadWordCount > 1) {
+        maximumLeadWordCount.current = Math.min(
+          maximumLeadWordCount.current,
+          leadWordCount - 1
+        );
+        setLeadWordCount((count) => Math.max(1, count - 1));
+        return;
+      }
+
+      if (lines.length < 2 && leadWordCount < maximumLeadWordCount.current) {
+        setLeadWordCount((count) => Math.min(maximumLeadWordCount.current, count + 1));
+        return;
+      }
+
+      if (
+        lines.length === 2 &&
+        lines[1].width < lines[0].width * 0.65 &&
+        leadWordCount < maximumLeadWordCount.current
+      ) {
+        setLeadWordCount((count) => Math.min(maximumLeadWordCount.current, count + 1));
+      }
+    },
+    [leadWordCount]
+  );
+
+  const lead = openingWords.slice(0, leadWordCount).join(' ');
+  const firstParagraphContinuation = openingWords.slice(leadWordCount).join(' ');
+
   return (
-    <View style={styles.factRow}>
-      <Text style={styles.factLabel}>{label}</Text>
-      <Text style={styles.factValue}>{value}</Text>
+    <View
+      accessibilityLabel={description}
+      accessibilityRole="text"
+      accessible
+      style={styles.detailDescriptionBlock}>
+      <View style={styles.descriptionOpening}>
+        <Text accessible={false} style={styles.descriptionDropCap}>
+          {firstLetter}
+        </Text>
+        <Text
+          accessible={false}
+          onTextLayout={handleLeadLayout}
+          style={[styles.detailDescription, styles.descriptionLead]}>
+          {lead}
+        </Text>
+      </View>
+      {!!firstParagraphContinuation && (
+        <Text accessible={false} style={styles.detailDescription}>
+          {firstParagraphContinuation}
+        </Text>
+      )}
+      {!!secondParagraph && (
+        <Text
+          accessible={false}
+          style={[styles.detailDescription, styles.descriptionParagraphSpacing]}>
+          {secondParagraph}
+        </Text>
+      )}
     </View>
   );
 }
@@ -401,29 +333,11 @@ function DetailSkeleton() {
     <View>
       <View style={[styles.artworkFrame, styles.skeletonBlock]} />
       <View style={[styles.skeletonLine, styles.skeletonTitle]} />
-      <View style={[styles.skeletonLine, styles.skeletonMeta]} />
       <View style={[styles.skeletonLine, styles.skeletonParagraph]} />
       <View style={[styles.skeletonLine, styles.skeletonParagraphShort]} />
       <View style={styles.skeletonActions} />
     </View>
   );
-}
-
-function titleCase(value: string) {
-  const trimmed = value.trim().replace(/[_-]+/g, ' ');
-  return trimmed.charAt(0).toUpperCase() + trimmed.slice(1);
-}
-
-function formatDate(value: string) {
-  const parsed = new Date(value);
-  return Number.isNaN(parsed.getTime())
-    ? value
-    : parsed.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
-}
-
-function formatBytes(bytes: number) {
-  if (bytes < 1024 * 1024) return `${Math.round(bytes / 1024)} KB`;
-  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
 const styles = StyleSheet.create({
@@ -482,27 +396,43 @@ const styles = StyleSheet.create({
     marginTop: 22,
     paddingHorizontal: HalcyonSpacing.screenX,
   },
-  meta: {
-    color: HalcyonColors.textSecondary,
-    fontFamily: AppFonts.sansRegular,
-    fontSize: 13,
-    lineHeight: 18,
-    marginTop: 4,
+  detailDescriptionBlock: {
+    marginTop: 26,
     paddingHorizontal: HalcyonSpacing.screenX,
   },
-  description: {
+  detailDescription: {
     color: HalcyonColors.textPrimary,
-    fontFamily: AppFonts.sansRegular,
-    fontSize: 15,
-    lineHeight: 24,
+    fontFamily: AppFonts.displayRegular,
+    fontSize: 20,
+    letterSpacing: 0.1,
+    lineHeight: 29,
+  },
+  descriptionDropCap: {
+    color: HalcyonColors.textPrimary,
+    fontFamily: AppFonts.displayRegular,
+    fontSize: 62,
+    lineHeight: 59,
+    marginRight: 8,
+    marginTop: -3,
+  },
+  descriptionLead: {
+    flex: 1,
+  },
+  descriptionOpening: {
+    alignItems: 'flex-start',
+    flexDirection: 'row',
+  },
+  descriptionParagraphSpacing: {
     marginTop: 16,
-    opacity: 0.9,
-    paddingHorizontal: HalcyonSpacing.screenX,
   },
   actionRow: {
     alignItems: 'center',
-    columnGap: 10,
+    columnGap: 24,
     flexDirection: 'row',
+    marginTop: 28,
+    paddingHorizontal: HalcyonSpacing.screenX,
+  },
+  playRow: {
     marginTop: 24,
     paddingHorizontal: HalcyonSpacing.screenX,
   },
@@ -515,6 +445,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     minHeight: 52,
     paddingHorizontal: 24,
+    width: '100%',
   },
   playButtonPressed: {
     backgroundColor: HalcyonColors.accentPressed,
@@ -542,84 +473,6 @@ const styles = StyleSheet.create({
   },
   iconActionLabelActive: {
     color: HalcyonColors.accent,
-  },
-  section: {
-    marginTop: 30,
-    paddingHorizontal: HalcyonSpacing.screenX,
-  },
-  sectionTitle: {
-    color: HalcyonColors.textPrimary,
-    fontFamily: AppFonts.displaySemiBold,
-    fontSize: 20,
-    fontWeight: '600',
-    lineHeight: 26,
-    marginBottom: 12,
-  },
-  sectionBody: {
-    color: HalcyonColors.textSecondary,
-    fontFamily: AppFonts.sansRegular,
-    fontSize: 14,
-    lineHeight: 22,
-  },
-  sectionNote: {
-    color: HalcyonColors.textSecondary,
-    fontFamily: AppFonts.sansRegular,
-    fontSize: 12,
-    lineHeight: 18,
-    marginTop: 12,
-    opacity: 0.85,
-  },
-  chipWrap: {
-    columnGap: 8,
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    rowGap: 8,
-  },
-  chip: {
-    alignItems: 'center',
-    backgroundColor: HalcyonColors.surface,
-    borderColor: HalcyonColors.border,
-    borderRadius: HalcyonRadius.pill,
-    borderWidth: 1,
-    columnGap: 6,
-    flexDirection: 'row',
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-  },
-  chipExcluded: {
-    backgroundColor: 'transparent',
-    borderColor: 'rgba(195,161,122,0.38)',
-  },
-  chipLabel: {
-    color: HalcyonColors.textPrimary,
-    fontFamily: AppFonts.sansRegular,
-    fontSize: 13,
-    lineHeight: 18,
-  },
-  chipLabelExcluded: {
-    color: HalcyonColors.accent,
-  },
-  factRow: {
-    borderBottomColor: HalcyonColors.border,
-    borderBottomWidth: 1,
-    columnGap: 16,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    paddingVertical: 11,
-  },
-  factLabel: {
-    color: HalcyonColors.textSecondary,
-    fontFamily: AppFonts.sansRegular,
-    fontSize: 13,
-    lineHeight: 20,
-  },
-  factValue: {
-    color: HalcyonColors.textPrimary,
-    flexShrink: 1,
-    fontFamily: AppFonts.sansRegular,
-    fontSize: 13,
-    lineHeight: 20,
-    textAlign: 'right',
   },
   stateBlock: {
     alignItems: 'flex-start',
@@ -668,11 +521,6 @@ const styles = StyleSheet.create({
     height: 28,
     marginTop: 24,
     width: '68%',
-  },
-  skeletonMeta: {
-    height: 12,
-    marginTop: 10,
-    width: '34%',
   },
   skeletonParagraph: {
     height: 12,

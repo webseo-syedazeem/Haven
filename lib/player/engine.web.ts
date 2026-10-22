@@ -19,6 +19,7 @@ export const createPlayerEngine = (): PlayerEngine => ({
   reset: noop,
   seekTo: noop,
   setVolume: noop,
+  setBackgroundPlayback: noop,
   setLoopEnabled: () => {},
   getProgress: async () => ({ position: 0, duration: 0 }),
   subscribe: () => () => {},

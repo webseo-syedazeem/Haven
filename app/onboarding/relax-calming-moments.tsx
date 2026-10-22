@@ -92,7 +92,7 @@ export default function RelaxCalmingMomentsScreen() {
     setSaveError('');
     try {
       await saveOnboardingAnswers({ calming_moments: selected });
-      router.push('/onboarding/relax-ritual' as Href);
+      router.push('/onboarding/relax-your-fit' as Href);
     } catch {
       setSaveError('We could not save that just yet. Please try again.');
     } finally {

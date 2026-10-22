@@ -18,7 +18,7 @@ import {
 import { safeGoBack } from '@/lib/navigation';
 import { supabase } from '@/lib/supabase';
 
-const background = require('@/assets/images/auth-verify-meadow-realistic.webp');
+const background = require('@/assets/images/auth-verify-letterbox-rain-v4.webp');
 
 const RESEND_COOLDOWN_SECONDS = 30;
 

@@ -119,6 +119,7 @@ export function createPlayerEngine(options: EngineOptions = {}): PlayerEngine {
 
   let setupPromise: Promise<boolean> | null = null;
   let ready = false;
+  let backgroundPlaybackEnabled = true;
   let player: AudioPlayer | null = null;
   let statusSubscription: Subscription | null = null;
 
@@ -658,7 +659,7 @@ export function createPlayerEngine(options: EngineOptions = {}): PlayerEngine {
         // the lock screen.
         await setAudioModeAsync({
           playsInSilentMode: true,
-          shouldPlayInBackground: true,
+          shouldPlayInBackground: backgroundPlaybackEnabled,
           interruptionMode: 'doNotMix',
           allowsRecording: false,
         });
@@ -858,6 +859,18 @@ export function createPlayerEngine(options: EngineOptions = {}): PlayerEngine {
       if (!ready || !player) return;
       // A property write, so the sleep timer's fade steps never reload the source.
       player.volume = Math.min(1, Math.max(0, level));
+    },
+
+    setBackgroundPlayback: async (enabled: boolean) => {
+      backgroundPlaybackEnabled = enabled;
+      if (!ready) return;
+
+      await setAudioModeAsync({
+        playsInSilentMode: true,
+        shouldPlayInBackground: enabled,
+        interruptionMode: 'doNotMix',
+        allowsRecording: false,
+      });
     },
 
     setLoopEnabled: (enabled: boolean) => {

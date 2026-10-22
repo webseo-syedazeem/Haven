@@ -27,7 +27,7 @@ const SOUNDS = getFilterGroupValues('contains');
  * Chips come from local state and the save is debounced, so a tap lands on the
  * next frame and a burst of them leaves as one `PUT /api/preferences/sound`.
  * The body carries the whole row, `excluded_sounds` included, so saving here
- * never clips what Sounds to Avoid owns.
+ * never clips exclusions captured during onboarding.
  */
 function SoundPreferencesContent() {
   const { notice, showToast } = useToast();

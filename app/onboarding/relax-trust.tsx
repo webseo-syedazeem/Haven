@@ -53,7 +53,7 @@ export default function RelaxTrustScreen() {
           </Text>
         </View>
       }
-      header={<RelaxStepHeader currentStep={9} onBack={() => safeGoBack(router)} />}>
+      header={<RelaxStepHeader currentStep={8} onBack={() => safeGoBack(router)} />}>
       <Text style={styles.heading}>
         Trusted by people{'\n'}who feel calmer now.
       </Text>

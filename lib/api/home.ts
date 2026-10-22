@@ -23,6 +23,7 @@ export type Soundscape = {
   short_title?: string | null;
   subcategory?: string | null;
   one_line_description?: string | null;
+  detail_description?: string | null;
   designed_for?: string | null;
   best_use?: string | null;
   artwork_url?: string | null;

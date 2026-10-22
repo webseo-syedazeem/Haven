@@ -49,6 +49,8 @@ export type PlayerEngine = {
   reset: () => Promise<void>;
   seekTo: (seconds: number) => Promise<void>;
   setVolume: (level: number) => Promise<void>;
+  /** Allow or prevent the active soundscape from continuing while the app is backgrounded. */
+  setBackgroundPlayback: (enabled: boolean) => Promise<void>;
   /** The "Continuous loop" preference. Applies live to the active player with no restart. */
   setLoopEnabled: (enabled: boolean) => void;
   getProgress: () => Promise<{ position: number; duration: number }>;

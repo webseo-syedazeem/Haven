@@ -7,9 +7,6 @@ import { Platform } from 'react-native';
  * Everything here is device-local and never leaves the phone. It exists for
  * settings the API cannot hold today:
  *
- * - `analytics_opt_out` — there is no analytics preference on the server
- *   (`/api/analytics/events` only accepts events), so the user's choice is kept
- *   here and every client side analytics call is gated on it.
  * - `reminder_time` — `user_notification_settings` stores `reminders_enabled`
  *   but no time, so the chosen hour lives here and drives the locally
  *   scheduled reminder.
@@ -81,8 +78,6 @@ export async function setLocalSettingStrict<T>(key: string, value: T): Promise<v
 }
 
 export const LOCAL_SETTING_KEYS = {
-  /** `true` when the user has agreed to anonymous usage analytics. */
-  analyticsEnabled: 'analytics_enabled',
   /** 24h "HH:MM" for the wind-down reminder. */
   reminderTime: 'reminder_time',
   /** Legacy guest flag, read once when migrating older installs to AsyncStorage. */
@@ -94,7 +89,6 @@ export const LOCAL_SETTING_KEYS = {
 export const GUEST_MODE_ACTIVE_DEFAULT = false;
 
 /** Analytics is opt-in: nothing is sent until the user turns it on. */
-export const ANALYTICS_ENABLED_DEFAULT = false;
 export const REMINDER_TIME_DEFAULT = '21:30';
 
 /** Off by default: a track only repeats once the listener asks for it. */

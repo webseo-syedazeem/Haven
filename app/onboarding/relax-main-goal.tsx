@@ -25,7 +25,6 @@ const OPTIONS = [
   'Manage daily stress',
   'Be more present',
   'Sleep more easily',
-  'Just explore',
 ] as const;
 
 type GoalOption = (typeof OPTIONS)[number];
@@ -80,12 +79,10 @@ function GoalIcon({
     'Manage daily stress': 'sunny-outline',
     'Be more present': 'person-outline',
     'Sleep more easily': 'moon-outline',
-    'Just explore': 'ellipsis-horizontal',
   }[option] as
     | 'sunny-outline'
     | 'person-outline'
-    | 'moon-outline'
-    | 'ellipsis-horizontal';
+    | 'moon-outline';
 
   return (
     <Ionicons

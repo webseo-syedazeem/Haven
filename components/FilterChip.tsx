@@ -10,8 +10,6 @@ type FilterChipProps = {
   onPress?: () => void;
   /** Shows an × so the chip can remove itself from the active row. */
   onRemove?: () => void;
-  /** Exclusion chips carry a ban glyph so "Avoid" never reads as "include". */
-  isExclusion?: boolean;
   icon?: keyof typeof Ionicons.glyphMap;
 };
 
@@ -20,7 +18,6 @@ export function FilterChip({
   selected = false,
   onPress,
   onRemove,
-  isExclusion = false,
   icon,
 }: FilterChipProps) {
   const tint = selected ? HalcyonColors.background : HalcyonColors.textPrimary;
@@ -34,13 +31,9 @@ export function FilterChip({
       style={({ pressed }) => [
         styles.chip,
         selected && styles.chipSelected,
-        selected && isExclusion && styles.chipExclusion,
         pressed && styles.chipPressed,
       ]}>
-      {isExclusion && (
-        <Ionicons color={selected ? tint : HalcyonColors.textSecondary} name="ban-outline" size={12} />
-      )}
-      {!!icon && !isExclusion && <Ionicons color={tint} name={icon} size={13} />}
+      {!!icon && <Ionicons color={tint} name={icon} size={13} />}
       <Text style={[styles.label, selected && styles.labelSelected]}>{label}</Text>
       {!!onRemove && (
         <Pressable
@@ -75,10 +68,6 @@ const styles = StyleSheet.create({
   chipSelected: {
     backgroundColor: HalcyonColors.accent,
     borderColor: HalcyonColors.accent,
-  },
-  chipExclusion: {
-    backgroundColor: HalcyonColors.accentPressed,
-    borderColor: HalcyonColors.accentPressed,
   },
   chipPressed: {
     opacity: 0.74,

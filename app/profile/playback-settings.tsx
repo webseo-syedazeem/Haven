@@ -9,7 +9,7 @@ import { SettingsScreen } from '@/components/SettingsScreen';
 import { Toast, useToast } from '@/components/Toast';
 import { HalcyonColors } from '@/constants/design';
 import { usePlaybackSettings, useUpdatePlaybackSettings } from '@/hooks/usePreferences';
-import type { PlaybackSettings, Quality } from '@/lib/api/preferences';
+import type { PlaybackSettings } from '@/lib/api/preferences';
 
 /** `default_timer_minutes` is a nullable integer; null means "no timer". */
 const TIMER_OPTIONS: readonly SheetOption<number | null>[] = [
@@ -24,18 +24,9 @@ const TIMER_OPTIONS: readonly SheetOption<number | null>[] = [
   { value: 480, label: '8 hours' },
 ];
 
-const QUALITY_OPTIONS: readonly SheetOption<Quality>[] = [
-  { value: 'standard', label: 'Standard', description: 'Lighter on data and battery.' },
-  { value: 'high', label: 'High', description: 'More detail, more data.' },
-];
-
 function timerLabel(minutes: number | null | undefined): string {
   if (minutes === null || minutes === undefined) return 'No timer';
   return TIMER_OPTIONS.find((option) => option.value === minutes)?.label ?? `${minutes} min`;
-}
-
-function qualityLabel(quality: Quality | undefined): string {
-  return QUALITY_OPTIONS.find((option) => option.value === quality)?.label ?? 'Standard';
 }
 
 /** R-05. Every control maps to a column on `user_playback_settings`. */
@@ -45,7 +36,6 @@ function PlaybackSettingsContent() {
   const update = useUpdatePlaybackSettings();
 
   const [timerSheetVisible, setTimerSheetVisible] = useState(false);
-  const [qualitySheetVisible, setQualitySheetVisible] = useState(false);
 
   const save = useCallback(
     (patch: Partial<PlaybackSettings>) => {
@@ -91,7 +81,7 @@ function PlaybackSettingsContent() {
             }}
           />
           <SettingsRow
-            description="Ease the volume down instead of stopping abruptly."
+            description="Ease the volume down when a sleep timer ends."
             icon="trending-down-outline"
             label="Fade out at end"
             toggle={{
@@ -110,12 +100,6 @@ function PlaybackSettingsContent() {
             onPress={() => setTimerSheetVisible(true)}
             value={timerLabel(settings.default_timer_minutes)}
           />
-          <SettingsRow
-            icon="pulse-outline"
-            label="Audio quality"
-            onPress={() => setQualitySheetVisible(true)}
-            value={qualityLabel(settings.quality)}
-          />
         </SettingsGroup>
 
         <OptionSheet
@@ -127,14 +111,6 @@ function PlaybackSettingsContent() {
           visible={timerSheetVisible}
         />
 
-        <OptionSheet
-          onClose={() => setQualitySheetVisible(false)}
-          onSelect={(value) => save({ quality: value })}
-          options={QUALITY_OPTIONS}
-          title="Audio quality"
-          value={settings.quality}
-          visible={qualitySheetVisible}
-        />
       </>
     );
   };

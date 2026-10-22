@@ -19,17 +19,12 @@ import { useGuestModeActive, useHasSession } from '@/hooks/useSession';
 import { useUser } from '@/hooks/useUser';
 import { getDisplayName, getProfileEmail } from '@/lib/api/user';
 import { clearUserSession } from '@/lib/auth/clearSession';
-import { setIntroSeen } from '@/lib/auth/intro-flag';
-import { beginExplicitSignOut, setGuestModeActive } from '@/lib/auth/session-state';
-import { resetGuestOnboardingState } from '@/lib/onboarding';
 import { resetToLogin } from '@/lib/navigation';
 import { usePlayerActions } from '@/lib/player/PlayerProvider';
 
 /** R-01. Every row here is a screen in `app/profile/`. */
 const SETTINGS_ROWS = [
   { label: 'Account', icon: 'person-outline', route: '/profile/account-setting' },
-  { label: 'Sound Preferences', icon: 'musical-notes-outline', route: '/profile/sound-preferences' },
-  { label: 'Sounds to Avoid', icon: 'ban-outline', route: '/profile/sounds-to-avoid' },
   { label: 'Playback', icon: 'play-circle-outline', route: '/profile/playback-settings' },
   { label: 'Notifications', icon: 'notifications-outline', route: '/profile/notification' },
   { label: 'Privacy & Data', icon: 'lock-closed-outline', route: '/profile/privacy-data' },
@@ -58,6 +53,7 @@ export default function ProfileScreen() {
 
   const { data: me, isInitialLoading, isError, refetch } = useUser();
   const [avatarPreviewVisible, setAvatarPreviewVisible] = useState(false);
+  const [guestLoginVisible, setGuestLoginVisible] = useState(false);
   const [signOutVisible, setSignOutVisible] = useState(false);
   const [signingOut, setSigningOut] = useState(false);
   const scrollAnim = useRef(new Animated.Value(0)).current;
@@ -95,19 +91,11 @@ export default function ProfileScreen() {
     router.push(route);
   }
 
-  // Choosing to sign in ends guest mode: with no back arrow on Login, backing out
-  // exits the app, and the next launch must open Login again, not the guest app.
-  async function leaveGuestForLogin() {
-    // Guard against the tabs layout's own "no session" redirect firing between
-    // setGuestModeActive(false) and resetToLogin — same race as clearUserSession.
-    beginExplicitSignOut();
-    // Guest playback belongs to the guest session too. Tear down the native
-    // player and notification before leaving so audio cannot continue on Login.
-    await stop({ forgetResumable: true });
-    await setGuestModeActive(false);
-    await resetGuestOnboardingState();
-    await setIntroSeen();
-    resetToLogin(router);
+  // Keep the guest session intact while the account screen is open. Successful
+  // authentication owns the transition; backing out returns to the same guest data.
+  function openLoginWithoutDiscardingGuestData() {
+    setGuestLoginVisible(false);
+    router.push('/welcome' as Href);
   }
 
   async function confirmSignOut() {
@@ -213,7 +201,7 @@ export default function ProfileScreen() {
                 <SettingsRow
                   icon="log-in-outline"
                   label="Sign in"
-                  onPress={() => void leaveGuestForLogin()}
+                  onPress={() => setGuestLoginVisible(true)}
                 />
               )}
             </SettingsGroup>
@@ -231,6 +219,17 @@ export default function ProfileScreen() {
           imageUrl={profileImageUrl}
           onClose={() => setAvatarPreviewVisible(false)}
           visible={avatarPreviewVisible}
+        />
+
+        <ConfirmDialog
+          cancelLabel="Stay as guest"
+          confirmLabel="Sign up or log in"
+          icon="cloud-upload-outline"
+          message="Your guest data is saved only on this device. Sign up or log in to keep it. If you leave guest mode without an account, it will be deleted."
+          onCancel={() => setGuestLoginVisible(false)}
+          onConfirm={openLoginWithoutDiscardingGuestData}
+          title="Save your guest data?"
+          visible={guestLoginVisible}
         />
 
         <ConfirmDialog

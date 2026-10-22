@@ -61,31 +61,31 @@ export function RequireAuth({
   if (isRestoring) return <>{waiting ?? <GateSpinner />}</>;
 
   if (isGuest) {
-    return <GuestAuthGate message={message} showBack={showBack} title={title} />;
+    return <GuestAuthGate />;
   }
 
   return <SignInPrompt message={message} showBack={showBack} title={title} />;
 }
 
-function GuestAuthGate({
-  message,
-  showBack,
-  title,
-}: {
-  message?: string;
-  showBack: boolean;
-  title: string;
-}) {
+function GuestAuthGate() {
+  const router = useRouter();
   const { showAccountRequiredPrompt } = useAccountRequiredPrompt();
 
   useEffect(() => {
     showAccountRequiredPrompt({
       title: 'Please log in',
-      message: message ?? 'Log in to use this account feature.',
     });
-  }, [message, showAccountRequiredPrompt]);
 
-  return <SignInPrompt message={message} showBack={showBack} title={title} />;
+    // Keep the shared prompt over the screen the guest came from. Rendering the
+    // full-page sign-in gate here placed a second login UI behind the modal.
+    if (router.canGoBack()) {
+      router.back();
+    } else {
+      router.replace('/(tabs)/profile');
+    }
+  }, [router, showAccountRequiredPrompt]);
+
+  return <View style={styles.guestGatePlaceholder} />;
 }
 
 /**
@@ -168,6 +168,10 @@ const styles = StyleSheet.create({
     backgroundColor: HalcyonColors.background,
     flex: 1,
     justifyContent: 'center',
+  },
+  guestGatePlaceholder: {
+    backgroundColor: HalcyonColors.background,
+    flex: 1,
   },
   header: {
     alignItems: 'center',

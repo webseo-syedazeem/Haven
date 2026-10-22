@@ -83,9 +83,6 @@ export default function LibraryScreen() {
     const [group, value] = chipId.split(':');
 
     setFilters((current) => {
-      if (group === 'duration') {
-        return { ...current, minMinutes: null, maxMinutes: null };
-      }
       if (group === 'modes') {
         return { ...current, modes: current.modes.filter((entry) => entry !== value) };
       }
@@ -234,7 +231,6 @@ export default function LibraryScreen() {
 
             {activeChips.map((chip) => (
               <FilterChip
-                isExclusion={chip.group === 'avoids'}
                 key={chip.id}
                 label={chip.label}
                 onRemove={() => removeChip(chip.id)}
@@ -293,7 +289,6 @@ export default function LibraryScreen() {
                 <View style={styles.rescueChips}>
                   {activeChips.map((chip) => (
                     <FilterChip
-                      isExclusion={chip.group === 'avoids'}
                       key={chip.id}
                       label={chip.label}
                       onRemove={() => removeChip(chip.id)}

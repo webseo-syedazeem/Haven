@@ -18,6 +18,15 @@ const tracks = ['a', 'b', 'c'].map((id) => track(id));
 function createPlayer({
   saved = null, catalogue = tracks, hasSession = false, seekError = null,
   storedLoopEnabled, localSettingsFail = false, playStarts = true,
+  guestMode = false, guestSaved = null,
+  playbackSettings = {
+    background_playback: true,
+    default_timer_minutes: null,
+    fade_enabled: true,
+    end_behaviour: 'silent',
+    quality: 'standard',
+    autoplay_next: true,
+  },
 } = {}) {
   const hooks = [];
   const timers = new Map();
@@ -25,8 +34,10 @@ function createPlayer({
   const warnings = [];
   const calls = {
     loads: [], seeks: [], saves: [], history: [], volumes: [], stop: 0, reset: 0, tones: 0,
-    subscribes: 0, setups: 0, loopEnabled: [], localSettingWrites: [],
+    subscribes: 0, setups: 0, loopEnabled: [], backgroundPlayback: [], localSettingWrites: [],
+    guestStorageWrites: [], guestStorageRemovals: [],
   };
+  let storedGuest = guestSaved === null ? null : JSON.stringify(guestSaved);
   let storedLoop = storedLoopEnabled;
   let hookIndex = 0;
   let dirty = true;
@@ -109,6 +120,7 @@ function createPlayer({
       emit('onProgress', { position: seconds, duration: 180, trackId: currentTrackId });
     },
     setVolume: async (level) => { calls.volumes.push(level); },
+    setBackgroundPlayback: async (enabled) => { calls.backgroundPlayback.push(enabled); },
     setLoopEnabled: (enabled) => { calls.loopEnabled.push(enabled); },
     playEndTone: async () => { calls.tones++; },
   };
@@ -122,7 +134,33 @@ function createPlayer({
     react,
     'react/jsx-runtime': { jsx: (type, props) => ({ type, props }), jsxs: (type, props) => ({ type, props }) },
     'react-native': { Platform: { OS: 'android' }, AppState: { addEventListener: (_, callback) => { background = callback; return { remove: () => { background = null; } }; } } },
-    '@/hooks/useSession': { useHasSession: () => hasSession },
+    '@/hooks/useSession': {
+      useHasSession: () => hasSession,
+      useGuestModeActive: () => guestMode,
+    },
+    '@react-native-async-storage/async-storage': {
+      __esModule: true,
+      default: {
+        getItem: async () => storedGuest,
+        setItem: async (key, value) => {
+          storedGuest = value;
+          calls.guestStorageWrites.push({ key, value: JSON.parse(value) });
+        },
+        removeItem: async (key) => {
+          storedGuest = null;
+          calls.guestStorageRemovals.push(key);
+        },
+      },
+    },
+    '@/hooks/usePreferences': { usePlaybackSettings: () => ({ data: playbackSettings }) },
+    '@/lib/api/preferences': { PLAYBACK_SETTING_DEFAULTS: {
+      background_playback: true,
+      default_timer_minutes: null,
+      fade_enabled: true,
+      end_behaviour: 'silent',
+      quality: 'standard',
+      autoplay_next: false,
+    } },
     '@/lib/api/home': { homeApi: { soundscape: async (id) => catalogue.find((value) => value.id === id) ?? null } },
     '@/lib/api/player': { playerApi: {
       getState: async () => saved,
@@ -202,6 +240,7 @@ function createPlayer({
   return {
     calls,
     warnings,
+    get guestSaved() { return storedGuest === null ? null : JSON.parse(storedGuest); },
     settle,
     /** The engine's give-up, in its order: the resume position, the failure, then the released player. */
     async failPlayback(position) {
@@ -312,6 +351,57 @@ test('save and stop preserve progress, while resume restores a one-item queue an
   assert.equal(player.calls.saves.at(-1).position_seconds, 12);
 });
 
+test('guest playback is saved locally without calling the account player-state API', async () => {
+  const player = createPlayer({ guestMode: true });
+  await player.settle();
+  await player.act('playSoundscape', tracks[1], { queue: tracks });
+  await player.act('seek', 37);
+  await player.act('setTimer', 10);
+  await player.background();
+
+  assert.equal(player.calls.saves.length, 0);
+  assert.equal(player.guestSaved.soundscape.id, 'b');
+  assert.deepEqual(ids(player.guestSaved.queue), ['a', 'b', 'c']);
+  assert.equal(player.guestSaved.positionSeconds, 37);
+  assert.equal(player.guestSaved.durationSeconds, 180);
+  assert.equal(player.guestSaved.timerMinutes, 10);
+});
+
+test('a guest relaunch restores the locally saved Continue Listening state', async () => {
+  const player = createPlayer({
+    guestMode: true,
+    guestSaved: {
+      soundscape: tracks[1],
+      queue: tracks,
+      positionSeconds: 52,
+      durationSeconds: 180,
+      timerMinutes: null,
+      savedAt: new Date(0).toISOString(),
+    },
+  });
+  await player.settle();
+
+  assert.equal(player.state.resumable.soundscape.id, 'b');
+  assert.deepEqual(ids(player.state.resumable.queue), ['a', 'b', 'c']);
+  assert.equal(player.state.resumable.positionSeconds, 52);
+
+  await player.act('resume');
+  assert.equal(player.calls.loads.at(-1).track.id, 'b');
+  assert.equal(player.calls.loads.at(-1).startAt, 52);
+});
+
+test('forgetting a guest session removes its locally saved player state', async () => {
+  const player = createPlayer({ guestMode: true });
+  await player.act('playSoundscape', tracks[0]);
+  await player.act('seek', 24);
+  await player.background();
+  assert.ok(player.guestSaved);
+
+  await player.act('stop', { forgetResumable: true });
+  assert.equal(player.guestSaved, null);
+  assert.equal(player.calls.guestStorageRemovals.length, 1);
+});
+
 test('cold resume restores saved queue order, removes missing tracks and finds current index', async () => {
   const player = createPlayer({ hasSession: true, saved: {
     soundscape_id: 'b', queue: ['a', 'missing', 'b', 'c', 'a'],
@@ -337,6 +427,65 @@ test('natural completion advances, then stops at the end without wrapping', asyn
   assert.equal(player.calls.loads.length, 2);
   assert.equal(player.calls.stop, 1);
   assert.equal(player.state.isPlaying, false);
+});
+
+test('playback preferences configure background audio and disable automatic queue advance', async () => {
+  const player = createPlayer({
+    playbackSettings: {
+      background_playback: false,
+      default_timer_minutes: null,
+      fade_enabled: true,
+      end_behaviour: 'silent',
+      quality: 'standard',
+      autoplay_next: false,
+    },
+  });
+  await player.settle();
+
+  assert.deepEqual(player.calls.backgroundPlayback, [false]);
+  await player.act('playSoundscape', tracks[0], { queue: tracks });
+  await player.event('onTrackEnd');
+
+  assert.deepEqual(player.calls.loads.map(({ track: loaded }) => loaded.id), ['a']);
+  assert.equal(player.calls.stop, 1);
+});
+
+test('a saved default timer is applied when a new listening session starts', async () => {
+  const player = createPlayer({
+    playbackSettings: {
+      background_playback: true,
+      default_timer_minutes: 30,
+      fade_enabled: true,
+      end_behaviour: 'silent',
+      quality: 'standard',
+      autoplay_next: false,
+    },
+  });
+
+  await player.act('playSoundscape', tracks[0]);
+
+  assert.equal(player.state.timerSelection, 30);
+  assert.equal(player.progress.timerRemainingSeconds, 30 * 60);
+});
+
+test('turning fade off keeps full volume until the timer stops playback', async () => {
+  const player = createPlayer({
+    playbackSettings: {
+      background_playback: true,
+      default_timer_minutes: null,
+      fade_enabled: false,
+      end_behaviour: 'silent',
+      quality: 'standard',
+      autoplay_next: false,
+    },
+  });
+
+  await player.act('playSoundscape', track('sleep', 'sleep'));
+  await player.act('setTimer', 1);
+  await player.advance(60_000);
+
+  assert.equal(player.calls.volumes.some((level) => level < 1), false);
+  assert.equal(player.calls.stop, 1);
 });
 
 test('queue changes preserve the timer deadline and Focus end tone', async () => {

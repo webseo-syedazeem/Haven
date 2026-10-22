@@ -15,8 +15,6 @@ export default function ProfileLayout() {
       <Stack.Screen name="change-email" />
       <Stack.Screen name="profile-picture" />
       <Stack.Screen name="update-password" />
-      <Stack.Screen name="sound-preferences" />
-      <Stack.Screen name="sounds-to-avoid" />
       <Stack.Screen name="playback-settings" />
       <Stack.Screen name="notification" />
       <Stack.Screen name="privacy-data" />

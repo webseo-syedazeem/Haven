@@ -17,10 +17,7 @@ import type { DetailLevel, SoundscapeMode } from '@/lib/api/home';
 
 export type FilterGroupKey =
   | 'contains'
-  | 'avoids'
   | 'environments'
-  | 'animals'
-  | 'instruments'
   | 'detail_levels';
 
 export type FilterGroup = {
@@ -29,8 +26,6 @@ export type FilterGroup = {
   /** Shown under the title when the rule is not obvious from the name. */
   hint?: string;
   values: readonly string[];
-  /** Avoid is an exclusion, so it gets its own treatment in the sheet. */
-  isExclusion?: boolean;
   /** Long groups collapse into their own multi-select sub-view. */
   expandable?: boolean;
 };
@@ -51,7 +46,14 @@ const CONTAINS = [
 ] as const;
 
 /** Matched against `does_not_contain`, as an absolute exclusion. */
-const AVOIDS = ['Thunder', 'Voices', 'Traffic', 'Music', 'Birds', 'Sudden Sounds'] as const;
+export const SOUNDS_TO_AVOID_VALUES = [
+  'Thunder',
+  'Voices',
+  'Traffic',
+  'Music',
+  'Birds',
+  'Sudden Sounds',
+] as const;
 
 /**
  * Environments are matched loosely by the backend — across subcategory,
@@ -67,21 +69,6 @@ const ENVIRONMENTS = [
   'Indoor',
   'Cabin',
   'Desert',
-] as const;
-
-const ANIMALS = ['Birds', 'Owls', 'Frogs', 'Crickets', 'Whales', 'Wolves'] as const;
-
-const INSTRUMENTS = [
-  'Piano',
-  'Guitar',
-  'Harp',
-  'Flute',
-  'Strings',
-  'Cello',
-  'Handpan',
-  'Singing Bowls',
-  'Gong',
-  'Drone',
 ] as const;
 
 /** These must match the `detail_level` column exactly — the backend compares with `=`. */
@@ -101,31 +88,10 @@ export const FILTER_GROUPS: readonly FilterGroup[] = [
     values: CONTAINS,
   },
   {
-    key: 'avoids',
-    title: 'Avoid',
-    hint: 'Never include these',
-    values: AVOIDS,
-    isExclusion: true,
-  },
-  {
     key: 'environments',
     title: 'Environment',
     hint: 'Any of these',
     values: ENVIRONMENTS,
-  },
-  {
-    key: 'animals',
-    title: 'Animals',
-    hint: 'Any of these',
-    values: ANIMALS,
-    expandable: true,
-  },
-  {
-    key: 'instruments',
-    title: 'Instruments',
-    hint: 'Any of these',
-    values: INSTRUMENTS,
-    expandable: true,
   },
   {
     key: 'detail_levels',
@@ -133,11 +99,6 @@ export const FILTER_GROUPS: readonly FilterGroup[] = [
     values: DETAIL_LEVEL_VALUES,
   },
 ];
-
-/** Duration slider bounds, in minutes. Sent to the API in seconds. */
-export const DURATION_MIN_MINUTES = 0;
-export const DURATION_MAX_MINUTES = 120;
-export const DURATION_STEP_MINUTES = 5;
 
 export type SortValue =
   | 'recommended'
@@ -150,7 +111,7 @@ export type SortValue =
   | 'lowest_intensity'
   | 'highest_detail';
 
-/** Exactly the nine values `LIBRARY_SORTS` accepts; anything else 400s. */
+/** Sort choices shown in the Library UI. Additional API values remain typed for compatibility. */
 export const SORT_OPTIONS: readonly { value: SortValue; label: string }[] = [
   { value: 'recommended', label: 'Recommended' },
   { value: 'most_played', label: 'Most Played' },
@@ -159,8 +120,6 @@ export const SORT_OPTIONS: readonly { value: SortValue; label: string }[] = [
   { value: 'a_z', label: 'A–Z' },
   { value: 'shortest', label: 'Shortest' },
   { value: 'longest', label: 'Longest' },
-  { value: 'lowest_intensity', label: 'Lowest Intensity' },
-  { value: 'highest_detail', label: 'Highest Detail' },
 ];
 
 export function getSortLabel(value: SortValue): string {
@@ -171,39 +130,23 @@ export function getSortLabel(value: SortValue): string {
 export type LibraryFilters = {
   modes: SoundscapeMode[];
   contains: string[];
-  avoids: string[];
   environments: string[];
-  animals: string[];
-  instruments: string[];
   detail_levels: string[];
-  /** Minutes. Null means "no bound", so the param is omitted entirely. */
-  minMinutes: number | null;
-  maxMinutes: number | null;
 };
 
 export const EMPTY_FILTERS: LibraryFilters = {
   modes: [],
   contains: [],
-  avoids: [],
   environments: [],
-  animals: [],
-  instruments: [],
   detail_levels: [],
-  minMinutes: null,
-  maxMinutes: null,
 };
 
 export function countActiveFilters(filters: LibraryFilters): number {
   return (
     filters.modes.length +
     filters.contains.length +
-    filters.avoids.length +
     filters.environments.length +
-    filters.animals.length +
-    filters.instruments.length +
-    filters.detail_levels.length +
-    (filters.minMinutes === null ? 0 : 1) +
-    (filters.maxMinutes === null ? 0 : 1)
+    filters.detail_levels.length
   );
 }
 
@@ -218,7 +161,7 @@ export function getFilterLabel(group: FilterGroupKey, value: string): string {
 export type ActiveFilterChip = {
   id: string;
   label: string;
-  group: FilterGroupKey | 'modes' | 'duration';
+  group: FilterGroupKey | 'modes';
   value: string;
 };
 
@@ -231,10 +174,7 @@ export function toActiveChips(filters: LibraryFilters): ActiveFilterChip[] {
 
   const groups: FilterGroupKey[] = [
     'contains',
-    'avoids',
     'environments',
-    'animals',
-    'instruments',
     'detail_levels',
   ];
 
@@ -242,22 +182,11 @@ export function toActiveChips(filters: LibraryFilters): ActiveFilterChip[] {
     for (const value of filters[group]) {
       chips.push({
         id: `${group}:${value}`,
-        label: group === 'avoids' ? `No ${value}` : getFilterLabel(group, value),
+        label: getFilterLabel(group, value),
         group,
         value,
       });
     }
-  }
-
-  if (filters.minMinutes !== null || filters.maxMinutes !== null) {
-    const min = filters.minMinutes ?? DURATION_MIN_MINUTES;
-    const max = filters.maxMinutes ?? DURATION_MAX_MINUTES;
-    chips.push({
-      id: 'duration',
-      label: `${min}–${max} min`,
-      group: 'duration',
-      value: 'duration',
-    });
   }
 
   return chips;
@@ -270,7 +199,7 @@ function capitalise(value: string): string {
 /**
  * The values behind one filter group, so screens outside the Library sheet can
  * offer the same vocabulary rather than curating a second list that drifts.
- * Sound Preferences and Sounds to Avoid both read through here.
+ * Sound Preferences reads through here.
  */
 export function getFilterGroupValues(key: FilterGroupKey): readonly string[] {
   return FILTER_GROUPS.find((group) => group.key === key)?.values ?? [];

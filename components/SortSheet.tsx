@@ -19,7 +19,7 @@ type SortSheetProps = {
   onSelect: (value: SortValue) => void;
 };
 
-/** The nine sort values `/api/library` accepts, and nothing else. */
+/** User-facing Library sort choices. */
 export function SortSheet({ visible, value, onClose, onSelect }: SortSheetProps) {
   const insets = useSafeAreaInsets();
 

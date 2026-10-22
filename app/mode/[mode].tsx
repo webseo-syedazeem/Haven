@@ -1,8 +1,8 @@
 import { Image } from 'expo-image';
 import { useLocalSearchParams, useRouter, type Href } from 'expo-router';
-import { useCallback, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { useCallback, useRef, useState } from 'react';
+import { Animated, Pressable, StyleSheet, Text, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { OnboardingBackButton } from '@/components/onboarding/OnboardingBackButton';
 import { SectionRail } from '@/components/SectionRail';
@@ -26,6 +26,7 @@ import { usePlayerActions } from '@/lib/player/PlayerProvider';
  */
 export default function ModeHubScreen() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const { mode: modeParam } = useLocalSearchParams<{ mode?: string }>();
   const mode = getModeConfig(modeParam) ?? MODES[0];
   const modeId = mode.id as ModeId;
@@ -34,6 +35,12 @@ export default function ModeHubScreen() {
     useModeSections(modeId);
   const { playSoundscape } = usePlayerActions();
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
+  const scrollAnim = useRef(new Animated.Value(0)).current;
+  const overlayOpacity = scrollAnim.interpolate({
+    inputRange: [0, 30],
+    outputRange: [0, 1],
+    extrapolate: 'clamp',
+  });
 
   const openSoundscape = useCallback(
     (soundscape: Soundscape) => router.push(`/soundscape/${soundscape.id}` as Href),
@@ -55,15 +62,23 @@ export default function ModeHubScreen() {
 
   return (
     <View style={styles.screen}>
-      <Image
-        contentFit="cover"
-        source={mode.detailArtwork}
-        style={styles.backgroundImage}
-        transition={220}
-      />
-      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-        <View style={styles.hero}>
-          <SafeAreaView edges={['top']} style={styles.heroSafeArea}>
+      <Animated.ScrollView
+        contentContainerStyle={styles.content}
+        onScroll={Animated.event(
+          [{ nativeEvent: { contentOffset: { y: scrollAnim } } }],
+          { useNativeDriver: true }
+        )}
+        scrollEventThrottle={16}
+        showsVerticalScrollIndicator={false}>
+        <View style={styles.scrollScene}>
+          <Image
+            contentFit="cover"
+            source={mode.detailArtwork}
+            style={styles.backgroundImage}
+            transition={220}
+          />
+          <View style={[styles.hero, { minHeight: 260 + insets.top }]}>
+            <View style={[styles.heroSafeArea, { paddingTop: insets.top }]}>
             <OnboardingBackButton
               onPress={() => router.back()}
               style={styles.backButton}
@@ -72,12 +87,12 @@ export default function ModeHubScreen() {
               <Text style={styles.heroTitle}>{mode.label.toUpperCase()}</Text>
               <Text style={styles.heroTagline}>{mode.tagline}</Text>
             </View>
-          </SafeAreaView>
-        </View>
+            </View>
+          </View>
 
-        <Text style={styles.description}>{mode.description}</Text>
+          <Text style={styles.description}>{mode.description}</Text>
 
-        {isLoading ? (
+          {isLoading ? (
           <>
             <HubSectionSkeleton />
             <HubSectionSkeleton />
@@ -125,8 +140,14 @@ export default function ModeHubScreen() {
               />
             );
           })
-        )}
-      </ScrollView>
+          )}
+        </View>
+      </Animated.ScrollView>
+
+      <Animated.View
+        pointerEvents="none"
+        style={[styles.topOverlay, { height: insets.top, opacity: overlayOpacity }]}
+      />
     </View>
   );
 }
@@ -159,12 +180,22 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   screen: {
-    backgroundColor: HalcyonColors.background,
+    backgroundColor: '#000000',
     flex: 1,
   },
   content: {
     flexGrow: 1,
     paddingBottom: 48,
+  },
+  scrollScene: {
+    flexGrow: 1,
+  },
+  topOverlay: {
+    backgroundColor: '#000000',
+    left: 0,
+    position: 'absolute',
+    right: 0,
+    top: 0,
   },
   hero: {
     justifyContent: 'flex-end',

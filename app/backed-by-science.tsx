@@ -43,7 +43,7 @@ export default function BackedByScienceScreen() {
   const spikeColor = isSleep ? '#9FAEFD' : '#F4B34C';
 
   const handleContinue = () => {
-    router.push('/onboarding/the-ritual' as Href);
+    router.push('/onboarding/your-fit' as Href);
   };
 
   return (
@@ -137,7 +137,7 @@ export default function BackedByScienceScreen() {
 
           <View style={styles.footer}>
             <OnboardingContinueButton
-              label="SEE HOW PASSAGE WORKS"
+              label="VIEW YOUR RESULTS"
               onPress={handleContinue}
               showArrow
               variant={isSleep ? 'lavender' : 'amber'}

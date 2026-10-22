@@ -392,10 +392,11 @@ export default function HomeScreen() {
                 activeOpacity={0.86}
                 onPress={() => router.push('/(tabs)/profile' as Href)}>
                 <ProfileAvatar
-                  iconColor="rgba(255,255,255,0.7)"
+                  iconColor="rgba(255,255,255,0.96)"
                   imageUrl={profileImageUrl}
-                  placeholderBackgroundColor="rgba(255,255,255,0.12)"
+                  placeholderBackgroundColor="rgba(255,255,255,0.18)"
                   size={40}
+                  style={styles.heroAvatar}
                 />
               </TouchableOpacity>
             </View>
@@ -637,6 +638,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     flexDirection: 'row',
     justifyContent: 'space-between',
+  },
+  heroAvatar: {
+    borderColor: 'rgba(255,255,255,0.3)',
+    borderWidth: 1,
   },
   brand: {
     alignItems: 'center',

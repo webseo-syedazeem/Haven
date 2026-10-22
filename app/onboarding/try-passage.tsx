@@ -48,34 +48,55 @@ const HEADING_WORD_BY_MODE: Record<ModeId, string> = {
   sleep: 'sleep',
 };
 
-const WAVE_BAR_HEIGHTS = [
-  4, 8, 14, 10, 18, 22, 16, 8, 12, 19, 24, 15, 9, 14, 20, 17, 11, 7, 13, 18, 12, 6, 10, 15, 8, 4,
+const WAVEFORM_SAMPLES: readonly (readonly number[])[] = [
+  [4, 8, 14, 10, 18, 22, 16, 8, 12, 19, 24, 15, 9, 14, 20, 17, 11, 7, 13, 18, 12, 6, 10, 15, 8, 4],
+  [7, 12, 18, 23, 16, 9, 5, 11, 20, 14, 8, 17, 22, 12, 6, 10, 19, 24, 15, 9, 13, 18, 11, 7, 5, 9],
+  [5, 6, 9, 15, 21, 24, 20, 13, 8, 6, 11, 17, 23, 18, 10, 7, 12, 19, 16, 9, 5, 8, 14, 20, 12, 6],
+  [18, 11, 7, 13, 22, 16, 8, 5, 10, 19, 14, 9, 21, 24, 17, 12, 6, 8, 15, 20, 11, 5, 9, 16, 13, 7],
+  [6, 13, 20, 12, 7, 16, 24, 18, 9, 5, 11, 15, 8, 14, 22, 17, 10, 6, 19, 23, 13, 8, 12, 17, 9, 4],
+  [9, 17, 12, 5, 8, 14, 21, 16, 10, 23, 18, 7, 11, 20, 15, 6, 9, 13, 24, 19, 12, 8, 5, 10, 16, 7],
+  [4, 10, 16, 22, 14, 7, 12, 19, 9, 5, 15, 24, 17, 11, 6, 13, 20, 8, 18, 23, 10, 5, 14, 9, 12, 6],
+  [12, 6, 11, 18, 24, 15, 8, 13, 21, 10, 5, 9, 16, 22, 14, 7, 12, 20, 17, 8, 6, 15, 19, 11, 7, 4],
+  [5, 14, 9, 20, 12, 6, 17, 23, 15, 8, 11, 19, 24, 13, 7, 10, 16, 21, 12, 5, 9, 18, 14, 8, 11, 6],
+  [8, 19, 13, 7, 15, 22, 10, 5, 12, 18, 9, 16, 24, 14, 6, 11, 20, 13, 8, 17, 23, 12, 7, 10, 15, 5],
 ];
+
+function pickUniqueWaveformSamples(count: number): readonly (readonly number[])[] {
+  const samples = [...WAVEFORM_SAMPLES];
+  for (let index = samples.length - 1; index > 0; index -= 1) {
+    const swapIndex = Math.floor(Math.random() * (index + 1));
+    [samples[index], samples[swapIndex]] = [samples[swapIndex], samples[index]];
+  }
+  return samples.slice(0, count);
+}
 
 // The bars keep the design's 1.5 : 1 bar-to-gap proportion but share out the
 // whole row between them, so the waveform spans whatever width the card leaves.
 const WAVE_BAR_UNITS = 1.5;
 const WAVE_GAP_UNITS = 1;
+const WAVE_BAR_COUNT = WAVEFORM_SAMPLES[0].length;
 const WAVE_TOTAL_UNITS =
-  WAVE_BAR_HEIGHTS.length * WAVE_BAR_UNITS + (WAVE_BAR_HEIGHTS.length - 1) * WAVE_GAP_UNITS;
+  WAVE_BAR_COUNT * WAVE_BAR_UNITS + (WAVE_BAR_COUNT - 1) * WAVE_GAP_UNITS;
 const WAVE_BAR_WIDTH = `${(WAVE_BAR_UNITS / WAVE_TOTAL_UNITS) * 100}%` as const;
 const WAVE_GAP_WIDTH = `${(WAVE_GAP_UNITS / WAVE_TOTAL_UNITS) * 100}%` as const;
 
 function Waveform({
   accentColor,
   active,
+  heights,
   progress,
 }: {
   accentColor: string;
   active: boolean;
+  heights: readonly number[];
   progress: number;
 }) {
-  const total = WAVE_BAR_HEIGHTS.length;
+  const total = heights.length;
   const filledCount = Math.floor(total * progress);
 
   return (
     <View style={styles.waveformContainer}>
-      {WAVE_BAR_HEIGHTS.map((height, i) => {
+      {heights.map((height, i) => {
         const isFilled = active && i < filledCount;
         return (
           <View
@@ -94,7 +115,13 @@ function Waveform({
   );
 }
 
-function SkeletonCard({ accentColor }: { accentColor: string }) {
+function SkeletonCard({
+  accentColor,
+  waveformHeights,
+}: {
+  accentColor: string;
+  waveformHeights: readonly number[];
+}) {
   return (
     <View style={styles.card}>
       <View style={[styles.cardImage, styles.skeletonBlock]} />
@@ -103,7 +130,12 @@ function SkeletonCard({ accentColor }: { accentColor: string }) {
         <View style={[styles.skeletonBlock, styles.skeletonTags]} />
         <View style={styles.playerRow}>
           <View style={[styles.playButton, styles.skeletonBlock]} />
-          <Waveform accentColor={accentColor} active={false} progress={0} />
+          <Waveform
+            accentColor={accentColor}
+            active={false}
+            heights={waveformHeights}
+            progress={0}
+          />
         </View>
       </View>
     </View>
@@ -120,6 +152,7 @@ export default function TryPassageScreen() {
   const [modeReady, setModeReady] = useState(initialMode !== null);
   const [enteringApp, setEnteringApp] = useState(false);
   const [entryError, setEntryError] = useState('');
+  const [waveformSamples] = useState(() => pickUniqueWaveformSamples(PREVIEW_COUNT));
   const player = useScopedPlayer();
   const resolvedMode: ModeId = mode ?? 'focus';
   const headingWord = HEADING_WORD_BY_MODE[resolvedMode];
@@ -233,12 +266,12 @@ export default function TryPassageScreen() {
   const brandHeader = <OnboardingBrandHeader onBack={handleBack} />;
   const customHeader =
     modeReady && resolvedMode === 'relax' ? (
-      <RelaxStepHeader currentStep={10} onBack={handleBack} />
+      <RelaxStepHeader currentStep={9} onBack={handleBack} />
     ) : (
       brandHeader
     );
 
-  const renderCard = (item: Soundscape) => {
+  const renderCard = (item: Soundscape, index: number) => {
     const isActive = player.activeId === item.id;
     const playing = isActive && player.isPlaying;
     // Every preview is presented as a one-minute sample immediately; once the
@@ -287,6 +320,7 @@ export default function TryPassageScreen() {
             <Waveform
               accentColor={accentColor}
               active={isActive}
+              heights={waveformSamples[index] ?? WAVEFORM_SAMPLES[0]}
               progress={progress}
             />
 
@@ -311,7 +345,11 @@ export default function TryPassageScreen() {
 
     if (preview.isLoading) {
       return Array.from({ length: PREVIEW_COUNT }, (_, index) => (
-        <SkeletonCard accentColor={accentColor} key={index} />
+        <SkeletonCard
+          accentColor={accentColor}
+          key={index}
+          waveformHeights={waveformSamples[index] ?? WAVEFORM_SAMPLES[0]}
+        />
       ));
     }
 
