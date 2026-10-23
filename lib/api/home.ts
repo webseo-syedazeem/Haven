@@ -24,6 +24,7 @@ export type Soundscape = {
   subcategory?: string | null;
   one_line_description?: string | null;
   detail_description?: string | null;
+  colour?: string | null;
   designed_for?: string | null;
   best_use?: string | null;
   artwork_url?: string | null;

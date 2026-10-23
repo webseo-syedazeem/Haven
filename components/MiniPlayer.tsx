@@ -1,6 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter, type Href } from 'expo-router';
-import { useMemo } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { CoverImage } from '@/components/CoverImage';
@@ -14,50 +13,6 @@ const MINI_PLAYER_BOTTOM_GAP = 7;
 
 export const MINI_PLAYER_HEIGHT = MINI_PLAYER_CARD_HEIGHT + MINI_PLAYER_BOTTOM_GAP;
 
-type MiniPlayerMood = 'focus' | 'sleep' | 'relax';
-
-function createMoodPalette(
-  hues: readonly number[],
-  count: number,
-  saturationBase: number,
-  lightnessBase: number
-): string[] {
-  return Array.from({ length: count }, (_, index) => {
-    const hue = hues[index % hues.length] + (Math.floor(index / hues.length) % 3) * 2;
-    const saturation = saturationBase + (index % 4) * 3;
-    const lightness = lightnessBase + (Math.floor(index / 4) % 4) * 2;
-    return `hsl(${hue}, ${saturation}%, ${lightness}%)`;
-  });
-}
-
-/**
- * Exactly 100 restrained backgrounds, grouped by listening mood. Bright,
- * fluorescent and high-saturation colours are deliberately excluded so the
- * player stays calm and white text remains readable on both platforms.
- */
-const MINI_PLAYER_BACKGROUNDS: Record<MiniPlayerMood, string[]> = {
-  focus: createMoodPalette([188, 196, 204, 212, 220, 228], 34, 24, 17),
-  sleep: createMoodPalette([216, 224, 232, 240, 248, 256], 33, 22, 15),
-  relax: createMoodPalette([26, 36, 46, 128, 140, 152, 164, 176], 33, 20, 17),
-};
-
-const ALL_MINI_PLAYER_BACKGROUNDS = Object.values(MINI_PLAYER_BACKGROUNDS).flat();
-let previousBackground = '';
-
-function pickMiniPlayerBackground(mode?: string | null): string {
-  const normalizedMode = mode?.toLowerCase() as MiniPlayerMood | undefined;
-  const palette = normalizedMode && MINI_PLAYER_BACKGROUNDS[normalizedMode]
-    ? MINI_PLAYER_BACKGROUNDS[normalizedMode]
-    : ALL_MINI_PLAYER_BACKGROUNDS;
-
-  let background = palette[Math.floor(Math.random() * palette.length)];
-  if (background === previousBackground && palette.length > 1) {
-    background = palette[(palette.indexOf(background) + 1) % palette.length];
-  }
-  previousBackground = background;
-  return background;
-}
-
 /**
  * Sits directly above the tab bar on every tab for as long as a soundscape is
  * loaded, playing or paused. Tapping it opens the full screen player.
@@ -67,13 +22,9 @@ export function MiniPlayer() {
   const { soundscape, isPlaying, isBuffering, error } = usePlayerState();
   const { position, duration } = usePlayerProgress();
   const { togglePlayPause } = usePlayerActions();
-  const backgroundColor = useMemo(() => {
-    if (!soundscape?.id) return MINI_PLAYER_BACKGROUNDS.focus[0];
-    return pickMiniPlayerBackground(soundscape.mode);
-  }, [soundscape?.id, soundscape?.mode]);
-
   if (!soundscape) return null;
 
+  const backgroundColor = soundscape.colour || HalcyonColors.accent;
   const total = duration || soundscape.duration_seconds || 0;
   const progress = total > 0 ? Math.min(1, Math.max(0, position / total)) : 0;
   const modeLabel = getModeLabel(soundscape.mode);
@@ -203,7 +154,7 @@ const styles = StyleSheet.create({
     lineHeight: 19,
   },
   meta: {
-    color: HalcyonColors.textSecondary,
+    color: '#FFFFFF',
     fontFamily: AppFonts.sansRegular,
     fontSize: 12,
     lineHeight: 16,

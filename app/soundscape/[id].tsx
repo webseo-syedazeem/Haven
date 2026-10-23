@@ -36,6 +36,7 @@ export default function SoundscapeDetailScreen() {
 
   const { data: soundscape, isInitialLoading, isError, error, refetch, isRefetching } =
     useSoundscape(id);
+  const playButtonColour = soundscape?.colour || HalcyonColors.accent;
   const similar = useSimilarSoundscapes(soundscape?.id);
 
   const isFavourite = useIsFavourite(id);
@@ -97,9 +98,13 @@ export default function SoundscapeDetailScreen() {
             accessibilityLabel={`Play ${soundscape.title}`}
             accessibilityRole="button"
             onPress={() => void handlePlay()}
-            style={({ pressed }) => [styles.playButton, pressed && styles.playButtonPressed]}>
+            style={({ pressed }) => [
+              styles.playButton,
+              { backgroundColor: playButtonColour },
+              pressed && styles.playButtonPressed,
+            ]}>
             <Ionicons
-              color={HalcyonColors.background}
+              color="#F6EFE6"
               name="play"
               size={20}
               style={styles.playIcon}
@@ -438,23 +443,29 @@ const styles = StyleSheet.create({
   },
   playButton: {
     alignItems: 'center',
-    backgroundColor: HalcyonColors.accent,
+    borderColor: 'rgba(255,255,255,0.16)',
     borderRadius: HalcyonRadius.pill,
+    borderWidth: 1,
     columnGap: 8,
+    elevation: 4,
     flexDirection: 'row',
     justifyContent: 'center',
     minHeight: 52,
     paddingHorizontal: 24,
+    shadowColor: '#000000',
+    shadowOffset: { height: 4, width: 0 },
+    shadowOpacity: 0.28,
+    shadowRadius: 8,
     width: '100%',
   },
   playButtonPressed: {
-    backgroundColor: HalcyonColors.accentPressed,
+    opacity: 0.84,
   },
   playIcon: {
     marginLeft: 2,
   },
   playLabel: {
-    color: HalcyonColors.background,
+    color: '#F6EFE6',
     fontFamily: AppFonts.sansSemiBold,
     fontSize: 16,
     fontWeight: '600',
