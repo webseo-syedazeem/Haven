@@ -72,7 +72,7 @@ export default function CollectionScreen() {
 
   return (
     <ImageBackground
-      source={require('@/assets/images/explore-collection-detail-bg.webp')}
+      source={require('@/assets/images/auth-verified-clearing-realistic.webp')}
       style={styles.screen}
       resizeMode="cover">
       <SafeAreaView edges={['top']} style={styles.safeArea}>

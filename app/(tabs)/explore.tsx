@@ -2,7 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter, type Href } from 'expo-router';
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useMemo, useRef, useState } from 'react';
 import {
   Animated,
   Pressable,
@@ -15,13 +15,10 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import {
-  CollectionCard,
-  COLLECTION_CARD_HEIGHT,
-  COLLECTION_CARD_WIDTH,
-} from '@/components/CollectionCard';
+import { COLLECTION_CARD_HEIGHT, COLLECTION_CARD_WIDTH } from '@/components/CollectionCard';
 import { CoverImage } from '@/components/CoverImage';
 import { EmptyState, ErrorState } from '@/components/EmptyState';
+import { FilterChip } from '@/components/FilterChip';
 import {
   HalcyonCardGradient,
   HalcyonCardGradientLocations,
@@ -33,12 +30,30 @@ import {
 import { AppFonts } from '@/constants/theme';
 import { useTabContentInset } from '@/hooks/use-bottom-safe-spacing';
 import { EXPLORE_GROUP_TITLES, useExploreGroups } from '@/hooks/useExplore';
+import type { ExploreGroupKey } from '@/lib/api/catalogue';
 import type { Collection } from '@/lib/api/home';
 
-const EXPLORE_BACKGROUND = require('@/assets/images/explore-volcanic-highland-v4.webp');
-const EXPLORE_BACKGROUND_ASPECT_RATIO = 941 / 1672;
+const EXPLORE_BACKGROUND = require('@/assets/images/home-sat-night-pine-trail-v1.webp');
+const EXPLORE_BACKGROUND_ASPECT_RATIO = 940 / 1672;
 
 const CARD_GAP = HalcyonSpacing.card;
+const CARD_WIDTH = COLLECTION_CARD_WIDTH;
+const CARD_HEIGHT = COLLECTION_CARD_HEIGHT;
+const WIDE_CARD_HEIGHT = 150;
+const CHIP_ACTIVE = '#E8CFA6';
+
+type TabKey = 'all' | ExploreGroupKey;
+
+/** Short chip labels; the section headings keep their longer titles. */
+const EXPLORE_TAB_LABELS: Partial<Record<ExploreGroupKey, string>> = {
+  situation: 'Situation',
+  editorial: 'Editorial',
+};
+
+const tabLabel = (key: TabKey) =>
+  key === 'all' ? 'All' : (EXPLORE_TAB_LABELS[key] ?? EXPLORE_GROUP_TITLES[key] ?? key);
+
+const sectionLabel = (key: ExploreGroupKey) => EXPLORE_GROUP_TITLES[key] ?? key;
 
 export default function ExploreScreen() {
   const router = useRouter();
@@ -46,6 +61,7 @@ export default function ExploreScreen() {
   const bottomInset = useTabContentInset();
   const { width } = useWindowDimensions();
   const [refreshing, setRefreshing] = useState(false);
+  const [activeTab, setActiveTab] = useState<TabKey>('all');
 
   const exploreQuery = useExploreGroups();
 
@@ -63,21 +79,25 @@ export default function ExploreScreen() {
     [router]
   );
 
-  const groups = exploreQuery.data ?? [];
-
-  const featured = groups.find((group) => group.group === 'editorial')?.collections[0]
-    ?? groups[0]?.collections[0]
-    ?? null;
-
-  const situation = groups.find((group) => group.group === 'situation');
-  const editorial = groups.find((group) => group.group === 'editorial');
-  const remaining = groups.filter(
-    (group) => group.group !== 'situation' && group.group !== 'editorial'
+  // Only groups that currently hold collections in the database get a tab.
+  const groups = useMemo(
+    () => (exploreQuery.data ?? []).filter((group) => group.collections.length > 0),
+    [exploreQuery.data]
   );
+  const tabs = useMemo<TabKey[]>(() => ['all', ...groups.map((group) => group.group)], [groups]);
+  const selectedTab: TabKey = tabs.includes(activeTab) ? activeTab : 'all';
+  const visibleGroups =
+    selectedTab === 'all' ? groups : groups.filter((group) => group.group === selectedTab);
+
+  const featured =
+    groups.find((group) => group.group === 'editorial')?.collections[0] ??
+    groups[0]?.collections[0] ??
+    null;
 
   const backgroundHeight = width / EXPLORE_BACKGROUND_ASPECT_RATIO;
   const isEmpty =
     !exploreQuery.isInitialLoading && !exploreQuery.isError && groups.length === 0;
+
   const scrollAnim = useRef(new Animated.Value(0)).current;
   const overlayOpacity = scrollAnim.interpolate({
     inputRange: [0, 30],
@@ -97,6 +117,7 @@ export default function ExploreScreen() {
           <RefreshControl
             colors={[HalcyonColors.accent]}
             onRefresh={onRefresh}
+            progressViewOffset={insets.top}
             refreshing={refreshing}
             tintColor={HalcyonColors.accent}
           />
@@ -104,102 +125,112 @@ export default function ExploreScreen() {
         scrollEventThrottle={16}
         showsVerticalScrollIndicator={false}>
         <View style={styles.scrollScene}>
-          <Image
-            contentFit="cover"
-            contentPosition="top center"
-            pointerEvents="none"
-            source={EXPLORE_BACKGROUND}
-            style={[styles.backgroundImage, { height: backgroundHeight, width }]}
-          />
-          <LinearGradient
-            colors={['rgba(2, 6, 10, 0.34)', 'rgba(2, 5, 8, 0.30)', 'rgba(0, 0, 0, 0.52)']}
-            locations={[0, 0.42, 1]}
-            pointerEvents="none"
-            style={[styles.backgroundImage, { height: backgroundHeight, width }]}
-          />
-          <View style={[styles.header, { paddingTop: insets.top + 12 }]}>
-            <Text style={styles.heading}>Explore</Text>
-            <Pressable
-              accessibilityLabel="Search soundscapes"
-              accessibilityRole="button"
-              hitSlop={10}
-              onPress={() => router.push('/(tabs)/library' as Href)}
-              style={({ pressed }) => [styles.iconButton, pressed && styles.pressed]}>
-              <Ionicons color="rgba(255, 255, 255, 0.7)" name="search-outline" size={21} />
-            </Pressable>
+          <View pointerEvents="none" style={[styles.backgroundImage, { height: backgroundHeight, width }]}>
+            <Image
+              contentFit="cover"
+              contentPosition="top center"
+              source={EXPLORE_BACKGROUND}
+              style={StyleSheet.absoluteFill}
+            />
+            <LinearGradient
+              colors={['rgba(4, 8, 12, 0.18)', 'rgba(5, 8, 11, 0.55)', 'rgba(8, 9, 11, 0.94)', '#0B0B0D']}
+              locations={[0, 0.4, 0.85, 1]}
+              style={StyleSheet.absoluteFill}
+            />
           </View>
+        <View style={[styles.header, { paddingTop: insets.top + 12 }]}>
+          <Text style={styles.heading}>Explore</Text>
+          <Pressable
+            accessibilityLabel="Search soundscapes"
+            accessibilityRole="button"
+            hitSlop={10}
+            onPress={() => router.push('/(tabs)/library' as Href)}
+            style={({ pressed }) => [styles.iconButton, pressed && styles.pressed]}>
+            <Ionicons color="rgba(255, 255, 255, 0.85)" name="search-outline" size={20} />
+          </Pressable>
         </View>
-          {exploreQuery.isInitialLoading ? (
-            <ExploreSkeleton />
-          ) : exploreQuery.isError && groups.length === 0 ? (
-            <ErrorState onRetry={() => void exploreQuery.refetch()} />
-          ) : isEmpty ? (
-            <View style={styles.emptyContent}>
-              <EmptyState
-                icon="compass-outline"
-                iconColor={HalcyonColors.textPrimary}
-                message="Curated collections arrive as the catalogue fills out."
-                title="Nothing to explore yet"
+
+        {tabs.length > 1 && (
+          <ScrollView
+            contentContainerStyle={styles.chipRow}
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            style={styles.chipScroll}>
+            {tabs.map((key) => (
+              <FilterChip
+                key={key}
+                label={tabLabel(key)}
+                onPress={() => setActiveTab(key)}
+                selected={key === selectedTab}
               />
-            </View>
-          ) : (
-            <>
-              {!!featured && <FeaturedCard collection={featured} onPress={openCollection} />}
+            ))}
+          </ScrollView>
+        )}
+        </View>
 
-              {!!situation?.collections.length && (
-                <View style={styles.section}>
-                  <Text style={styles.sectionTitle}>{EXPLORE_GROUP_TITLES.situation}</Text>
-                  <ScrollView
-                    contentContainerStyle={styles.tileRow}
-                    horizontal
-                    showsHorizontalScrollIndicator={false}
-                    style={styles.horizontalScroll}>
-                    {situation.collections.map((collection) => (
-                      <View key={collection.id} style={styles.railCard}>
-                        <CollectionCard collection={collection} onPress={openCollection} />
-                      </View>
-                    ))}
-                  </ScrollView>
-                </View>
-              )}
+        {exploreQuery.isInitialLoading ? (
+          <ExploreSkeleton />
+        ) : exploreQuery.isError && groups.length === 0 ? (
+          <ErrorState onRetry={() => void exploreQuery.refetch()} />
+        ) : isEmpty ? (
+          <View style={styles.emptyContent}>
+            <EmptyState
+              icon="compass-outline"
+              iconColor={HalcyonColors.textPrimary}
+              message="Curated collections arrive as the catalogue fills out."
+              title="Nothing to explore yet"
+            />
+          </View>
+        ) : (
+          <>
+            {selectedTab === 'all' && !!featured && (
+              <FeaturedCard collection={featured} onPress={openCollection} />
+            )}
 
-              {!!editorial?.collections.length && (
-                <View style={styles.section}>
-                  <Text style={[styles.sectionTitle, styles.sectionTitleInset]}>
-                    {EXPLORE_GROUP_TITLES.editorial}
-                  </Text>
-                  <ScrollView
-                    contentContainerStyle={styles.tileRow}
-                    horizontal
-                    showsHorizontalScrollIndicator={false}>
-                    {editorial.collections.map((collection) => (
-                      <View key={collection.id} style={styles.railCard}>
-                        <CollectionCard collection={collection} onPress={openCollection} />
-                      </View>
-                    ))}
-                  </ScrollView>
-                </View>
-              )}
-
-              {remaining.map((group) => (
-                <View key={group.group} style={styles.section}>
-                  <Text style={styles.sectionTitle}>
-                    {EXPLORE_GROUP_TITLES[group.group] ?? group.group}
-                  </Text>
-                  <ScrollView
-                    contentContainerStyle={styles.tileRow}
-                    horizontal
-                    showsHorizontalScrollIndicator={false}>
+            {selectedTab === 'all'
+              ? visibleGroups.map((group) => (
+                  <View key={group.group} style={styles.section}>
+                    <View style={styles.sectionHeader}>
+                      <Text style={styles.sectionTitle}>{sectionLabel(group.group)}</Text>
+                      <Pressable
+                        accessibilityLabel={`See all ${sectionLabel(group.group)}`}
+                        accessibilityRole="button"
+                        hitSlop={10}
+                        onPress={() => setActiveTab(group.group)}
+                        style={({ pressed }) => [styles.seeAll, pressed && styles.pressed]}>
+                        <Text style={styles.seeAllText}>See all</Text>
+                        <Ionicons color={HalcyonColors.accent} name="chevron-forward" size={14} />
+                      </Pressable>
+                    </View>
+                    <ScrollView
+                      contentContainerStyle={styles.tileRow}
+                      horizontal
+                      showsHorizontalScrollIndicator={false}
+                      style={styles.horizontalScroll}>
+                      {group.collections.map((collection) => (
+                        <ExploreCard
+                          collection={collection}
+                          key={collection.id}
+                          onPress={openCollection}
+                        />
+                      ))}
+                    </ScrollView>
+                  </View>
+                ))
+              : visibleGroups.map((group) => (
+                  <View key={group.group} style={styles.wideList}>
                     {group.collections.map((collection) => (
-                      <View key={collection.id} style={styles.railCard}>
-                        <CollectionCard collection={collection} onPress={openCollection} />
-                      </View>
+                      <ExploreCard
+                        collection={collection}
+                        key={collection.id}
+                        onPress={openCollection}
+                        wide
+                      />
                     ))}
-                  </ScrollView>
-                </View>
-              ))}
-            </>
-          )}
+                  </View>
+                ))}
+          </>
+        )}
       </Animated.ScrollView>
 
       <Animated.View
@@ -210,6 +241,69 @@ export default function ExploreScreen() {
   );
 }
 
+function SoundscapeCount({ count, large }: { count: number | null; large?: boolean }) {
+  return (
+    <View style={styles.countRow}>
+      <View style={[styles.playCircle, large && styles.playCircleLarge]}>
+        <Ionicons
+          color={HalcyonColors.textPrimary}
+          name="play"
+          size={large ? 11 : 9}
+          style={styles.playIcon}
+        />
+      </View>
+      <Text numberOfLines={1} style={[styles.countText, large && styles.countTextLarge]}>
+        {count === null ? 'Collection' : `${count} ${count === 1 ? 'soundscape' : 'soundscapes'}`}
+      </Text>
+    </View>
+  );
+}
+
+function ArrowButton({ large }: { large?: boolean }) {
+  return (
+    <View style={[styles.arrow, large && styles.arrowLarge]}>
+      <Ionicons color="#FFFFFF" name="chevron-forward" size={large ? 18 : 16} />
+    </View>
+  );
+}
+
+function ExploreCard({
+  collection,
+  onPress,
+  wide,
+}: {
+  collection: Collection;
+  onPress: (collection: Collection) => void;
+  /** Full-width card, used when a single group is open. */
+  wide?: boolean;
+}) {
+  return (
+    <Pressable
+      accessibilityLabel={collection.title}
+      accessibilityRole="button"
+      onPress={() => onPress(collection)}
+      style={({ pressed }) => [
+        styles.card,
+        wide ? styles.cardWide : { width: CARD_WIDTH },
+        pressed && styles.pressed,
+      ]}>
+      <CoverImage size="md" style={StyleSheet.absoluteFill} uri={collection.cover_image_url} />
+      <LinearGradient
+        colors={HalcyonCardGradient as unknown as readonly [string, string, ...string[]]}
+        locations={HalcyonCardGradientLocations as unknown as readonly [number, number, ...number[]]}
+        style={StyleSheet.absoluteFill}
+      />
+      <View style={styles.cardCopy}>
+        <Text numberOfLines={1} style={[styles.cardTitle, wide && styles.cardTitleWide]}>
+          {collection.title}
+        </Text>
+        <SoundscapeCount count={collection.soundscape_count ?? null} large={wide} />
+      </View>
+      <ArrowButton large={wide} />
+    </Pressable>
+  );
+}
+
 function FeaturedCard({
   collection,
   onPress,
@@ -217,8 +311,6 @@ function FeaturedCard({
   collection: Collection;
   onPress: (collection: Collection) => void;
 }) {
-  const count = collection.soundscape_count ?? null;
-
   return (
     <Pressable
       accessibilityLabel={collection.title}
@@ -232,7 +324,9 @@ function FeaturedCard({
         style={StyleSheet.absoluteFill}
       />
       <View style={styles.featuredCopy}>
-        <Text style={styles.featuredEyebrow}>Featured</Text>
+        <View style={styles.featuredPill}>
+          <Text style={styles.featuredEyebrow}>Featured</Text>
+        </View>
         <Text numberOfLines={2} style={styles.featuredTitle}>
           {collection.title}
         </Text>
@@ -241,12 +335,9 @@ function FeaturedCard({
             {collection.description}
           </Text>
         )}
-        {count !== null && (
-          <Text style={styles.featuredMeta}>
-            {count} {count === 1 ? 'soundscape' : 'soundscapes'}
-          </Text>
-        )}
+        <SoundscapeCount count={collection.soundscape_count ?? null} large />
       </View>
+      <ArrowButton large />
     </Pressable>
   );
 }
@@ -259,35 +350,14 @@ function ExploreSkeleton() {
         <View style={styles.skeletonHeading}>
           <View style={styles.skeletonLine} />
         </View>
-        <ScrollView
-          contentContainerStyle={styles.tileRow}
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          style={styles.horizontalScroll}>
-          {[0, 1, 2].map((index) => (
+        <View style={styles.tileRow}>
+          {[0, 1].map((index) => (
             <View
               key={index}
-              style={[styles.skeletonBlock, styles.gridSkeleton, { width: COLLECTION_CARD_WIDTH }]}
+              style={[styles.skeletonBlock, styles.gridSkeleton, { width: CARD_WIDTH }]}
             />
           ))}
-        </ScrollView>
-      </View>
-      <View style={styles.section}>
-        <View style={styles.skeletonHeading}>
-          <View style={styles.skeletonLine} />
         </View>
-        <ScrollView
-          contentContainerStyle={styles.tileRow}
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          style={styles.horizontalScroll}>
-          {[0, 1, 2].map((index) => (
-            <View
-              key={index}
-              style={[styles.skeletonBlock, styles.gridSkeleton, { width: COLLECTION_CARD_WIDTH }]}
-            />
-          ))}
-        </ScrollView>
       </View>
     </View>
   );
@@ -295,7 +365,7 @@ function ExploreSkeleton() {
 
 const styles = StyleSheet.create({
   screen: {
-    backgroundColor: '#000000',
+    backgroundColor: HalcyonColors.background,
     flex: 1,
   },
   scrollScene: {
@@ -317,7 +387,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     flexDirection: 'row',
     justifyContent: 'space-between',
-    paddingBottom: 16,
     paddingHorizontal: HalcyonSpacing.screenX,
   },
   heading: {
@@ -325,8 +394,10 @@ const styles = StyleSheet.create({
   },
   iconButton: {
     alignItems: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.12)',
+    backgroundColor: 'rgba(255, 255, 255, 0.14)',
+    borderColor: 'rgba(255, 255, 255, 0.18)',
     borderRadius: 20,
+    borderWidth: 1,
     height: 40,
     justifyContent: 'center',
     width: 40,
@@ -345,20 +416,146 @@ const styles = StyleSheet.create({
     flexGrow: 0,
     flexShrink: 0,
   },
+  chipScroll: {
+    flexGrow: 0,
+    flexShrink: 0,
+    marginBottom: 8,
+    marginTop: 18,
+  },
+  chipRow: {
+    alignItems: 'center',
+    columnGap: 8,
+    flexDirection: 'row',
+    flexWrap: 'nowrap',
+    paddingBottom: 4,
+    paddingHorizontal: HalcyonSpacing.screenX,
+  },
   section: {
     marginTop: HalcyonSpacing.section,
   },
-  sectionTitle: {
-    ...Typography.sectionHeading,
+  sectionHeader: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
     marginBottom: 14,
     paddingHorizontal: HalcyonSpacing.screenX,
   },
-  sectionTitleInset: {
+  sectionTitle: {
+    ...Typography.sectionHeading,
+  },
+  seeAll: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: 2,
+  },
+  seeAllText: {
+    color: HalcyonColors.accent,
+    fontFamily: AppFonts.sansMedium,
+    fontSize: 13,
+    fontWeight: '500',
+    lineHeight: 18,
+  },
+  grid: {
+    columnGap: CARD_GAP,
+    flexDirection: 'row',
+    flexWrap: 'wrap',
     paddingHorizontal: HalcyonSpacing.screenX,
+    rowGap: CARD_GAP,
+  },
+  card: {
+    backgroundColor: HalcyonColors.surface,
+    borderColor: 'rgba(255, 255, 255, 0.14)',
+    borderRadius: HalcyonRadius.card,
+    borderWidth: 1,
+    height: CARD_HEIGHT,
+    justifyContent: 'flex-end',
+    overflow: 'hidden',
+  },
+  cardWide: {
+    height: WIDE_CARD_HEIGHT,
+    width: '100%',
+  },
+  cardTitleWide: {
+    fontSize: 24,
+    lineHeight: 30,
+  },
+  wideList: {
+    paddingHorizontal: HalcyonSpacing.screenX,
+    paddingTop: HalcyonSpacing.card,
+    rowGap: CARD_GAP,
+  },
+  tileRow: {
+    columnGap: CARD_GAP,
+    flexDirection: 'row',
+    paddingHorizontal: HalcyonSpacing.screenX,
+  },
+  cardCopy: {
+    paddingBottom: 14,
+    paddingHorizontal: 14,
+    paddingRight: 48,
+  },
+  cardTitle: {
+    ...Typography.sectionHeading,
+    fontSize: 20,
+    lineHeight: 26,
+  },
+  countRow: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: 8,
+    marginTop: 6,
+  },
+  playCircle: {
+    alignItems: 'center',
+    borderColor: HalcyonColors.accent,
+    borderRadius: 11,
+    borderWidth: 1.5,
+    height: 22,
+    justifyContent: 'center',
+    width: 22,
+  },
+  playCircleLarge: {
+    borderRadius: 13,
+    height: 26,
+    width: 26,
+  },
+  playIcon: {
+    marginLeft: 2,
+  },
+  countText: {
+    color: HalcyonColors.textPrimary,
+    fontFamily: AppFonts.sansRegular,
+    fontSize: 12,
+    lineHeight: 16,
+    opacity: 0.9,
+  },
+  countTextLarge: {
+    fontSize: 13,
+    lineHeight: 18,
+  },
+  arrow: {
+    alignItems: 'center',
+    backgroundColor: 'rgba(8, 8, 10, 0.55)',
+    borderColor: 'rgba(255, 255, 255, 0.16)',
+    borderRadius: 15,
+    borderWidth: 1,
+    bottom: 12,
+    height: 30,
+    justifyContent: 'center',
+    position: 'absolute',
+    right: 12,
+    width: 30,
+  },
+  arrowLarge: {
+    borderRadius: 18,
+    bottom: 16,
+    height: 36,
+    right: 16,
+    width: 36,
   },
   featured: {
     backgroundColor: HalcyonColors.surface,
-    borderColor: HalcyonColors.border,
+    borderColor: 'rgba(255, 255, 255, 0.16)',
     borderRadius: HalcyonRadius.card,
     borderWidth: 1,
     height: 232,
@@ -369,9 +566,19 @@ const styles = StyleSheet.create({
   },
   featuredCopy: {
     padding: 18,
+    paddingRight: 64,
+  },
+  featuredPill: {
+    alignSelf: 'flex-start',
+    backgroundColor: 'rgba(195, 161, 122, 0.22)',
+    borderColor: 'rgba(195, 161, 122, 0.55)',
+    borderRadius: HalcyonRadius.pill,
+    borderWidth: 1,
+    paddingHorizontal: 10,
+    paddingVertical: 3,
   },
   featuredEyebrow: {
-    color: HalcyonColors.accent,
+    color: CHIP_ACTIVE,
     fontFamily: AppFonts.sansMedium,
     fontSize: 11,
     fontWeight: '500',
@@ -381,47 +588,29 @@ const styles = StyleSheet.create({
   },
   featuredTitle: {
     ...Typography.sectionHeading,
-    marginTop: 6,
+    marginTop: 8,
   },
   featuredBody: {
     ...Typography.muted,
-    marginTop: 6,
-  },
-  featuredMeta: {
-    color: HalcyonColors.textSecondary,
-    fontFamily: AppFonts.sansMedium,
-    fontSize: 12,
-    fontWeight: '500',
-    lineHeight: 16,
-    marginTop: 8,
-  },
-  tileRow: {
-    alignItems: 'center',
-    columnGap: CARD_GAP,
-    flexDirection: 'row',
-    flexWrap: 'nowrap',
-    paddingHorizontal: HalcyonSpacing.screenX,
-  },
-  railCard: {
-    width: COLLECTION_CARD_WIDTH,
+    marginTop: 4,
   },
   skeletonBlock: {
-    backgroundColor: HalcyonColors.surface,
+    backgroundColor: 'rgba(255, 255, 255, 0.08)',
     borderColor: 'transparent',
   },
   gridSkeleton: {
     borderRadius: HalcyonRadius.card,
-    height: COLLECTION_CARD_HEIGHT,
+    height: CARD_HEIGHT,
   },
   skeletonLine: {
-    backgroundColor: HalcyonColors.surface,
+    backgroundColor: 'rgba(255, 255, 255, 0.08)',
     borderRadius: 4,
     height: 20,
     maxWidth: '100%',
     width: 180,
   },
   skeletonHeading: {
-    height: 28,
+    height: 34,
     justifyContent: 'center',
     marginBottom: 14,
     paddingHorizontal: HalcyonSpacing.screenX,

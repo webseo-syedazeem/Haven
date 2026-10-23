@@ -31,7 +31,7 @@ const idleAt = (currentTime) => ({
 });
 const named = (calls, name) => calls.filter(([call]) => call === name);
 
-function createEngineHarness({ artworkCache = null } = {}) {
+function createEngineHarness({ artworkCache = null, platformOS = 'android' } = {}) {
   const players = [];
   const audioModes = [];
   const audioActive = [];
@@ -129,6 +129,7 @@ function createEngineHarness({ artworkCache = null } = {}) {
     Date: class extends Date { static now() { return now; } },
     require(id) {
       if (id === 'expo-audio') return audio;
+      if (id === 'react-native') return { Platform: { OS: platformOS } };
       if (id === '@/assets/audio/end-tone.wav') return 'end-tone.wav';
       if (id === './types') return { getArtworkCache: () => artworkCache };
       throw new Error('Unexpected engine dependency: ' + id);
@@ -494,7 +495,7 @@ test('a scoped engine with lock screen on activates once, updates tracks, and cl
   ]);
   await scoped.reset();
   const names = players[0].calls.map(([name]) => name);
-  assert.ok(names.includes('clearLockScreen'));
+  assert.equal(names.includes('clearLockScreen'), false);
   // `setActiveForLockScreen(false)` would clear a lock screen held by another player.
   assert.equal(lockScreenCalls().length, 1);
   assert.equal(names.at(-1), 'release');
@@ -509,8 +510,8 @@ test('teardown frees the native player without replacing its source, and raises 
 
   // `replace(null)` is rejected natively, so it can never be part of a teardown.
   assert.equal(plain(players[0].calls).some(([name, source]) => name === 'replace' && source == null), false);
-  assert.deepEqual(plain(players[0].calls.slice(-5)), [
-    ['pause'], ['clearLockScreen'], ['lockScreen', false], ['remove'], ['release'],
+  assert.deepEqual(plain(players[0].calls.slice(-3)), [
+    ['pause'], ['remove'], ['release'],
   ]);
   assert.equal(players[0].released, true);
   assert.deepEqual(warnings, []);
@@ -524,8 +525,8 @@ test('teardown frees the native player without replacing its source, and raises 
   assert.deepEqual(warnings, []);
 });
 
-test('a teardown step that fails cannot skip the steps after it, or the audio session release', async () => {
-  const { engine, players, audioActive, warnings } = createEngineHarness();
+test('iOS teardown steps cannot skip native release or audio-session release after a failure', async () => {
+  const { engine, players, audioActive, warnings } = createEngineHarness({ platformOS: 'ios' });
   await engine.load(track('a'));
   await engine.play();
   players[0].failing.add('clearLockScreenControls');
@@ -573,10 +574,13 @@ test('native config retains background audio and Android swipe-close service tea
   vm.runInNewContext(fs.readFileSync(path.join(root, 'plugins/with-expo-audio-stop-with-app.js'), 'utf8'), {
     module, exports: module.exports,
     require(id) {
+      if (id === 'node:fs/promises') return {};
+      if (id === 'node:path') return path;
       assert.equal(id, 'expo/config-plugins');
       return {
         AndroidConfig: { Manifest: { getMainApplicationOrThrow: () => application } },
         withAndroidManifest: (value, callback) => callback(value),
+        withDangerousMod: (value) => value,
       };
     },
   });

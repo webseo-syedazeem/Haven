@@ -1,3 +1,4 @@
+import { Ionicons } from '@expo/vector-icons';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import type { ReactNode } from 'react';
 
@@ -68,8 +69,9 @@ export function SectionRail<T>({
             accessibilityRole="button"
             hitSlop={8}
             onPress={onSeeAll}
-            style={({ pressed }) => pressed && styles.seeAllPressed}>
+            style={({ pressed }) => [styles.seeAllButton, pressed && styles.seeAllPressed]}>
             <Text style={styles.seeAll}>{seeAllLabel}</Text>
+            <Ionicons color={HalcyonColors.accent} name="chevron-forward" size={14} />
           </Pressable>
         )}
       </View>
@@ -134,6 +136,11 @@ const styles = StyleSheet.create({
     ...Typography.sectionHeading,
     flex: 1,
     paddingRight: 12,
+  },
+  seeAllButton: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: 2,
   },
   seeAll: {
     color: HalcyonColors.accent,

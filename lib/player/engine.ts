@@ -6,6 +6,7 @@ import {
   type AudioPlayer,
   type AudioStatus,
 } from 'expo-audio';
+import { Platform } from 'react-native';
 
 import {
   getArtworkCache,
@@ -586,12 +587,13 @@ export function createPlayerEngine(options: EngineOptions = {}): PlayerEngine {
   function disposePlayer(current: AudioPlayer) {
     const steps: [string, () => void][] = [['pause', () => current.pause()]];
 
-    if (lockScreenActive) {
-      // Both are intentional: clearLockScreenControls clears now-playing state,
-      // while the explicit false mirrors the activation beside `play`. The first only
-      // acts if this player holds the lock screen; the second would clear another
-      // player's, so a non-owner leaves it out. Clearing comes before `release`,
-      // which would otherwise drop the whole media session if this player held it.
+    if (lockScreenActive && Platform.OS !== 'android') {
+      // On Android, both clearLockScreenControls() and setActiveForLockScreen(false)
+      // call startForegroundService() when the task-removal service has already
+      // stopped. Because there is no player to post a notification for, Android
+      // then throws ForegroundServiceDidNotStartInTimeException. Releasing the
+      // Android shared player clears the existing media session directly without
+      // starting a service, so explicit deactivation is only needed on iOS/tvOS.
       steps.push(['clearLockScreenControls', () => current.clearLockScreenControls()]);
       if (ownsLockScreen) {
         steps.push(['setActiveForLockScreen(false)', () => current.setActiveForLockScreen(false)]);

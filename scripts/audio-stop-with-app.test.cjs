@@ -16,6 +16,7 @@ function applyPlugin(manifest) {
       return {
         AndroidConfig: { Manifest: { getMainApplicationOrThrow: (value) => value.manifest.application[0] } },
         withAndroidManifest: (config, mod) => mod({ ...config, modResults: manifest }),
+        withDangerousMod: (config) => config,
       };
     }
     return originalLoad.call(this, request, ...rest);
@@ -55,4 +56,26 @@ test('the plugin updates an existing service entry once, without duplicating it'
 test('the plugin is registered in the Expo config, so a rebuild applies it', () => {
   const { expo } = JSON.parse(fs.readFileSync(path.join(root, 'app.json'), 'utf8').replace(/^\uFEFF/, ''));
   assert.ok(expo.plugins.includes('./plugins/with-expo-audio-stop-with-app'));
+});
+
+test('native service teardown pauses audio and clears the Android media card before destruction', () => {
+  const pluginPath = path.join(root, 'plugins/with-expo-audio-stop-with-app.js');
+  delete require.cache[pluginPath];
+  const { patchAudioControlsServiceSource } = require(pluginPath);
+  const source = [
+    'class AudioControlsService {',
+    '  override fun onDestroy() {',
+    '    super.onDestroy()',
+    '    instance = null',
+    '  }',
+    '}',
+  ].join('\n');
+
+  const patched = patchAudioControlsServiceSource(source);
+  const pause = patched.indexOf('currentPlayer?.ref?.pause()');
+  const hide = patched.indexOf('hideNotification()');
+  const clear = patched.indexOf('clearSessionInternal()');
+  const destroy = patched.indexOf('super.onDestroy()');
+  assert.ok(pause > 0 && pause < hide && hide < clear && clear < destroy);
+  assert.equal(patchAudioControlsServiceSource(patched), patched, 'patch must be idempotent');
 });
