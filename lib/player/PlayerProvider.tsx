@@ -139,7 +139,6 @@ export type PlayerStateValue = {
   canRetry: boolean;
   timerSelection: TimerSelection | null;
   isFadingOut: boolean;
-  endToneEnabled: boolean;
   resumable: ResumableState | null;
   /** The "Continuous loop" (repeat-one) preference; persists across launches. */
   loopEnabled: boolean;
@@ -164,7 +163,6 @@ export type PlayerActions = {
   skipNext: () => Promise<void>;
   skipPrevious: () => Promise<void>;
   setTimer: (selection: TimerSelection | null) => void;
-  setEndToneEnabled: (enabled: boolean) => void;
   setLoopEnabled: (enabled: boolean) => void;
   /** `forgetResumable` also drops the Continue card, for a sign out: it belongs to the account. */
   stop: (options?: { forgetResumable?: boolean }) => Promise<void>;
@@ -183,7 +181,6 @@ const INITIAL_STATE: PlayerStateValue = {
   canRetry: false,
   timerSelection: null,
   isFadingOut: false,
-  endToneEnabled: false,
   resumable: null,
   loopEnabled: LOOP_ENABLED_DEFAULT,
   loopNotice: null,
@@ -227,7 +224,6 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
     pausedRemainingMs: null,
     pausedAt: null,
   });
-  const endToneRef = useRef(false);
   const loopEnabledRef = useRef(LOOP_ENABLED_DEFAULT);
   /** True only while loop is on because a timer auto-enabled it, never a user choice; session-only. */
   const loopAutoEnabledRef = useRef(false);
@@ -373,12 +369,6 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
   }, [clearFade, clearTimerState, persistNow, refreshResumable]);
 
   const handleTimerEnd = useCallback(() => {
-    const config = getTimerConfig(soundscapeRef.current?.mode);
-
-    // Modes that offer it play the optional gentle tone after their normal ending.
-    if (config.ending.offerEndTone && endToneRef.current) {
-      void engine.playEndTone();
-    }
     void finishPlayback();
   }, [finishPlayback]);
 
@@ -1018,11 +1008,6 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
 
   setTimerRef.current = setTimer;
 
-  const setEndToneEnabled = useCallback((enabled: boolean) => {
-    endToneRef.current = enabled;
-    setState((current) => ({ ...current, endToneEnabled: enabled }));
-  }, []);
-
   const setLoopEnabled = useCallback((enabled: boolean) => {
     // An explicit choice, even to turn it back off, is a real preference from
     // here on — no longer subject to being auto-reverted with the timer.
@@ -1069,7 +1054,6 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
     setState((current) => ({
       ...INITIAL_STATE,
       resumable: forgetResumable ? null : current.resumable,
-      endToneEnabled: current.endToneEnabled,
       loopEnabled: loopEnabledRef.current,
     }));
     setProgress(INITIAL_PROGRESS);
@@ -1096,7 +1080,6 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
       skipNext,
       skipPrevious,
       setTimer,
-      setEndToneEnabled,
       setLoopEnabled,
       stop,
       resume,
@@ -1108,7 +1091,6 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
       skipNext,
       skipPrevious,
       setTimer,
-      setEndToneEnabled,
       setLoopEnabled,
       stop,
       resume,

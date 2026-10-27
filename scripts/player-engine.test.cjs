@@ -430,25 +430,6 @@ test('stop preserves resume progress and volume fade does not replace the active
   assert.equal(engine.hasSource(), false);
 });
 
-test('end tone uses a separate player without replacing soundscape or lock-screen metadata', async () => {
-  const { engine, players, scheduled, runTimeouts } = createEngineHarness();
-  await engine.load(track('a'));
-  const soundscapeCalls = players[0].calls.length;
-  await engine.playEndTone();
-  assert.equal(players.length, 2);
-  const tone = players[1];
-  assert.equal(tone.source, 'end-tone.wav');
-  assert.equal(tone.options.keepAudioSessionActive, true);
-  assert.equal(tone.volume, 0.7);
-  assert.equal(players[0].calls.length, soundscapeCalls);
-  assert.equal(tone.calls.some(([name]) => name === 'lockScreen'), false);
-  assert.deepEqual(tone.calls.at(-1), ['play']);
-  tone.emit({ didJustFinish: true });
-  runTimeouts(0);
-  assert.deepEqual(tone.calls.at(-1), ['remove']);
-  assert.equal(scheduled.size, 0);
-});
-
 test('a scoped engine keeps its own player and listeners and leaves the lock screen and shared session alone', async () => {
   const { engine, createPlayerEngine, players, audioActive } = createEngineHarness();
   const scoped = createPlayerEngine({ lockScreen: false, releaseAudioSession: false });

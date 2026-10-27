@@ -55,8 +55,6 @@ export type PlayerEngine = {
   setLoopEnabled: (enabled: boolean) => void;
   getProgress: () => Promise<{ position: number; duration: number }>;
   subscribe: (listeners: EngineListeners) => () => void;
-  /** One short chime for the Focus end-of-timer option. */
-  playEndTone: () => Promise<void>;
 };
 
 export type EngineOptions = {

@@ -50,7 +50,6 @@ export default function PlayerScreen() {
     canRetry,
     timerSelection,
     isFadingOut,
-    endToneEnabled,
     loopEnabled,
     loopNotice,
     position,
@@ -61,7 +60,6 @@ export default function PlayerScreen() {
     skipNext,
     skipPrevious,
     setTimer,
-    setEndToneEnabled,
     setLoopEnabled,
   } = usePlayer();
 
@@ -328,7 +326,6 @@ export default function PlayerScreen() {
       </SafeAreaView>
 
       <TimerSheet
-        endToneEnabled={endToneEnabled}
         isLoading={timerLoading}
         isPaused={timerPaused}
         mode={soundscape.mode}
@@ -337,7 +334,6 @@ export default function PlayerScreen() {
           setTimer(selection);
           setTimerVisible(false);
         }}
-        onToggleEndTone={setEndToneEnabled}
         remainingSeconds={timerRemainingSeconds}
         selection={timerSelection}
         visible={timerVisible}

@@ -7,6 +7,10 @@ import type { ModeId } from '@/constants/modes';
  */
 export const UNTIL_I_STOP = 'until_i_stop';
 
+export const TIMER_MIN_MINUTES = 5;
+export const TIMER_MAX_MINUTES = 8 * 60;
+export const TIMER_STEP_MINUTES = 5;
+
 export type TimerSelection = number | typeof UNTIL_I_STOP;
 
 export type TimerPreset = {
@@ -17,9 +21,9 @@ export type TimerPreset = {
 
 export type TimerEnding =
   /** Volume ramps to silence over `fadeSeconds`, then playback stops. */
-  | { type: 'fade'; fadeSeconds: number; offerEndTone?: boolean }
-  /** Playback stops outright; an optional soft tone can be switched on by the user. */
-  | { type: 'silent'; offerEndTone: true };
+  | { type: 'fade'; fadeSeconds: number }
+  /** Playback stops outright and silently. */
+  | { type: 'silent' };
 
 export type ModeTimerConfig = {
   presets: readonly TimerPreset[];
@@ -71,7 +75,7 @@ const PRODUCTION_MODE_TIMERS: Record<ModeId, ModeTimerConfig> = {
       minutes(120, '2 hr'),
       UNTIL_I_STOP_PRESET,
     ],
-    ending: { type: 'fade', fadeSeconds: FADE_OUT_SECONDS, offerEndTone: true },
+    ending: { type: 'fade', fadeSeconds: FADE_OUT_SECONDS },
   },
 };
 
@@ -118,9 +122,6 @@ export function buildModeTimers(
 }
 
 export const MODE_TIMERS = buildModeTimers(SHOW_DEV_TIMER_PRESETS);
-
-/** Focus is the only mode that offers an end tone, and it is off until asked for. */
-export const END_TONE_DEFAULT = false;
 
 export function getTimerConfig(mode?: ModeId | string | null): ModeTimerConfig {
   const key = typeof mode === 'string' ? (mode.trim().toLowerCase() as ModeId) : undefined;

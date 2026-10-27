@@ -97,7 +97,7 @@ test('Test timer presets are isolated from server default timer preferences', ()
   assert.doesNotMatch(settingsSource, /buildModeTimers|MODE_TIMERS/);
 });
 
-test('all listening modes fade during the final minute and Focus keeps its optional end tone', () => {
+test('all listening modes fade during the final minute without an end tone', () => {
   const { buildModeTimers, FADE_OUT_SECONDS } = loadTimers(false);
   const timers = buildModeTimers(false);
 
@@ -105,5 +105,13 @@ test('all listening modes fade during the final minute and Focus keeps its optio
     assert.equal(timers[mode].ending.type, 'fade');
     assert.equal(timers[mode].ending.fadeSeconds, FADE_OUT_SECONDS);
   }
-  assert.equal(timers.focus.ending.offerEndTone, true);
+  assert.equal('offerEndTone' in timers.focus.ending, false);
+});
+
+test('the draggable timer range runs from 5 minutes to 8 hours in 5-minute steps', () => {
+  const { TIMER_MIN_MINUTES, TIMER_MAX_MINUTES, TIMER_STEP_MINUTES } = loadTimers(false);
+
+  assert.equal(TIMER_MIN_MINUTES, 5);
+  assert.equal(TIMER_MAX_MINUTES, 480);
+  assert.equal(TIMER_STEP_MINUTES, 5);
 });

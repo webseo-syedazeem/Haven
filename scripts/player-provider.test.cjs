@@ -33,7 +33,7 @@ function createPlayer({
   const listeners = new Set();
   const warnings = [];
   const calls = {
-    loads: [], seeks: [], saves: [], history: [], volumes: [], stop: 0, reset: 0, tones: 0,
+    loads: [], seeks: [], saves: [], history: [], volumes: [], stop: 0, reset: 0,
     subscribes: 0, setups: 0, loopEnabled: [], backgroundPlayback: [], localSettingWrites: [],
     guestStorageWrites: [], guestStorageRemovals: [],
   };
@@ -122,7 +122,6 @@ function createPlayer({
     setVolume: async (level) => { calls.volumes.push(level); },
     setBackgroundPlayback: async (enabled) => { calls.backgroundPlayback.push(enabled); },
     setLoopEnabled: (enabled) => { calls.loopEnabled.push(enabled); },
-    playEndTone: async () => { calls.tones++; },
   };
   const cache = new Map();
   const schedule = (callback, delay, interval) => {
@@ -488,17 +487,15 @@ test('turning fade off keeps full volume until the timer stops playback', async 
   assert.equal(player.calls.stop, 1);
 });
 
-test('queue changes preserve the timer deadline and Focus end tone', async () => {
+test('queue changes preserve the timer deadline', async () => {
   const player = createPlayer();
   await player.act('playSoundscape', tracks[0], { queue: tracks });
   await player.act('setTimer', 1);
-  await player.act('setEndToneEnabled', true);
   await player.advance(5000);
   assert.equal(player.progress.timerRemainingSeconds, 55);
   await player.act('skipNext');
   assert.equal(player.progress.timerRemainingSeconds, 55);
   await player.advance(55000);
-  assert.equal(player.calls.tones, 1);
   assert.equal(player.calls.stop, 1);
   assert.equal(player.state.timerSelection, null);
 });
@@ -970,10 +967,9 @@ test('the 5-minute Test timer (DEV preset) survives a pause and resume', async (
   assert.equal(player.calls.stop, 1);
 });
 
-test('Focus fades during its final minute, survives pause/resume, and keeps its optional end tone', async () => {
+test('Focus fades during its final minute and survives pause/resume', async () => {
   const player = createPlayer();
   await player.act('playSoundscape', track('focus-timer', 'focus'));
-  await player.act('setEndToneEnabled', true);
   await player.act('setTimer', 2);
 
   await player.advance(59000);
@@ -996,7 +992,6 @@ test('Focus fades during its final minute, survives pause/resume, and keeps its 
 
   await player.advance(30000);
   assert.equal(player.calls.stop, 1);
-  assert.equal(player.calls.tones, 1);
 });
 
 test('a timer frozen by pausing never fires across an AppState background/foreground cycle', async () => {

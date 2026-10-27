@@ -23,7 +23,6 @@ export const createPlayerEngine = (): PlayerEngine => ({
   setLoopEnabled: () => {},
   getProgress: async () => ({ position: 0, duration: 0 }),
   subscribe: () => () => {},
-  playEndTone: noop,
 });
 
 export const engine: PlayerEngine = createPlayerEngine();

@@ -110,8 +110,8 @@ test('player, soundscape detail and collection screens no longer offer Download 
   const player = read('app/player.tsx');
   assert.doesNotMatch(player, /download/i);
   assert.doesNotMatch(player, /share/i);
-  assert.match(player, /label="Timer"/);
-  assert.match(player, /label="Playlist"/);
+  assert.match(player, /accessibilityLabel=\{`Timer,/);
+  assert.match(player, /accessibilityLabel="Playlist"/);
 
   const soundscapeDetail = read('app/soundscape/[id].tsx');
   assert.doesNotMatch(soundscapeDetail, /download/i);

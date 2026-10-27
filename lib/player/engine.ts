@@ -35,10 +35,6 @@ const STATUS_INTERVAL_MS = 500;
 /** The 10s skip buttons expo-audio drives natively from the media session. */
 const LOCK_SCREEN_OPTIONS = { showSeekForward: true, showSeekBackward: true };
 
-const END_TONE_VOLUME = 0.7;
-/** Releases the end tone even if its finish event never lands. */
-const END_TONE_FAILSAFE_MS = 30_000;
-
 /**
  * The stall watchdog. expo-audio reports no playback errors: a failed load on
  * Android leaves ExoPlayer idle, fetching nothing until the source is prepared
@@ -900,43 +896,6 @@ export function createPlayerEngine(options: EngineOptions = {}): PlayerEngine {
       };
     },
 
-    /**
-     * The Focus end tone is a one shot UI sound on its own short lived player, so
-     * it never touches the lock screen or replaces the current soundscape.
-     */
-    playEndTone: async () => {
-      try {
-        const tone = createAudioPlayer(require('@/assets/audio/end-tone.wav'), {
-          // Leaves the shared audio session up, so ending the chime cannot cut
-          // anything else short. It is never made active for the lock screen.
-          keepAudioSessionActive: true,
-        });
-        tone.volume = END_TONE_VOLUME;
-
-        let released = false;
-        let subscription: Subscription | null = null;
-        let failsafe: ReturnType<typeof setTimeout> | null = null;
-
-        const release = () => {
-          if (released) return;
-          released = true;
-
-          if (failsafe) clearTimeout(failsafe);
-          subscription?.remove();
-          // Deferred so the player is not freed from inside its own event.
-          setTimeout(() => tone.remove(), 0);
-        };
-
-        subscription = tone.addListener('playbackStatusUpdate', (status) => {
-          if (status.didJustFinish) release();
-        });
-        failsafe = setTimeout(release, END_TONE_FAILSAFE_MS);
-
-        tone.play();
-      } catch (error) {
-        console.warn('[player] end tone failed', error);
-      }
-    },
   };
 }
 
