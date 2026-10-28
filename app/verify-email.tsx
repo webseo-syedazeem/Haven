@@ -22,6 +22,47 @@ const background = require('@/assets/images/auth-verify-letterbox-rain-v4.webp')
 
 const RESEND_COOLDOWN_SECONDS = 30;
 
+const IOS_MAIL_CLIENTS = [
+  'googlegmail://',
+  'ms-outlook://',
+  'ymail://',
+  'readdle-spark://',
+  'message://',
+] as const;
+
+function webInboxUrl(address: string): string | null {
+  const domain = address.split('@')[1]?.toLowerCase();
+
+  if (domain === 'gmail.com' || domain === 'googlemail.com') {
+    return 'https://mail.google.com/mail/u/0/#inbox';
+  }
+  if (domain === 'outlook.com' || domain === 'hotmail.com' || domain === 'live.com' || domain === 'msn.com') {
+    return 'https://outlook.live.com/mail/0/inbox';
+  }
+  if (domain === 'yahoo.com' || domain?.startsWith('yahoo.')) {
+    return 'https://mail.yahoo.com/';
+  }
+  if (domain === 'icloud.com' || domain === 'me.com' || domain === 'mac.com') {
+    return 'https://www.icloud.com/mail/';
+  }
+  if (domain === 'proton.me' || domain === 'protonmail.com') {
+    return 'https://mail.proton.me/';
+  }
+
+  return null;
+}
+
+async function tryOpenUrl(url: string): Promise<boolean> {
+  try {
+    if (!(await Linking.canOpenURL(url))) return false;
+    await Linking.openURL(url);
+    return true;
+  } catch {
+    // One unavailable/misconfigured client must not prevent the next fallback.
+    return false;
+  }
+}
+
 function firstParam(value: string | string[] | undefined): string {
   return Array.isArray(value) ? value[0] ?? '' : value ?? '';
 }
@@ -99,18 +140,22 @@ export default function VerifyEmailScreen() {
     setOpeningMail(true);
     setMessage('');
     try {
-      const candidates = Platform.OS === 'ios' ? ['message://', 'mailto:'] : ['mailto:'];
-      let opened = false;
-      for (const url of candidates) {
-        if (await Linking.canOpenURL(url)) {
-          await Linking.openURL(url);
-          opened = true;
-          break;
-        }
+      const nativeCandidates = Platform.OS === 'ios' ? IOS_MAIL_CLIENTS : ['mailto:'];
+
+      for (const url of nativeCandidates) {
+        if (await tryOpenUrl(url)) return;
       }
-      if (!opened) {
-        setMessage('No email app is available on this device.');
-      }
+
+      // `mailto:` respects the user's default iOS email client. It opens a
+      // compose view, so keep it behind the direct inbox schemes above.
+      if (Platform.OS === 'ios' && (await tryOpenUrl('mailto:'))) return;
+
+      // iOS users can remove Mail and may not have another supported client.
+      // A provider inbox in the browser is a reliable final fallback.
+      const inboxUrl = webInboxUrl(email);
+      if (inboxUrl && (await tryOpenUrl(inboxUrl))) return;
+
+      setMessage('No email app is available. Please open your inbox manually.');
     } catch {
       setMessage('We could not open your email app. Please open it manually.');
     } finally {

@@ -13,6 +13,12 @@
       "bundleIdentifier": "com.happycheeksltd.halcyon",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
+        "LSApplicationQueriesSchemes": [
+          "googlegmail",
+          "ms-outlook",
+          "ymail",
+          "readdle-spark"
+        ],
         "UIBackgroundModes": [
           "audio"
         ]
