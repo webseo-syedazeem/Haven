@@ -31,11 +31,117 @@ const idleAt = (currentTime) => ({
 });
 const named = (calls, name) => calls.filter(([call]) => call === name);
 
+function deferred() {
+  let resolve, reject;
+  const promise = new Promise((yes, no) => { resolve = yes; reject = no; });
+  return { promise, resolve, reject };
+}
+
+test('iOS awaits off-thread session activation; pausing cancels a late play', async () => {
+  const harness = createEngineHarness({ platformOS: 'ios' });
+  await harness.engine.load(track('a'));
+  const native = harness.players[0];
+  assert.equal(native.options.keepAudioSessionActive, true);
+  const seen = watch(harness.engine);
+  const gate = deferred();
+  harness.audio.setIsAudioActiveAsync = () => gate.promise;
+  const pending = harness.engine.play();
+  await harness.flush();
+  assert.equal(named(native.calls, 'play').length, 0);
+  await harness.engine.pause();
+  assert.deepEqual(seen.changes.at(-1), { isPlaying: false, isBuffering: false });
+  gate.resolve();
+  await pending;
+  assert.equal(named(native.calls, 'play').length, 0);
+});
+
+test('a delayed activation for A cannot start B, and B can start normally', async () => {
+  const harness = createEngineHarness({ platformOS: 'ios' });
+  await harness.engine.load(track('a'));
+  const first = deferred();
+  harness.audio.setIsAudioActiveAsync = () => first.promise;
+  const pendingA = harness.engine.play();
+  await harness.engine.load(track('b'));
+  harness.audio.setIsAudioActiveAsync = async () => {};
+  await harness.engine.play();
+  first.resolve();
+  await pendingA;
+  assert.equal(harness.players[0].source, track('b').url);
+  assert.equal(named(harness.players[0].calls, 'play').length, 1);
+});
+
+test('session activation timeout reports failure and a late response never starts audio', async () => {
+  const harness = createEngineHarness({ platformOS: 'ios' });
+  await harness.engine.load(track('a'));
+  const seen = watch(harness.engine);
+  const gate = deferred();
+  harness.audio.setIsAudioActiveAsync = () => gate.promise;
+  const result = harness.engine.play().catch((error) => error);
+  await harness.flush();
+  harness.runTimeouts(15_000);
+  assert.match((await result).message, /did not respond/);
+  assert.equal(seen.failures, 1);
+  assert.deepEqual(seen.changes.at(-1), { isPlaying: false, isBuffering: false });
+  assert.equal(harness.diagnostics.at(-1).event, 'session_error');
+  gate.resolve();
+  await harness.flush();
+  assert.equal(named(harness.players[0].calls, 'play').length, 0);
+  harness.audio.setIsAudioActiveAsync = async () => {};
+  await harness.engine.play();
+  assert.equal(named(harness.players[0].calls, 'play').length, 1);
+});
+
+test('an old setup completing after reset cannot create a ghost player', async () => {
+  const harness = createEngineHarness({ platformOS: 'ios' });
+  const gate = deferred();
+  harness.audio.setAudioModeAsync = () => gate.promise;
+  const pending = harness.engine.setup();
+  await harness.engine.reset();
+  gate.resolve();
+  assert.equal(await pending, false);
+  assert.equal(harness.players.length, 0);
+  harness.audio.setAudioModeAsync = async () => {};
+  await harness.engine.load(track('b'));
+  assert.equal(harness.players.length, 1);
+});
+
+test('late teardown completion cannot erase a newly loaded source', async () => {
+  const harness = createEngineHarness({ platformOS: 'ios' });
+  await harness.engine.load(track('a'));
+  const gate = deferred();
+  harness.audio.setIsAudioActiveAsync = (active) => active ? Promise.resolve() : gate.promise;
+  const resetting = harness.engine.reset();
+  await harness.engine.load(track('b'));
+  gate.resolve();
+  await resetting;
+  assert.equal(harness.engine.hasSource(), true);
+  await harness.engine.play();
+  assert.equal(harness.players[1].source, track('b').url);
+  assert.equal(named(harness.players[1].calls, 'play').length, 1);
+});
+
+test('persistent buffering stops after bounded recovery and a user can retry', async () => {
+  const harness = createEngineHarness();
+  await harness.engine.load(track('a'));
+  await harness.engine.play();
+  const seen = watch(harness.engine);
+  await harness.advance(180_000);
+  assert.equal(seen.failures, 1);
+  assert.equal(harness.players[0].released, true);
+  assert.equal(named(harness.players[0].calls, 'replace').length, 6);
+  assert.equal(harness.diagnostics.filter((event) => event.event === 'failed').length, 1);
+  await harness.engine.load(track('a'));
+  await harness.engine.play();
+  assert.equal(harness.players.length, 2);
+  assert.equal(harness.engine.hasSource(), true);
+});
+
 function createEngineHarness({ artworkCache = null, platformOS = 'android' } = {}) {
   const players = [];
   const audioModes = [];
   const audioActive = [];
   const warnings = [];
+  const diagnostics = [];
   const scheduled = new Map();
   const intervals = new Map();
   let nextTimeout = 1;
@@ -131,7 +237,7 @@ function createEngineHarness({ artworkCache = null, platformOS = 'android' } = {
       if (id === 'expo-audio') return audio;
       if (id === 'react-native') return { Platform: { OS: platformOS } };
       if (id === '@/assets/audio/end-tone.wav') return 'end-tone.wav';
-      if (id === './types') return { getArtworkCache: () => artworkCache };
+      if (id === './types') return { getArtworkCache: () => artworkCache, reportPlayerDiagnostic: (event) => diagnostics.push(plain(event)) };
       throw new Error('Unexpected engine dependency: ' + id);
     },
     setTimeout(callback, delay) {
@@ -151,7 +257,7 @@ function createEngineHarness({ artworkCache = null, platformOS = 'android' } = {
   const flush = () => new Promise(setImmediate);
   return {
     engine: module.exports.engine, createPlayerEngine: module.exports.createPlayerEngine,
-    players, audioModes, audioActive, scheduled, warnings, flush,
+    players, audioModes, audioActive, scheduled, warnings, flush, audio, diagnostics,
     runTimeouts(delay) {
       for (const [id, timeout] of [...scheduled]) {
         if (timeout.delay !== delay) continue;
@@ -520,7 +626,7 @@ test('iOS teardown steps cannot skip native release or audio-session release aft
   assert.match(warnings[1], /native teardown failed at clearLockScreenControls/);
   assert.deepEqual(plain(players[0].calls.slice(-3)), [['lockScreen', false], ['remove'], ['release']]);
   assert.equal(players[0].released, true);
-  assert.deepEqual(audioActive, [true, false]);
+  assert.deepEqual(audioActive, [true, true, false]);
 });
 
 test('an engine torn down and set up again builds one native player per round, and frees each one', async () => {

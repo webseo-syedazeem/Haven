@@ -1,5 +1,5 @@
 import { Image } from 'expo-image';
-import { useLocalSearchParams, useRouter, type Href } from 'expo-router';
+import { useFocusEffect, useLocalSearchParams, useRouter, type Href } from 'expo-router';
 import { useCallback, useRef, useState } from 'react';
 import { Animated, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -34,6 +34,8 @@ export default function ModeHubScreen() {
   const { sections, totalCount, isLoading, isError, refetch, isRefetching } =
     useModeSections(modeId);
   const { playSoundscape } = usePlayerActions();
+  const playNavigationRequest = useRef(0);
+  useFocusEffect(useCallback(() => () => { playNavigationRequest.current += 1; }, []));
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
   const scrollAnim = useRef(new Animated.Value(0)).current;
   const overlayOpacity = scrollAnim.interpolate({
@@ -49,7 +51,9 @@ export default function ModeHubScreen() {
 
   const playFromMode = useCallback(
     async (soundscape: Soundscape) => {
+      const request = ++playNavigationRequest.current;
       await playSoundscape(soundscape);
+      if (request !== playNavigationRequest.current) return;
       router.push('/player' as Href);
     },
     [playSoundscape, router]
@@ -128,11 +132,12 @@ export default function ModeHubScreen() {
                 keyExtractor={(item, index) => item.id ?? `${index}`}
                 layout={isExpanded ? 'grid' : 'rail'}
                 onSeeAll={section.items.length > 2 ? () => toggleExpanded(section.key) : undefined}
-                renderItem={(soundscape) => (
+                renderItem={(soundscape, _index, width) => (
                   <SoundscapeCard
                     onPlay={(item) => void playFromMode(item)}
                     onPress={openSoundscape}
                     soundscape={soundscape}
+                    width={width}
                   />
                 )}
                 seeAllLabel={isExpanded ? 'Show less' : 'See all'}

@@ -1,5 +1,21 @@
 import type { Soundscape } from '@/lib/api/home';
 
+export type PlayerDiagnostic = {
+  event: 'load' | 'play' | 'pause' | 'recovery' | 'failed' | 'session_error';
+  trackId?: string;
+  attempt?: number;
+  reason?: string;
+};
+
+let diagnosticReporter: ((event: PlayerDiagnostic) => void) | null = null;
+export function setPlayerDiagnosticReporter(reporter: (event: PlayerDiagnostic) => void) {
+  diagnosticReporter = reporter;
+}
+export function reportPlayerDiagnostic(event: PlayerDiagnostic) {
+  // Monitoring must never break playback. Deliberately exclude URLs and titles.
+  try { diagnosticReporter?.(event); } catch { /* best effort */ }
+}
+
 /** The minimum a soundscape needs before it can be handed to the audio engine. */
 export type PlayableTrack = {
   id: string;

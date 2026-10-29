@@ -20,6 +20,8 @@ type SoundscapeCardProps = {
   showFavourite?: boolean;
   isFavourite?: boolean;
   onToggleFavourite?: (soundscape: Soundscape, isFavourite: boolean) => void;
+  /** Optional custom width for grid layouts */
+  width?: number;
 };
 
 export function SoundscapeCard({
@@ -29,6 +31,7 @@ export function SoundscapeCard({
   showFavourite = false,
   isFavourite = false,
   onToggleFavourite,
+  width = SOUNDSCAPE_CARD_WIDTH,
 }: SoundscapeCardProps) {
   const duration = formatDuration(soundscape.duration_seconds);
   const title = soundscape.short_title?.trim() || soundscape.title;
@@ -38,8 +41,8 @@ export function SoundscapeCard({
       accessibilityLabel={title}
       accessibilityRole="button"
       onPress={() => onPress?.(soundscape)}
-      style={({ pressed }) => [styles.card, pressed && styles.cardPressed]}>
-      <View style={styles.artworkFrame}>
+      style={({ pressed }) => [styles.card, { width }, pressed && styles.cardPressed]}>
+      <View style={[styles.artworkFrame, { width, height: width }]}>
         <CoverImage size="sm" style={styles.artwork} uri={soundscape.artwork_url} />
         <Pressable
           accessibilityLabel={`Play ${title}`}
@@ -76,7 +79,7 @@ export function SoundscapeCard({
 
 const styles = StyleSheet.create({
   card: {
-    width: SOUNDSCAPE_CARD_WIDTH,
+    // Width is set dynamically via inline style
   },
   cardPressed: {
     opacity: 0.82,
@@ -86,9 +89,8 @@ const styles = StyleSheet.create({
     borderColor: HalcyonColors.border,
     borderRadius: HalcyonRadius.artwork,
     borderWidth: 1,
-    height: SOUNDSCAPE_CARD_WIDTH,
+    // Width and height are set dynamically via inline style
     overflow: 'hidden',
-    width: SOUNDSCAPE_CARD_WIDTH,
   },
   artwork: {
     height: '100%',

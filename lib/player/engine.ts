@@ -10,6 +10,7 @@ import { Platform } from 'react-native';
 
 import {
   getArtworkCache,
+  reportPlayerDiagnostic,
   type EngineListeners,
   type EngineOptions,
   type PlayableTrack,
@@ -42,6 +43,18 @@ const LOCK_SCREEN_OPTIONS = { showSeekForward: true, showSeekBackward: true };
  * engine samples the native player and reloads the source once it stops moving.
  */
 const WATCHDOG_INTERVAL_MS = 1000;
+const AUDIO_OPERATION_TIMEOUT_MS = 15_000;
+const MAX_RECOVERY_ATTEMPTS = 5;
+
+function withAudioTimeout<T>(operation: Promise<T>): Promise<T> {
+  return new Promise((resolve, reject) => {
+    const timer = setTimeout(() => reject(new Error('Audio session did not respond in time.')), AUDIO_OPERATION_TIMEOUT_MS);
+    operation.then(
+      (value) => { clearTimeout(timer); resolve(value); },
+      (error) => { clearTimeout(timer); reject(error); }
+    );
+  });
+}
 /** Idle with a source loaded only follows a failed load, so it is acted on almost at once. */
 const IDLE_TIMEOUT_MS = 1500;
 /** A player that says it is playing has to move; frozen this long is a stall. */
@@ -51,7 +64,7 @@ const BUFFERING_TIMEOUT_MS = 10_000;
 /**
  * The first two recovery reloads happen as soon as the watchdog declares the
  * source stuck. Later reloads back off so a long offline spell does not hammer
- * the network, while still keeping the listener's play request alive.
+ * the network. Persistent failure eventually exposes an explicit retry.
  */
 const RECOVERY_BACKOFF_MS = [0, 0, 5_000, 10_000, 20_000, 30_000] as const;
 /** Unbroken playback this long closes a failure, restoring the full retry budget. */
@@ -132,6 +145,10 @@ export function createPlayerEngine(options: EngineOptions = {}): PlayerEngine {
   let nativeLoopEnabled = false;
   /** Bumped on every source swap and teardown, so work queued for an old source is dropped. */
   let sourceGeneration = 0;
+  let lifecycleGeneration = 0;
+  let loadRequest = 0;
+  let playRequest = 0;
+  let waitingForSession = false;
   /**
    * Set once the current source has opened. AVPlayer throws on a seek before its
    * item is ready to play, so until then a seek waits in `pendingSeek`.
@@ -215,9 +232,33 @@ export function createPlayerEngine(options: EngineOptions = {}): PlayerEngine {
     lockScreenActive = true;
   }
 
-  function playCurrent(current: AudioPlayer) {
+  async function playCurrent(current: AudioPlayer) {
+    const request = ++playRequest;
+    const generation = sourceGeneration;
+    if (Platform.OS === 'ios') {
+      waitingForSession = true;
+      reportPlayback(false, true);
+      try {
+        // Our native patch runs this on a dedicated queue. keepAudioSessionActive
+        // prevents play() from repeating setActive synchronously on the JS thread.
+        await withAudioTimeout(setIsAudioActiveAsync(true));
+      } catch (error) {
+        if (request !== playRequest || generation !== sourceGeneration || player !== current) return;
+        reportPlayerDiagnostic({ event: 'session_error', trackId: currentTrack?.id, reason: 'activation_failed_or_timed_out' });
+        wantsPlayback = false;
+        stopWatching();
+        reportPlayback(false, false);
+        emit('onPlaybackFailed');
+        throw error;
+      } finally {
+        if (request === playRequest) waitingForSession = false;
+      }
+    }
+    if (request !== playRequest || generation !== sourceGeneration || player !== current || !wantsPlayback) return;
     activateLockScreen(current);
     current.play();
+    restartWatch(resumeTarget);
+    reportPlayerDiagnostic({ event: 'play', trackId: currentTrack?.id });
   }
 
   function pushProgress() {
@@ -297,6 +338,8 @@ export function createPlayerEngine(options: EngineOptions = {}): PlayerEngine {
       stopWatching();
       return;
     }
+
+    if (waitingForSession) return;
 
     const now = Date.now();
     // Timers stop while the app is suspended and can fire late on a busy JS
@@ -378,10 +421,15 @@ export function createPlayerEngine(options: EngineOptions = {}): PlayerEngine {
     }
   }
 
-  /** Reloads a stuck source where it should be, backing off but never abandoning playback. */
+  /** Recover transient failures, then offer an explicit retry instead of an endless spinner. */
   function handleStall(reason: string) {
     const now = Date.now();
     if (now < nextRecoveryAt) return;
+
+    if (recoveryAttempts >= MAX_RECOVERY_ATTEMPTS) {
+      void giveUp('exceeded the automatic retry limit');
+      return;
+    }
 
     recoveryAttempts += 1;
     const backoffIndex = Math.min(recoveryAttempts, RECOVERY_BACKOFF_MS.length - 1);
@@ -390,6 +438,7 @@ export function createPlayerEngine(options: EngineOptions = {}): PlayerEngine {
       `[player] playback ${reason}; reloading at ${Math.round(resumeTarget)}s ` +
         `(attempt ${recoveryAttempts}; automatic retries remain enabled)`
     );
+    reportPlayerDiagnostic({ event: 'recovery', trackId: currentTrack?.id, attempt: recoveryAttempts, reason });
     reload(resumeTarget);
   }
 
@@ -402,6 +451,8 @@ export function createPlayerEngine(options: EngineOptions = {}): PlayerEngine {
     const current = player;
     const track = currentTrack;
     if (!current || !track) return;
+    playRequest += 1;
+    waitingForSession = false;
 
     try {
       current.pause();
@@ -435,6 +486,7 @@ export function createPlayerEngine(options: EngineOptions = {}): PlayerEngine {
     const position = resumeTarget;
     const duration = knownDuration;
     const trackId = currentTrack?.id ?? null;
+    reportPlayerDiagnostic({ event: 'failed', trackId: trackId ?? undefined, reason, attempt: recoveryAttempts });
     wantsPlayback = false;
     stopWatching();
 
@@ -464,7 +516,7 @@ export function createPlayerEngine(options: EngineOptions = {}): PlayerEngine {
       if (generation !== sourceGeneration || !resumeAfterSeek) return;
 
       resumeAfterSeek = false;
-      if (wantsPlayback) playCurrent(current);
+      if (wantsPlayback) await playCurrent(current);
     } catch (error) {
       console.warn('[player] could not start at the saved position', error);
       if (generation !== sourceGeneration) return;
@@ -482,7 +534,7 @@ export function createPlayerEngine(options: EngineOptions = {}): PlayerEngine {
     // is left to the watchdog; reporting it as buffering kept the spinner up
     // forever. Playback held back for a resume seek still counts as buffering.
     const isBuffering =
-      hasSource && (phase === 'buffering' || (resumeAfterSeek && phase !== 'idle'));
+      hasSource && (waitingForSession || phase === 'buffering' || (resumeAfterSeek && phase !== 'idle'));
     reportPlayback(isPlaying, isBuffering);
 
     if (isPlaying && hasSource && !wantsPlayback) {
@@ -541,7 +593,12 @@ export function createPlayerEngine(options: EngineOptions = {}): PlayerEngine {
   function ensurePlayer(): AudioPlayer {
     if (player) return player;
 
-    player = createAudioPlayer(null, { updateInterval: STATUS_INTERVAL_MS });
+    player = createAudioPlayer(null, {
+      updateInterval: STATUS_INTERVAL_MS,
+      // iOS activation is explicitly awaited in playCurrent; pause must not
+      // schedule a blocking main-thread deactivation between source swaps.
+      keepAudioSessionActive: Platform.OS === 'ios',
+    });
     statusSubscription = player.addListener('playbackStatusUpdate', handleStatus);
 
     return player;
@@ -622,6 +679,10 @@ export function createPlayerEngine(options: EngineOptions = {}): PlayerEngine {
     setupPromise = null;
     wantsPlayback = false;
     sourceGeneration += 1;
+    lifecycleGeneration += 1;
+    loadRequest += 1;
+    playRequest += 1;
+    waitingForSession = false;
     stopWatching();
 
     statusSubscription?.remove();
@@ -629,25 +690,27 @@ export function createPlayerEngine(options: EngineOptions = {}): PlayerEngine {
 
     if (current) disposePlayer(current);
 
+    // Reset synchronously: a late session deactivation must never erase a newer load.
+    resetBookkeeping();
+    emit('onPlaybackChange', { isPlaying: false, isBuffering: false });
+    if (emitResetProgress) {
+      emit('onProgress', { position: 0, duration: 0, trackId: null });
+    }
+
     if (releaseAudioSession) {
       try {
         // Releases audio focus / the iOS audio session after the player is gone.
-        await setIsAudioActiveAsync(false);
+        await withAudioTimeout(setIsAudioActiveAsync(false));
       } catch (error) {
         console.warn('[player] audio session teardown failed', error);
       }
     }
 
-    resetBookkeeping();
-    emit('onPlaybackChange', { isPlaying: false, isBuffering: false });
-    if (emitResetProgress) {
-      // Not about any one track, so a listener comparing ids never drops it.
-      emit('onProgress', { position: 0, duration: 0, trackId: null });
-    }
   }
 
   async function setup(): Promise<boolean> {
     if (setupPromise) return setupPromise;
+    const generation = lifecycleGeneration;
 
     setupPromise = (async () => {
       try {
@@ -655,18 +718,22 @@ export function createPlayerEngine(options: EngineOptions = {}): PlayerEngine {
         // the silent switch and the background keep-alive both default to off.
         // `doNotMix` takes the audio focus that the media session needs to own
         // the lock screen.
-        await setAudioModeAsync({
+        await withAudioTimeout(setAudioModeAsync({
           playsInSilentMode: true,
           shouldPlayInBackground: backgroundPlaybackEnabled,
           interruptionMode: 'doNotMix',
           allowsRecording: false,
-        });
-        await setIsAudioActiveAsync(true);
+        }));
+        if (generation !== lifecycleGeneration) return false;
+        await withAudioTimeout(setIsAudioActiveAsync(true));
+        if (generation !== lifecycleGeneration) return false;
 
         ensurePlayer();
         ready = true;
         return true;
       } catch (error) {
+        if (generation !== lifecycleGeneration) return false;
+        reportPlayerDiagnostic({ event: 'session_error', reason: 'setup_failed_or_timed_out' });
         // Most often the native module is missing because the app is running in
         // Expo Go, which means playback is unavailable for this session.
         console.warn('[player] setup failed', error);
@@ -686,12 +753,16 @@ export function createPlayerEngine(options: EngineOptions = {}): PlayerEngine {
     hasSource: () => hasSource,
 
     load: async (track: PlayableTrack, startAtSeconds = 0) => {
-      if (!(await setup())) return;
+      const request = ++loadRequest;
+      if (!(await setup()) || request !== loadRequest) return;
 
       const current = ensurePlayer();
 
       sourceGeneration += 1;
+      playRequest += 1;
+      waitingForSession = false;
       currentTrack = track;
+      reportPlayerDiagnostic({ event: 'load', trackId: track.id });
       completionFired = false;
       sourceOpen = false;
       // A start offset can only be applied once the new source has opened.
@@ -785,16 +856,20 @@ export function createPlayerEngine(options: EngineOptions = {}): PlayerEngine {
         return;
       }
 
-      playCurrent(current);
+      await playCurrent(current);
     },
 
     pause: async () => {
+      playRequest += 1;
+      waitingForSession = false;
       if (!ready || !player) return;
 
       wantsPlayback = false;
       resumeAfterSeek = false;
       stopWatching();
       player.pause();
+      reportPlayback(false, false);
+      reportPlayerDiagnostic({ event: 'pause', trackId: currentTrack?.id });
     },
 
     /** Full stop that preserves provider progress for its resume offer. */

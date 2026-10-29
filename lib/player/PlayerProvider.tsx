@@ -10,6 +10,7 @@ import {
 } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { AppState, Platform } from 'react-native';
+import { captureProductEvent } from '@/lib/analytics-events';
 
 import {
   getTimerConfig,
@@ -207,6 +208,7 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
   // the actions need to be re-created when playback advances.
   const soundscapeRef = useRef<Soundscape | null>(null);
   const queueRef = useRef<Soundscape[]>([]);
+  const playbackRequestRef = useRef(0);
   const indexRef = useRef(-1);
   const positionRef = useRef(0);
   const durationRef = useRef(0);
@@ -240,6 +242,9 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
   const fadeInterval = useRef<ReturnType<typeof setInterval> | null>(null);
   const hasSessionRef = useRef(hasSession);
   const guestModeActiveRef = useRef(guestModeActive);
+  const listeningStartedAtRef = useRef<number | null>(null);
+  const listeningSecondsRef = useRef(0);
+  const listeningTrackIdRef = useRef<string | null>(null);
 
   hasSessionRef.current = hasSession;
   guestModeActiveRef.current = guestModeActive;
@@ -355,18 +360,52 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
     setProgress((current) => ({ ...current, timerRemainingSeconds: null }));
   }, [revertAutoLoop]);
 
+  const pauseListeningSegment = useCallback(() => {
+    if (listeningStartedAtRef.current === null) return;
+    listeningSecondsRef.current += (Date.now() - listeningStartedAtRef.current) / 1000;
+    listeningStartedAtRef.current = null;
+  }, []);
+
+  const beginListeningSegment = useCallback(() => {
+    const id = soundscapeRef.current?.id;
+    if (!id || listeningStartedAtRef.current !== null) return;
+    listeningTrackIdRef.current = id;
+    listeningStartedAtRef.current = Date.now();
+  }, []);
+
+  const flushListeningSession = useCallback((reason: string) => {
+    if (listeningStartedAtRef.current !== null) {
+      listeningSecondsRef.current += (Date.now() - listeningStartedAtRef.current) / 1000;
+      listeningStartedAtRef.current = null;
+    }
+    const soundscapeId = listeningTrackIdRef.current;
+    const durationSeconds = Math.round(listeningSecondsRef.current);
+    listeningSecondsRef.current = 0;
+    listeningTrackIdRef.current = null;
+    if (!soundscapeId || durationSeconds < 1) return;
+    captureProductEvent('soundscape_play', {
+      soundscape_id: soundscapeId,
+      duration_seconds: durationSeconds,
+      position_seconds: Math.round(positionRef.current),
+      reason,
+    });
+  }, []);
+
   const finishPlayback = useCallback(async () => {
+    const request = ++playbackRequestRef.current;
     clearFade();
     isPlayingRef.current = false;
+    flushListeningSession('completed');
     // Timer expiry and natural completion update the controls immediately;
     // releasing the native player can finish without holding the UI behind it.
     setState((current) => ({ ...current, isPlaying: false, isFadingOut: false }));
     clearTimerState();
     await engine.stop();
+    if (request !== playbackRequestRef.current) return;
     await engine.setVolume(1);
     refreshResumable();
     void persistNow();
-  }, [clearFade, clearTimerState, persistNow, refreshResumable]);
+  }, [clearFade, clearTimerState, flushListeningSession, persistNow, refreshResumable]);
 
   const handleTimerEnd = useCallback(() => {
     void finishPlayback();
@@ -516,8 +555,10 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
         // this a no-op, since `wasPlaying` already matches.
         if (isPlaying && !wasPlaying) {
           unfreezeTimer();
+          beginListeningSegment();
         } else if (!isPlaying && wasPlaying) {
           freezeTimer();
+          pauseListeningSegment();
         }
         setState((current) => {
           // Sound is flowing again, so an earlier failure message no longer applies.
@@ -576,6 +617,7 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
         // The engine's own reloads could not revive the source and it has released
         // the player, so the next play loads afresh from the position it reported.
         isPlayingRef.current = false;
+        flushListeningSession('playback_failed');
         freezeTimer();
         const soundscape = soundscapeRef.current;
         setState((current) => ({
@@ -597,12 +639,13 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
 
     return () => {
       unsubscribe();
+      playbackRequestRef.current += 1;
       // `createAudioPlayer` is not hook-managed, so the provider owns release.
       // Android task removal is handled by app config because the OS cannot be
       // expected to run this JS cleanup after a swipe-close.
       void engine.reset();
     };
-  }, [finishPlayback, freezeTimer, persistNow, refreshResumable, unfreezeTimer]);
+  }, [beginListeningSegment, finishPlayback, flushListeningSession, freezeTimer, pauseListeningSegment, persistNow, refreshResumable, unfreezeTimer]);
 
   // The loop preference is read once per app launch; missing or unreadable
   // storage keeps the safe default of off.
@@ -640,11 +683,12 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
         reconcileTimer();
       } else if (soundscapeRef.current) {
         void persistNow();
+        if (!isPlayingRef.current) flushListeningSession('app_backgrounded');
       }
     });
 
     return () => subscription.remove();
-  }, [persistNow, reconcileTimer]);
+  }, [flushListeningSession, persistNow, reconcileTimer]);
 
   // Anything saved by a previous account or guest session becomes the resume offer on Home.
   useEffect(() => {
@@ -718,17 +762,23 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
 
   useEffect(
     () => () => {
+      flushListeningSession('provider_unmounted');
       if (persistTimeout.current) clearTimeout(persistTimeout.current);
       if (fadeInterval.current) clearInterval(fadeInterval.current);
     },
-    []
+    [flushListeningSession]
   );
 
   // ---------------------------------------------------------------------- actions
 
   const loadAndPlay = useCallback(
     async (soundscape: Soundscape, queue: Soundscape[], index: number, startAt: number) => {
+      const request = ++playbackRequestRef.current;
       const track = toPlayableTrack(soundscape);
+
+      if (listeningTrackIdRef.current && listeningTrackIdRef.current !== soundscape.id) {
+        flushListeningSession('track_changed');
+      }
 
       soundscapeRef.current = soundscape;
       queueRef.current = queue;
@@ -765,6 +815,7 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
       }
 
       const available = await engine.setup();
+      if (request !== playbackRequestRef.current) return false;
       if (!available) {
         setState((current) => ({
           ...current,
@@ -779,20 +830,24 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
         // A queue change must not cancel an active sleep-timer fade or restart
         // its deadline. The fade interval keeps controlling the same engine.
         if (!fadeInterval.current) await engine.setVolume(1);
+        if (request !== playbackRequestRef.current) return false;
         await engine.load(track, startAt);
+        if (request !== playbackRequestRef.current) return false;
         await engine.play();
+        if (request !== playbackRequestRef.current) return false;
+        beginListeningSegment();
       } catch (error) {
+        if (request !== playbackRequestRef.current) return false;
         console.warn('[player] playback failed', error);
         setState((current) => ({
           ...current,
           isBuffering: false,
           isPlaying: false,
-          // A local file that will not open is a real fault; a stream that will
-          // not open is usually just a missing connection, and saying so tells
-          // the user what to do about it.
+          // Audio-session errors and stream errors both arrive here. Do not
+          // incorrectly describe every native failure as a network outage.
           error: hasLocalSource(soundscape.id)
             ? LOCAL_FAILURE_MESSAGE
-            : 'This one needs a connection. Try again once you are back online.',
+            : 'Audio could not start. Check your connection and try again.',
           canRetry: true,
         }));
         return false;
@@ -805,7 +860,7 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
       schedulePersist();
       return true;
     },
-    [schedulePersist]
+    [beginListeningSegment, flushListeningSession, schedulePersist]
   );
 
   /** A different soundscape/queue cancels the timer; it belongs to the session, not a single tap. */
@@ -853,6 +908,7 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
   );
 
   const togglePlayPause = useCallback(async () => {
+    const request = ++playbackRequestRef.current;
     const soundscape = soundscapeRef.current;
     if (!soundscape) return;
 
@@ -865,7 +921,10 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
       setState((current) => ({ ...current, isPlaying: false, isFadingOut: false }));
       try {
         await engine.pause();
+        if (request !== playbackRequestRef.current) return;
+        pauseListeningSegment();
       } catch (error) {
+        if (request !== playbackRequestRef.current) return;
         // A rejected pause means audio may still be flowing, so restore both
         // the icon and any timer that was frozen for the attempted pause.
         isPlayingRef.current = true;
@@ -882,7 +941,9 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
     if (!engine.hasSource()) {
       const track = toPlayableTrack(soundscape);
       if (!track || !(await engine.setup())) return;
+      if (request !== playbackRequestRef.current) return;
       await engine.load(track, positionRef.current);
+      if (request !== playbackRequestRef.current) return;
     }
 
     const timerResumed = unfreezeTimer();
@@ -895,8 +956,12 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
     }));
     try {
       if (!timerResumed) await engine.setVolume(1);
+      if (request !== playbackRequestRef.current) return;
       await engine.play();
+      if (request !== playbackRequestRef.current) return;
+      beginListeningSegment();
     } catch (error) {
+      if (request !== playbackRequestRef.current) return;
       freezeTimer();
       isPlayingRef.current = false;
       setState((current) => ({
@@ -910,7 +975,7 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
       return;
     }
     schedulePersist();
-  }, [freezeTimer, persistNow, refreshResumable, schedulePersist, unfreezeTimer]);
+  }, [beginListeningSegment, freezeTimer, pauseListeningSegment, persistNow, refreshResumable, schedulePersist, unfreezeTimer]);
 
   const seek = useCallback(
     async (seconds: number) => {
@@ -1032,15 +1097,26 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const stop = useCallback(async (options?: { forgetResumable?: boolean }) => {
+    const request = ++playbackRequestRef.current;
+    // Cancel a pending native session activation before waiting on persistence.
+    const pausing = engine.pause().catch((error) => {
+      // Reset still releases the native player even when an early pause fails.
+      console.warn('[player] pause before stop failed', error);
+    });
     const forgetResumable = options?.forgetResumable === true;
     clearFade();
     isPlayingRef.current = false;
+    flushListeningSession('stopped');
     await persistNow();
+    if (request !== playbackRequestRef.current) return;
     if (!forgetResumable) refreshResumable();
     if (forgetResumable && guestModeActiveRef.current) {
       await AsyncStorage.removeItem(GUEST_PLAYER_STATE_STORAGE_KEY).catch(() => {});
     }
+    await pausing;
+    if (request !== playbackRequestRef.current) return;
     await engine.reset();
+    if (request !== playbackRequestRef.current) return;
     await engine.setVolume(1);
     revertAutoLoop();
 
@@ -1057,7 +1133,7 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
       loopEnabled: loopEnabledRef.current,
     }));
     setProgress(INITIAL_PROGRESS);
-  }, [clearFade, persistNow, refreshResumable, revertAutoLoop]);
+  }, [clearFade, flushListeningSession, persistNow, refreshResumable, revertAutoLoop]);
 
   const resume = useCallback(async () => {
     const resumable = resumableRef.current;

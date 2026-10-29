@@ -6,7 +6,7 @@ import { markLoggedOut } from '@/lib/auth/offline-session';
 import { clearAuthTokens, getAccessToken, getRefreshToken, refreshSession } from '@/lib/haven-api';
 import { Platform } from 'react-native';
 
-const API_BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL ?? 'https://thehappyapp.co.uk';
+export const API_BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL ?? 'https://thehappyapp.co.uk';
 export const AUTH_TOKEN_KEY = 'haven.auth.access_token';
 const LEGACY_AUTH_TOKEN_KEY = 'access_token';
 const RATE_LIMIT_MAX_RETRIES = 2;
@@ -321,6 +321,12 @@ async function readEnvelope<T>(res: Response): Promise<T> {
     data = null;
   }
 
+  if (res.status === 503) {
+    const statusBridge = globalThis as typeof globalThis & {
+      __passageSetServiceUnavailable?: (value: boolean) => void;
+    };
+    statusBridge.__passageSetServiceUnavailable?.(true);
+  }
   if (!res.ok) {
     throw new ApiError(data?.error ?? `Request failed with status ${res.status}`, res.status, data);
   }

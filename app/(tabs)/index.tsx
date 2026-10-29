@@ -141,10 +141,10 @@ const HERO_BACKGROUNDS: Record<UkWeekday, Record<TimeOfDay, number>> = {
 };
 const brandIcon = require('@/assets/images/passage-brand-assets/screens-icon.webp');
 const HERO_BACKGROUND_ASPECT_RATIO = 940 / 1672;
-const HOME_SCENE_REVIEW_ORDER: ReadonlyArray<{
+const HOME_SCENE_REVIEW_ORDER: readonly {
   timeOfDay: TimeOfDay;
   weekday: UkWeekday;
-}> = [
+}[] = [
   'monday',
   'tuesday',
   'wednesday',
@@ -443,7 +443,7 @@ export default function HomeScreen() {
             isError={recommended.isError}
             isLoading={recommended.isInitialLoading}
             keyExtractor={soundscapeKey}
-            onSeeAll={() => router.push('/(tabs)/explore' as Href)}
+            onSeeAll={() => router.push('/(tabs)/library' as Href)}
             renderItem={renderCard}
             title="Recommendation for you"
           />
@@ -469,7 +469,7 @@ export default function HomeScreen() {
             isError={recentlyPlayed.isError}
             isLoading={recentlyPlayed.isInitialLoading}
             keyExtractor={soundscapeKey}
-            onSeeAll={() => router.push('/(tabs)/saved' as Href)}
+            onSeeAll={() => router.push('/(tabs)/saved?segment=recent' as Href)}
             renderItem={renderCard}
             title="Recently Played"
           />

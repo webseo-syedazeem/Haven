@@ -109,6 +109,7 @@
         }
       ],
       "./plugins/with-expo-audio-stop-with-app",
+      "./plugins/with-expo-audio-ios-fixes",
       "expo-asset"
     ],
     "experiments": {

@@ -13,6 +13,43 @@ const track = (id, mode = 'focus') => ({
 });
 const tracks = ['a', 'b', 'c'].map((id) => track(id));
 
+test('overlapping sound selections only load the newest request after setup resolves', async () => {
+  const player = createPlayer();
+  await player.settle();
+  let resolveA, resolveB;
+  const first = new Promise((resolve) => { resolveA = resolve; });
+  const second = new Promise((resolve) => { resolveB = resolve; });
+  let count = 0;
+  player.engine.setup = () => ++count === 1 ? first : second;
+  const a = player.act('playSoundscape', tracks[0]);
+  const b = player.act('playSoundscape', tracks[1]);
+  resolveB(true);
+  await b;
+  resolveA(true);
+  await a;
+  assert.deepEqual(player.calls.loads.map((item) => item.track.id), ['b']);
+  assert.equal(player.state.soundscape.id, 'b');
+  assert.equal(player.state.isPlaying, true);
+});
+
+test('a late play rejection for A cannot overwrite the successful state of B', async () => {
+  const player = createPlayer();
+  await player.settle();
+  let rejectA;
+  const first = new Promise((resolve, reject) => { rejectA = reject; });
+  const originalPlay = player.engine.play;
+  let count = 0;
+  player.engine.play = () => ++count === 1 ? first : originalPlay();
+  const a = player.act('playSoundscape', tracks[0]);
+  await player.settle();
+  await player.act('playSoundscape', tracks[1]);
+  rejectA(new Error('late native failure for A'));
+  await a;
+  assert.equal(player.state.soundscape.id, 'b');
+  assert.equal(player.state.error, null);
+  assert.equal(player.state.isPlaying, true);
+});
+
 // Run the actual provider with deterministic hooks, audio events and time.
 // This needs no native runtime, test-renderer package, network, or real timers.
 function createPlayer({
@@ -238,6 +275,7 @@ function createPlayer({
   render();
   return {
     calls,
+    engine,
     warnings,
     get guestSaved() { return storedGuest === null ? null : JSON.parse(storedGuest); },
     settle,

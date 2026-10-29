@@ -68,8 +68,6 @@ export function DevResetButton() {
   const router = useRouter();
   const [busy, setBusy] = useState(false);
 
-  if (!SHOW_DEV_RESET_BUTTON) return null;
-
   // Position: starts bottom-right
   const pan = useRef(new Animated.ValueXY({ x: 0, y: 0 })).current;
   // Track whether the gesture was a drag or a tap
@@ -114,6 +112,8 @@ export function DevResetButton() {
       setBusy(false);
     }
   };
+
+  if (!SHOW_DEV_RESET_BUTTON) return null;
 
   return (
     <Animated.View

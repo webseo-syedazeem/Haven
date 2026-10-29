@@ -19,13 +19,16 @@ import { PlayerProvider } from '@/lib/player/PlayerProvider';
 import { AccountRequiredPromptProvider } from '@/components/auth/AccountRequiredPrompt';
 import { DevResetButton } from '@/components/dev/DevResetButton';
 import { DevOnboardingReplayButton } from '@/components/dev/DevOnboardingReplayButton';
+import { AnalyticsLifecycle } from '@/components/AnalyticsLifecycle';
+import { ServiceAvailability } from '@/components/ServiceAvailability';
+import { Sentry } from '@/lib/observability';
 
 void SplashScreen.preventAutoHideAsync();
 
 export const unstable_settings = { anchor: '(tabs)' };
 
 
-export default function RootLayout() {
+function RootLayout() {
   const colorScheme = useColorScheme();
 
   const [fontsLoaded] = useFonts({
@@ -65,7 +68,9 @@ export default function RootLayout() {
           <PersistQueryClientProvider client={queryClient} persistOptions={persistOptions}>
             <AccountRequiredPromptProvider>
               <PlayerProvider>
-                <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: 'transparent' } }}>
+                <ServiceAvailability>
+                  <AnalyticsLifecycle />
+                  <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: 'transparent' } }}>
                 <Stack.Screen name="index" options={{ headerShown: false }} />
                 <Stack.Screen name="why-passage" options={{ headerShown: false }} />
                 <Stack.Screen name="what-it-does" options={{ headerShown: false }} />
@@ -118,7 +123,8 @@ export default function RootLayout() {
                 />
                 <Stack.Screen name="auth/callback" options={{ headerShown: false }} />
                 <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />
-                </Stack>
+                  </Stack>
+                </ServiceAvailability>
                 {/* `light` means light bar content, i.e. white navigation arrows. */}
                 <SystemBars style={{ navigationBar: 'light', statusBar: 'light' }} />
                 <DevResetButton />
@@ -131,3 +137,5 @@ export default function RootLayout() {
     </GestureHandlerRootView>
   );
 }
+
+export default Sentry.wrap(RootLayout);

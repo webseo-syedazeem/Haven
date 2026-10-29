@@ -147,7 +147,12 @@ export function useScopedPlayer() {
 
         playingRef.current = true;
         setState((current) => ({ ...current, isPlaying: true, error: null }));
-        await engine.play();
+        try {
+          await engine.play();
+        } catch (error) {
+          console.warn('[preview] resume failed', error);
+          if (activeIdRef.current === soundscape.id) reset(FAILED_MESSAGE);
+        }
         return;
       }
 

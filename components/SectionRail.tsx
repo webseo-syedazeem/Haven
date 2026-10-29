@@ -1,5 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import type { ReactNode } from 'react';
 
 import { HalcyonColors, HalcyonRadius, HalcyonSpacing, Typography } from '@/constants/design';
@@ -10,7 +10,7 @@ const SKELETON_COUNT = 3;
 type SectionRailProps<T> = {
   title: string;
   data: T[] | undefined;
-  renderItem: (item: T, index: number) => ReactNode;
+  renderItem: (item: T, index: number, width?: number) => ReactNode;
   keyExtractor: (item: T, index: number) => string;
   isLoading?: boolean;
   isError?: boolean;
@@ -50,6 +50,13 @@ export function SectionRail<T>({
   note,
 }: SectionRailProps<T>) {
   const items = data ?? [];
+  const { width: screenWidth } = useWindowDimensions();
+  
+  // Calculate dynamic card width for grid layout - always use 2 columns to fill width
+  const gridItemWidth = layout === 'grid'
+    ? (screenWidth - HalcyonSpacing.screenX * 2 - 14) / 2
+    : itemWidth;
+  
   // A refetch that failed while cached rows are on screen is not worth a
   // message: the rail is still usable, which is the whole point of the
   // persisted cache. The note is for a rail that has nothing to show.
@@ -71,7 +78,11 @@ export function SectionRail<T>({
             onPress={onSeeAll}
             style={({ pressed }) => [styles.seeAllButton, pressed && styles.seeAllPressed]}>
             <Text style={styles.seeAll}>{seeAllLabel}</Text>
-            <Ionicons color={HalcyonColors.accent} name="chevron-forward" size={14} />
+            <Ionicons 
+              color={HalcyonColors.accent} 
+              name={seeAllLabel === 'Show less' ? 'chevron-down' : 'chevron-forward'} 
+              size={14} 
+            />
           </Pressable>
         )}
       </View>
@@ -102,7 +113,9 @@ export function SectionRail<T>({
       ) : layout === 'grid' ? (
         <View style={styles.grid}>
           {items.map((item, index) => (
-            <View key={keyExtractor(item, index)}>{renderItem(item, index)}</View>
+            <View key={keyExtractor(item, index)} style={{ width: gridItemWidth }}>
+              {renderItem(item, index, gridItemWidth)}
+            </View>
           ))}
         </View>
       ) : (
@@ -111,7 +124,7 @@ export function SectionRail<T>({
           horizontal
           showsHorizontalScrollIndicator={false}>
           {items.map((item, index) => (
-            <View key={keyExtractor(item, index)}>{renderItem(item, index)}</View>
+            <View key={keyExtractor(item, index)}>{renderItem(item, index, itemWidth)}</View>
           ))}
         </ScrollView>
       )}
@@ -166,7 +179,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     paddingHorizontal: HalcyonSpacing.screenX,
-    rowGap: 20,
+    rowGap: 18,
   },
   skeletonBlock: {
     backgroundColor: HalcyonColors.skeleton,

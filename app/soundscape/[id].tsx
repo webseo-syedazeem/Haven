@@ -1,5 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
-import { useLocalSearchParams, useRouter, type Href } from 'expo-router';
+import { useFocusEffect, useLocalSearchParams, useRouter, type Href } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
@@ -42,6 +42,8 @@ export default function SoundscapeDetailScreen() {
   const isFavourite = useIsFavourite(id);
   const { toggleFavourite } = useToggleFavourite();
   const { playSoundscape } = usePlayerActions();
+  const playNavigationRequest = useRef(0);
+  useFocusEffect(useCallback(() => () => { playNavigationRequest.current += 1; }, []));
 
   const openSoundscape = useCallback(
     (item: Soundscape) => router.push(`/soundscape/${item.id}` as Href),
@@ -50,7 +52,9 @@ export default function SoundscapeDetailScreen() {
 
   const handlePlay = useCallback(async () => {
     if (!soundscape) return;
+    const request = ++playNavigationRequest.current;
     await playSoundscape(soundscape);
+    if (request !== playNavigationRequest.current) return;
     router.push('/player');
   }, [playSoundscape, router, soundscape]);
 

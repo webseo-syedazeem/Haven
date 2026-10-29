@@ -18,7 +18,8 @@ const read = (file) => fs.readFileSync(path.join(root, file), 'utf8');
 
 test('the flag is a hard-coded boolean, not derived from __DEV__ or an env var', () => {
   const source = read('config/dev-flags.ts');
-  assert.match(source, /export const SHOW_DEV_ONBOARDING_REPLAY_BUTTON = true;/);
+  // Release builds intentionally use false; this test checks a literal, not its rollout value.
+  assert.match(source, /export const SHOW_DEV_ONBOARDING_REPLAY_BUTTON = (?:true|false);/);
   assert.doesNotMatch(source, /SHOW_DEV_ONBOARDING_REPLAY_BUTTON\s*=\s*__DEV__/);
   assert.doesNotMatch(source, /SHOW_DEV_ONBOARDING_REPLAY_BUTTON\s*=\s*process\.env/);
 });

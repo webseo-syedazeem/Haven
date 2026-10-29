@@ -5,7 +5,6 @@ import { useEffect, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
 import { ChoiceRow } from '@/components/onboarding/OnboardingChoices';
-import { OnboardingContinueButton } from '@/components/onboarding/OnboardingContinueButton';
 import { OnboardingScaffold } from '@/components/onboarding/OnboardingScaffold';
 import { HalcyonColors } from '@/constants/design';
 import { DETAIL_LEVEL_LABELS, DETAIL_LEVEL_VALUES } from '@/constants/filters';
