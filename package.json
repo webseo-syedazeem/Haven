@@ -97,7 +97,17 @@
   "engines": {
     "node": ">=20"
   },
+ 
   "overrides": {
     "@expo/fingerprint": "0.15.5"
+  },
+  "expo": {
+    "doctor": {
+      "reactNativeDirectoryCheck": {
+        "exclude": [
+          "react-native-edge-to-edge"
+        ]
+      }
+    }
   }
 }
