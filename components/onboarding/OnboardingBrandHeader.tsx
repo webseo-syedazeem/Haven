@@ -2,7 +2,7 @@ import type { ReactNode } from 'react';
 import { Image, StyleSheet, Text, View } from 'react-native';
 
 import { OnboardingBackButton } from '@/components/onboarding/OnboardingBackButton';
-import { HalcyonColors } from '@/constants/design';
+import { PassageColors } from '@/constants/design';
 import { AppFonts } from '@/constants/theme';
 
 const brandIcon = require('@/assets/images/passage-brand-assets/screens-icon.webp');
@@ -58,7 +58,7 @@ const styles = StyleSheet.create({
     width: 58,
   },
   brandText: {
-    color: HalcyonColors.textPrimary,
+    color: PassageColors.textPrimary,
     fontFamily: AppFonts.sansBold,
     fontSize: 20,
     fontWeight: '700',

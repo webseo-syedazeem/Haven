@@ -12,7 +12,7 @@ import { OnboardingContinueButton } from '@/components/onboarding/OnboardingCont
 import { OnboardingScaffold } from '@/components/onboarding/OnboardingScaffold';
 import { RelaxStepHeader } from '@/components/onboarding/RelaxStepHeader';
 import {
-  HalcyonColors,
+  PassageColors,
   RELAX_ACCENT,
   RELAX_ACCENT_PRESSED,
 } from '@/constants/design';
@@ -187,7 +187,7 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   heading: {
-    color: HalcyonColors.textPrimary,
+    color: PassageColors.textPrimary,
     fontFamily: AppFonts.displayRegular,
     fontSize: RELAX_ONBOARDING.heading.fontSize,
     fontWeight: '500',
@@ -201,7 +201,7 @@ const styles = StyleSheet.create({
     marginTop: 24,
   },
   subtitle: {
-    color: HalcyonColors.textSecondary,
+    color: PassageColors.textSecondary,
     fontFamily: AppFonts.sansRegular,
     fontSize: RELAX_ONBOARDING.body.fontSize,
     lineHeight: RELAX_ONBOARDING.body.lineHeight,

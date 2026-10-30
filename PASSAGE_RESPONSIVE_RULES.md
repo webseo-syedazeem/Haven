@@ -1,4 +1,4 @@
-# Halcyon Responsive Layout Rules
+# Passage Responsive Layout Rules
 
 These rules are mandatory for every screen created or redesigned in this project.
 

@@ -20,7 +20,6 @@ export {
   recommendationsApi,
 } from './recommendations';
 export type { Recommendations } from './recommendations';
-export { stressProfileApi } from './stressProfileApi';
 export { supportApi } from './support';
 export type { SupportRequest } from './support';
 export { userApi } from './user';

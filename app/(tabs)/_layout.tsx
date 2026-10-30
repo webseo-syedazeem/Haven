@@ -7,7 +7,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { MiniPlayer } from '@/components/MiniPlayer';
 import { useAccountRequiredPrompt } from '@/components/auth/AccountRequiredPrompt';
-import { HALCYON_TAB_BAR_HEIGHT, HalcyonColors } from '@/constants/design';
+import { PASSAGE_TAB_BAR_HEIGHT, PassageColors } from '@/constants/design';
 import { AppFonts } from '@/constants/theme';
 import { isExplicitSignOutInFlight } from '@/lib/auth/session-state';
 import {
@@ -44,7 +44,7 @@ function FloatingTabBar({ state, descriptors, navigation }: BottomTabBarProps) {
       <View
         style={[
           styles.tabBar,
-          { height: HALCYON_TAB_BAR_HEIGHT + insets.bottom, paddingBottom: insets.bottom },
+          { height: PASSAGE_TAB_BAR_HEIGHT + insets.bottom, paddingBottom: insets.bottom },
         ]}>
         {state.routes.map((route, index) => {
           const options = descriptors[route.key]?.options;
@@ -61,7 +61,7 @@ function FloatingTabBar({ state, descriptors, navigation }: BottomTabBarProps) {
           const icon = isFocused
             ? activeMenuIcons[route.name] ?? menuIcons[route.name] ?? 'ellipse'
             : menuIcons[route.name] ?? 'ellipse-outline';
-          const iconColor = isFocused ? HalcyonColors.accent : HalcyonColors.textSecondary;
+          const iconColor = isFocused ? PassageColors.accent : PassageColors.textSecondary;
 
           return (
             <Pressable
@@ -112,7 +112,7 @@ export default function TabLayout() {
   if (tabsAreActive && isRestoring) {
     return (
       <View style={styles.authLoading}>
-        <ActivityIndicator color={HalcyonColors.accent} size="large" />
+        <ActivityIndicator color={PassageColors.accent} size="large" />
       </View>
     );
   }
@@ -134,7 +134,7 @@ export default function TabLayout() {
       tabBar={(props) => <FloatingTabBar {...props} />}
       screenOptions={{
         headerShown: false,
-        sceneStyle: { backgroundColor: HalcyonColors.background },
+        sceneStyle: { backgroundColor: PassageColors.background },
       }}>
       <Tabs.Screen name="index" options={{ title: 'Home' }} />
       <Tabs.Screen name="explore" options={{ title: 'Explore' }} />
@@ -148,7 +148,7 @@ export default function TabLayout() {
 const styles = StyleSheet.create({
   authLoading: {
     alignItems: 'center',
-    backgroundColor: HalcyonColors.background,
+    backgroundColor: PassageColors.background,
     flex: 1,
     justifyContent: 'center',
   },
@@ -160,8 +160,8 @@ const styles = StyleSheet.create({
   },
   tabBar: {
     alignItems: 'center',
-    backgroundColor: HalcyonColors.background,
-    borderTopColor: HalcyonColors.border,
+    backgroundColor: PassageColors.background,
+    borderTopColor: PassageColors.border,
     borderTopWidth: 1,
     flexDirection: 'row',
     justifyContent: 'space-around',
@@ -177,7 +177,7 @@ const styles = StyleSheet.create({
     width: 22,
   },
   tabBarLabel: {
-    color: HalcyonColors.textSecondary,
+    color: PassageColors.textSecondary,
     fontFamily: AppFonts.sansMedium,
     fontSize: 11,
     fontWeight: '500',
@@ -187,6 +187,6 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   tabBarLabelActive: {
-    color: HalcyonColors.accent,
+    color: PassageColors.accent,
   },
 });

@@ -6,6 +6,6 @@ as private EAS build environment variables so release source maps are uploaded;
 the auth token must never use the `EXPO_PUBLIC_` prefix.
 
 PostHog receives app lifecycle and manually named screen views. Touch autocapture
-and session replay are intentionally not enabled, keeping free-form wellbeing and
-check-in content out of analytics. The Passage backend receives the small event
+and session replay are intentionally not enabled, keeping free-form user content
+out of analytics. The Passage backend receives the small event
 subset needed by the admin monitoring dashboard.

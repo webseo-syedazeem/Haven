@@ -17,7 +17,7 @@ import { RelaxContinueButton } from '@/components/onboarding/RelaxContinueButton
 import { OnboardingScaffold } from '@/components/onboarding/OnboardingScaffold';
 import { RelaxStepHeader } from '@/components/onboarding/RelaxStepHeader';
 import {
-  HalcyonColors,
+  PassageColors,
   ONBOARDING_MODE_ACCENTS,
   ONBOARDING_MODE_ACCENTS_PRESSED,
 } from '@/constants/design';
@@ -371,7 +371,7 @@ export default function TryPassageScreen() {
     return (
       <View style={styles.messageBox}>
         <Ionicons
-          color={HalcyonColors.textSecondary}
+          color={PassageColors.textSecondary}
           name="musical-notes-outline"
           size={25}
         />
@@ -529,7 +529,7 @@ const styles = StyleSheet.create({
     paddingVertical: 32,
   },
   messageText: {
-    color: HalcyonColors.textSecondary,
+    color: PassageColors.textSecondary,
     fontFamily: AppFonts.sansRegular,
     fontSize: 14,
     lineHeight: 21,

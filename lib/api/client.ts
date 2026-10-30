@@ -3,16 +3,20 @@ import { supabase } from '@/lib/supabase';
 import * as SecureStore from 'expo-secure-store';
 import { isGuestModeActive, setSessionSource } from '@/lib/auth/session-state';
 import { markLoggedOut } from '@/lib/auth/offline-session';
-import { clearAuthTokens, getAccessToken, getRefreshToken, refreshSession } from '@/lib/haven-api';
+import { clearAuthTokens, getAccessToken, getRefreshToken, refreshSession } from '@/lib/passage-api';
 import { Platform } from 'react-native';
 
-export const API_BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL ?? 'https://thehappyapp.co.uk';
-export const AUTH_TOKEN_KEY = 'haven.auth.access_token';
-const LEGACY_AUTH_TOKEN_KEY = 'access_token';
+export const API_BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL?.trim().replace(/\/+$/, '') || 'https://thehappyapp.co.uk';
+export const AUTH_TOKEN_KEY = 'passage.auth.access_token';
+const LEGACY_AUTH_TOKEN_KEYS = ['access_token', 'haven.auth.access_token'] as const;
 const RATE_LIMIT_MAX_RETRIES = 2;
 const RATE_LIMIT_FALLBACK_DELAYS_MS = [1_000, 2_000] as const;
 /** A long server window must not leave a screen apparently hung for minutes. */
 const RATE_LIMIT_MAX_DELAY_MS = 10_000;
+
+function apiUrl(path: string): string {
+  return `${API_BASE_URL}${path}`;
+}
 
 const TOKEN_REQUIRED_PATH_PREFIXES = [
   '/api/me',
@@ -77,19 +81,23 @@ async function deleteStoredItem(key: string) {
 }
 
 async function getStoredToken() {
-  return (
-    getAccessToken() ||
-    (await getStoredItem(LEGACY_AUTH_TOKEN_KEY)) ||
-    (await getStoredItem(AUTH_TOKEN_KEY))
-  );
+  const inMemory = getAccessToken();
+  if (inMemory) return inMemory;
+  const current = await getStoredItem(AUTH_TOKEN_KEY);
+  if (current) return current;
+  for (const key of LEGACY_AUTH_TOKEN_KEYS) {
+    const legacy = await getStoredItem(key);
+    if (legacy) return legacy;
+  }
+  return null;
 }
 
 export async function clearStoredAccessToken() {
-  setSessionSource('haven', false);
+  setSessionSource('passage', false);
 
   await Promise.all([
     deleteStoredItem(AUTH_TOKEN_KEY),
-    deleteStoredItem(LEGACY_AUTH_TOKEN_KEY),
+    ...LEGACY_AUTH_TOKEN_KEYS.map((key) => deleteStoredItem(key)),
   ]);
 }
 
@@ -97,7 +105,7 @@ let signOutInFlight: Promise<void> | null = null;
 
 /**
  * Drops both session sources at once (see lib/auth/session-state.ts): the
- * Haven tokens and the Supabase session that Google/Apple/email-confirm
+ * Passage tokens and the Supabase session that Google/Apple/email-confirm
  * sign-ins also mark active. Clearing only one used to leave
  * `hasActiveSession()` stuck true forever with no token anywhere left to
  * send — every gated query kept firing and kept 401ing.
@@ -109,7 +117,7 @@ async function forceSignOutStaleSession(): Promise<void> {
     try {
       await supabase.auth.signOut();
     } catch {
-      // Best effort — the Haven-side clear above is what actually matters.
+      // Best effort — the Passage-side clear above is what actually matters.
     }
   })();
 
@@ -164,7 +172,7 @@ async function send(path: string, options: RequestInit, token: string | null): P
   const hasBody = body !== undefined && body !== null;
 
   try {
-    return await fetch(`${API_BASE_URL}${path}`, {
+    return await fetch(apiUrl(path), {
       ...fetchOptions,
       ...(hasBody ? { body } : {}),
       headers: {
@@ -250,7 +258,7 @@ export async function apiClient<T>(
 
   // 2. SecureStore se try karo
   if (!token) {
-    token = await getStoredItem(LEGACY_AUTH_TOKEN_KEY);
+    token = await getStoredToken();
   }
 
   // 3. Supabase session se try karo
@@ -258,7 +266,7 @@ export async function apiClient<T>(
     const { data } = await supabase.auth.getSession();
     token = data.session?.access_token ?? null;
     if (token) {
-      await setStoredItem(LEGACY_AUTH_TOKEN_KEY, token);
+      await setStoredItem(AUTH_TOKEN_KEY, token);
     }
   }
 
@@ -347,20 +355,20 @@ export async function apiClientFormData<T>(
   let token = getAccessToken();
 
   if (!token) {
-    token = await getStoredItem(LEGACY_AUTH_TOKEN_KEY);
+    token = await getStoredToken();
   }
 
   if (!token) {
     const { data } = await supabase.auth.getSession();
     token = data.session?.access_token ?? null;
     if (token) {
-      await setStoredItem(LEGACY_AUTH_TOKEN_KEY, token);
+      await setStoredItem(AUTH_TOKEN_KEY, token);
     }
   }
 
   const sendForm = async (bearer: string | null): Promise<Response> => {
     try {
-      return await fetch(`${API_BASE_URL}${path}`, {
+      return await fetch(apiUrl(path), {
         method,
         headers: {
           ...(bearer ? { Authorization: `Bearer ${bearer}` } : {}),

@@ -18,10 +18,10 @@ import { setGuestModeActive } from '@/lib/auth/session-state';
  *   waiting on a request that cannot finish.
  *
  * The id is read inline rather than imported from `lib/api/user` because that
- * module reaches back to `lib/haven-api`, which imports this one.
+ * module reaches back to `lib/passage-api`, which imports this one.
  *
  * Tokens are NOT here and never will be: they stay in SecureStore, which is
- * what `lib/haven-api.ts` and `lib/api/client.ts` already use. This file holds
+ * what `lib/passage-api.ts` and `lib/api/client.ts` already use. This file holds
  * only what is safe to keep in the clear.
  *
  * Storage is a small JSON file in the app-private document directory, with

@@ -4,10 +4,10 @@ import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-nati
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import {
-  HalcyonColors,
-  HalcyonModal,
-  HalcyonRadius,
-  HalcyonSpacing,
+  PassageColors,
+  PassageModal,
+  PassageRadius,
+  PassageSpacing,
   Typography,
 } from '@/constants/design';
 import { AppFonts } from '@/constants/theme';
@@ -45,7 +45,7 @@ export function SheetFrame({
             accessibilityRole="button"
             hitSlop={10}
             onPress={onClose}>
-            <Ionicons color={HalcyonColors.textPrimary} name="close" size={22} />
+            <Ionicons color={PassageColors.textPrimary} name="close" size={22} />
           </Pressable>
         </View>
         {children}
@@ -107,7 +107,7 @@ export function OptionSheet<T extends string | number | null>({
                   <Text style={styles.description}>{option.description}</Text>
                 )}
               </View>
-              {isActive && <Ionicons color={HalcyonColors.accent} name="checkmark" size={19} />}
+              {isActive && <Ionicons color={PassageColors.accent} name="checkmark" size={19} />}
             </Pressable>
           );
         })}
@@ -123,16 +123,16 @@ const styles = StyleSheet.create({
   },
   backdrop: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: HalcyonModal.backdrop,
+    backgroundColor: PassageModal.backdrop,
   },
   sheet: {
-    backgroundColor: HalcyonColors.surface,
-    borderTopColor: HalcyonColors.border,
-    borderTopLeftRadius: HalcyonRadius.sheet,
-    borderTopRightRadius: HalcyonRadius.sheet,
+    backgroundColor: PassageColors.surface,
+    borderTopColor: PassageColors.border,
+    borderTopLeftRadius: PassageRadius.sheet,
+    borderTopRightRadius: PassageRadius.sheet,
     borderTopWidth: 1,
     maxHeight: '78%',
-    paddingHorizontal: HalcyonSpacing.screenX,
+    paddingHorizontal: PassageSpacing.screenX,
     paddingTop: 16,
   },
   header: {
@@ -162,18 +162,18 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   label: {
-    color: HalcyonColors.textPrimary,
+    color: PassageColors.textPrimary,
     fontFamily: AppFonts.sansRegular,
     fontSize: 15,
     lineHeight: 21,
   },
   labelActive: {
-    color: HalcyonColors.accent,
+    color: PassageColors.accent,
     fontFamily: AppFonts.sansMedium,
     fontWeight: '500',
   },
   description: {
-    color: HalcyonColors.textSecondary,
+    color: PassageColors.textSecondary,
     fontFamily: AppFonts.sansRegular,
     fontSize: 12,
     lineHeight: 17,

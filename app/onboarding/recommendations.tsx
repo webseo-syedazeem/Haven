@@ -9,7 +9,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { CoverImage } from '@/components/CoverImage';
 import { OnboardingContinueButton } from '@/components/onboarding/OnboardingContinueButton';
 import { OnboardingScaffold } from '@/components/onboarding/OnboardingScaffold';
-import { HalcyonColors, HalcyonRadius } from '@/constants/design';
+import { PassageColors, PassageRadius } from '@/constants/design';
 import { AppFonts } from '@/constants/theme';
 import { useSinglePress } from '@/hooks/useSinglePress';
 import { coverUrl } from '@/lib/image-url';
@@ -113,7 +113,7 @@ export default function FirstRecommendationsScreen() {
         </>
       ) : (
         <View style={styles.empty}>
-          <Ionicons color={HalcyonColors.accent} name="cloud-offline-outline" size={28} />
+          <Ionicons color={PassageColors.accent} name="cloud-offline-outline" size={28} />
           <Text style={styles.emptyTitle}>Your picks are not ready yet.</Text>
           <Text style={styles.emptyBody}>
             You can still enter Passage now, or try loading recommendations again.
@@ -142,7 +142,7 @@ function FeaturedCard({ soundscape }: { soundscape: Soundscape }) {
           <Text style={styles.meta}>{metaFor(soundscape)}</Text>
         </View>
         <View style={styles.playCircle}>
-          <Ionicons color={HalcyonColors.background} name="play" size={16} />
+          <Ionicons color={PassageColors.background} name="play" size={16} />
         </View>
       </View>
     </View>
@@ -180,9 +180,9 @@ function metaFor(soundscape: Soundscape) {
 const styles = StyleSheet.create({
   alternative: {
     alignItems: 'center',
-    backgroundColor: HalcyonColors.surface,
-    borderColor: HalcyonColors.border,
-    borderRadius: HalcyonRadius.artwork,
+    backgroundColor: PassageColors.surface,
+    borderColor: PassageColors.border,
+    borderRadius: PassageRadius.artwork,
     borderWidth: 1,
     flexDirection: 'row',
     minHeight: 64,
@@ -192,7 +192,7 @@ const styles = StyleSheet.create({
   alternativeCopy: { flex: 1, marginLeft: 11 },
   alternatives: { gap: 8, marginTop: 10 },
   alternativeTitle: {
-    color: HalcyonColors.textPrimary,
+    color: PassageColors.textPrimary,
     fontFamily: AppFonts.sansMedium,
     fontSize: 14,
     fontWeight: '500',
@@ -200,15 +200,15 @@ const styles = StyleSheet.create({
   },
   empty: {
     alignItems: 'center',
-    backgroundColor: HalcyonColors.surface,
-    borderColor: HalcyonColors.border,
-    borderRadius: HalcyonRadius.card,
+    backgroundColor: PassageColors.surface,
+    borderColor: PassageColors.border,
+    borderRadius: PassageRadius.card,
     borderWidth: 1,
     marginTop: 24,
     padding: 26,
   },
   emptyBody: {
-    color: HalcyonColors.textSecondary,
+    color: PassageColors.textSecondary,
     fontFamily: AppFonts.sansRegular,
     fontSize: 13,
     lineHeight: 20,
@@ -216,14 +216,14 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   emptyTitle: {
-    color: HalcyonColors.textPrimary,
+    color: PassageColors.textPrimary,
     fontFamily: AppFonts.displayRegular,
     fontSize: 22,
     lineHeight: 27,
     marginTop: 12,
   },
   eyebrow: {
-    color: HalcyonColors.accent,
+    color: PassageColors.accent,
     fontFamily: AppFonts.sansSemiBold,
     fontSize: 10,
     fontWeight: '600',
@@ -232,9 +232,9 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   featured: {
-    backgroundColor: HalcyonColors.surface,
-    borderColor: HalcyonColors.accent,
-    borderRadius: HalcyonRadius.card,
+    backgroundColor: PassageColors.surface,
+    borderColor: PassageColors.accent,
+    borderRadius: PassageRadius.card,
     borderWidth: 1,
     height: 172,
     marginTop: 22,
@@ -256,7 +256,7 @@ const styles = StyleSheet.create({
   },
   featuredText: { flex: 1 },
   featuredTitle: {
-    color: HalcyonColors.textPrimary,
+    color: PassageColors.textPrimary,
     fontFamily: AppFonts.displaySemiBold,
     fontSize: 22,
     fontWeight: '600',
@@ -264,24 +264,24 @@ const styles = StyleSheet.create({
   },
   footer: { alignItems: 'center', gap: 11 },
   heading: {
-    color: HalcyonColors.textPrimary,
+    color: PassageColors.textPrimary,
     fontFamily: AppFonts.displayRegular,
     fontSize: 31,
     lineHeight: 36,
     marginTop: 4,
     textAlign: 'center',
   },
-  imageFallback: { backgroundColor: HalcyonColors.surfaceRaised },
+  imageFallback: { backgroundColor: PassageColors.surfaceRaised },
   linkDisabled: { opacity: 0.45 },
   meta: {
-    color: HalcyonColors.textSecondary,
+    color: PassageColors.textSecondary,
     fontFamily: AppFonts.sansRegular,
     fontSize: 12,
     lineHeight: 17,
     marginTop: 3,
   },
   notice: {
-    color: HalcyonColors.textPrimary,
+    color: PassageColors.textPrimary,
     fontFamily: AppFonts.sansRegular,
     fontSize: 12,
     lineHeight: 18,
@@ -290,7 +290,7 @@ const styles = StyleSheet.create({
   },
   playCircle: {
     alignItems: 'center',
-    backgroundColor: HalcyonColors.accent,
+    backgroundColor: PassageColors.accent,
     borderRadius: 18,
     height: 36,
     justifyContent: 'center',
@@ -298,7 +298,7 @@ const styles = StyleSheet.create({
   },
   pressed: { opacity: 0.72 },
   retry: {
-    borderColor: HalcyonColors.border,
+    borderColor: PassageColors.border,
     borderRadius: 18,
     borderWidth: 1,
     marginTop: 18,
@@ -306,25 +306,25 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
   },
   retryLabel: {
-    color: HalcyonColors.accent,
+    color: PassageColors.accent,
     fontFamily: AppFonts.sansMedium,
     fontSize: 13,
   },
   saveLink: {
-    color: HalcyonColors.textSecondary,
+    color: PassageColors.textSecondary,
     fontFamily: AppFonts.sansRegular,
     fontSize: 12,
     lineHeight: 18,
     textDecorationLine: 'underline',
   },
   skeletonFeatured: {
-    backgroundColor: HalcyonColors.skeleton,
-    borderRadius: HalcyonRadius.card,
+    backgroundColor: PassageColors.skeleton,
+    borderRadius: PassageRadius.card,
     height: 172,
   },
   skeletonRow: {
-    backgroundColor: HalcyonColors.skeleton,
-    borderRadius: HalcyonRadius.artwork,
+    backgroundColor: PassageColors.skeleton,
+    borderRadius: PassageRadius.artwork,
     height: 64,
   },
   skeletonWrap: { gap: 8, marginTop: 22 },

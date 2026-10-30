@@ -5,7 +5,7 @@ import { apiClient } from '@/lib/api/client';
 import { userApi, type MeApiResponse } from '@/lib/api/user';
 import { cacheProfile, markLoggedIn } from '@/lib/auth/offline-session';
 import { setSessionSource } from '@/lib/auth/session-state';
-import { setAuthTokens } from '@/lib/haven-api';
+import { setAuthTokens } from '@/lib/passage-api';
 import { migrateGuestOnboardingAfterAuth } from '@/lib/onboarding';
 import { queryClient } from '@/lib/query-client';
 

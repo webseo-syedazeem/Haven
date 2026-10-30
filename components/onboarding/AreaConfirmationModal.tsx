@@ -4,8 +4,8 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Modal, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import {
-  HalcyonColors,
-  HalcyonModal,
+  PassageColors,
+  PassageModal,
   ONBOARDING_MODE_ACCENTS,
   ONBOARDING_MODE_ACCENTS_PRESSED,
 } from '@/constants/design';
@@ -134,7 +134,7 @@ export function AreaConfirmationModal({
               ]}>
               <Text style={styles.primaryLabel}>{content.buttonLabel}</Text>
               <Ionicons
-                color={HalcyonColors.background}
+                color={PassageColors.background}
                 name="arrow-forward"
                 size={19}
                 style={styles.primaryArrow}
@@ -214,7 +214,7 @@ const styles = StyleSheet.create({
   },
   overlay: {
     alignItems: 'center',
-    backgroundColor: HalcyonModal.backdrop,
+    backgroundColor: PassageModal.backdrop,
     flex: 1,
     justifyContent: 'center',
     paddingHorizontal: 20,
@@ -234,7 +234,7 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   primaryLabel: {
-    color: HalcyonColors.background,
+    color: PassageColors.background,
     fontFamily: AppFonts.sansSemiBold,
     fontSize: 15,
     fontWeight: '600',
@@ -261,7 +261,7 @@ const styles = StyleSheet.create({
     opacity: 0.64,
   },
   title: {
-    color: HalcyonColors.textPrimary,
+    color: PassageColors.textPrimary,
     fontFamily: AppFonts.playfairRegular,
     fontSize: 28,
     letterSpacing: -0.35,

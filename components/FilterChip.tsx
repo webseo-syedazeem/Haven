@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
-import { HalcyonColors, HalcyonRadius } from '@/constants/design';
+import { PassageColors, PassageRadius } from '@/constants/design';
 import { AppFonts } from '@/constants/theme';
 
 type FilterChipProps = {
@@ -20,7 +20,7 @@ export function FilterChip({
   onRemove,
   icon,
 }: FilterChipProps) {
-  const tint = selected ? HalcyonColors.background : HalcyonColors.textPrimary;
+  const tint = selected ? PassageColors.background : PassageColors.textPrimary;
 
   return (
     <Pressable
@@ -57,8 +57,8 @@ const styles = StyleSheet.create({
   chip: {
     alignItems: 'center',
     alignSelf: 'flex-start',
-    borderColor: HalcyonColors.border,
-    borderRadius: HalcyonRadius.pill,
+    borderColor: PassageColors.border,
+    borderRadius: PassageRadius.pill,
     borderWidth: 1,
     columnGap: 6,
     flexDirection: 'row',
@@ -66,21 +66,21 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
   },
   chipSelected: {
-    backgroundColor: HalcyonColors.accent,
-    borderColor: HalcyonColors.accent,
+    backgroundColor: PassageColors.accent,
+    borderColor: PassageColors.accent,
   },
   chipPressed: {
     opacity: 0.74,
   },
   label: {
-    color: HalcyonColors.textPrimary,
+    color: PassageColors.textPrimary,
     fontFamily: AppFonts.sansMedium,
     fontSize: 13,
     fontWeight: '500',
     lineHeight: 18,
   },
   labelSelected: {
-    color: HalcyonColors.background,
+    color: PassageColors.background,
   },
   group: {
     columnGap: 8,

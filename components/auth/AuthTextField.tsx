@@ -9,7 +9,7 @@ import {
   type TextInputProps,
 } from 'react-native';
 
-import { HalcyonColors, HalcyonRadius } from '@/constants/design';
+import { PassageColors, PassageRadius } from '@/constants/design';
 import { AppFonts } from '@/constants/theme';
 
 type IconName = ComponentProps<typeof Ionicons>['name'];
@@ -40,8 +40,8 @@ export function AuthTextField({
       <View style={[styles.field, (error || errorMessage) && styles.fieldError]}>
         <TextInput
           {...inputProps}
-          placeholderTextColor={inputProps.placeholderTextColor ?? HalcyonColors.textSecondary}
-          selectionColor={HalcyonColors.accent}
+          placeholderTextColor={inputProps.placeholderTextColor ?? PassageColors.textSecondary}
+          selectionColor={PassageColors.accent}
           style={[styles.input, (onToggleSecureText || trailingIcon) && styles.inputWithIcon]}
         />
         {onToggleSecureText ? (
@@ -50,11 +50,11 @@ export function AuthTextField({
             hitSlop={8}
             onPress={onToggleSecureText}
             style={({ pressed }) => [styles.iconButton, pressed && styles.pressed]}>
-            <Ionicons color={HalcyonColors.textSecondary} name={secureIcon} size={19} />
+            <Ionicons color={PassageColors.textSecondary} name={secureIcon} size={19} />
           </Pressable>
         ) : trailingIcon ? (
           <View pointerEvents={'none'} style={styles.iconButton}>
-            <Ionicons color={HalcyonColors.textSecondary} name={trailingIcon} size={19} />
+            <Ionicons color={PassageColors.textSecondary} name={trailingIcon} size={19} />
           </View>
         ) : null}
       </View>
@@ -70,9 +70,9 @@ export function AuthTextField({
 const styles = StyleSheet.create({
   field: {
     alignItems: 'center',
-    backgroundColor: HalcyonColors.surface,
-    borderColor: HalcyonColors.border,
-    borderRadius: HalcyonRadius.artwork,
+    backgroundColor: PassageColors.surface,
+    borderColor: PassageColors.border,
+    borderRadius: PassageRadius.artwork,
     borderWidth: 1,
     flexDirection: 'row',
     minHeight: 54,
@@ -100,7 +100,7 @@ const styles = StyleSheet.create({
     width: 42,
   },
   input: {
-    color: HalcyonColors.textPrimary,
+    color: PassageColors.textPrimary,
     flex: 1,
     fontFamily: AppFonts.sansRegular,
     fontSize: 14,
@@ -113,7 +113,7 @@ const styles = StyleSheet.create({
     paddingRight: 52,
   },
   label: {
-    color: HalcyonColors.textSecondary,
+    color: PassageColors.textSecondary,
     fontFamily: AppFonts.sansMedium,
     fontSize: 13,
     fontWeight: '500',

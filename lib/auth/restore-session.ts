@@ -16,12 +16,13 @@ import {
   hydrateGuestMode,
   isGuestModeActive,
 } from '@/lib/auth/session-state';
-import { clearAuthTokens, refreshSession, setAccessToken, setAuthTokens } from '@/lib/haven-api';
+import { clearAuthTokens, refreshSession, setAccessToken, setAuthTokens } from '@/lib/passage-api';
 import { queryClient } from '@/lib/query-client';
 
-const ACCESS_TOKEN_KEY = 'access_token';
-const LEGACY_ACCESS_TOKEN_KEY = 'haven.auth.access_token';
-const REFRESH_TOKEN_KEY = 'haven.auth.refresh_token';
+const ACCESS_TOKEN_KEY = 'passage.auth.access_token';
+const REFRESH_TOKEN_KEY = 'passage.auth.refresh_token';
+const LEGACY_ACCESS_TOKEN_KEYS = ['access_token', 'haven.auth.access_token'] as const;
+const LEGACY_REFRESH_TOKEN_KEY = 'haven.auth.refresh_token';
 
 function getWebStorage() {
   return typeof globalThis !== 'undefined'
@@ -100,9 +101,19 @@ async function runRestore(): Promise<SessionRestoreStatus> {
     // the public app and every token-only query stays disabled.
     if (isGuestModeActive()) return 'signed-out';
 
-    const accessToken =
-      (await getStoredItem(ACCESS_TOKEN_KEY)) ?? (await getStoredItem(LEGACY_ACCESS_TOKEN_KEY));
-    const refreshToken = await getStoredItem(REFRESH_TOKEN_KEY);
+    let accessToken = await getStoredItem(ACCESS_TOKEN_KEY);
+    if (!accessToken) {
+      for (const key of LEGACY_ACCESS_TOKEN_KEYS) {
+        accessToken = await getStoredItem(key);
+        if (accessToken) break;
+      }
+      if (accessToken) await setStoredItem(ACCESS_TOKEN_KEY, accessToken);
+    }
+    let refreshToken = await getStoredItem(REFRESH_TOKEN_KEY);
+    if (!refreshToken) {
+      refreshToken = await getStoredItem(LEGACY_REFRESH_TOKEN_KEY);
+      if (refreshToken) await setStoredItem(REFRESH_TOKEN_KEY, refreshToken);
+    }
 
     // Seed the cache before anything is validated, so an offline launch has a
     // name and an avatar to draw the moment the tabs mount.
@@ -167,8 +178,9 @@ async function runRestore(): Promise<SessionRestoreStatus> {
     await markLoggedOut();
     await Promise.all([
       deleteStoredItem(ACCESS_TOKEN_KEY),
-      deleteStoredItem(LEGACY_ACCESS_TOKEN_KEY),
+      ...LEGACY_ACCESS_TOKEN_KEYS.map((key) => deleteStoredItem(key)),
       deleteStoredItem(REFRESH_TOKEN_KEY),
+      deleteStoredItem(LEGACY_REFRESH_TOKEN_KEY),
     ]);
 
     return 'signed-out';

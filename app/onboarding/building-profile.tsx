@@ -6,7 +6,7 @@ import { Animated, StyleSheet, Text, View } from 'react-native';
 
 import { OnboardingScaffold } from '@/components/onboarding/OnboardingScaffold';
 import { PassageLogo } from '@/components/onboarding/PassageLogo';
-import { HalcyonColors } from '@/constants/design';
+import { PassageColors } from '@/constants/design';
 import { AppFonts } from '@/constants/theme';
 import {
   getOnboardingAnswers,
@@ -83,7 +83,7 @@ export default function BuildingProfileScreen() {
 
 const styles = StyleSheet.create({
   body: {
-    color: HalcyonColors.textSecondary,
+    color: PassageColors.textSecondary,
     fontFamily: AppFonts.sansRegular,
     fontSize: 13,
     lineHeight: 20,
@@ -95,7 +95,7 @@ const styles = StyleSheet.create({
     paddingBottom: 64,
   },
   heading: {
-    color: HalcyonColors.textPrimary,
+    color: PassageColors.textPrimary,
     fontFamily: AppFonts.displayRegular,
     fontSize: 29,
     lineHeight: 34,
@@ -104,7 +104,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   line: {
-    backgroundColor: HalcyonColors.accent,
+    backgroundColor: PassageColors.accent,
     height: 2,
     opacity: 0.9,
     position: 'absolute',
@@ -112,7 +112,7 @@ const styles = StyleSheet.create({
     width: 28,
   },
   logoGlow: {
-    shadowColor: HalcyonColors.accent,
+    shadowColor: PassageColors.accent,
     shadowOffset: { height: 0, width: 0 },
     shadowOpacity: 0.48,
     shadowRadius: 22,

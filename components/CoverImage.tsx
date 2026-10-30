@@ -2,7 +2,7 @@ import { Image, type ImageProps, type ImageStyle } from 'expo-image';
 import { useEffect, useState } from 'react';
 import type { StyleProp } from 'react-native';
 
-import { HalcyonColors } from '@/constants/design';
+import { PassageColors } from '@/constants/design';
 import { coverUrl, pickActiveCoverUrl, type CoverSize } from '@/lib/image-url';
 
 export type { CoverSize } from '@/lib/image-url';
@@ -73,5 +73,5 @@ export function CoverImage({ uri, size, style, ...rest }: CoverImageProps) {
 }
 
 const placeholderStyle: StyleProp<ImageStyle> = {
-  backgroundColor: HalcyonColors.surfaceRaised,
+  backgroundColor: PassageColors.surfaceRaised,
 };

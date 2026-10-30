@@ -6,7 +6,7 @@ import { markLoggedOut } from '@/lib/auth/offline-session';
 import { setIntroSeen } from '@/lib/auth/intro-flag';
 import { beginExplicitSignOut, setGuestModeActive } from '@/lib/auth/session-state';
 import { resetGuestOnboardingState } from '@/lib/onboarding';
-import { clearAuthTokens } from '@/lib/haven-api';
+import { clearAuthTokens } from '@/lib/passage-api';
 import { clearPersistedQueryCache } from '@/lib/query-persist';
 import { supabase } from '@/lib/supabase';
 

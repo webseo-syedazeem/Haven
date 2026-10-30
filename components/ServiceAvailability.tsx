@@ -9,7 +9,7 @@ import {
   subscribeToServiceStatus,
 } from '@/lib/service-status'
 
-const API_BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL ?? 'https://thehappyapp.co.uk'
+const API_BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL?.trim().replace(/\/+$/, '') || 'https://thehappyapp.co.uk'
 
 async function checkHealth() {
   try {

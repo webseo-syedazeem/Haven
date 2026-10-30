@@ -2,7 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { Children, Fragment, type ReactNode } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, Switch, Text, View } from 'react-native';
 
-import { HalcyonColors, HalcyonRadius } from '@/constants/design';
+import { PassageColors, PassageRadius } from '@/constants/design';
 import { AppFonts } from '@/constants/theme';
 
 /** Muted, desaturated red — a warning, not an alarm. */
@@ -56,7 +56,7 @@ export function SettingsRow({
   const isToggle = !!toggle;
   const pressable = !disabled && (!!onPress || isToggle);
   const chevron = showChevron ?? (!!onPress && !isToggle && !accessory);
-  const tint = destructive ? DESTRUCTIVE_COLOR : HalcyonColors.textPrimary;
+  const tint = destructive ? DESTRUCTIVE_COLOR : PassageColors.textPrimary;
 
   const handlePress = () => {
     if (disabled) return;
@@ -71,7 +71,7 @@ export function SettingsRow({
     <>
       {!!icon && (
         <Ionicons
-          color={destructive ? DESTRUCTIVE_COLOR : HalcyonColors.textSecondary}
+          color={destructive ? DESTRUCTIVE_COLOR : PassageColors.textSecondary}
           name={icon}
           size={19}
           style={styles.icon}
@@ -83,7 +83,7 @@ export function SettingsRow({
         {!!description && <Text style={styles.description}>{description}</Text>}
       </View>
 
-      {busy && <ActivityIndicator color={HalcyonColors.accent} size="small" />}
+      {busy && <ActivityIndicator color={PassageColors.accent} size="small" />}
 
       {!busy && accessory}
 
@@ -99,14 +99,14 @@ export function SettingsRow({
           ios_backgroundColor={SWITCH_TRACK_OFF}
           onValueChange={toggle.onValueChange}
           thumbColor="#FFFFFF"
-          trackColor={{ false: SWITCH_TRACK_OFF, true: HalcyonColors.accent }}
+          trackColor={{ false: SWITCH_TRACK_OFF, true: PassageColors.accent }}
           value={toggle.value}
         />
       )}
 
       {!busy && chevron && (
         <Ionicons
-          color={destructive ? DESTRUCTIVE_COLOR : HalcyonColors.textSecondary}
+          color={destructive ? DESTRUCTIVE_COLOR : PassageColors.textSecondary}
           name="chevron-forward"
           size={16}
           style={styles.chevron}
@@ -173,7 +173,7 @@ export function SettingsStatus({
 }) {
   return (
     <View style={styles.status}>
-      <Ionicons color={HalcyonColors.accent} name={icon} size={15} />
+      <Ionicons color={PassageColors.accent} name={icon} size={15} />
       <Text style={styles.statusLabel}>{label}</Text>
     </View>
   );
@@ -184,7 +184,7 @@ const styles = StyleSheet.create({
     marginBottom: 22,
   },
   groupTitle: {
-    color: HalcyonColors.textSecondary,
+    color: PassageColors.textSecondary,
     fontFamily: AppFonts.sansMedium,
     fontSize: 12,
     fontWeight: '500',
@@ -195,19 +195,19 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
   },
   card: {
-    backgroundColor: HalcyonColors.surface,
-    borderColor: HalcyonColors.border,
-    borderRadius: HalcyonRadius.card,
+    backgroundColor: PassageColors.surface,
+    borderColor: PassageColors.border,
+    borderRadius: PassageRadius.card,
     borderWidth: 1,
     overflow: 'hidden',
   },
   divider: {
-    backgroundColor: HalcyonColors.border,
+    backgroundColor: PassageColors.border,
     height: StyleSheet.hairlineWidth,
     marginLeft: 16,
   },
   footnote: {
-    color: HalcyonColors.textSecondary,
+    color: PassageColors.textSecondary,
     fontFamily: AppFonts.sansRegular,
     fontSize: 12,
     lineHeight: 17,
@@ -223,7 +223,7 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
   },
   rowPressed: {
-    backgroundColor: HalcyonColors.surfaceRaised,
+    backgroundColor: PassageColors.surfaceRaised,
   },
   rowDisabled: {
     opacity: 0.6,
@@ -241,14 +241,14 @@ const styles = StyleSheet.create({
     lineHeight: 21,
   },
   description: {
-    color: HalcyonColors.textSecondary,
+    color: PassageColors.textSecondary,
     fontFamily: AppFonts.sansRegular,
     fontSize: 12,
     lineHeight: 17,
     marginTop: 2,
   },
   value: {
-    color: HalcyonColors.textSecondary,
+    color: PassageColors.textSecondary,
     fontFamily: AppFonts.sansRegular,
     fontSize: 14,
     lineHeight: 19,
@@ -263,7 +263,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
   },
   statusLabel: {
-    color: HalcyonColors.accent,
+    color: PassageColors.accent,
     fontFamily: AppFonts.sansMedium,
     fontSize: 13,
     fontWeight: '500',

@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
-import { HalcyonColors, HalcyonRadius, HalcyonSpacing, Typography } from '@/constants/design';
+import { PassageColors, PassageRadius, PassageSpacing, Typography } from '@/constants/design';
 import { AppFonts } from '@/constants/theme';
 
 type EmptyStateProps = {
@@ -17,7 +17,7 @@ type EmptyStateProps = {
 export function EmptyState({ icon, iconColor, title, message, actionLabel, onAction }: EmptyStateProps) {
   return (
     <View style={styles.wrapper}>
-      <Ionicons color={iconColor ?? HalcyonColors.skeleton} name={icon} size={64} />
+      <Ionicons color={iconColor ?? PassageColors.skeleton} name={icon} size={64} />
       <Text style={styles.title}>{title}</Text>
       {!!message && <Text style={styles.message}>{message}</Text>}
       {!!actionLabel && !!onAction && (
@@ -49,7 +49,7 @@ export function ErrorState({ message, onRetry }: { message?: string; onRetry?: (
 const styles = StyleSheet.create({
   wrapper: {
     alignItems: 'center',
-    paddingHorizontal: HalcyonSpacing.screenX,
+    paddingHorizontal: PassageSpacing.screenX,
     paddingVertical: 56,
   },
   title: {
@@ -64,8 +64,8 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   action: {
-    borderColor: HalcyonColors.border,
-    borderRadius: HalcyonRadius.pill,
+    borderColor: PassageColors.border,
+    borderRadius: PassageRadius.pill,
     borderWidth: 1,
     marginTop: 22,
     paddingHorizontal: 24,
@@ -75,7 +75,7 @@ const styles = StyleSheet.create({
     opacity: 0.74,
   },
   actionLabel: {
-    color: HalcyonColors.accent,
+    color: PassageColors.accent,
     fontFamily: AppFonts.sansMedium,
     fontSize: 14,
     fontWeight: '500',

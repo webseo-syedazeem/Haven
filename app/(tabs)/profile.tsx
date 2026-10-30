@@ -12,7 +12,7 @@ import { AvatarPreview } from '@/components/profile/AvatarPreview';
 import { ProfileAvatar } from '@/components/profile/ProfileAvatar';
 import { SettingsGroup, SettingsRow } from '@/components/SettingsRow';
 import { Toast, useToast } from '@/components/Toast';
-import { HalcyonColors, HalcyonSpacing, Typography } from '@/constants/design';
+import { PassageColors, PassageSpacing, Typography } from '@/constants/design';
 import { AppFonts } from '@/constants/theme';
 import { useTabContentInset } from '@/hooks/use-bottom-safe-spacing';
 import { useGuestModeActive, useHasSession } from '@/hooks/useSession';
@@ -145,7 +145,7 @@ export default function ProfileScreen() {
                 <ProfileAvatar
                   iconColor="#FFFFFF"
                   imageUrl={profileImageUrl}
-                  placeholderBackgroundColor={HalcyonColors.surfaceRaised}
+                  placeholderBackgroundColor={PassageColors.surfaceRaised}
                   size={96}
                   style={styles.avatar}
                 />
@@ -206,7 +206,7 @@ export default function ProfileScreen() {
               )}
             </SettingsGroup>
 
-            <Text style={styles.version}>Passage · free, with no subscription</Text>
+            <Text style={styles.version}>Passage · Focus · Sleep · Relax</Text>
           </ImageBackground>
         </Animated.ScrollView>
 
@@ -261,7 +261,7 @@ const styles = StyleSheet.create({
   },
   scrollScene: {
     flexGrow: 1,
-    paddingHorizontal: HalcyonSpacing.screenX,
+    paddingHorizontal: PassageSpacing.screenX,
   },
   topOverlay: {
     backgroundColor: '#000000',
@@ -300,7 +300,7 @@ const styles = StyleSheet.create({
     textShadowRadius: 6,
   },
   retry: {
-    borderColor: HalcyonColors.border,
+    borderColor: PassageColors.border,
     borderRadius: 999,
     borderWidth: 1,
     marginTop: 14,
@@ -308,7 +308,7 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
   },
   retryLabel: {
-    color: HalcyonColors.accent,
+    color: PassageColors.accent,
     fontFamily: AppFonts.sansMedium,
     fontSize: 13,
     fontWeight: '500',

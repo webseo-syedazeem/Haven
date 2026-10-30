@@ -1,6 +1,6 @@
 import { Image, StyleSheet, Text, View } from 'react-native';
 
-import { HalcyonColors } from '@/constants/design';
+import { PassageColors } from '@/constants/design';
 import { AppFonts } from '@/constants/theme';
 
 const appLogo = require('@/assets/images/passage-brand-assets/screens-icon.webp');
@@ -39,7 +39,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   tagline: {
-    color: HalcyonColors.accent,
+    color: PassageColors.accent,
     fontFamily: AppFonts.sansRegular,
     fontSize: 12,
     letterSpacing: 1.1,
@@ -47,7 +47,7 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   wordmark: {
-    color: HalcyonColors.textPrimary,
+    color: PassageColors.textPrimary,
     fontFamily: AppFonts.displayRegular,
     fontSize: 44,
     fontWeight: '400',

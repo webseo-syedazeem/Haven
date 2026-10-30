@@ -8,9 +8,9 @@ import { OnboardingBackButton } from '@/components/onboarding/OnboardingBackButt
 import { SectionRail } from '@/components/SectionRail';
 import { SoundscapeCard } from '@/components/SoundscapeCard';
 import {
-  HalcyonColors,
-  HalcyonRadius,
-  HalcyonSpacing,
+  PassageColors,
+  PassageRadius,
+  PassageSpacing,
 } from '@/constants/design';
 import { getModeConfig, MODES, type ModeId } from '@/constants/modes';
 import { AppFonts } from '@/constants/theme';
@@ -212,7 +212,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   backButton: {
-    marginLeft: HalcyonSpacing.screenX,
+    marginLeft: PassageSpacing.screenX,
     marginTop: 12,
   },
   pressed: {
@@ -220,11 +220,11 @@ const styles = StyleSheet.create({
   },
   heroCopy: {
     paddingBottom: 22,
-    paddingHorizontal: HalcyonSpacing.screenX,
+    paddingHorizontal: PassageSpacing.screenX,
     paddingTop: 56,
   },
   heroTitle: {
-    color: HalcyonColors.textPrimary,
+    color: PassageColors.textPrimary,
     fontFamily: AppFonts.displayRegular,
     fontSize: 46,
     letterSpacing: 1.5,
@@ -238,71 +238,71 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   description: {
-    color: HalcyonColors.textSecondary,
+    color: PassageColors.textSecondary,
     fontFamily: AppFonts.sansRegular,
     fontSize: 15,
     lineHeight: 24,
-    paddingHorizontal: HalcyonSpacing.screenX,
+    paddingHorizontal: PassageSpacing.screenX,
     paddingTop: 22,
   },
   stateBlock: {
     alignItems: 'flex-start',
-    paddingHorizontal: HalcyonSpacing.screenX,
+    paddingHorizontal: PassageSpacing.screenX,
     paddingTop: 36,
   },
   stateTitle: {
-    color: HalcyonColors.textPrimary,
+    color: PassageColors.textPrimary,
     fontFamily: AppFonts.displaySemiBold,
     fontSize: 20,
     fontWeight: '600',
     lineHeight: 28,
   },
   stateBody: {
-    color: HalcyonColors.textSecondary,
+    color: PassageColors.textSecondary,
     fontFamily: AppFonts.sansRegular,
     fontSize: 14,
     lineHeight: 21,
     marginTop: 6,
   },
   retryButton: {
-    borderColor: HalcyonColors.border,
-    borderRadius: HalcyonRadius.pill,
+    borderColor: PassageColors.border,
+    borderRadius: PassageRadius.pill,
     borderWidth: 1,
     marginTop: 18,
     paddingHorizontal: 26,
     paddingVertical: 12,
   },
   retryLabel: {
-    color: HalcyonColors.textPrimary,
+    color: PassageColors.textPrimary,
     fontFamily: AppFonts.sansMedium,
     fontSize: 14,
     fontWeight: '500',
     lineHeight: 20,
   },
   skeletonSection: {
-    marginTop: HalcyonSpacing.section,
+    marginTop: PassageSpacing.section,
   },
   skeletonHeading: {
-    backgroundColor: HalcyonColors.skeleton,
+    backgroundColor: PassageColors.skeleton,
     borderRadius: 6,
     height: 20,
     marginBottom: 16,
-    marginHorizontal: HalcyonSpacing.screenX,
+    marginHorizontal: PassageSpacing.screenX,
     width: 168,
   },
   skeletonRow: {
     columnGap: 14,
     flexDirection: 'row',
-    paddingHorizontal: HalcyonSpacing.screenX,
+    paddingHorizontal: PassageSpacing.screenX,
   },
   skeletonCard: {
-    backgroundColor: HalcyonColors.skeleton,
+    backgroundColor: PassageColors.skeleton,
     borderRadius: 14,
     height: 132,
     width: 132,
   },
   skeletonLine: {
-    backgroundColor: HalcyonColors.skeleton,
+    backgroundColor: PassageColors.skeleton,
     borderRadius: 4,
     height: 10,
   },

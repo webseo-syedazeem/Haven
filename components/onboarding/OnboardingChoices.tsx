@@ -9,7 +9,7 @@ import {
   type ViewStyle,
 } from 'react-native';
 
-import { HalcyonColors, HalcyonRadius } from '@/constants/design';
+import { PassageColors, PassageRadius } from '@/constants/design';
 import { AppFonts } from '@/constants/theme';
 
 export function ChoiceRow({
@@ -63,7 +63,7 @@ export function ChoiceRow({
             : null,
         ]}>
         {selected ? (
-          <Ionicons color={HalcyonColors.background} name="checkmark" size={14} />
+          <Ionicons color={PassageColors.background} name="checkmark" size={14} />
         ) : null}
       </View>
     </Pressable>
@@ -90,7 +90,7 @@ export function ChoiceChip({
         pressed && styles.pressed,
       ]}>
       {selected ? (
-        <Ionicons color={HalcyonColors.background} name="checkmark" size={14} />
+        <Ionicons color={PassageColors.background} name="checkmark" size={14} />
       ) : null}
       <Text style={[styles.chipLabel, selected && styles.chipLabelSelected]}>{label}</Text>
     </Pressable>
@@ -108,14 +108,14 @@ const styles = StyleSheet.create({
     width: 20,
   },
   checkSelected: {
-    backgroundColor: HalcyonColors.accent,
-    borderColor: HalcyonColors.accent,
+    backgroundColor: PassageColors.accent,
+    borderColor: PassageColors.accent,
   },
   chip: {
     alignItems: 'center',
-    backgroundColor: HalcyonColors.surface,
-    borderColor: HalcyonColors.border,
-    borderRadius: HalcyonRadius.pill,
+    backgroundColor: PassageColors.surface,
+    borderColor: PassageColors.border,
+    borderRadius: PassageRadius.pill,
     borderWidth: 1,
     columnGap: 6,
     flexDirection: 'row',
@@ -124,23 +124,23 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
   },
   chipLabel: {
-    color: HalcyonColors.textPrimary,
+    color: PassageColors.textPrimary,
     fontFamily: AppFonts.sansRegular,
     fontSize: 15,
     lineHeight: 21,
   },
   chipLabelSelected: {
-    color: HalcyonColors.background,
+    color: PassageColors.background,
     fontFamily: AppFonts.sansSemiBold,
     fontWeight: '600',
   },
   chipSelected: {
-    backgroundColor: HalcyonColors.accent,
-    borderColor: HalcyonColors.accent,
+    backgroundColor: PassageColors.accent,
+    borderColor: PassageColors.accent,
   },
   copy: { flex: 1 },
   description: {
-    color: HalcyonColors.textSecondary,
+    color: PassageColors.textSecondary,
     fontFamily: AppFonts.sansRegular,
     fontSize: 13,
     lineHeight: 19,
@@ -150,9 +150,9 @@ const styles = StyleSheet.create({
   pressed: { opacity: 0.76 },
   row: {
     alignItems: 'center',
-    backgroundColor: HalcyonColors.surface,
-    borderColor: HalcyonColors.border,
-    borderRadius: HalcyonRadius.card,
+    backgroundColor: PassageColors.surface,
+    borderColor: PassageColors.border,
+    borderRadius: PassageRadius.card,
     borderWidth: 1,
     columnGap: 12,
     flexDirection: 'row',
@@ -161,7 +161,7 @@ const styles = StyleSheet.create({
     paddingVertical: 13,
   },
   rowLabel: {
-    color: HalcyonColors.textPrimary,
+    color: PassageColors.textPrimary,
     fontFamily: AppFonts.sansMedium,
     fontSize: 16,
     fontWeight: '500',

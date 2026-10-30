@@ -8,7 +8,7 @@ import { RequireAuth } from '@/components/RequireAuth';
 import { FieldError, SettingsField } from '@/components/SettingsField';
 import { SettingsPrimaryButton, SettingsScreen } from '@/components/SettingsScreen';
 import { SupportSuccess } from '@/components/SupportSuccess';
-import { HalcyonColors } from '@/constants/design';
+import { PassageColors } from '@/constants/design';
 import { MODES } from '@/constants/modes';
 import { AppFonts } from '@/constants/theme';
 import { useHasSession } from '@/hooks/useSession';
@@ -151,7 +151,7 @@ function RequestSoundscapeContent() {
           disabled={request.isPending}
           label="Send request"
           onPress={handleSubmit}>
-          {request.isPending ? <ActivityIndicator color={HalcyonColors.background} /> : undefined}
+          {request.isPending ? <ActivityIndicator color={PassageColors.background} /> : undefined}
         </SettingsPrimaryButton>
       </KeyboardAvoidingView>
     </SettingsScreen>
@@ -167,7 +167,7 @@ export default function RequestSoundscapeScreen() {
 }
 const styles = StyleSheet.create({
   intro: {
-    color: HalcyonColors.textSecondary,
+    color: PassageColors.textSecondary,
     fontFamily: AppFonts.sansRegular,
     fontSize: 14,
     lineHeight: 21,
@@ -177,14 +177,14 @@ const styles = StyleSheet.create({
     marginBottom: 22,
   },
   sectionTitle: {
-    color: HalcyonColors.textPrimary,
+    color: PassageColors.textPrimary,
     fontFamily: AppFonts.displaySemiBold,
     fontSize: 19,
     fontWeight: '600',
     lineHeight: 26,
   },
   sectionHint: {
-    color: HalcyonColors.textSecondary,
+    color: PassageColors.textSecondary,
     fontFamily: AppFonts.sansRegular,
     fontSize: 12,
     lineHeight: 17,

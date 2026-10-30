@@ -5,10 +5,10 @@ import { Modal, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import {
-  HalcyonColors,
-  HalcyonModal,
-  HalcyonRadius,
-  HalcyonSpacing,
+  PassageColors,
+  PassageModal,
+  PassageRadius,
+  PassageSpacing,
   Typography,
 } from '@/constants/design';
 import { getModeLabel, type ModeId } from '@/constants/modes';
@@ -112,7 +112,7 @@ export function TimerSheet({
               accessibilityRole="button"
               hitSlop={10}
               onPress={onClose}>
-              <Ionicons color={HalcyonColors.textSecondary} name="close" size={20} />
+              <Ionicons color={PassageColors.textSecondary} name="close" size={20} />
             </Pressable>
           </View>
 
@@ -129,7 +129,7 @@ export function TimerSheet({
               {timerMode === 'duration' ? 'Set a duration' : 'Until I Stop'}
             </Text>
             <Ionicons
-              color={HalcyonColors.textSecondary}
+              color={PassageColors.textSecondary}
               name={dropdownOpen ? 'chevron-up' : 'chevron-down'}
               size={18}
             />
@@ -146,7 +146,7 @@ export function TimerSheet({
                 style={({ pressed }) => [styles.dropdownOption, pressed && styles.pressed]}>
                 <Text style={styles.dropdownOptionLabel}>Set a duration</Text>
                 {timerMode === 'duration' && (
-                  <Ionicons color={HalcyonColors.accent} name="checkmark" size={19} />
+                  <Ionicons color={PassageColors.accent} name="checkmark" size={19} />
                 )}
               </Pressable>
               <Pressable
@@ -158,7 +158,7 @@ export function TimerSheet({
                 style={({ pressed }) => [styles.dropdownOption, pressed && styles.pressed]}>
                 <Text style={styles.dropdownOptionLabel}>Until I Stop</Text>
                 {timerMode === 'until-stop' && (
-                  <Ionicons color={HalcyonColors.accent} name="checkmark" size={19} />
+                  <Ionicons color={PassageColors.accent} name="checkmark" size={19} />
                 )}
               </Pressable>
             </View>
@@ -180,12 +180,12 @@ export function TimerSheet({
                 }}
                 maximumTrackTintColor="rgba(255,255,255,0.14)"
                 maximumValue={TIMER_MAX_MINUTES}
-                minimumTrackTintColor={HalcyonColors.accent}
+                minimumTrackTintColor={PassageColors.accent}
                 minimumValue={TIMER_MIN_MINUTES}
                 onValueChange={(value) => setDurationMinutes(Math.round(value))}
                 step={TIMER_STEP_MINUTES}
                 style={styles.slider}
-                thumbTintColor={HalcyonColors.accent}
+                thumbTintColor={PassageColors.accent}
                 value={durationMinutes}
               />
               <View style={styles.timelineLabels}>
@@ -196,7 +196,7 @@ export function TimerSheet({
             </View>
           ) : (
             <View style={styles.untilStopCard}>
-              <Ionicons color={HalcyonColors.accent} name="infinite-outline" size={24} />
+              <Ionicons color={PassageColors.accent} name="infinite-outline" size={24} />
               <View style={styles.untilStopCopy}>
                 <Text style={styles.untilStopTitle}>No time limit</Text>
                 <Text style={styles.untilStopHint}>Playback continues until you stop it.</Text>
@@ -231,15 +231,15 @@ export function TimerSheet({
 
 const styles = StyleSheet.create({
   container: { flex: 1, justifyContent: 'flex-end' },
-  backdrop: { ...StyleSheet.absoluteFillObject, backgroundColor: HalcyonModal.backdrop },
+  backdrop: { ...StyleSheet.absoluteFillObject, backgroundColor: PassageModal.backdrop },
   sheet: {
-    backgroundColor: HalcyonColors.surface,
+    backgroundColor: PassageColors.surface,
     borderTopColor: 'rgba(255,255,255,0.035)',
-    borderTopLeftRadius: HalcyonRadius.sheet,
-    borderTopRightRadius: HalcyonRadius.sheet,
+    borderTopLeftRadius: PassageRadius.sheet,
+    borderTopRightRadius: PassageRadius.sheet,
     borderTopWidth: StyleSheet.hairlineWidth,
     overflow: 'hidden',
-    paddingHorizontal: HalcyonSpacing.screenX,
+    paddingHorizontal: PassageSpacing.screenX,
     paddingTop: 10,
   },
   grabber: {
@@ -258,7 +258,7 @@ const styles = StyleSheet.create({
   },
   title: { ...Typography.sectionHeading },
   pausedNote: {
-    color: HalcyonColors.accent,
+    color: PassageColors.accent,
     fontFamily: AppFonts.sansMedium,
     fontSize: 13,
     fontWeight: '500',
@@ -266,7 +266,7 @@ const styles = StyleSheet.create({
     marginBottom: 14,
   },
   fieldLabel: {
-    color: HalcyonColors.textSecondary,
+    color: PassageColors.textSecondary,
     fontFamily: AppFonts.sansMedium,
     fontSize: 12,
     letterSpacing: 0.4,
@@ -276,7 +276,7 @@ const styles = StyleSheet.create({
   },
   dropdown: {
     alignItems: 'center',
-    borderColor: HalcyonColors.border,
+    borderColor: PassageColors.border,
     borderRadius: 14,
     borderWidth: 1,
     flexDirection: 'row',
@@ -286,14 +286,14 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
   },
   dropdownLabel: {
-    color: HalcyonColors.textPrimary,
+    color: PassageColors.textPrimary,
     fontFamily: AppFonts.sansMedium,
     fontSize: 15,
     fontWeight: '500',
   },
   dropdownMenu: {
-    backgroundColor: HalcyonColors.background,
-    borderColor: HalcyonColors.border,
+    backgroundColor: PassageColors.background,
+    borderColor: PassageColors.border,
     borderRadius: 14,
     borderWidth: 1,
     marginTop: 6,
@@ -308,21 +308,21 @@ const styles = StyleSheet.create({
     paddingVertical: 11,
   },
   dropdownOptionLabel: {
-    color: HalcyonColors.textPrimary,
+    color: PassageColors.textPrimary,
     fontFamily: AppFonts.sansRegular,
     fontSize: 14,
     lineHeight: 20,
   },
   timelineSection: { marginTop: 22 },
   durationValue: {
-    color: HalcyonColors.textPrimary,
+    color: PassageColors.textPrimary,
     fontFamily: AppFonts.displayRegular,
     fontSize: 34,
     lineHeight: 40,
     textAlign: 'center',
   },
   durationHint: {
-    color: HalcyonColors.textSecondary,
+    color: PassageColors.textSecondary,
     fontFamily: AppFonts.sansRegular,
     fontSize: 12,
     lineHeight: 18,
@@ -332,7 +332,7 @@ const styles = StyleSheet.create({
   slider: { height: 42, marginHorizontal: -4, marginTop: 10 },
   timelineLabels: { flexDirection: 'row', justifyContent: 'space-between' },
   timelineLabel: {
-    color: HalcyonColors.textSecondary,
+    color: PassageColors.textSecondary,
     fontFamily: AppFonts.sansRegular,
     fontSize: 11,
     lineHeight: 16,
@@ -350,21 +350,21 @@ const styles = StyleSheet.create({
   },
   untilStopCopy: { flex: 1 },
   untilStopTitle: {
-    color: HalcyonColors.textPrimary,
+    color: PassageColors.textPrimary,
     fontFamily: AppFonts.sansMedium,
     fontSize: 15,
     fontWeight: '500',
     lineHeight: 20,
   },
   untilStopHint: {
-    color: HalcyonColors.textSecondary,
+    color: PassageColors.textSecondary,
     fontFamily: AppFonts.sansRegular,
     fontSize: 12,
     lineHeight: 18,
     marginTop: 2,
   },
   note: {
-    color: HalcyonColors.textSecondary,
+    color: PassageColors.textSecondary,
     fontFamily: AppFonts.sansRegular,
     fontSize: 12,
     lineHeight: 18,
@@ -372,8 +372,8 @@ const styles = StyleSheet.create({
   },
   applyButton: {
     alignItems: 'center',
-    backgroundColor: HalcyonColors.accent,
-    borderRadius: HalcyonRadius.pill,
+    backgroundColor: PassageColors.accent,
+    borderRadius: PassageRadius.pill,
     justifyContent: 'center',
     marginTop: 18,
     minHeight: 50,
@@ -381,7 +381,7 @@ const styles = StyleSheet.create({
     paddingVertical: 13,
   },
   applyLabel: {
-    color: HalcyonColors.background,
+    color: PassageColors.background,
     fontFamily: AppFonts.sansMedium,
     fontSize: 15,
     fontWeight: '600',
@@ -395,7 +395,7 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
   },
   clearLabel: {
-    color: HalcyonColors.textSecondary,
+    color: PassageColors.textSecondary,
     fontFamily: AppFonts.sansMedium,
     fontSize: 14,
     fontWeight: '500',

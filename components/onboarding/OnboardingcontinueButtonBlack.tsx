@@ -9,7 +9,7 @@ import {
   type ViewStyle,
 } from 'react-native';
 
-import { HalcyonColors, HalcyonRadius } from '@/constants/design';
+import { PassageColors, PassageRadius } from '@/constants/design';
 import { AppFonts } from '@/constants/theme';
 import { useSinglePress } from '@/hooks/useSinglePress';
 
@@ -56,7 +56,7 @@ export function OnboardingContinueButtonBlack({
 
       {loading ? (
         <ActivityIndicator
-          color={HalcyonColors.textPrimary}
+          color={PassageColors.textPrimary}
           size="small"
         />
       ) : (
@@ -96,7 +96,7 @@ const styles = StyleSheet.create({
 
     backgroundColor: '#151515',
 
-    borderRadius: HalcyonRadius.pill,
+    borderRadius: PassageRadius.pill,
     paddingHorizontal: 20,
 
     borderWidth: 1,

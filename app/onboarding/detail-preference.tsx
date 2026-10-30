@@ -6,7 +6,7 @@ import { StyleSheet, Text, View } from 'react-native';
 
 import { ChoiceRow } from '@/components/onboarding/OnboardingChoices';
 import { OnboardingScaffold } from '@/components/onboarding/OnboardingScaffold';
-import { HalcyonColors } from '@/constants/design';
+import { PassageColors } from '@/constants/design';
 import { DETAIL_LEVEL_LABELS, DETAIL_LEVEL_VALUES } from '@/constants/filters';
 import { AppFonts } from '@/constants/theme';
 import type { DetailPreference } from '@/lib/api/preferences';
@@ -73,7 +73,7 @@ export default function DetailPreferenceScreen() {
             description={COPY[value]}
             icon={
               <Ionicons
-                color={selected === value ? HalcyonColors.accent : HalcyonColors.textSecondary}
+                color={selected === value ? PassageColors.accent : PassageColors.textSecondary}
                 name={ICONS[value]}
                 size={19}
               />
@@ -102,7 +102,7 @@ const styles = StyleSheet.create({
   },
   footerContent: { gap: 8 },
   heading: {
-    color: HalcyonColors.textPrimary,
+    color: PassageColors.textPrimary,
     fontFamily: AppFonts.displayRegular,
     fontSize: 32,
     lineHeight: 37,
@@ -110,7 +110,7 @@ const styles = StyleSheet.create({
     maxWidth: 300,
   },
   hint: {
-    color: HalcyonColors.textSecondary,
+    color: PassageColors.textSecondary,
     fontFamily: AppFonts.sansRegular,
     fontSize: 13,
     lineHeight: 20,

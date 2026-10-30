@@ -1,24 +1,10 @@
-/**
- * Passage's legal copy, authored for this app.
- *
- * COMPLIANCE: Passage is free. There is no subscription, no in-app purchase, no
- * free trial, no premium tier and no payment processor, so no clause here may
- * describe billing, renewals, refunds, or a purchase provider. Earlier revisions
- * of these screens carried copy from an unrelated product — including its
- * feature names and a subscription-management section — and all of it has been
- * removed. Anything added here must describe what this app actually does.
- *
- * The backend also serves a policy document at `GET /privacy-policy.md`, but
- * that file still carries the other product's subscription and purchase
- * sections, so it is deliberately not rendered by the app. These strings are the
- * copy the client approved.
- */
+/** Passage-specific legal copy for the soundscape app. */
 
-export const LEGAL_LAST_UPDATED = 'Last updated: 20 October 2026';
+export const LEGAL_LAST_UPDATED = 'Last updated: 30 October 2026';
 
 export const PRIVACY_POLICY = `Passage is a soundscape app for sleep, relaxation and focus. This policy explains what we collect, why, and what you can do about it.
 
-Passage is free to use. There is no subscription, no in-app purchase and no payment of any kind, so we never collect or process payment information.
+Passage does not collect or process payment information.
 
 ## 1. Information we collect
 
@@ -38,7 +24,7 @@ We do not collect health data, location, contacts, or advertising identifiers.
 - To answer your support messages.
 - To keep the app and your account secure.
 
-We do not use your information to diagnose, treat or make medical claims, and we do not sell it.
+We use your information only to operate, secure and improve the soundscape service described in this policy. We do not sell it.
 
 ## 3. Notifications
 
@@ -89,11 +75,11 @@ Passage is a soundscape app for sleep, relaxation and focus. It offers a catalog
 
 ## 2. Passage is free
 
-Passage is provided free of charge. There is no subscription, no in-app purchase, no trial period and no premium tier. We will never ask you for payment details inside the app. If anything ever claims otherwise, it did not come from us.
+Passage is currently provided free of charge and does not collect payment details.
 
-## 3. Not medical advice
+## 3. General-purpose listening
 
-Passage supports rest, relaxation and focus. It is not a medical device and it does not provide medical advice, diagnosis or treatment. It is not a substitute for professional care. If you are struggling with your sleep or your mental health, please speak to a qualified professional. If you feel unsafe or are in crisis, contact your local emergency services or a crisis support line.
+Passage provides pre-recorded soundscapes for general listening. It does not provide healthcare services or professional advice.
 
 ## 4. Your account
 

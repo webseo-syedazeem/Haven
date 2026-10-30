@@ -3,10 +3,10 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { CoverImage } from '@/components/CoverImage';
 import {
-  HalcyonCardGradient,
-  HalcyonCardGradientLocations,
-  HalcyonColors,
-  HalcyonRadius,
+  PassageCardGradient,
+  PassageCardGradientLocations,
+  PassageColors,
+  PassageRadius,
 } from '@/constants/design';
 import { AppFonts } from '@/constants/theme';
 import type { Collection } from '@/lib/api/home';
@@ -35,8 +35,8 @@ export function CollectionCard({
       style={({ pressed }) => [styles.card, { width }, pressed && styles.cardPressed]}>
       <CoverImage size="md" style={StyleSheet.absoluteFill} uri={collection.cover_image_url} />
       <LinearGradient
-        colors={HalcyonCardGradient as unknown as readonly [string, string, ...string[]]}
-        locations={HalcyonCardGradientLocations as unknown as readonly [number, number, ...number[]]}
+        colors={PassageCardGradient as unknown as readonly [string, string, ...string[]]}
+        locations={PassageCardGradientLocations as unknown as readonly [number, number, ...number[]]}
         style={StyleSheet.absoluteFill}
       />
       <View style={styles.copy}>
@@ -53,9 +53,9 @@ export function CollectionCard({
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: HalcyonColors.surface,
-    borderColor: HalcyonColors.border,
-    borderRadius: HalcyonRadius.card,
+    backgroundColor: PassageColors.surface,
+    borderColor: PassageColors.border,
+    borderRadius: PassageRadius.card,
     borderWidth: 1,
     height: COLLECTION_CARD_HEIGHT,
     justifyContent: 'flex-end',
@@ -68,14 +68,14 @@ const styles = StyleSheet.create({
     padding: 14,
   },
   title: {
-    color: HalcyonColors.textPrimary,
+    color: PassageColors.textPrimary,
     fontFamily: AppFonts.displaySemiBold,
     fontSize: 20,
     fontWeight: '600',
     lineHeight: 26,
   },
   meta: {
-    color: HalcyonColors.textSecondary,
+    color: PassageColors.textSecondary,
     fontFamily: AppFonts.sansRegular,
     fontSize: 12,
     lineHeight: 16,

@@ -8,12 +8,12 @@ import { RequireAuth } from '@/components/RequireAuth';
 import { SettingsGroup, SettingsRow } from '@/components/SettingsRow';
 import { SettingsScreen } from '@/components/SettingsScreen';
 import { Toast, useToast } from '@/components/Toast';
-import { HalcyonColors } from '@/constants/design';
+import { PassageColors } from '@/constants/design';
 import { AppFonts } from '@/constants/theme';
 import { clearUserSession } from '@/lib/auth/clearSession';
 import { resetToLogin } from '@/lib/navigation';
 import { usePlayerActions } from '@/lib/player/PlayerProvider';
-import { deleteAccount } from '@/lib/haven-api';
+import { deleteAccount } from '@/lib/passage-api';
 
 /**
  * R-08. The hub for Passage's privacy policies and account deletion control.
@@ -91,7 +91,7 @@ function PrivacyDataContent() {
       </SettingsGroup>
 
       <Text style={styles.footnote}>
-        Passage is free. There is no subscription, no payment information, and nothing to cancel.
+        Export or permanently delete the Passage data connected to your account here.
       </Text>
     </SettingsScreen>
   );
@@ -99,7 +99,7 @@ function PrivacyDataContent() {
 
 const styles = StyleSheet.create({
   footnote: {
-    color: HalcyonColors.textSecondary,
+    color: PassageColors.textSecondary,
     fontFamily: AppFonts.sansRegular,
     fontSize: 12,
     lineHeight: 17,

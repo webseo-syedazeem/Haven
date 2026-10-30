@@ -5,7 +5,7 @@ import { ArticleBody } from '@/components/ArticleBody';
 import { EmptyState, ErrorState } from '@/components/EmptyState';
 import { SettingsGroup, SettingsRow } from '@/components/SettingsRow';
 import { SettingsScreen } from '@/components/SettingsScreen';
-import { HalcyonColors } from '@/constants/design';
+import { PassageColors } from '@/constants/design';
 import { AppFonts } from '@/constants/theme';
 import { useHelpArticle } from '@/hooks/useHelp';
 import { formatHelpCategory } from '@/lib/api/help';
@@ -26,7 +26,7 @@ export default function HelpArticleScreen() {
     if (isInitialLoading) {
       return (
         <View style={styles.loading}>
-          <ActivityIndicator color={HalcyonColors.accent} />
+          <ActivityIndicator color={PassageColors.accent} />
         </View>
       );
     }
@@ -83,7 +83,7 @@ const styles = StyleSheet.create({
     paddingVertical: 64,
   },
   category: {
-    color: HalcyonColors.textSecondary,
+    color: PassageColors.textSecondary,
     fontFamily: AppFonts.sansMedium,
     fontSize: 12,
     fontWeight: '500',

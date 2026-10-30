@@ -15,7 +15,7 @@ import {
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { HalcyonColors, HalcyonSpacing, Typography } from '@/constants/design';
+import { PassageColors, PassageSpacing, Typography } from '@/constants/design';
 import { AppFonts } from '@/constants/theme';
 
 const ANDROID_NAV_FALLBACK = 34;
@@ -204,7 +204,7 @@ export function SettingsPrimaryButton({
 
 const styles = StyleSheet.create({
   screen: {
-    backgroundColor: HalcyonColors.background,
+    backgroundColor: PassageColors.background,
     flex: 1,
   },
   safeArea: {
@@ -215,7 +215,7 @@ const styles = StyleSheet.create({
   },
   scrollScene: {
     flexGrow: 1,
-    paddingHorizontal: HalcyonSpacing.screenX,
+    paddingHorizontal: PassageSpacing.screenX,
   },
   topCover: {
     backgroundColor: '#000000',
@@ -225,7 +225,7 @@ const styles = StyleSheet.create({
     top: 0,
   },
   content: {
-    paddingHorizontal: HalcyonSpacing.screenX,
+    paddingHorizontal: PassageSpacing.screenX,
     paddingTop: 6,
   },
   header: {
@@ -258,19 +258,19 @@ const styles = StyleSheet.create({
   },
   primaryButton: {
     alignItems: 'center',
-    backgroundColor: HalcyonColors.accent,
+    backgroundColor: PassageColors.accent,
     borderRadius: 999,
     justifyContent: 'center',
     minHeight: 50,
   },
   primaryButtonPressed: {
-    backgroundColor: HalcyonColors.accentPressed,
+    backgroundColor: PassageColors.accentPressed,
   },
   primaryButtonDisabled: {
     opacity: 0.55,
   },
   primaryLabel: {
-    color: HalcyonColors.background,
+    color: PassageColors.background,
     fontFamily: AppFonts.sansSemiBold,
     fontSize: 15,
     fontWeight: '600',

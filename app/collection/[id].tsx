@@ -17,11 +17,11 @@ import { EmptyState, ErrorState } from '@/components/EmptyState';
 import { SoundscapeRow, SoundscapeRowSkeletonList } from '@/components/SoundscapeRow';
 import { Toast, useToast } from '@/components/Toast';
 import {
-  HalcyonCardGradient,
-  HalcyonCardGradientLocations,
-  HalcyonColors,
-  HalcyonRadius,
-  HalcyonSpacing,
+  PassageCardGradient,
+  PassageCardGradientLocations,
+  PassageColors,
+  PassageRadius,
+  PassageSpacing,
 } from '@/constants/design';
 import { AppFonts } from '@/constants/theme';
 import { useBottomSafeSpacing } from '@/hooks/use-bottom-safe-spacing';
@@ -108,9 +108,9 @@ export default function CollectionScreen() {
                 <View style={styles.hero}>
                   <CoverImage size="md" style={StyleSheet.absoluteFill} uri={collection.cover_image_url} />
                   <LinearGradient
-                    colors={HalcyonCardGradient as unknown as readonly [string, string, ...string[]]}
+                    colors={PassageCardGradient as unknown as readonly [string, string, ...string[]]}
                     locations={
-                      HalcyonCardGradientLocations as unknown as readonly [number, number, ...number[]]
+                      PassageCardGradientLocations as unknown as readonly [number, number, ...number[]]
                     }
                     style={StyleSheet.absoluteFill}
                   />
@@ -138,7 +138,7 @@ export default function CollectionScreen() {
                       pressed && styles.playAllPressed,
                       soundscapes.length === 0 && styles.disabled,
                     ]}>
-                    <Ionicons color={HalcyonColors.background} name="play" size={17} />
+                    <Ionicons color={PassageColors.background} name="play" size={17} />
                     <Text style={styles.playAllLabel}>Play All</Text>
                   </Pressable>
                 </View>
@@ -173,7 +173,7 @@ export default function CollectionScreen() {
 
 const styles = StyleSheet.create({
   screen: {
-    backgroundColor: HalcyonColors.background,
+    backgroundColor: PassageColors.background,
     flex: 1,
   },
   safeArea: {
@@ -187,7 +187,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   topBar: {
-    paddingHorizontal: HalcyonSpacing.screenX,
+    paddingHorizontal: PassageSpacing.screenX,
     paddingTop: 6,
   },
   iconButton: {
@@ -203,60 +203,60 @@ const styles = StyleSheet.create({
     opacity: 0.5,
   },
   hero: {
-    backgroundColor: HalcyonColors.surface,
-    borderColor: HalcyonColors.border,
-    borderRadius: HalcyonRadius.card,
+    backgroundColor: PassageColors.surface,
+    borderColor: PassageColors.border,
+    borderRadius: PassageRadius.card,
     borderWidth: 1,
     height: 210,
     justifyContent: 'flex-end',
-    marginHorizontal: HalcyonSpacing.screenX,
+    marginHorizontal: PassageSpacing.screenX,
     marginTop: 8,
     overflow: 'hidden',
   },
   heroSkeleton: {
-    backgroundColor: HalcyonColors.skeleton,
-    borderRadius: HalcyonRadius.card,
+    backgroundColor: PassageColors.skeleton,
+    borderRadius: PassageRadius.card,
     height: 210,
     marginBottom: 20,
-    marginHorizontal: HalcyonSpacing.screenX,
+    marginHorizontal: PassageSpacing.screenX,
     marginTop: 8,
   },
   heroCopy: {
     padding: 18,
   },
   heroTitle: {
-    color: HalcyonColors.textPrimary,
+    color: PassageColors.textPrimary,
     fontFamily: AppFonts.displaySemiBold,
     fontSize: 28,
     fontWeight: '600',
     lineHeight: 35,
   },
   heroMeta: {
-    color: HalcyonColors.textSecondary,
+    color: PassageColors.textSecondary,
     fontFamily: AppFonts.sansRegular,
     fontSize: 13,
     lineHeight: 18,
     marginTop: 4,
   },
   description: {
-    color: HalcyonColors.textPrimary,
+    color: PassageColors.textPrimary,
     fontFamily: AppFonts.sansRegular,
     fontSize: 14,
     lineHeight: 21,
-    paddingHorizontal: HalcyonSpacing.screenX,
+    paddingHorizontal: PassageSpacing.screenX,
     paddingTop: 16,
   },
   actions: {
     columnGap: 12,
     flexDirection: 'row',
-    paddingHorizontal: HalcyonSpacing.screenX,
+    paddingHorizontal: PassageSpacing.screenX,
     paddingTop: 18,
     paddingBottom: 16,
   },
   playAll: {
     alignItems: 'center',
-    backgroundColor: HalcyonColors.accent,
-    borderRadius: HalcyonRadius.pill,
+    backgroundColor: PassageColors.accent,
+    borderRadius: PassageRadius.pill,
     columnGap: 8,
     flex: 1,
     flexDirection: 'row',
@@ -264,10 +264,10 @@ const styles = StyleSheet.create({
     paddingVertical: 13,
   },
   playAllPressed: {
-    backgroundColor: HalcyonColors.accentPressed,
+    backgroundColor: PassageColors.accentPressed,
   },
   playAllLabel: {
-    color: HalcyonColors.background,
+    color: PassageColors.background,
     fontFamily: AppFonts.sansSemiBold,
     fontSize: 15,
     fontWeight: '600',

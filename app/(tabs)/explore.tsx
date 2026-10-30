@@ -20,11 +20,11 @@ import { CoverImage } from '@/components/CoverImage';
 import { EmptyState, ErrorState } from '@/components/EmptyState';
 import { FilterChip } from '@/components/FilterChip';
 import {
-  HalcyonCardGradient,
-  HalcyonCardGradientLocations,
-  HalcyonColors,
-  HalcyonRadius,
-  HalcyonSpacing,
+  PassageCardGradient,
+  PassageCardGradientLocations,
+  PassageColors,
+  PassageRadius,
+  PassageSpacing,
   Typography,
 } from '@/constants/design';
 import { AppFonts } from '@/constants/theme';
@@ -36,7 +36,7 @@ import type { Collection } from '@/lib/api/home';
 const EXPLORE_BACKGROUND = require('@/assets/images/home-sat-night-pine-trail-v1.webp');
 const EXPLORE_BACKGROUND_ASPECT_RATIO = 940 / 1672;
 
-const CARD_GAP = HalcyonSpacing.card;
+const CARD_GAP = PassageSpacing.card;
 const CARD_WIDTH = COLLECTION_CARD_WIDTH;
 const CARD_HEIGHT = COLLECTION_CARD_HEIGHT;
 const WIDE_CARD_HEIGHT = 150;
@@ -115,11 +115,11 @@ export default function ExploreScreen() {
         )}
         refreshControl={
           <RefreshControl
-            colors={[HalcyonColors.accent]}
+            colors={[PassageColors.accent]}
             onRefresh={onRefresh}
             progressViewOffset={insets.top}
             refreshing={refreshing}
-            tintColor={HalcyonColors.accent}
+            tintColor={PassageColors.accent}
           />
         }
         scrollEventThrottle={16}
@@ -176,7 +176,7 @@ export default function ExploreScreen() {
           <View style={styles.emptyContent}>
             <EmptyState
               icon="compass-outline"
-              iconColor={HalcyonColors.textPrimary}
+              iconColor={PassageColors.textPrimary}
               message="Curated collections arrive as the catalogue fills out."
               title="Nothing to explore yet"
             />
@@ -199,7 +199,7 @@ export default function ExploreScreen() {
                         onPress={() => setActiveTab(group.group)}
                         style={({ pressed }) => [styles.seeAll, pressed && styles.pressed]}>
                         <Text style={styles.seeAllText}>See all</Text>
-                        <Ionicons color={HalcyonColors.accent} name="chevron-forward" size={14} />
+                        <Ionicons color={PassageColors.accent} name="chevron-forward" size={14} />
                       </Pressable>
                     </View>
                     <ScrollView
@@ -246,7 +246,7 @@ function SoundscapeCount({ count, large }: { count: number | null; large?: boole
     <View style={styles.countRow}>
       <View style={[styles.playCircle, large && styles.playCircleLarge]}>
         <Ionicons
-          color={HalcyonColors.textPrimary}
+          color={PassageColors.textPrimary}
           name="play"
           size={large ? 11 : 9}
           style={styles.playIcon}
@@ -289,8 +289,8 @@ function ExploreCard({
       ]}>
       <CoverImage size="md" style={StyleSheet.absoluteFill} uri={collection.cover_image_url} />
       <LinearGradient
-        colors={HalcyonCardGradient as unknown as readonly [string, string, ...string[]]}
-        locations={HalcyonCardGradientLocations as unknown as readonly [number, number, ...number[]]}
+        colors={PassageCardGradient as unknown as readonly [string, string, ...string[]]}
+        locations={PassageCardGradientLocations as unknown as readonly [number, number, ...number[]]}
         style={StyleSheet.absoluteFill}
       />
       <View style={styles.cardCopy}>
@@ -319,8 +319,8 @@ function FeaturedCard({
       style={({ pressed }) => [styles.featured, pressed && styles.pressed]}>
       <CoverImage size="md" style={StyleSheet.absoluteFill} uri={collection.cover_image_url} />
       <LinearGradient
-        colors={HalcyonCardGradient as unknown as readonly [string, string, ...string[]]}
-        locations={HalcyonCardGradientLocations as unknown as readonly [number, number, ...number[]]}
+        colors={PassageCardGradient as unknown as readonly [string, string, ...string[]]}
+        locations={PassageCardGradientLocations as unknown as readonly [number, number, ...number[]]}
         style={StyleSheet.absoluteFill}
       />
       <View style={styles.featuredCopy}>
@@ -365,7 +365,7 @@ function ExploreSkeleton() {
 
 const styles = StyleSheet.create({
   screen: {
-    backgroundColor: HalcyonColors.background,
+    backgroundColor: PassageColors.background,
     flex: 1,
   },
   scrollScene: {
@@ -387,7 +387,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     flexDirection: 'row',
     justifyContent: 'space-between',
-    paddingHorizontal: HalcyonSpacing.screenX,
+    paddingHorizontal: PassageSpacing.screenX,
   },
   heading: {
     ...Typography.screenHeading,
@@ -428,17 +428,17 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'nowrap',
     paddingBottom: 4,
-    paddingHorizontal: HalcyonSpacing.screenX,
+    paddingHorizontal: PassageSpacing.screenX,
   },
   section: {
-    marginTop: HalcyonSpacing.section,
+    marginTop: PassageSpacing.section,
   },
   sectionHeader: {
     alignItems: 'center',
     flexDirection: 'row',
     justifyContent: 'space-between',
     marginBottom: 14,
-    paddingHorizontal: HalcyonSpacing.screenX,
+    paddingHorizontal: PassageSpacing.screenX,
   },
   sectionTitle: {
     ...Typography.sectionHeading,
@@ -449,7 +449,7 @@ const styles = StyleSheet.create({
     gap: 2,
   },
   seeAllText: {
-    color: HalcyonColors.accent,
+    color: PassageColors.accent,
     fontFamily: AppFonts.sansMedium,
     fontSize: 13,
     fontWeight: '500',
@@ -459,13 +459,13 @@ const styles = StyleSheet.create({
     columnGap: CARD_GAP,
     flexDirection: 'row',
     flexWrap: 'wrap',
-    paddingHorizontal: HalcyonSpacing.screenX,
+    paddingHorizontal: PassageSpacing.screenX,
     rowGap: CARD_GAP,
   },
   card: {
-    backgroundColor: HalcyonColors.surface,
+    backgroundColor: PassageColors.surface,
     borderColor: 'rgba(255, 255, 255, 0.14)',
-    borderRadius: HalcyonRadius.card,
+    borderRadius: PassageRadius.card,
     borderWidth: 1,
     height: CARD_HEIGHT,
     justifyContent: 'flex-end',
@@ -480,14 +480,14 @@ const styles = StyleSheet.create({
     lineHeight: 30,
   },
   wideList: {
-    paddingHorizontal: HalcyonSpacing.screenX,
-    paddingTop: HalcyonSpacing.card,
+    paddingHorizontal: PassageSpacing.screenX,
+    paddingTop: PassageSpacing.card,
     rowGap: CARD_GAP,
   },
   tileRow: {
     columnGap: CARD_GAP,
     flexDirection: 'row',
-    paddingHorizontal: HalcyonSpacing.screenX,
+    paddingHorizontal: PassageSpacing.screenX,
   },
   cardCopy: {
     paddingBottom: 14,
@@ -507,7 +507,7 @@ const styles = StyleSheet.create({
   },
   playCircle: {
     alignItems: 'center',
-    borderColor: HalcyonColors.accent,
+    borderColor: PassageColors.accent,
     borderRadius: 11,
     borderWidth: 1.5,
     height: 22,
@@ -523,7 +523,7 @@ const styles = StyleSheet.create({
     marginLeft: 2,
   },
   countText: {
-    color: HalcyonColors.textPrimary,
+    color: PassageColors.textPrimary,
     fontFamily: AppFonts.sansRegular,
     fontSize: 12,
     lineHeight: 16,
@@ -554,13 +554,13 @@ const styles = StyleSheet.create({
     width: 36,
   },
   featured: {
-    backgroundColor: HalcyonColors.surface,
+    backgroundColor: PassageColors.surface,
     borderColor: 'rgba(255, 255, 255, 0.16)',
-    borderRadius: HalcyonRadius.card,
+    borderRadius: PassageRadius.card,
     borderWidth: 1,
     height: 232,
     justifyContent: 'flex-end',
-    marginHorizontal: HalcyonSpacing.screenX,
+    marginHorizontal: PassageSpacing.screenX,
     marginTop: 18,
     overflow: 'hidden',
   },
@@ -572,7 +572,7 @@ const styles = StyleSheet.create({
     alignSelf: 'flex-start',
     backgroundColor: 'rgba(195, 161, 122, 0.22)',
     borderColor: 'rgba(195, 161, 122, 0.55)',
-    borderRadius: HalcyonRadius.pill,
+    borderRadius: PassageRadius.pill,
     borderWidth: 1,
     paddingHorizontal: 10,
     paddingVertical: 3,
@@ -599,7 +599,7 @@ const styles = StyleSheet.create({
     borderColor: 'transparent',
   },
   gridSkeleton: {
-    borderRadius: HalcyonRadius.card,
+    borderRadius: PassageRadius.card,
     height: CARD_HEIGHT,
   },
   skeletonLine: {
@@ -613,6 +613,6 @@ const styles = StyleSheet.create({
     height: 34,
     justifyContent: 'center',
     marginBottom: 14,
-    paddingHorizontal: HalcyonSpacing.screenX,
+    paddingHorizontal: PassageSpacing.screenX,
   },
 });

@@ -6,11 +6,12 @@ import { markLoggedIn, markLoggedOut } from '@/lib/auth/offline-session';
 import { setGuestModeActive, setSessionSource } from '@/lib/auth/session-state';
 import { supabase } from '@/lib/supabase';
 
-const REMOTE_API_BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL ?? 'https://thehappyapp.co.uk';
+const REMOTE_API_BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL?.trim().replace(/\/+$/, '') || 'https://thehappyapp.co.uk';
 const API_BASE_URL = Platform.OS === 'web' ? '/api-proxy' : REMOTE_API_BASE_URL;
-const ACCESS_TOKEN_KEY = 'access_token';
-const REFRESH_TOKEN_KEY = 'haven.auth.refresh_token';
-const LEGACY_ACCESS_TOKEN_KEY = 'haven.auth.access_token';
+const ACCESS_TOKEN_KEY = 'passage.auth.access_token';
+const REFRESH_TOKEN_KEY = 'passage.auth.refresh_token';
+const LEGACY_ACCESS_TOKEN_KEYS = ['access_token', 'haven.auth.access_token'] as const;
+const LEGACY_REFRESH_TOKEN_KEY = 'haven.auth.refresh_token';
 
 export type AuthUser = {
   id?: string;
@@ -77,12 +78,16 @@ export type ProfileImageUpload = {
   type: string;
 };
 
+function apiUrl(path: string): string {
+  return `${API_BASE_URL}${path}`;
+}
+
 let accessToken: string | null = null;
 let refreshToken: string | null = null;
 
 /** Keeps the shared session flag in sync with the in-memory access token. */
 function syncSessionState() {
-  setSessionSource('haven', Boolean(accessToken));
+  setSessionSource('passage', Boolean(accessToken));
 }
 
 function getWebStorage() {
@@ -137,7 +142,9 @@ function pickToken(candidates: { source: string; value?: string }[]) {
 async function clearStoredAccessTokens() {
   await Promise.all([
     setStoredItem(ACCESS_TOKEN_KEY, null),
-    setStoredItem(LEGACY_ACCESS_TOKEN_KEY, null),
+    setStoredItem(REFRESH_TOKEN_KEY, null),
+    ...LEGACY_ACCESS_TOKEN_KEYS.map((key) => setStoredItem(key, null)),
+    setStoredItem(LEGACY_REFRESH_TOKEN_KEY, null),
   ]);
 }
 
@@ -199,7 +206,7 @@ async function apiRequest<T>(path: string, options: RequestInit = {}) {
   let response: Response;
 
   try {
-    response = await fetch(`${API_BASE_URL}${path}`, {
+    response = await fetch(apiUrl(path), {
       ...options,
       headers: buildHeaders(options),
     });
@@ -353,7 +360,7 @@ export async function signUp(payload: {
   // Supabase returns session: null when email confirmation is enabled. That
   // is a successful registration, not a failed login, so only require a token
   // for sign-in/refresh. If confirmation is disabled and a real session is
-  // returned, keep the existing Haven tokens and hydrate the Supabase client
+  // returned, keep the existing Passage tokens and hydrate the Supabase client
   // so the verification screen can inspect the authoritative user state.
   const rememberedSession = await rememberToken(response, false);
 

@@ -260,7 +260,7 @@ test('resume routing follows the real mode and mode-specific screen order', () =
       relax_causes: ['Work'],
       calming_moments: 'In the evenings',
     }),
-    '/onboarding/relax-ritual'
+    '/onboarding/relax-your-fit'
   );
 });
 

@@ -11,10 +11,10 @@ import {
 import { Modal, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import {
-  HalcyonColors,
-  HalcyonModal,
-  HalcyonRadius,
-  HalcyonSpacing,
+  PassageColors,
+  PassageModal,
+  PassageRadius,
+  PassageSpacing,
   Typography,
 } from '@/constants/design';
 import { AppFonts } from '@/constants/theme';
@@ -85,7 +85,7 @@ export function AccountRequiredPromptProvider({ children }: { children: ReactNod
               hitSlop={10}
               onPress={dismissAccountRequiredPrompt}
               style={({ pressed }) => [styles.closeButton, pressed && styles.pressed]}>
-              <Ionicons color={HalcyonColors.textSecondary} name="close" size={19} />
+              <Ionicons color={PassageColors.textSecondary} name="close" size={19} />
             </Pressable>
 
             <Text style={styles.title}>{prompt?.title ?? DEFAULT_TITLE}</Text>
@@ -115,16 +115,16 @@ export function useAccountRequiredPrompt() {
 const styles = StyleSheet.create({
   modalRoot: {
     alignItems: 'center',
-    backgroundColor: HalcyonModal.backdrop,
+    backgroundColor: PassageModal.backdrop,
     flex: 1,
     justifyContent: 'center',
-    paddingHorizontal: HalcyonSpacing.screenX,
+    paddingHorizontal: PassageSpacing.screenX,
   },
   card: {
     alignItems: 'center',
-    backgroundColor: HalcyonColors.surface,
-    borderColor: HalcyonColors.border,
-    borderRadius: HalcyonRadius.card,
+    backgroundColor: PassageColors.surface,
+    borderColor: PassageColors.border,
+    borderRadius: PassageRadius.card,
     borderWidth: 1,
     maxWidth: 360,
     padding: 24,
@@ -153,16 +153,16 @@ const styles = StyleSheet.create({
   },
   loginButton: {
     alignItems: 'center',
-    backgroundColor: HalcyonColors.accent,
-    borderRadius: HalcyonRadius.pill,
+    backgroundColor: PassageColors.accent,
+    borderRadius: PassageRadius.pill,
     justifyContent: 'center',
     marginTop: 26,
     minHeight: 50,
     width: '100%',
   },
-  loginButtonPressed: { backgroundColor: HalcyonColors.accentPressed },
+  loginButtonPressed: { backgroundColor: PassageColors.accentPressed },
   loginLabel: {
-    color: HalcyonColors.background,
+    color: PassageColors.background,
     fontFamily: AppFonts.sansSemiBold,
     fontSize: 15,
     fontWeight: '600',

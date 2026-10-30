@@ -6,7 +6,7 @@ import { Image, StyleSheet, Text, View } from 'react-native';
 import { RelaxContinueButton } from '@/components/onboarding/RelaxContinueButton';
 import { OnboardingScaffold } from '@/components/onboarding/OnboardingScaffold';
 import { RelaxStepHeader } from '@/components/onboarding/RelaxStepHeader';
-import { HalcyonColors } from '@/constants/design';
+import { PassageColors } from '@/constants/design';
 import { RELAX_ONBOARDING } from '@/constants/relax-onboarding';
 import { AppFonts } from '@/constants/theme';
 import { safeGoBack } from '@/lib/navigation';
@@ -106,7 +106,7 @@ export default function RelaxTrustScreen() {
 
 const styles = StyleSheet.create({
   attribution: {
-    color: HalcyonColors.textSecondary,
+    color: PassageColors.textSecondary,
     fontFamily: AppFonts.sansRegular,
     fontSize: 13,
     lineHeight: 19,
@@ -143,7 +143,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   footerNote: {
-    color: HalcyonColors.textSecondary,
+    color: PassageColors.textSecondary,
     fontFamily: AppFonts.sansRegular,
     fontSize: 11,
     lineHeight: 16,
@@ -151,7 +151,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   heading: {
-    color: HalcyonColors.textPrimary,
+    color: PassageColors.textPrimary,
     fontFamily: AppFonts.displayRegular,
     fontSize: RELAX_ONBOARDING.heading.fontSize,
     fontWeight: '500',
@@ -168,7 +168,7 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   quote: {
-    color: HalcyonColors.textPrimary,
+    color: PassageColors.textPrimary,
     fontFamily: AppFonts.sansRegular,
     fontSize: RELAX_ONBOARDING.body.fontSize,
     lineHeight: RELAX_ONBOARDING.body.lineHeight,

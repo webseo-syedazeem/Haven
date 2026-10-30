@@ -31,7 +31,7 @@ test('soundscape detail renders one plain paragraph with the required fallback',
   );
   assert.match(
     detail,
-    /descriptionDropCap:\s*\{[\s\S]*?color: HalcyonColors\.textPrimary,[\s\S]*?fontFamily: AppFonts\.displayRegular,[\s\S]*?fontSize: 62,[\s\S]*?lineHeight: 59/,
+    /descriptionDropCap:\s*\{[\s\S]*?color: PassageColors\.textPrimary,[\s\S]*?fontFamily: AppFonts\.displayRegular,[\s\S]*?fontSize: 62,[\s\S]*?lineHeight: 59/,
   );
   assert.match(detail, /accessibilityLabel=\{description\}/);
   assert.match(detail, /descriptionParagraphSpacing:\s*\{[\s\S]*?marginTop: 16/);

@@ -19,7 +19,7 @@ import { PlaylistPickerSheet } from '@/components/PlaylistPickerSheet';
 import { SectionRail } from '@/components/SectionRail';
 import { SoundscapeCard } from '@/components/SoundscapeCard';
 import { Toast, useToast } from '@/components/Toast';
-import { HalcyonColors, HalcyonRadius, HalcyonSpacing } from '@/constants/design';
+import { PassageColors, PassageRadius, PassageSpacing } from '@/constants/design';
 import { AppFonts } from '@/constants/theme';
 import { useSimilarSoundscapes } from '@/hooks/useCatalogue';
 import { useIsFavourite, useToggleFavourite } from '@/hooks/useFavourites';
@@ -36,7 +36,7 @@ export default function SoundscapeDetailScreen() {
 
   const { data: soundscape, isInitialLoading, isError, error, refetch, isRefetching } =
     useSoundscape(id);
-  const playButtonColour = soundscape?.colour || HalcyonColors.accent;
+  const playButtonColour = soundscape?.colour || PassageColors.accent;
   const similar = useSimilarSoundscapes(soundscape?.id);
 
   const isFavourite = useIsFavourite(id);
@@ -170,7 +170,7 @@ export default function SoundscapeDetailScreen() {
             onPress={() => soundscape && toggleFavourite(soundscape, isFavourite)}
             style={({ pressed }) => [styles.iconButton, pressed && styles.pressed]}>
             <Ionicons
-              color={isFavourite ? HalcyonColors.accent : HalcyonColors.textPrimary}
+              color={isFavourite ? PassageColors.accent : PassageColors.textPrimary}
               name={isFavourite ? 'heart' : 'heart-outline'}
               size={20}
             />
@@ -295,10 +295,10 @@ function IconAction({
       onPress={onPress}
       style={({ pressed }) => [styles.iconAction, pressed && styles.pressed]}>
       {busy ? (
-        <ActivityIndicator color={HalcyonColors.accent} size="small" />
+        <ActivityIndicator color={PassageColors.accent} size="small" />
       ) : (
         <Ionicons
-          color={active ? HalcyonColors.accent : HalcyonColors.textPrimary}
+          color={active ? PassageColors.accent : PassageColors.textPrimary}
           name={icon}
           size={20}
         />
@@ -351,7 +351,7 @@ function DetailSkeleton() {
 
 const styles = StyleSheet.create({
   screen: {
-    backgroundColor: HalcyonColors.background,
+    backgroundColor: PassageColors.background,
     flex: 1,
   },
   safeArea: {
@@ -364,12 +364,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     flexDirection: 'row',
     justifyContent: 'space-between',
-    paddingHorizontal: HalcyonSpacing.screenX,
+    paddingHorizontal: PassageSpacing.screenX,
     paddingTop: 8,
   },
   iconButton: {
     alignItems: 'center',
-    borderColor: HalcyonColors.border,
+    borderColor: PassageColors.border,
     borderRadius: 18,
     borderWidth: 1,
     height: 36,
@@ -382,11 +382,11 @@ const styles = StyleSheet.create({
   },
   artworkFrame: {
     aspectRatio: 0.92,
-    backgroundColor: HalcyonColors.surface,
-    borderColor: HalcyonColors.border,
-    borderRadius: HalcyonRadius.card,
+    backgroundColor: PassageColors.surface,
+    borderColor: PassageColors.border,
+    borderRadius: PassageRadius.card,
     borderWidth: 1,
-    marginHorizontal: HalcyonSpacing.screenX,
+    marginHorizontal: PassageSpacing.screenX,
     overflow: 'hidden',
   },
   artwork: {
@@ -394,30 +394,30 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   artworkFallback: {
-    backgroundColor: HalcyonColors.surfaceRaised,
+    backgroundColor: PassageColors.surfaceRaised,
   },
   title: {
-    color: HalcyonColors.textPrimary,
+    color: PassageColors.textPrimary,
     fontFamily: AppFonts.displaySemiBold,
     fontSize: 30,
     fontWeight: '600',
     lineHeight: 38,
     marginTop: 22,
-    paddingHorizontal: HalcyonSpacing.screenX,
+    paddingHorizontal: PassageSpacing.screenX,
   },
   detailDescriptionBlock: {
     marginTop: 26,
-    paddingHorizontal: HalcyonSpacing.screenX,
+    paddingHorizontal: PassageSpacing.screenX,
   },
   detailDescription: {
-    color: HalcyonColors.textPrimary,
+    color: PassageColors.textPrimary,
     fontFamily: AppFonts.displayRegular,
     fontSize: 20,
     letterSpacing: 0.1,
     lineHeight: 29,
   },
   descriptionDropCap: {
-    color: HalcyonColors.textPrimary,
+    color: PassageColors.textPrimary,
     fontFamily: AppFonts.displayRegular,
     fontSize: 62,
     lineHeight: 59,
@@ -439,16 +439,16 @@ const styles = StyleSheet.create({
     columnGap: 24,
     flexDirection: 'row',
     marginTop: 28,
-    paddingHorizontal: HalcyonSpacing.screenX,
+    paddingHorizontal: PassageSpacing.screenX,
   },
   playRow: {
     marginTop: 24,
-    paddingHorizontal: HalcyonSpacing.screenX,
+    paddingHorizontal: PassageSpacing.screenX,
   },
   playButton: {
     alignItems: 'center',
     borderColor: 'rgba(255,255,255,0.16)',
-    borderRadius: HalcyonRadius.pill,
+    borderRadius: PassageRadius.pill,
     borderWidth: 1,
     columnGap: 8,
     elevation: 4,
@@ -481,56 +481,56 @@ const styles = StyleSheet.create({
     rowGap: 5,
   },
   iconActionLabel: {
-    color: HalcyonColors.textSecondary,
+    color: PassageColors.textSecondary,
     fontFamily: AppFonts.sansRegular,
     fontSize: 11,
     lineHeight: 15,
   },
   iconActionLabelActive: {
-    color: HalcyonColors.accent,
+    color: PassageColors.accent,
   },
   stateBlock: {
     alignItems: 'flex-start',
-    paddingHorizontal: HalcyonSpacing.screenX,
+    paddingHorizontal: PassageSpacing.screenX,
     paddingTop: 60,
   },
   stateTitle: {
-    color: HalcyonColors.textPrimary,
+    color: PassageColors.textPrimary,
     fontFamily: AppFonts.displaySemiBold,
     fontSize: 22,
     fontWeight: '600',
     lineHeight: 30,
   },
   stateBody: {
-    color: HalcyonColors.textSecondary,
+    color: PassageColors.textSecondary,
     fontFamily: AppFonts.sansRegular,
     fontSize: 14,
     lineHeight: 21,
     marginTop: 6,
   },
   retryButton: {
-    borderColor: HalcyonColors.border,
-    borderRadius: HalcyonRadius.pill,
+    borderColor: PassageColors.border,
+    borderRadius: PassageRadius.pill,
     borderWidth: 1,
     marginTop: 20,
     paddingHorizontal: 26,
     paddingVertical: 12,
   },
   retryLabel: {
-    color: HalcyonColors.textPrimary,
+    color: PassageColors.textPrimary,
     fontFamily: AppFonts.sansMedium,
     fontSize: 14,
     fontWeight: '500',
     lineHeight: 20,
   },
   skeletonBlock: {
-    backgroundColor: HalcyonColors.skeleton,
+    backgroundColor: PassageColors.skeleton,
     borderColor: 'transparent',
   },
   skeletonLine: {
-    backgroundColor: HalcyonColors.skeleton,
+    backgroundColor: PassageColors.skeleton,
     borderRadius: 6,
-    marginHorizontal: HalcyonSpacing.screenX,
+    marginHorizontal: PassageSpacing.screenX,
   },
   skeletonTitle: {
     height: 28,
@@ -548,10 +548,10 @@ const styles = StyleSheet.create({
     width: '72%',
   },
   skeletonActions: {
-    backgroundColor: HalcyonColors.skeleton,
-    borderRadius: HalcyonRadius.pill,
+    backgroundColor: PassageColors.skeleton,
+    borderRadius: PassageRadius.pill,
     height: 52,
-    marginHorizontal: HalcyonSpacing.screenX,
+    marginHorizontal: PassageSpacing.screenX,
     marginTop: 26,
   },
 });

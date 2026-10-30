@@ -15,10 +15,10 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import {
-  HalcyonColors,
-  HalcyonModal,
-  HalcyonRadius,
-  HalcyonSpacing,
+  PassageColors,
+  PassageModal,
+  PassageRadius,
+  PassageSpacing,
   Typography,
 } from '@/constants/design';
 import { AppFonts } from '@/constants/theme';
@@ -118,7 +118,7 @@ export function PlaylistFormSheet({
               accessibilityRole="button"
               hitSlop={10}
               onPress={onClose}>
-              <Ionicons color={HalcyonColors.textPrimary} name="close" size={22} />
+              <Ionicons color={PassageColors.textPrimary} name="close" size={22} />
             </Pressable>
           </View>
 
@@ -131,7 +131,7 @@ export function PlaylistFormSheet({
               if (error) setError(null);
             }}
             placeholder="Evening wind-down"
-            placeholderTextColor={HalcyonColors.textSecondary}
+            placeholderTextColor={PassageColors.textSecondary}
             returnKeyType="done"
             style={styles.input}
             value={name}
@@ -143,7 +143,7 @@ export function PlaylistFormSheet({
             multiline
             onChangeText={setDescription}
             placeholder="Optional"
-            placeholderTextColor={HalcyonColors.textSecondary}
+            placeholderTextColor={PassageColors.textSecondary}
             style={[styles.input, styles.multiline]}
             value={description}
           />
@@ -154,7 +154,7 @@ export function PlaylistFormSheet({
             keyboardType="url"
             onChangeText={setCoverUrl}
             placeholder="Optional"
-            placeholderTextColor={HalcyonColors.textSecondary}
+            placeholderTextColor={PassageColors.textSecondary}
             style={styles.input}
             value={coverUrl}
           />
@@ -172,7 +172,7 @@ export function PlaylistFormSheet({
               busy && styles.submitDisabled,
             ]}>
             {busy ? (
-              <ActivityIndicator color={HalcyonColors.background} />
+              <ActivityIndicator color={PassageColors.background} />
             ) : (
               <Text style={styles.submitLabel}>{playlist ? 'Save' : 'Create playlist'}</Text>
             )}
@@ -197,16 +197,16 @@ const styles = StyleSheet.create({
   },
   backdrop: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: HalcyonModal.backdrop,
+    backgroundColor: PassageModal.backdrop,
   },
   sheet: {
-    backgroundColor: HalcyonColors.surface,
+    backgroundColor: PassageColors.surface,
     borderTopColor: 'rgba(255,255,255,0.035)',
-    borderTopLeftRadius: HalcyonRadius.sheet,
-    borderTopRightRadius: HalcyonRadius.sheet,
+    borderTopLeftRadius: PassageRadius.sheet,
+    borderTopRightRadius: PassageRadius.sheet,
     borderTopWidth: StyleSheet.hairlineWidth,
     overflow: 'hidden',
-    paddingHorizontal: HalcyonSpacing.screenX,
+    paddingHorizontal: PassageSpacing.screenX,
     paddingTop: 10,
   },
   grabber: {
@@ -227,7 +227,7 @@ const styles = StyleSheet.create({
     ...Typography.sectionHeading,
   },
   label: {
-    color: HalcyonColors.textSecondary,
+    color: PassageColors.textSecondary,
     fontFamily: AppFonts.sansMedium,
     fontSize: 12,
     fontWeight: '500',
@@ -236,11 +236,11 @@ const styles = StyleSheet.create({
     marginTop: 12,
   },
   input: {
-    backgroundColor: HalcyonColors.surfaceRaised,
-    borderColor: HalcyonColors.border,
+    backgroundColor: PassageColors.surfaceRaised,
+    borderColor: PassageColors.border,
     borderRadius: 12,
     borderWidth: 1,
-    color: HalcyonColors.textPrimary,
+    color: PassageColors.textPrimary,
     fontFamily: AppFonts.sansRegular,
     fontSize: 15,
     lineHeight: 20,
@@ -252,7 +252,7 @@ const styles = StyleSheet.create({
     textAlignVertical: 'top',
   },
   error: {
-    color: HalcyonColors.accent,
+    color: PassageColors.accent,
     fontFamily: AppFonts.sansRegular,
     fontSize: 13,
     lineHeight: 18,
@@ -260,20 +260,20 @@ const styles = StyleSheet.create({
   },
   submit: {
     alignItems: 'center',
-    backgroundColor: HalcyonColors.accent,
-    borderRadius: HalcyonRadius.pill,
+    backgroundColor: PassageColors.accent,
+    borderRadius: PassageRadius.pill,
     justifyContent: 'center',
     marginTop: 20,
     minHeight: 50,
   },
   submitPressed: {
-    backgroundColor: HalcyonColors.accentPressed,
+    backgroundColor: PassageColors.accentPressed,
   },
   submitDisabled: {
     opacity: 0.7,
   },
   submitLabel: {
-    color: HalcyonColors.background,
+    color: PassageColors.background,
     fontFamily: AppFonts.sansSemiBold,
     fontSize: 15,
     fontWeight: '600',

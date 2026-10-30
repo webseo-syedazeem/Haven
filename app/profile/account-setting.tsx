@@ -9,7 +9,7 @@ import { ProfileAvatar } from '@/components/profile/ProfileAvatar';
 import { SettingsGroup, SettingsRow, SettingsStatus } from '@/components/SettingsRow';
 import { SettingsScreen } from '@/components/SettingsScreen';
 import { Toast, useToast } from '@/components/Toast';
-import { HalcyonColors } from '@/constants/design';
+import { PassageColors } from '@/constants/design';
 import { AppFonts } from '@/constants/theme';
 import { useHasSession } from '@/hooks/useSession';
 import { useUser } from '@/hooks/useUser';
@@ -17,7 +17,7 @@ import { getDisplayName, getProfileEmail } from '@/lib/api/user';
 import { clearUserSession } from '@/lib/auth/clearSession';
 import { resetToLogin } from '@/lib/navigation';
 import { usePlayerActions } from '@/lib/player/PlayerProvider';
-import { deleteAccount } from '@/lib/haven-api';
+import { deleteAccount } from '@/lib/passage-api';
 
 /**
  * R-02. The account's own details, plus the two irreversible actions — signing
@@ -116,9 +116,9 @@ function AccountSettingContent() {
       title="Account">
       <View style={styles.avatarBlock}>
         <ProfileAvatar
-          iconColor={HalcyonColors.textSecondary}
+          iconColor={PassageColors.textSecondary}
           imageUrl={profileImageUrl}
-          placeholderBackgroundColor={HalcyonColors.surfaceRaised}
+          placeholderBackgroundColor={PassageColors.surfaceRaised}
           size={88}
           style={styles.avatar}
         />
@@ -205,11 +205,11 @@ const styles = StyleSheet.create({
     marginBottom: 26,
   },
   avatar: {
-    borderColor: HalcyonColors.border,
+    borderColor: PassageColors.border,
     borderWidth: 1,
   },
   editButton: {
-    borderColor: HalcyonColors.border,
+    borderColor: PassageColors.border,
     borderRadius: 999,
     borderWidth: 1,
     marginTop: 14,
@@ -217,7 +217,7 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
   },
   editLabel: {
-    color: HalcyonColors.accent,
+    color: PassageColors.accent,
     fontFamily: AppFonts.sansMedium,
     fontSize: 13,
     fontWeight: '500',
@@ -230,7 +230,7 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   retryLabel: {
-    color: HalcyonColors.accent,
+    color: PassageColors.accent,
     fontFamily: AppFonts.sansRegular,
     fontSize: 13,
     lineHeight: 18,

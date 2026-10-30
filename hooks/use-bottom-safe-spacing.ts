@@ -2,7 +2,7 @@ import { Platform } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { MINI_PLAYER_HEIGHT } from '@/components/MiniPlayer';
-import { HALCYON_TAB_BAR_HEIGHT } from '@/constants/design';
+import { PASSAGE_TAB_BAR_HEIGHT } from '@/constants/design';
 import { usePlayerState } from '@/lib/player/PlayerProvider';
 
 const ANDROID_EXPO_GO_NAV_BAR_PADDING = 34;
@@ -26,6 +26,6 @@ export function useTabContentInset(extra = 36) {
   const { soundscape } = usePlayerState();
 
   return (
-    insets.bottom + HALCYON_TAB_BAR_HEIGHT + (soundscape ? MINI_PLAYER_HEIGHT : 0) + extra
+    insets.bottom + PASSAGE_TAB_BAR_HEIGHT + (soundscape ? MINI_PLAYER_HEIGHT : 0) + extra
   );
 }

@@ -17,7 +17,7 @@ import { RequireAuth } from '@/components/RequireAuth';
 import { FieldError, SettingsField } from '@/components/SettingsField';
 import { SettingsPrimaryButton, SettingsScreen } from '@/components/SettingsScreen';
 import { SupportSuccess } from '@/components/SupportSuccess';
-import { HalcyonColors, HalcyonRadius } from '@/constants/design';
+import { PassageColors, PassageRadius } from '@/constants/design';
 import { AppFonts } from '@/constants/theme';
 import { useSoundscape } from '@/hooks/useHome';
 import { usePlayHistory } from '@/hooks/usePlayHistory';
@@ -182,7 +182,7 @@ function ReportProblemContent() {
           <View style={styles.picker}>
             <Text style={styles.sectionTitle}>Which soundscape?</Text>
             {history.isInitialLoading ? (
-              <ActivityIndicator color={HalcyonColors.accent} style={styles.pickerLoading} />
+              <ActivityIndicator color={PassageColors.accent} style={styles.pickerLoading} />
             ) : recent.length ? (
               <ChipGroup>
                 {recent.map((item) => (
@@ -245,7 +245,7 @@ function ReportProblemContent() {
           disabled={report.isPending}
           label="Send report"
           onPress={handleSubmit}>
-          {report.isPending ? <ActivityIndicator color={HalcyonColors.background} /> : undefined}
+          {report.isPending ? <ActivityIndicator color={PassageColors.background} /> : undefined}
         </SettingsPrimaryButton>
       </KeyboardAvoidingView>
     </SettingsScreen>
@@ -262,9 +262,9 @@ export default function ReportProblemScreen() {
 const styles = StyleSheet.create({
   soundscapeCard: {
     alignItems: 'center',
-    backgroundColor: HalcyonColors.surface,
-    borderColor: HalcyonColors.border,
-    borderRadius: HalcyonRadius.card,
+    backgroundColor: PassageColors.surface,
+    borderColor: PassageColors.border,
+    borderRadius: PassageRadius.card,
     borderWidth: 1,
     columnGap: 14,
     flexDirection: 'row',
@@ -277,27 +277,27 @@ const styles = StyleSheet.create({
     width: 56,
   },
   artworkFallback: {
-    backgroundColor: HalcyonColors.skeleton,
+    backgroundColor: PassageColors.skeleton,
   },
   soundscapeCopy: {
     flex: 1,
   },
   soundscapeTitle: {
-    color: HalcyonColors.textPrimary,
+    color: PassageColors.textPrimary,
     fontFamily: AppFonts.sansMedium,
     fontSize: 15,
     fontWeight: '500',
     lineHeight: 21,
   },
   soundscapeMeta: {
-    color: HalcyonColors.textSecondary,
+    color: PassageColors.textSecondary,
     fontFamily: AppFonts.sansRegular,
     fontSize: 12,
     lineHeight: 17,
     marginTop: 2,
   },
   changeLabel: {
-    color: HalcyonColors.accent,
+    color: PassageColors.accent,
     fontFamily: AppFonts.sansMedium,
     fontSize: 13,
     fontWeight: '500',
@@ -314,7 +314,7 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   pickerEmpty: {
-    color: HalcyonColors.textSecondary,
+    color: PassageColors.textSecondary,
     fontFamily: AppFonts.sansRegular,
     fontSize: 13,
     lineHeight: 19,
@@ -323,7 +323,7 @@ const styles = StyleSheet.create({
     marginBottom: 22,
   },
   sectionTitle: {
-    color: HalcyonColors.textPrimary,
+    color: PassageColors.textPrimary,
     fontFamily: AppFonts.displaySemiBold,
     fontSize: 19,
     fontWeight: '600',

@@ -13,14 +13,14 @@ export const GUEST_MODE_STORAGE_KEY = 'is_guest';
  * Tracks whether a signed-in session actually exists, so authenticated queries
  * (e.g. `/api/me`) never fire before the user has signed in.
  *
- * Two independent sources can hold a session: the Haven API tokens kept in
+ * Two independent sources can hold a session: the Passage API tokens kept in
  * SecureStore, and the Supabase session used by Google/Apple sign in. Either one
  * being present means the app may talk to authenticated endpoints.
  */
-type SessionSource = 'haven' | 'supabase';
+type SessionSource = 'passage' | 'supabase';
 
 const activeSources: Record<SessionSource, boolean> = {
-  haven: false,
+  passage: false,
   supabase: false,
 };
 
@@ -50,7 +50,7 @@ function notify() {
 // True from the moment an explicit sign-out/account-deletion starts clearing
 // the session until the login screen it navigates to has actually mounted.
 //
-// `clearUserSession` drops the Haven access token as one of its first steps,
+  // `clearUserSession` drops the Passage access token as one of its first steps,
 // which flips `hasActiveSession()` to false well before the explicit
 // `resetToLogin()` navigation that follows it actually runs — the function
 // awaits several more network/native calls (Google and Supabase sign-out
@@ -91,7 +91,7 @@ export function isExplicitSignOutInFlight() {
 
 /** True when an authenticated request is safe to make. */
 export function hasActiveSession() {
-  return !restoring && !guestModeActive && (activeSources.haven || activeSources.supabase);
+  return !restoring && !guestModeActive && (activeSources.passage || activeSources.supabase);
 }
 
 /**

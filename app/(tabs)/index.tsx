@@ -24,13 +24,13 @@ import { ProfileAvatar } from '@/components/profile/ProfileAvatar';
 import { SectionRail } from '@/components/SectionRail';
 import { SoundscapeCard } from '@/components/SoundscapeCard';
 import { SHOW_DEV_HOME_SCENE_REVIEW_BUTTON } from '@/config/dev-flags';
-import { HALCYON_TAB_BAR_HEIGHT, HalcyonColors, HalcyonSpacing, Typography } from '@/constants/design';
+import { PASSAGE_TAB_BAR_HEIGHT, PassageColors, PassageSpacing, Typography } from '@/constants/design';
 import { AppFonts } from '@/constants/theme';
 import { MODES, type ModeConfig } from '@/constants/modes';
 import {
   useContinueListening,
   useFavouriteSoundscapes,
-  useNewToHalcyon,
+  useNewToPassage,
   usePopularCollections,
   useRecentlyPlayed,
   useRecommended,
@@ -189,7 +189,7 @@ export default function HomeScreen() {
   const recommended = useRecommended();
   const recentlyPlayed = useRecentlyPlayed();
   const favourites = useFavouriteSoundscapes();
-  const newToHalcyon = useNewToHalcyon();
+  const newToPassage = useNewToPassage();
   const shortSessions = useShortSessions();
   const popularCollections = usePopularCollections();
 
@@ -238,7 +238,7 @@ export default function HomeScreen() {
       await Promise.allSettled([
         ...accountRefreshes,
         ...recommendationRefresh,
-        newToHalcyon.refetch(),
+        newToPassage.refetch(),
         shortSessions.refetch(),
         popularCollections.refetch(),
       ]);
@@ -250,7 +250,7 @@ export default function HomeScreen() {
     favourites,
     guestModeActive,
     hasSession,
-    newToHalcyon,
+    newToPassage,
     popularCollections,
     recentlyPlayed,
     recommended,
@@ -270,7 +270,7 @@ export default function HomeScreen() {
         recommended.data,
         recentlyPlayed.data,
         favourites.soundscapes,
-        newToHalcyon.data,
+        newToPassage.data,
         shortSessions.data,
       ],
       collections: popularCollections.data,
@@ -278,7 +278,7 @@ export default function HomeScreen() {
   }, [
     apiContinueItem?.soundscape,
     favourites.soundscapes,
-    newToHalcyon.data,
+    newToPassage.data,
     popularCollections.data,
     recentlyPlayed.data,
     recommended.data,
@@ -320,7 +320,7 @@ export default function HomeScreen() {
   );
   const soundscapeKey = useCallback((item: Soundscape, index: number) => item.id ?? `${index}`, []);
   const bottomInset =
-    insets.bottom + HALCYON_TAB_BAR_HEIGHT + (currentTrack ? MINI_PLAYER_HEIGHT : 0) + 36;
+    insets.bottom + PASSAGE_TAB_BAR_HEIGHT + (currentTrack ? MINI_PLAYER_HEIGHT : 0) + 36;
   const backgroundHeight = screenWidth / HERO_BACKGROUND_ASPECT_RATIO;
   const reviewedScene = sceneReviewIndex === null
     ? null
@@ -357,10 +357,10 @@ export default function HomeScreen() {
         )}
         refreshControl={
           <RefreshControl
-            colors={[HalcyonColors.accent]}
+            colors={[PassageColors.accent]}
             onRefresh={onRefresh}
             refreshing={refreshing}
-            tintColor={HalcyonColors.accent}
+            tintColor={PassageColors.accent}
           />
         }
         scrollEventThrottle={16}
@@ -491,9 +491,9 @@ export default function HomeScreen() {
           />
 
           <SectionRail
-            data={newToHalcyon.data}
-            isError={newToHalcyon.isError}
-            isLoading={newToHalcyon.isInitialLoading}
+            data={newToPassage.data}
+            isError={newToPassage.isError}
+            isLoading={newToPassage.isInitialLoading}
             keyExtractor={soundscapeKey}
             onSeeAll={() => router.push('/(tabs)/library' as Href)}
             renderItem={renderCard}
@@ -543,7 +543,7 @@ export default function HomeScreen() {
             {
               bottom:
                 insets.bottom +
-                HALCYON_TAB_BAR_HEIGHT +
+                PASSAGE_TAB_BAR_HEIGHT +
                 (currentTrack ? MINI_PLAYER_HEIGHT : 0) +
                 12,
             },
@@ -623,16 +623,16 @@ const styles = StyleSheet.create({
     flexGrow: 1,
   },
   block: {
-    paddingHorizontal: HalcyonSpacing.screenX,
+    paddingHorizontal: PassageSpacing.screenX,
   },
   section: {
-    marginTop: HalcyonSpacing.section,
+    marginTop: PassageSpacing.section,
   },
   /* ── Hero header ───────────────────────────────────────── */
   hero: {
     justifyContent: 'space-between',
     paddingBottom: 28,
-    paddingHorizontal: HalcyonSpacing.screenX,
+    paddingHorizontal: PassageSpacing.screenX,
   },
   heroTopRow: {
     alignItems: 'center',
@@ -673,12 +673,12 @@ const styles = StyleSheet.create({
   },
   greetingName: {
     ...Typography.screenHeading,
-    color: HalcyonColors.accent,
+    color: PassageColors.accent,
     fontSize: GREETING_FONT_SIZE,
     lineHeight: GREETING_LINE_HEIGHT,
   },
   greetingNameSkeleton: {
-    backgroundColor: HalcyonColors.skeleton,
+    backgroundColor: PassageColors.skeleton,
     borderRadius: 6,
     height: 26,
     marginTop: 8,

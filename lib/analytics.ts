@@ -3,7 +3,7 @@ import * as Application from 'expo-application'
 import * as Crypto from 'expo-crypto'
 import { Platform } from 'react-native'
 
-import { getAccessToken } from '@/lib/haven-api'
+import { getAccessToken } from '@/lib/passage-api'
 import { posthog, Sentry } from '@/lib/observability'
 import { supabase } from '@/lib/supabase'
 import {
@@ -12,7 +12,7 @@ import {
   type ProductEventProperties,
 } from '@/lib/analytics-events'
 
-const API_BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL ?? 'https://thehappyapp.co.uk'
+const API_BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL?.trim().replace(/\/+$/, '') || 'https://thehappyapp.co.uk'
 export const ONBOARDING_PROGRESS_KEY = 'passage.analytics.onboarding_progress'
 export const analyticsSessionId = Crypto.randomUUID()
 
@@ -25,8 +25,8 @@ function clean(properties: AnalyticsProperties = {}): Record<string, string | nu
 }
 
 async function token() {
-  const havenToken = getAccessToken()
-  if (havenToken) return havenToken
+  const passageToken = getAccessToken()
+  if (passageToken) return passageToken
   const { data } = await supabase.auth.getSession()
   return data.session?.access_token ?? null
 }

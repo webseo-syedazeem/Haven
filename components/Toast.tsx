@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
-import { HalcyonColors, HalcyonRadius } from '@/constants/design';
+import { PassageColors, PassageRadius } from '@/constants/design';
 import { AppFonts } from '@/constants/theme';
 
 const NOTICE_MS = 2600;
@@ -53,16 +53,16 @@ const styles = StyleSheet.create({
     right: 0,
   },
   pill: {
-    backgroundColor: HalcyonColors.surfaceRaised,
-    borderColor: HalcyonColors.border,
-    borderRadius: HalcyonRadius.pill,
+    backgroundColor: PassageColors.surfaceRaised,
+    borderColor: PassageColors.border,
+    borderRadius: PassageRadius.pill,
     borderWidth: 1,
     maxWidth: '86%',
     paddingHorizontal: 18,
     paddingVertical: 10,
   },
   text: {
-    color: HalcyonColors.textPrimary,
+    color: PassageColors.textPrimary,
     fontFamily: AppFonts.sansRegular,
     fontSize: 13,
     lineHeight: 18,

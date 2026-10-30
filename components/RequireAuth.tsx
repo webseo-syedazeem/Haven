@@ -4,7 +4,7 @@ import { type ReactNode, useEffect } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { HalcyonColors, HalcyonRadius, HalcyonSpacing } from '@/constants/design';
+import { PassageColors, PassageRadius, PassageSpacing } from '@/constants/design';
 import { AppFonts } from '@/constants/theme';
 import {
   useGuestModeActive,
@@ -98,7 +98,7 @@ export function useRequireAuth(): { hasSession: boolean; isRestoring: boolean } 
 function GateSpinner() {
   return (
     <View style={styles.spinner}>
-      <ActivityIndicator color={HalcyonColors.accent} />
+      <ActivityIndicator color={PassageColors.accent} />
     </View>
   );
 }
@@ -131,14 +131,14 @@ export function SignInPrompt({
               hitSlop={12}
               onPress={() => (router.canGoBack() ? router.back() : router.replace('/(tabs)'))}
               style={({ pressed }) => [styles.backButton, pressed && styles.pressed]}>
-              <Ionicons color={HalcyonColors.textPrimary} name="chevron-back" size={19} />
+              <Ionicons color={PassageColors.textPrimary} name="chevron-back" size={19} />
             </Pressable>
           </View>
         )}
 
         <View style={styles.body}>
           <View style={styles.iconCircle}>
-            <Ionicons color={HalcyonColors.accent} name="lock-closed-outline" size={26} />
+            <Ionicons color={PassageColors.accent} name="lock-closed-outline" size={26} />
           </View>
 
           <Text style={styles.title}>{title}</Text>
@@ -159,18 +159,18 @@ export function SignInPrompt({
 
 const styles = StyleSheet.create({
   screen: {
-    backgroundColor: HalcyonColors.background,
+    backgroundColor: PassageColors.background,
     flex: 1,
   },
   safeArea: { flex: 1 },
   spinner: {
     alignItems: 'center',
-    backgroundColor: HalcyonColors.background,
+    backgroundColor: PassageColors.background,
     flex: 1,
     justifyContent: 'center',
   },
   guestGatePlaceholder: {
-    backgroundColor: HalcyonColors.background,
+    backgroundColor: PassageColors.background,
     flex: 1,
   },
   header: {
@@ -182,7 +182,7 @@ const styles = StyleSheet.create({
   },
   backButton: {
     alignItems: 'center',
-    borderColor: HalcyonColors.border,
+    borderColor: PassageColors.border,
     borderRadius: 18,
     borderWidth: 1,
     height: 36,
@@ -196,11 +196,11 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     paddingBottom: 40,
-    paddingHorizontal: HalcyonSpacing.screenX,
+    paddingHorizontal: PassageSpacing.screenX,
   },
   iconCircle: {
     alignItems: 'center',
-    borderColor: HalcyonColors.border,
+    borderColor: PassageColors.border,
     borderRadius: 32,
     borderWidth: 1,
     height: 64,
@@ -208,7 +208,7 @@ const styles = StyleSheet.create({
     width: 64,
   },
   title: {
-    color: HalcyonColors.textPrimary,
+    color: PassageColors.textPrimary,
     fontFamily: AppFonts.displaySemiBold,
     fontSize: 26,
     fontWeight: '600',
@@ -217,7 +217,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   message: {
-    color: HalcyonColors.textSecondary,
+    color: PassageColors.textSecondary,
     fontFamily: AppFonts.sansRegular,
     fontSize: 13,
     lineHeight: 20,
@@ -227,16 +227,16 @@ const styles = StyleSheet.create({
   },
   primaryButton: {
     alignItems: 'center',
-    backgroundColor: HalcyonColors.accent,
-    borderRadius: HalcyonRadius.pill,
+    backgroundColor: PassageColors.accent,
+    borderRadius: PassageRadius.pill,
     justifyContent: 'center',
     marginTop: 28,
     minHeight: 50,
     paddingHorizontal: 46,
   },
-  primaryPressed: { backgroundColor: HalcyonColors.accentPressed },
+  primaryPressed: { backgroundColor: PassageColors.accentPressed },
   primaryLabel: {
-    color: HalcyonColors.background,
+    color: PassageColors.background,
     fontFamily: AppFonts.sansSemiBold,
     fontSize: 15,
     fontWeight: '600',

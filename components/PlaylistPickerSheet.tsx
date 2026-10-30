@@ -14,10 +14,10 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { PlaylistFormSheet } from '@/components/PlaylistFormSheet';
 import { useAccountRequiredPrompt } from '@/components/auth/AccountRequiredPrompt';
 import {
-  HalcyonColors,
-  HalcyonModal,
-  HalcyonRadius,
-  HalcyonSpacing,
+  PassageColors,
+  PassageModal,
+  PassageRadius,
+  PassageSpacing,
   Typography,
 } from '@/constants/design';
 import { AppFonts } from '@/constants/theme';
@@ -123,7 +123,7 @@ export function PlaylistPickerSheet({
                 accessibilityRole="button"
                 hitSlop={10}
                 onPress={onClose}>
-                <Ionicons color={HalcyonColors.textPrimary} name="close" size={22} />
+                <Ionicons color={PassageColors.textPrimary} name="close" size={22} />
               </Pressable>
             </View>
 
@@ -139,7 +139,7 @@ export function PlaylistPickerSheet({
             onPress={() => setFormVisible(true)}
             style={({ pressed }) => [styles.row, pressed && styles.rowPressed]}>
             <View style={styles.newIcon}>
-              <Ionicons color={HalcyonColors.accent} name="add" size={20} />
+              <Ionicons color={PassageColors.accent} name="add" size={20} />
             </View>
             <Text style={[styles.rowLabel, styles.newLabel]}>New playlist</Text>
           </Pressable>
@@ -147,7 +147,7 @@ export function PlaylistPickerSheet({
           <ScrollView style={styles.list}>
             {playlists.isInitialLoading ? (
               <View style={styles.stateBlock}>
-                <ActivityIndicator color={HalcyonColors.accent} />
+                <ActivityIndicator color={PassageColors.accent} />
               </View>
             ) : playlists.isError ? (
               <Text style={styles.stateText}>Couldn&apos;t load your playlists.</Text>
@@ -179,12 +179,12 @@ export function PlaylistPickerSheet({
                     </View>
 
                     {busy ? (
-                      <ActivityIndicator color={HalcyonColors.accent} size="small" />
+                      <ActivityIndicator color={PassageColors.accent} size="small" />
                     ) : added ? (
-                      <Ionicons color={HalcyonColors.accent} name="checkmark-circle" size={21} />
+                      <Ionicons color={PassageColors.accent} name="checkmark-circle" size={21} />
                     ) : (
                       <Ionicons
-                        color={HalcyonColors.textSecondary}
+                        color={PassageColors.textSecondary}
                         name="ellipse-outline"
                         size={21}
                       />
@@ -217,17 +217,17 @@ const styles = StyleSheet.create({
   },
   backdrop: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: HalcyonModal.backdrop,
+    backgroundColor: PassageModal.backdrop,
   },
   sheet: {
-    backgroundColor: HalcyonColors.surface,
+    backgroundColor: PassageColors.surface,
     borderTopColor: 'rgba(255,255,255,0.035)',
-    borderTopLeftRadius: HalcyonRadius.sheet,
-    borderTopRightRadius: HalcyonRadius.sheet,
+    borderTopLeftRadius: PassageRadius.sheet,
+    borderTopRightRadius: PassageRadius.sheet,
     borderTopWidth: StyleSheet.hairlineWidth,
     maxHeight: '72%',
     overflow: 'hidden',
-    paddingHorizontal: HalcyonSpacing.screenX,
+    paddingHorizontal: PassageSpacing.screenX,
     paddingTop: 10,
   },
   grabber: {
@@ -247,7 +247,7 @@ const styles = StyleSheet.create({
     ...Typography.sectionHeading,
   },
   subject: {
-    color: HalcyonColors.textSecondary,
+    color: PassageColors.textSecondary,
     fontFamily: AppFonts.sansRegular,
     fontSize: 13,
     lineHeight: 18,
@@ -258,7 +258,7 @@ const styles = StyleSheet.create({
   },
   row: {
     alignItems: 'center',
-    borderTopColor: HalcyonColors.border,
+    borderTopColor: PassageColors.border,
     borderTopWidth: 1,
     columnGap: 12,
     flexDirection: 'row',
@@ -271,14 +271,14 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   rowLabel: {
-    color: HalcyonColors.textPrimary,
+    color: PassageColors.textPrimary,
     fontFamily: AppFonts.sansMedium,
     fontSize: 15,
     fontWeight: '500',
     lineHeight: 20,
   },
   rowMeta: {
-    color: HalcyonColors.textSecondary,
+    color: PassageColors.textSecondary,
     fontFamily: AppFonts.sansRegular,
     fontSize: 12,
     lineHeight: 16,
@@ -286,7 +286,7 @@ const styles = StyleSheet.create({
   },
   newIcon: {
     alignItems: 'center',
-    borderColor: HalcyonColors.border,
+    borderColor: PassageColors.border,
     borderRadius: 10,
     borderWidth: 1,
     height: 38,
@@ -294,20 +294,20 @@ const styles = StyleSheet.create({
     width: 38,
   },
   newLabel: {
-    color: HalcyonColors.accent,
+    color: PassageColors.accent,
   },
   stateBlock: {
     paddingVertical: 28,
   },
   stateText: {
-    color: HalcyonColors.textSecondary,
+    color: PassageColors.textSecondary,
     fontFamily: AppFonts.sansRegular,
     fontSize: 13,
     lineHeight: 19,
     paddingVertical: 22,
   },
   error: {
-    color: HalcyonColors.accent,
+    color: PassageColors.accent,
     fontFamily: AppFonts.sansRegular,
     fontSize: 13,
     lineHeight: 18,

@@ -27,7 +27,7 @@ export const HOME_QUERY_KEYS = {
   guestModeRecommended: ['home', 'guest-mode-recommended'] as const,
   playHistory: PLAY_HISTORY_QUERY_KEY,
   favourites: FAVOURITES_QUERY_KEY,
-  newToHalcyon: ['home', 'library', 'recently_added'] as const,
+  newToPassage: ['home', 'library', 'recently_added'] as const,
   shortSessions: ['home', 'library', 'shortest'] as const,
   popularCollections: ['home', 'collections', 'popular'] as const,
   soundscape: (id: string) => ['soundscape', id] as const,
@@ -102,9 +102,9 @@ function dedupeSoundscapes(rows: PlayHistoryRow[]): Soundscape[] {
   return result;
 }
 
-export function useNewToHalcyon() {
+export function useNewToPassage() {
   return useQuery({
-    queryKey: HOME_QUERY_KEYS.newToHalcyon,
+    queryKey: HOME_QUERY_KEYS.newToPassage,
     queryFn: () => homeApi.library({ sort: 'recently_added', limit: RAIL_LIMIT }),
   });
 }

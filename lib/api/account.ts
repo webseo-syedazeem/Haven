@@ -4,7 +4,7 @@ import type { SoundscapeMode } from './home';
 type Envelope<T> = { success: boolean; data: T };
 
 /**
- * `GET /api/account/export` returns everything Halcyon stores for the caller as
+ * `GET /api/account/export` returns everything Passage stores for the caller as
  * one JSON document — the account row, favourites, playlists with their items,
  * play history, all three preference rows, support requests, onboarding,
  * player state and device tokens.

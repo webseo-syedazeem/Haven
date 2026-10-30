@@ -7,7 +7,7 @@ import { RequireAuth } from '@/components/RequireAuth';
 import { FieldError, SettingsField } from '@/components/SettingsField';
 import { SettingsPrimaryButton, SettingsScreen } from '@/components/SettingsScreen';
 import { SupportSuccess } from '@/components/SupportSuccess';
-import { HalcyonColors } from '@/constants/design';
+import { PassageColors } from '@/constants/design';
 import { AppFonts } from '@/constants/theme';
 import { useHasSession } from '@/hooks/useSession';
 import { useContactSupport } from '@/hooks/useSupport';
@@ -130,7 +130,7 @@ function ContactSupportContent() {
           disabled={contact.isPending}
           label="Send message"
           onPress={handleSubmit}>
-          {contact.isPending ? <ActivityIndicator color={HalcyonColors.background} /> : undefined}
+          {contact.isPending ? <ActivityIndicator color={PassageColors.background} /> : undefined}
         </SettingsPrimaryButton>
 
         <Text style={styles.footnote}>We usually reply within a couple of days.</Text>
@@ -148,7 +148,7 @@ export default function ContactSupportScreen() {
 }
 const styles = StyleSheet.create({
   footnote: {
-    color: HalcyonColors.textSecondary,
+    color: PassageColors.textSecondary,
     fontFamily: AppFonts.sansRegular,
     fontSize: 12,
     lineHeight: 17,

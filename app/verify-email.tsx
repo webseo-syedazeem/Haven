@@ -8,7 +8,7 @@ import { Platform, Pressable, StyleSheet, Text } from 'react-native';
 
 import { OnboardingContinueButton } from '@/components/onboarding/OnboardingContinueButton';
 import { OnboardingScaffold } from '@/components/onboarding/OnboardingScaffold';
-import { HalcyonColors, Typography } from '@/constants/design';
+import { PassageColors, Typography } from '@/constants/design';
 import { AppFonts } from '@/constants/theme';
 import {
   completeSupabaseAuth,
@@ -282,7 +282,7 @@ const styles = StyleSheet.create({
     paddingVertical: 5,
   },
   changeLink: {
-    color: HalcyonColors.textPrimary,
+    color: PassageColors.textPrimary,
     textDecorationLine: 'underline',
   },
   changeText: {
@@ -303,7 +303,7 @@ const styles = StyleSheet.create({
   },
   heading: {
     ...Typography.screenHeading,
-    color: HalcyonColors.textPrimary,
+    color: PassageColors.textPrimary,
     textAlign: 'center',
   },
   linkButton: {
@@ -320,7 +320,7 @@ const styles = StyleSheet.create({
     textDecorationLine: 'underline',
   },
   message: {
-    color: HalcyonColors.accent,
+    color: PassageColors.accent,
     fontFamily: AppFonts.sansRegular,
     fontSize: 14,
     lineHeight: 21,

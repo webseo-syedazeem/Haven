@@ -16,7 +16,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { OnboardingPillButton } from '@/components/onboarding/OnboardingPillButton';
 import { OnboardingStepHeader } from '@/components/onboarding/OnboardingStepHeader';
-import { HalcyonColors } from '@/constants/design';
+import { PassageColors } from '@/constants/design';
 import { AppFonts } from '@/constants/theme';
 import { useSinglePress } from '@/hooks/useSinglePress';
 import { ME_QUERY_KEY } from '@/hooks/useUser';
@@ -239,7 +239,7 @@ function LaunchLoadingScreen() {
   return (
     <View style={styles.loadingScreen}>
       <StatusBar style="light" />
-      <ActivityIndicator color={HalcyonColors.accent} size="large" />
+      <ActivityIndicator color={PassageColors.accent} size="large" />
     </View>
   );
 }
@@ -266,7 +266,7 @@ const styles = StyleSheet.create({
   },
   loadingScreen: {
     alignItems: 'center',
-    backgroundColor: HalcyonColors.background,
+    backgroundColor: PassageColors.background,
     flex: 1,
     justifyContent: 'center',
   },

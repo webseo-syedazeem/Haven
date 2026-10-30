@@ -1,6 +1,6 @@
 import { StyleSheet, Text, View } from 'react-native';
 
-import { HalcyonColors } from '@/constants/design';
+import { PassageColors } from '@/constants/design';
 import { AppFonts } from '@/constants/theme';
 
 type Block =
@@ -110,7 +110,7 @@ export function ArticleBody({ body }: { body: string }) {
 
 const styles = StyleSheet.create({
   heading: {
-    color: HalcyonColors.textPrimary,
+    color: PassageColors.textPrimary,
     fontFamily: AppFonts.playfairRegular,
     fontSize: 21,
     letterSpacing: -0.2,
@@ -133,7 +133,7 @@ const styles = StyleSheet.create({
     marginTop: 0,
   },
   paragraph: {
-    color: HalcyonColors.textSecondary,
+    color: PassageColors.textSecondary,
     fontFamily: AppFonts.sansRegular,
     fontSize: 16,
     lineHeight: 24,
@@ -144,14 +144,14 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   bulletDot: {
-    color: HalcyonColors.accent,
+    color: PassageColors.accent,
     fontFamily: AppFonts.sansRegular,
     fontSize: 16,
     lineHeight: 24,
     marginRight: 10,
   },
   bulletText: {
-    color: HalcyonColors.textSecondary,
+    color: PassageColors.textSecondary,
     flex: 1,
     fontFamily: AppFonts.sansRegular,
     fontSize: 16,

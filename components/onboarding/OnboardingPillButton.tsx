@@ -3,7 +3,7 @@ import { Ionicons } from '@expo/vector-icons';
 import React from 'react';
 import { Pressable, StyleSheet, Text, View, type StyleProp, type ViewStyle } from 'react-native';
 
-import { HalcyonRadius } from '@/constants/design';
+import { PassageRadius } from '@/constants/design';
 import { useSinglePress } from '@/hooks/useSinglePress';
 
 type OnboardingPillButtonProps = {
@@ -56,7 +56,7 @@ export function OnboardingPillButton({
 const styles = StyleSheet.create({
   button: {
     alignItems: 'center',
-    borderRadius: HalcyonRadius.pill,
+    borderRadius: PassageRadius.pill,
     justifyContent: 'center',
     minHeight: 60,
     paddingHorizontal: 20,

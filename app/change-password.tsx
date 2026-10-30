@@ -6,14 +6,14 @@ import { Alert, KeyboardAvoidingView, Platform, StyleSheet, Text, View } from 'r
 import { AuthTextField } from '@/components/auth/AuthTextField';
 import { OnboardingContinueButton } from '@/components/onboarding/OnboardingContinueButton';
 import { OnboardingScaffold } from '@/components/onboarding/OnboardingScaffold';
-import { HalcyonColors } from '@/constants/design';
+import { PassageColors } from '@/constants/design';
 import { AppFonts } from '@/constants/theme';
 import {
   parseAuthError,
   passwordIssue,
   type AuthFieldErrors,
 } from '@/lib/auth/form-errors';
-import { changePassword, resetPassword } from '@/lib/haven-api';
+import { changePassword, resetPassword } from '@/lib/passage-api';
 import { safeGoBack } from '@/lib/navigation';
 
 function firstParam(value: string | string[] | undefined) {
@@ -110,7 +110,7 @@ export default function ChangePasswordScreen() {
         onBack={() => safeGoBack(router, isResetFlow ? '/login' : '/')}>
         <View style={styles.content}>
           <View style={styles.iconCircle}>
-            <Ionicons color={HalcyonColors.accent} name="key-outline" size={27} />
+            <Ionicons color={PassageColors.accent} name="key-outline" size={27} />
           </View>
 
           <Text style={styles.heading}>
@@ -226,7 +226,7 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   heading: {
-    color: HalcyonColors.textPrimary,
+    color: PassageColors.textPrimary,
     fontFamily: AppFonts.displayRegular,
     fontSize: 36,
     fontWeight: '400',
@@ -237,7 +237,7 @@ const styles = StyleSheet.create({
   iconCircle: {
     alignItems: 'center',
     alignSelf: 'center',
-    borderColor: HalcyonColors.accent,
+    borderColor: PassageColors.accent,
     borderRadius: 28,
     borderWidth: 1,
     height: 56,
@@ -245,7 +245,7 @@ const styles = StyleSheet.create({
     width: 56,
   },
   keyboardView: {
-    backgroundColor: HalcyonColors.background,
+    backgroundColor: PassageColors.background,
     flex: 1,
   },
   scrollContent: {

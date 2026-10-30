@@ -8,7 +8,7 @@ import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-nati
 
 import { OnboardingContinueButton } from '@/components/onboarding/OnboardingContinueButton';
 import { OnboardingScaffold } from '@/components/onboarding/OnboardingScaffold';
-import { HalcyonColors, Typography } from '@/constants/design';
+import { PassageColors, Typography } from '@/constants/design';
 import { AppFonts } from '@/constants/theme';
 import {
   completeSupabaseAuth,
@@ -355,7 +355,7 @@ export default function AuthCallback() {
   return (
     <OnboardingScaffold contentContainerStyle={styles.content} scroll={false}>
       {isLoading ? (
-        <ActivityIndicator color={HalcyonColors.accent} size={'large'} />
+        <ActivityIndicator color={PassageColors.accent} size={'large'} />
       ) : errorMessage ? (
         <>
           <Text style={styles.heading}>We couldn&apos;t confirm that link</Text>
@@ -412,7 +412,7 @@ const styles = StyleSheet.create({
   },
   body: {
     ...Typography.body,
-    color: HalcyonColors.textSecondary,
+    color: PassageColors.textSecondary,
     marginTop: 10,
     maxWidth: 350,
     textAlign: 'center',
@@ -424,7 +424,7 @@ const styles = StyleSheet.create({
   },
   heading: {
     ...Typography.screenHeading,
-    color: HalcyonColors.textPrimary,
+    color: PassageColors.textPrimary,
     maxWidth: 440,
     textAlign: 'center',
   },
@@ -438,7 +438,7 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
   },
   signInLink: {
-    color: HalcyonColors.accent,
+    color: PassageColors.accent,
     fontFamily: AppFonts.sansSemiBold,
     fontSize: 15,
     fontWeight: '600',

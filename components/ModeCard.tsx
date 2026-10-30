@@ -4,10 +4,10 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import {
-  HalcyonCardGradient,
-  HalcyonCardGradientLocations,
-  HalcyonColors,
-  HalcyonRadius,
+  PassageCardGradient,
+  PassageCardGradientLocations,
+  PassageColors,
+  PassageRadius,
 } from '@/constants/design';
 import { AppFonts } from '@/constants/theme';
 import type { ModeConfig } from '@/constants/modes';
@@ -42,8 +42,8 @@ export function ModeCard({ mode, onPress }: ModeCardProps) {
           transition={220}
         />
         <LinearGradient
-          colors={HalcyonCardGradient as unknown as readonly [string, string, ...string[]]}
-          locations={HalcyonCardGradientLocations as unknown as readonly [number, number, ...number[]]}
+          colors={PassageCardGradient as unknown as readonly [string, string, ...string[]]}
+          locations={PassageCardGradientLocations as unknown as readonly [number, number, ...number[]]}
           style={StyleSheet.absoluteFill}
         />
         <View style={styles.row}>
@@ -53,7 +53,7 @@ export function ModeCard({ mode, onPress }: ModeCardProps) {
               {mode.tagline}
             </Text>
           </View>
-          <Ionicons color={HalcyonColors.textPrimary} name="chevron-forward" size={18} />
+          <Ionicons color={PassageColors.textPrimary} name="chevron-forward" size={18} />
         </View>
       </Pressable>
     </View>
@@ -68,7 +68,7 @@ export function ModeCardSkeleton() {
 const styles = StyleSheet.create({
   ring: {
     backgroundColor: 'transparent',
-    borderRadius: HalcyonRadius.card,
+    borderRadius: PassageRadius.card,
     borderWidth: 1,
     // borderColor and shadowColor applied inline (mode-specific)
     elevation: 4,
@@ -78,7 +78,7 @@ const styles = StyleSheet.create({
   },
   card: {
     aspectRatio: 2.6,
-    borderRadius: HalcyonRadius.card,
+    borderRadius: PassageRadius.card,
     justifyContent: 'flex-end',
     minHeight: 118,
     overflow: 'hidden',
@@ -87,7 +87,7 @@ const styles = StyleSheet.create({
     opacity: 0.88,
   },
   skeleton: {
-    backgroundColor: HalcyonColors.skeleton,
+    backgroundColor: PassageColors.skeleton,
   },
   row: {
     alignItems: 'flex-end',
@@ -100,7 +100,7 @@ const styles = StyleSheet.create({
     paddingRight: 12,
   },
   title: {
-    color: HalcyonColors.textPrimary,
+    color: PassageColors.textPrimary,
     fontFamily: AppFonts.displayRegular,
     fontSize: 38,
     letterSpacing: 1.5,

@@ -20,7 +20,7 @@ import { PlaylistFormSheet } from '@/components/PlaylistFormSheet';
 import { RequireAuth } from '@/components/RequireAuth';
 import { SoundscapeRow, SoundscapeRowSkeletonList } from '@/components/SoundscapeRow';
 import { Toast, useToast } from '@/components/Toast';
-import { HalcyonColors, HalcyonRadius, HalcyonSpacing, Typography } from '@/constants/design';
+import { PassageColors, PassageRadius, PassageSpacing, Typography } from '@/constants/design';
 import { useTabContentInset } from '@/hooks/use-bottom-safe-spacing';
 import { useFavouriteSoundscapes, useToggleFavourite } from '@/hooks/useFavourites';
 import { usePlayHistory } from '@/hooks/usePlayHistory';
@@ -152,7 +152,7 @@ function FavouritesPanel({
     return (
       <EmptyState
         icon="heart-outline"
-        iconColor={HalcyonColors.textPrimary}
+        iconColor={PassageColors.textPrimary}
         message="Tap the heart on any soundscape to save it here."
         title="No favourites yet"
       />
@@ -202,7 +202,7 @@ function PlaylistsPanel({
   const { createPlaylist, isCreating } = useCreatePlaylist();
   const [formVisible, setFormVisible] = useState(false);
 
-  const cardWidth = (width - HalcyonSpacing.screenX * 2 - 14) / 2;
+  const cardWidth = (width - PassageSpacing.screenX * 2 - 14) / 2;
 
   const handleCreate = useCallback(
     async (payload: PlaylistPayload) => {
@@ -236,7 +236,7 @@ function PlaylistsPanel({
         <EmptyState
           actionLabel="New playlist"
           icon="albums-outline"
-          iconColor={HalcyonColors.textPrimary}
+          iconColor={PassageColors.textPrimary}
           message="Create a playlist to group your favourite soundscapes."
           onAction={() => setFormVisible(true)}
           title="No playlists yet"
@@ -265,7 +265,7 @@ function PlaylistsPanel({
           { bottom: bottomInset - 12 },
           pressed && styles.fabPressed,
         ]}>
-        <Ionicons color={HalcyonColors.background} name="add" size={26} />
+        <Ionicons color={PassageColors.background} name="add" size={26} />
       </Pressable>
 
       <PlaylistFormSheet
@@ -302,7 +302,7 @@ function RecentPanel({ bottomInset }: { bottomInset: number }) {
     return (
       <EmptyState
         icon="time-outline"
-        iconColor={HalcyonColors.textPrimary}
+        iconColor={PassageColors.textPrimary}
         message="The soundscapes you play will show up here."
         title="Nothing played yet"
       />
@@ -331,7 +331,7 @@ function RecentPanel({ bottomInset }: { bottomInset: number }) {
               hitSlop={8}
               onPress={() => void playSoundscape(item.soundscape)}
               style={styles.resumeButton}>
-              <Ionicons color={HalcyonColors.accent} name="play" size={16} />
+              <Ionicons color={PassageColors.accent} name="play" size={16} />
             </Pressable>
           }
         />
@@ -363,7 +363,7 @@ function formatPlayedAt(value?: string): string {
 
 const styles = StyleSheet.create({
   screen: {
-    backgroundColor: HalcyonColors.background,
+    backgroundColor: PassageColors.background,
     flex: 1,
   },
   favouritesBackground: {
@@ -380,7 +380,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   header: {
-    paddingHorizontal: HalcyonSpacing.screenX,
+    paddingHorizontal: PassageSpacing.screenX,
     paddingTop: 12,
   },
   heading: {
@@ -392,7 +392,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'nowrap',
     paddingBottom: 4,
-    paddingHorizontal: HalcyonSpacing.screenX,
+    paddingHorizontal: PassageSpacing.screenX,
   },
   horizontalScroll: {
     flexGrow: 0,
@@ -412,7 +412,7 @@ const styles = StyleSheet.create({
     columnGap: 14,
     flexDirection: 'row',
     flexWrap: 'wrap',
-    paddingHorizontal: HalcyonSpacing.screenX,
+    paddingHorizontal: PassageSpacing.screenX,
     paddingTop: 18,
     rowGap: 20,
   },
@@ -420,23 +420,23 @@ const styles = StyleSheet.create({
     columnGap: 14,
     flexDirection: 'row',
     flexWrap: 'wrap',
-    paddingHorizontal: HalcyonSpacing.screenX,
+    paddingHorizontal: PassageSpacing.screenX,
     paddingTop: 18,
     rowGap: 20,
   },
   skeletonBlock: {
-    backgroundColor: HalcyonColors.skeleton,
-    borderRadius: HalcyonRadius.artwork,
+    backgroundColor: PassageColors.skeleton,
+    borderRadius: PassageRadius.artwork,
   },
   fab: {
     alignItems: 'center',
-    backgroundColor: HalcyonColors.accent,
+    backgroundColor: PassageColors.accent,
     borderRadius: 28,
     elevation: 6,
     height: 56,
     justifyContent: 'center',
     position: 'absolute',
-    right: HalcyonSpacing.screenX,
+    right: PassageSpacing.screenX,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.32,
@@ -444,11 +444,11 @@ const styles = StyleSheet.create({
     width: 56,
   },
   fabPressed: {
-    backgroundColor: HalcyonColors.accentPressed,
+    backgroundColor: PassageColors.accentPressed,
   },
   resumeButton: {
     alignItems: 'center',
-    borderColor: HalcyonColors.border,
+    borderColor: PassageColors.border,
     borderRadius: 17,
     borderWidth: 1,
     height: 34,

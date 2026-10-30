@@ -6,7 +6,7 @@ import {
   type ImageSourcePropType,
 } from 'react-native';
 
-import { HalcyonColors, HalcyonRadius } from '@/constants/design';
+import { PassageColors, PassageRadius } from '@/constants/design';
 import { AppFonts } from '@/constants/theme';
 
 type AuthSocialButtonProps = {
@@ -43,9 +43,9 @@ export function AuthSocialButton({
 const styles = StyleSheet.create({
   button: {
     alignItems: 'center',
-    backgroundColor: HalcyonColors.surface,
+    backgroundColor: PassageColors.surface,
     borderColor: 'rgba(255,255,255,0.11)',
-    borderRadius: HalcyonRadius.artwork,
+    borderRadius: PassageRadius.artwork,
     borderWidth: 1,
     flexDirection: 'row',
     justifyContent: 'center',
@@ -62,14 +62,14 @@ const styles = StyleSheet.create({
     width: 18,
   },
   label: {
-    color: HalcyonColors.textPrimary,
+    color: PassageColors.textPrimary,
     fontFamily: AppFonts.sansSemiBold,
     fontSize: 16,
     fontWeight: '600',
     lineHeight: 22,
   },
   pressed: {
-    backgroundColor: HalcyonColors.surfaceRaised,
+    backgroundColor: PassageColors.surfaceRaised,
     opacity: 0.84,
   },
 });

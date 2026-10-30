@@ -5,10 +5,10 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { ChipGroup, FilterChip } from '@/components/FilterChip';
 import {
-  HalcyonColors,
-  HalcyonModal,
-  HalcyonRadius,
-  HalcyonSpacing,
+  PassageColors,
+  PassageModal,
+  PassageRadius,
+  PassageSpacing,
   Typography,
 } from '@/constants/design';
 import {
@@ -99,7 +99,7 @@ export function FilterSheet({ visible, filters, sort, onClose, onApply }: Filter
               accessibilityRole="button"
               hitSlop={10}
               onPress={() => setSubView(null)}>
-              <Ionicons color={HalcyonColors.textPrimary} name="chevron-back" size={22} />
+              <Ionicons color={PassageColors.textPrimary} name="chevron-back" size={22} />
             </Pressable>
           ) : (
             <Pressable
@@ -118,7 +118,7 @@ export function FilterSheet({ visible, filters, sort, onClose, onApply }: Filter
             accessibilityRole="button"
             hitSlop={10}
             onPress={onClose}>
-            <Ionicons color={HalcyonColors.textPrimary} name="close" size={22} />
+            <Ionicons color={PassageColors.textPrimary} name="close" size={22} />
           </Pressable>
         </View>
 
@@ -254,7 +254,7 @@ function Section({
           </Pressable>
         )}
         <Ionicons
-          color={HalcyonColors.textSecondary}
+          color={PassageColors.textSecondary}
           name={collapsed ? 'chevron-down' : 'chevron-up'}
           size={17}
         />
@@ -277,13 +277,13 @@ const styles = StyleSheet.create({
   },
   backdrop: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: HalcyonModal.backdrop,
+    backgroundColor: PassageModal.backdrop,
   },
   sheet: {
-    backgroundColor: HalcyonColors.surface,
-    borderTopColor: HalcyonColors.border,
-    borderTopLeftRadius: HalcyonRadius.sheet,
-    borderTopRightRadius: HalcyonRadius.sheet,
+    backgroundColor: PassageColors.surface,
+    borderTopColor: PassageColors.border,
+    borderTopLeftRadius: PassageRadius.sheet,
+    borderTopRightRadius: PassageRadius.sheet,
     borderTopWidth: 1,
     maxHeight: '86%',
     paddingTop: 14,
@@ -293,13 +293,13 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     paddingBottom: 12,
-    paddingHorizontal: HalcyonSpacing.screenX,
+    paddingHorizontal: PassageSpacing.screenX,
   },
   title: {
     ...Typography.sectionHeading,
   },
   reset: {
-    color: HalcyonColors.accent,
+    color: PassageColors.accent,
     fontFamily: AppFonts.sansMedium,
     fontSize: 14,
     fontWeight: '500',
@@ -307,10 +307,10 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     paddingBottom: 12,
-    paddingHorizontal: HalcyonSpacing.screenX,
+    paddingHorizontal: PassageSpacing.screenX,
   },
   section: {
-    borderTopColor: HalcyonColors.border,
+    borderTopColor: PassageColors.border,
     borderTopWidth: 1,
     paddingVertical: 6,
   },
@@ -324,7 +324,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   sectionTitle: {
-    color: HalcyonColors.textPrimary,
+    color: PassageColors.textPrimary,
     fontFamily: AppFonts.sansSemiBold,
     fontSize: 15,
     fontWeight: '600',
@@ -332,7 +332,7 @@ const styles = StyleSheet.create({
   },
   sectionCount: {
     alignItems: 'center',
-    backgroundColor: HalcyonColors.accent,
+    backgroundColor: PassageColors.accent,
     borderRadius: 9,
     height: 18,
     justifyContent: 'center',
@@ -340,14 +340,14 @@ const styles = StyleSheet.create({
     paddingHorizontal: 5,
   },
   sectionCountLabel: {
-    color: HalcyonColors.background,
+    color: PassageColors.background,
     fontFamily: AppFonts.sansSemiBold,
     fontSize: 11,
     fontWeight: '600',
     lineHeight: 15,
   },
   seeAll: {
-    color: HalcyonColors.accent,
+    color: PassageColors.accent,
     fontFamily: AppFonts.sansMedium,
     fontSize: 13,
     fontWeight: '500',
@@ -357,7 +357,7 @@ const styles = StyleSheet.create({
     paddingBottom: 16,
   },
   hint: {
-    color: HalcyonColors.textSecondary,
+    color: PassageColors.textSecondary,
     fontFamily: AppFonts.sansRegular,
     fontSize: 12,
     lineHeight: 16,
@@ -365,20 +365,20 @@ const styles = StyleSheet.create({
   },
   showButton: {
     alignItems: 'center',
-    backgroundColor: HalcyonColors.accent,
-    borderRadius: HalcyonRadius.pill,
+    backgroundColor: PassageColors.accent,
+    borderRadius: PassageRadius.pill,
     columnGap: 8,
     flexDirection: 'row',
     justifyContent: 'center',
-    marginHorizontal: HalcyonSpacing.screenX,
+    marginHorizontal: PassageSpacing.screenX,
     marginTop: 8,
     paddingVertical: 15,
   },
   showButtonPressed: {
-    backgroundColor: HalcyonColors.accentPressed,
+    backgroundColor: PassageColors.accentPressed,
   },
   showLabel: {
-    color: HalcyonColors.background,
+    color: PassageColors.background,
     fontFamily: AppFonts.sansSemiBold,
     fontSize: 15,
     fontWeight: '600',
@@ -394,7 +394,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 6,
   },
   showBadgeLabel: {
-    color: HalcyonColors.background,
+    color: PassageColors.background,
     fontFamily: AppFonts.sansSemiBold,
     fontSize: 11,
     fontWeight: '600',

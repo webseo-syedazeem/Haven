@@ -3,7 +3,7 @@ import { useRouter, type Href } from 'expo-router';
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { CoverImage } from '@/components/CoverImage';
-import { HalcyonColors } from '@/constants/design';
+import { PassageColors } from '@/constants/design';
 import { getModeLabel } from '@/constants/modes';
 import { AppFonts } from '@/constants/theme';
 import { usePlayerProgress, usePlayerState, usePlayerActions } from '@/lib/player/PlayerProvider';
@@ -24,7 +24,7 @@ export function MiniPlayer() {
   const { togglePlayPause } = usePlayerActions();
   if (!soundscape) return null;
 
-  const backgroundColor = soundscape.colour || HalcyonColors.accent;
+  const backgroundColor = soundscape.colour || PassageColors.accent;
   const total = duration || soundscape.duration_seconds || 0;
   const progress = total > 0 ? Math.min(1, Math.max(0, position / total)) : 0;
   const modeLabel = getModeLabel(soundscape.mode);
@@ -66,10 +66,10 @@ export function MiniPlayer() {
           }}
           style={({ pressed }) => [styles.playButton, pressed && styles.playButtonPressed]}>
           {isBuffering && !isPlaying ? (
-            <ActivityIndicator color={HalcyonColors.background} size="small" />
+            <ActivityIndicator color={PassageColors.background} size="small" />
           ) : (
             <Ionicons
-              color={HalcyonColors.background}
+              color={PassageColors.background}
               name={isPlaying ? 'pause' : 'play'}
               size={18}
               style={isPlaying ? undefined : styles.playIcon}
@@ -128,7 +128,7 @@ const styles = StyleSheet.create({
     opacity: 0.9,
   },
   artworkFrame: {
-    backgroundColor: HalcyonColors.surfaceRaised,
+    backgroundColor: PassageColors.surfaceRaised,
     borderRadius: 10,
     height: 44,
     overflow: 'hidden',
@@ -139,7 +139,7 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   artworkFallback: {
-    backgroundColor: HalcyonColors.surfaceRaised,
+    backgroundColor: PassageColors.surfaceRaised,
   },
   copy: {
     flex: 1,
@@ -147,7 +147,7 @@ const styles = StyleSheet.create({
     paddingRight: 6,
   },
   title: {
-    color: HalcyonColors.textPrimary,
+    color: PassageColors.textPrimary,
     fontFamily: AppFonts.sansMedium,
     fontSize: 14,
     fontWeight: '500',
@@ -160,7 +160,7 @@ const styles = StyleSheet.create({
     lineHeight: 16,
   },
   metaError: {
-    color: HalcyonColors.accent,
+    color: PassageColors.accent,
   },
   playButton: {
     alignItems: 'center',
@@ -171,7 +171,7 @@ const styles = StyleSheet.create({
     width: 38,
   },
   playButtonPressed: {
-    backgroundColor: HalcyonColors.accentPressed,
+    backgroundColor: PassageColors.accentPressed,
   },
   playIcon: {
     marginLeft: 2,

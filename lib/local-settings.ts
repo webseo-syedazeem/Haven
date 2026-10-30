@@ -18,7 +18,8 @@ import { Platform } from 'react-native';
  * default the caller passed.
  */
 
-const KEY_PREFIX = 'halcyon.settings.';
+const KEY_PREFIX = 'passage.settings.';
+const LEGACY_KEY_PREFIX = 'halcyon.settings.';
 
 function getWebStorage() {
   return typeof globalThis !== 'undefined'
@@ -55,7 +56,11 @@ async function writeRaw(key: string, value: string): Promise<void> {
 }
 
 export async function getLocalSetting<T>(key: string, fallback: T): Promise<T> {
-  const raw = await readRaw(`${KEY_PREFIX}${key}`);
+  let raw = await readRaw(`${KEY_PREFIX}${key}`);
+  if (raw === null) {
+    raw = await readRaw(`${LEGACY_KEY_PREFIX}${key}`);
+    if (raw !== null) await writeRaw(`${KEY_PREFIX}${key}`, raw);
+  }
   if (raw === null) return fallback;
 
   try {

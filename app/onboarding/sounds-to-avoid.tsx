@@ -6,7 +6,7 @@ import { StyleSheet, Text, View } from 'react-native';
 
 import { ChoiceRow } from '@/components/onboarding/OnboardingChoices';
 import { OnboardingScaffold } from '@/components/onboarding/OnboardingScaffold';
-import { HalcyonColors } from '@/constants/design';
+import { PassageColors } from '@/constants/design';
 import { SOUNDS_TO_AVOID_VALUES } from '@/constants/filters';
 import { AppFonts } from '@/constants/theme';
 import { safeGoBack } from '@/lib/navigation';
@@ -84,7 +84,7 @@ export default function SoundsToAvoidScreen() {
           <ChoiceRow
             icon={
               <Ionicons
-                color={selected.includes(value) ? HalcyonColors.accent : HalcyonColors.textSecondary}
+                color={selected.includes(value) ? PassageColors.accent : PassageColors.textSecondary}
                 name="volume-mute-outline"
                 size={18}
               />
@@ -98,7 +98,7 @@ export default function SoundsToAvoidScreen() {
         <ChoiceRow
           icon={
             <Ionicons
-              color={noneSelected ? HalcyonColors.accent : HalcyonColors.textSecondary}
+              color={noneSelected ? PassageColors.accent : PassageColors.textSecondary}
               name="checkmark-circle-outline"
               size={18}
             />
@@ -122,14 +122,14 @@ const styles = StyleSheet.create({
   },
   footerContent: { gap: 8 },
   heading: {
-    color: HalcyonColors.textPrimary,
+    color: PassageColors.textPrimary,
     fontFamily: AppFonts.displayRegular,
     fontSize: 32,
     lineHeight: 36,
     marginTop: 14,
   },
   hint: {
-    color: HalcyonColors.textSecondary,
+    color: PassageColors.textSecondary,
     fontFamily: AppFonts.sansRegular,
     fontSize: 13,
     lineHeight: 20,

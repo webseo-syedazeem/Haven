@@ -6,7 +6,7 @@ import { RequireAuth } from '@/components/RequireAuth';
 import { FieldError, RevealToggle, SettingsField } from '@/components/SettingsField';
 import { SettingsPrimaryButton, SettingsScreen } from '@/components/SettingsScreen';
 import { Toast, useToast } from '@/components/Toast';
-import { HalcyonColors } from '@/constants/design';
+import { PassageColors } from '@/constants/design';
 import { useChangePassword } from '@/hooks/useUser';
 import {
   parseAuthError,
@@ -131,7 +131,7 @@ function UpdatePasswordContent() {
           label="Update password"
           onPress={handleUpdate}>
           {changePassword.isPending ? (
-            <ActivityIndicator color={HalcyonColors.background} />
+            <ActivityIndicator color={PassageColors.background} />
           ) : undefined}
         </SettingsPrimaryButton>
       </KeyboardAvoidingView>

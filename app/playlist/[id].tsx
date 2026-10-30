@@ -10,10 +10,10 @@ import { PlaylistFormSheet } from '@/components/PlaylistFormSheet';
 import { SoundscapeRow, SoundscapeRowSkeletonList } from '@/components/SoundscapeRow';
 import { Toast, useToast } from '@/components/Toast';
 import {
-  HalcyonColors,
-  HalcyonModal,
-  HalcyonRadius,
-  HalcyonSpacing,
+  PassageColors,
+  PassageModal,
+  PassageRadius,
+  PassageSpacing,
 } from '@/constants/design';
 import { AppFonts } from '@/constants/theme';
 import { useBottomSafeSpacing } from '@/hooks/use-bottom-safe-spacing';
@@ -155,7 +155,7 @@ function PlaylistScreenContent() {
             hitSlop={10}
             onPress={() => router.back()}
             style={({ pressed }) => [styles.iconButton, pressed && styles.pressed]}>
-            <Ionicons color={HalcyonColors.textPrimary} name="chevron-back" size={22} />
+            <Ionicons color={PassageColors.textPrimary} name="chevron-back" size={22} />
           </Pressable>
 
           {!!playlist && (
@@ -166,7 +166,7 @@ function PlaylistScreenContent() {
               onPress={() => setMenuVisible(true)}
               style={({ pressed }) => [styles.iconButton, pressed && styles.pressed]}>
               <Ionicons
-                color={HalcyonColors.textPrimary}
+                color={PassageColors.textPrimary}
                 name="ellipsis-horizontal"
                 size={21}
               />
@@ -215,7 +215,7 @@ function PlaylistScreenContent() {
                     pressed && styles.playAllPressed,
                     tracks.length === 0 && styles.disabled,
                   ]}>
-                  <Ionicons color={HalcyonColors.background} name="play" size={17} />
+                  <Ionicons color={PassageColors.background} name="play" size={17} />
                   <Text style={styles.playAllLabel}>Play All</Text>
                 </Pressable>
               </View>
@@ -243,7 +243,7 @@ function PlaylistScreenContent() {
                         hitSlop={6}
                         onPress={() => move(index, -1)}>
                         <Ionicons
-                          color={index === 0 ? HalcyonColors.skeleton : HalcyonColors.textSecondary}
+                          color={index === 0 ? PassageColors.skeleton : PassageColors.textSecondary}
                           name="chevron-up"
                           size={16}
                         />
@@ -257,8 +257,8 @@ function PlaylistScreenContent() {
                         <Ionicons
                           color={
                             index === order.length - 1
-                              ? HalcyonColors.skeleton
-                              : HalcyonColors.textSecondary
+                              ? PassageColors.skeleton
+                              : PassageColors.textSecondary
                           }
                           name="chevron-down"
                           size={16}
@@ -278,7 +278,7 @@ function PlaylistScreenContent() {
                       onPress={() => handleRemove(item.soundscape_id)}
                       style={styles.removeButton}>
                       <Ionicons
-                        color={HalcyonColors.textSecondary}
+                        color={PassageColors.textSecondary}
                         name="remove-circle-outline"
                         size={19}
                       />
@@ -314,7 +314,7 @@ function PlaylistScreenContent() {
               setEditVisible(true);
             }}
             style={({ pressed }) => [styles.menuRow, pressed && styles.pressed]}>
-            <Ionicons color={HalcyonColors.textPrimary} name="create-outline" size={19} />
+            <Ionicons color={PassageColors.textPrimary} name="create-outline" size={19} />
             <Text style={styles.menuLabel}>Edit playlist</Text>
           </Pressable>
           <Pressable
@@ -322,7 +322,7 @@ function PlaylistScreenContent() {
             accessibilityRole="button"
             onPress={confirmDelete}
             style={({ pressed }) => [styles.menuRow, pressed && styles.pressed]}>
-            <Ionicons color={HalcyonColors.accent} name="trash-outline" size={19} />
+            <Ionicons color={PassageColors.accent} name="trash-outline" size={19} />
             <Text style={[styles.menuLabel, styles.menuLabelDanger]}>Delete playlist</Text>
           </Pressable>
         </View>
@@ -343,7 +343,7 @@ function PlaylistScreenContent() {
 
 const styles = StyleSheet.create({
   screen: {
-    backgroundColor: HalcyonColors.background,
+    backgroundColor: PassageColors.background,
     flex: 1,
   },
   background: {
@@ -358,7 +358,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     flexDirection: 'row',
     justifyContent: 'space-between',
-    paddingHorizontal: HalcyonSpacing.screenX,
+    paddingHorizontal: PassageSpacing.screenX,
     paddingTop: 6,
   },
   iconButton: {
@@ -376,25 +376,25 @@ const styles = StyleSheet.create({
   },
   header: {
     paddingBottom: 18,
-    paddingHorizontal: HalcyonSpacing.screenX,
+    paddingHorizontal: PassageSpacing.screenX,
     paddingTop: 10,
   },
   title: {
-    color: HalcyonColors.textPrimary,
+    color: PassageColors.textPrimary,
     fontFamily: AppFonts.displaySemiBold,
     fontSize: 30,
     fontWeight: '600',
     lineHeight: 38,
   },
   meta: {
-    color: HalcyonColors.textSecondary,
+    color: PassageColors.textSecondary,
     fontFamily: AppFonts.sansRegular,
     fontSize: 13,
     lineHeight: 18,
     marginTop: 4,
   },
   description: {
-    color: HalcyonColors.textSecondary,
+    color: PassageColors.textSecondary,
     fontFamily: AppFonts.sansRegular,
     fontSize: 14,
     lineHeight: 20,
@@ -402,8 +402,8 @@ const styles = StyleSheet.create({
   },
   playAll: {
     alignItems: 'center',
-    backgroundColor: HalcyonColors.accent,
-    borderRadius: HalcyonRadius.pill,
+    backgroundColor: PassageColors.accent,
+    borderRadius: PassageRadius.pill,
     columnGap: 8,
     flexDirection: 'row',
     justifyContent: 'center',
@@ -411,10 +411,10 @@ const styles = StyleSheet.create({
     paddingVertical: 13,
   },
   playAllPressed: {
-    backgroundColor: HalcyonColors.accentPressed,
+    backgroundColor: PassageColors.accentPressed,
   },
   playAllLabel: {
-    color: HalcyonColors.background,
+    color: PassageColors.background,
     fontFamily: AppFonts.sansSemiBold,
     fontSize: 15,
     fontWeight: '600',
@@ -432,16 +432,16 @@ const styles = StyleSheet.create({
     width: 34,
   },
   menuBackdrop: {
-    backgroundColor: HalcyonModal.backdrop,
+    backgroundColor: PassageModal.backdrop,
     flex: 1,
   },
   menu: {
-    backgroundColor: HalcyonColors.surface,
-    borderTopColor: HalcyonColors.border,
-    borderTopLeftRadius: HalcyonRadius.sheet,
-    borderTopRightRadius: HalcyonRadius.sheet,
+    backgroundColor: PassageColors.surface,
+    borderTopColor: PassageColors.border,
+    borderTopLeftRadius: PassageRadius.sheet,
+    borderTopRightRadius: PassageRadius.sheet,
     borderTopWidth: 1,
-    paddingHorizontal: HalcyonSpacing.screenX,
+    paddingHorizontal: PassageSpacing.screenX,
     paddingTop: 12,
   },
   menuRow: {
@@ -451,12 +451,12 @@ const styles = StyleSheet.create({
     minHeight: 54,
   },
   menuLabel: {
-    color: HalcyonColors.textPrimary,
+    color: PassageColors.textPrimary,
     fontFamily: AppFonts.sansRegular,
     fontSize: 15,
     lineHeight: 21,
   },
   menuLabelDanger: {
-    color: HalcyonColors.accent,
+    color: PassageColors.accent,
   },
 });

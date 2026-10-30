@@ -2,7 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { CoverImage } from '@/components/CoverImage';
-import { HalcyonColors, HalcyonRadius } from '@/constants/design';
+import { PassageColors, PassageRadius } from '@/constants/design';
 import { AppFonts } from '@/constants/theme';
 import type { Soundscape } from '@/lib/api/home';
 import { formatDuration } from '@/lib/utils/duration';
@@ -50,7 +50,7 @@ export function SoundscapeCard({
           hitSlop={8}
           onPress={() => onPlay?.(soundscape)}
           style={({ pressed }) => [styles.playBadge, pressed && styles.playBadgePressed]}>
-          <Ionicons color={HalcyonColors.textPrimary} name="play" size={13} style={styles.playIcon} />
+          <Ionicons color={PassageColors.textPrimary} name="play" size={13} style={styles.playIcon} />
         </Pressable>
         {showFavourite && (
           <Pressable
@@ -62,7 +62,7 @@ export function SoundscapeCard({
             onPress={() => onToggleFavourite?.(soundscape, isFavourite)}
             style={({ pressed }) => [styles.favouriteBadge, pressed && styles.playBadgePressed]}>
             <Ionicons
-              color={isFavourite ? HalcyonColors.accent : HalcyonColors.textPrimary}
+              color={isFavourite ? PassageColors.accent : PassageColors.textPrimary}
               name={isFavourite ? 'heart' : 'heart-outline'}
               size={14}
             />
@@ -85,9 +85,9 @@ const styles = StyleSheet.create({
     opacity: 0.82,
   },
   artworkFrame: {
-    backgroundColor: HalcyonColors.surface,
-    borderColor: HalcyonColors.border,
-    borderRadius: HalcyonRadius.artwork,
+    backgroundColor: PassageColors.surface,
+    borderColor: PassageColors.border,
+    borderRadius: PassageRadius.artwork,
     borderWidth: 1,
     // Width and height are set dynamically via inline style
     overflow: 'hidden',
@@ -97,7 +97,7 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   artworkFallback: {
-    backgroundColor: HalcyonColors.surfaceRaised,
+    backgroundColor: PassageColors.surfaceRaised,
   },
   playBadge: {
     alignItems: 'center',
@@ -132,7 +132,7 @@ const styles = StyleSheet.create({
     marginLeft: 2,
   },
   title: {
-    color: HalcyonColors.textPrimary,
+    color: PassageColors.textPrimary,
     fontFamily: AppFonts.sansMedium,
     fontSize: 13,
     fontWeight: '500',
@@ -140,7 +140,7 @@ const styles = StyleSheet.create({
     marginTop: 10,
   },
   duration: {
-    color: HalcyonColors.textSecondary,
+    color: PassageColors.textSecondary,
     fontFamily: AppFonts.sansRegular,
     fontSize: 12,
     lineHeight: 16,

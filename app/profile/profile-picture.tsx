@@ -9,7 +9,7 @@ import { ProfileAvatar } from '@/components/profile/ProfileAvatar';
 import { SettingsGroup, SettingsRow } from '@/components/SettingsRow';
 import { SettingsPrimaryButton, SettingsScreen } from '@/components/SettingsScreen';
 import { Toast, useToast } from '@/components/Toast';
-import { HalcyonColors } from '@/constants/design';
+import { PassageColors } from '@/constants/design';
 import { AppFonts } from '@/constants/theme';
 import { useRemoveProfileImage, useUploadProfileImage, useUser } from '@/hooks/useUser';
 import { getDisplayName } from '@/lib/api/user';
@@ -143,9 +143,9 @@ function ProfilePictureContent() {
       title="Profile Picture">
       <View style={styles.avatarBlock}>
         <ProfileAvatar
-          iconColor={HalcyonColors.textSecondary}
+          iconColor={PassageColors.textSecondary}
           imageUrl={profileImageUrl}
-          placeholderBackgroundColor={HalcyonColors.surfaceRaised}
+          placeholderBackgroundColor={PassageColors.surfaceRaised}
           size={140}
           style={styles.avatar}
         />
@@ -157,7 +157,7 @@ function ProfilePictureContent() {
         label={hasImage ? 'Change picture' : 'Add a picture'}
         onPress={() => setSourceSheetVisible(true)}>
         {uploadImage.isPending ? (
-          <ActivityIndicator color={HalcyonColors.background} />
+          <ActivityIndicator color={PassageColors.background} />
         ) : undefined}
       </SettingsPrimaryButton>
 
@@ -194,11 +194,11 @@ const styles = StyleSheet.create({
     marginBottom: 28,
   },
   avatar: {
-    borderColor: HalcyonColors.border,
+    borderColor: PassageColors.border,
     borderWidth: 1,
   },
   name: {
-    color: HalcyonColors.textPrimary,
+    color: PassageColors.textPrimary,
     fontFamily: AppFonts.displaySemiBold,
     fontSize: 20,
     fontWeight: '600',

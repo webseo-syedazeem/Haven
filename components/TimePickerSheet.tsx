@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { SheetFrame } from '@/components/OptionSheet';
-import { HalcyonColors, HalcyonRadius } from '@/constants/design';
+import { PassageColors, PassageRadius } from '@/constants/design';
 import { AppFonts } from '@/constants/theme';
 
 const HOURS = Array.from({ length: 24 }, (_, index) => index);
@@ -153,7 +153,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   columnLabel: {
-    color: HalcyonColors.textSecondary,
+    color: PassageColors.textSecondary,
     fontFamily: AppFonts.sansMedium,
     fontSize: 12,
     fontWeight: '500',
@@ -172,35 +172,35 @@ const styles = StyleSheet.create({
     paddingVertical: 11,
   },
   optionActive: {
-    backgroundColor: HalcyonColors.accent,
+    backgroundColor: PassageColors.accent,
   },
   optionPressed: {
     opacity: 0.72,
   },
   optionLabel: {
-    color: HalcyonColors.textPrimary,
+    color: PassageColors.textPrimary,
     fontFamily: AppFonts.sansRegular,
     fontSize: 16,
     lineHeight: 22,
   },
   optionLabelActive: {
-    color: HalcyonColors.background,
+    color: PassageColors.background,
     fontFamily: AppFonts.sansSemiBold,
     fontWeight: '600',
   },
   confirm: {
     alignItems: 'center',
-    backgroundColor: HalcyonColors.accent,
-    borderRadius: HalcyonRadius.pill,
+    backgroundColor: PassageColors.accent,
+    borderRadius: PassageRadius.pill,
     justifyContent: 'center',
     marginTop: 18,
     minHeight: 50,
   },
   confirmPressed: {
-    backgroundColor: HalcyonColors.accentPressed,
+    backgroundColor: PassageColors.accentPressed,
   },
   confirmLabel: {
-    color: HalcyonColors.background,
+    color: PassageColors.background,
     fontFamily: AppFonts.sansSemiBold,
     fontSize: 15,
     fontWeight: '600',

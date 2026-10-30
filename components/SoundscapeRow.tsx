@@ -3,7 +3,7 @@ import type { ReactNode } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { CoverImage } from '@/components/CoverImage';
-import { HalcyonColors, HalcyonSpacing } from '@/constants/design';
+import { PassageColors, PassageSpacing } from '@/constants/design';
 import { AppFonts } from '@/constants/theme';
 import type { Soundscape } from '@/lib/api/home';
 import { formatDuration } from '@/lib/utils/duration';
@@ -73,7 +73,7 @@ export function SoundscapeRow({
         {!!onPlay && (
           <View style={styles.playScrim}>
             <Ionicons
-              color={HalcyonColors.textPrimary}
+              color={PassageColors.textPrimary}
               name="play"
               size={14}
               style={styles.playIcon}
@@ -104,7 +104,7 @@ export function SoundscapeRow({
             onPress={() => onToggleFavourite?.(soundscape, isFavourite)}
             style={({ pressed }) => [styles.trailingButton, pressed && styles.rowPressed]}>
             <Ionicons
-              color={isFavourite ? HalcyonColors.accent : HalcyonColors.textSecondary}
+              color={isFavourite ? PassageColors.accent : PassageColors.textSecondary}
               name={isFavourite ? 'heart' : 'heart-outline'}
               size={20}
             />
@@ -143,7 +143,7 @@ const styles = StyleSheet.create({
     columnGap: 12,
     flexDirection: 'row',
     height: SOUNDSCAPE_ROW_HEIGHT,
-    paddingHorizontal: HalcyonSpacing.screenX,
+    paddingHorizontal: PassageSpacing.screenX,
   },
   rowPressed: {
     opacity: 0.72,
@@ -154,11 +154,11 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     borderWidth: 1,
     marginBottom: 10,
-    marginHorizontal: HalcyonSpacing.screenX,
+    marginHorizontal: PassageSpacing.screenX,
     paddingHorizontal: 9,
   },
   artworkFrame: {
-    backgroundColor: HalcyonColors.surface,
+    backgroundColor: PassageColors.surface,
     borderRadius: 12,
     height: THUMBNAIL,
     overflow: 'hidden',
@@ -169,7 +169,7 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   artworkFallback: {
-    backgroundColor: HalcyonColors.surfaceRaised,
+    backgroundColor: PassageColors.surfaceRaised,
   },
   playScrim: {
     alignItems: 'center',
@@ -188,14 +188,14 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   title: {
-    color: HalcyonColors.textPrimary,
+    color: PassageColors.textPrimary,
     fontFamily: AppFonts.sansMedium,
     fontSize: 15,
     fontWeight: '500',
     lineHeight: 20,
   },
   meta: {
-    color: HalcyonColors.textSecondary,
+    color: PassageColors.textSecondary,
     fontFamily: AppFonts.sansRegular,
     fontSize: 12,
     lineHeight: 17,
@@ -208,11 +208,11 @@ const styles = StyleSheet.create({
     width: 40,
   },
   skeletonBlock: {
-    backgroundColor: HalcyonColors.skeleton,
+    backgroundColor: PassageColors.skeleton,
     borderWidth: 0,
   },
   skeletonLine: {
-    backgroundColor: HalcyonColors.skeleton,
+    backgroundColor: PassageColors.skeleton,
     borderRadius: 4,
     height: 11,
   },

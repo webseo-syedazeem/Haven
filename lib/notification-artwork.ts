@@ -12,7 +12,7 @@ import { Platform } from 'react-native';
  * is the form the native side reads fastest.
  *
  * The cache directory is used on purpose: these are disposable, and the OS may
- * reclaim them. Permanent downloads keep their own cover (`artwork_uri`).
+ * reclaim them.
  */
 
 const FOLDER = 'notification-artwork';

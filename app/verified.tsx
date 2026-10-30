@@ -4,7 +4,7 @@ import { ActivityIndicator, BackHandler, StyleSheet, Text } from 'react-native';
 
 import { OnboardingContinueButton } from '@/components/onboarding/OnboardingContinueButton';
 import { OnboardingScaffold } from '@/components/onboarding/OnboardingScaffold';
-import { HalcyonColors, Typography } from '@/constants/design';
+import { PassageColors, Typography } from '@/constants/design';
 import { hasEmailIdentity, isEmailConfirmed } from '@/lib/auth/complete-auth';
 import { routeAfterSignIn } from '@/lib/auth/onboarding-routing';
 import { resetToMainApp } from '@/lib/navigation';
@@ -90,7 +90,7 @@ export default function VerifiedScreen() {
         backgroundOverlayColor="rgba(7, 11, 16, 0.30)"
         contentContainerStyle={styles.content}
         scroll={false}>
-        <ActivityIndicator color={HalcyonColors.accent} size="small" />
+        <ActivityIndicator color={PassageColors.accent} size="small" />
       </OnboardingScaffold>
     );
   }

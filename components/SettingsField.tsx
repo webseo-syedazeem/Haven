@@ -10,7 +10,7 @@ import {
   type TextInputProps,
 } from 'react-native';
 
-import { HalcyonColors, HalcyonRadius } from '@/constants/design';
+import { PassageColors, PassageRadius } from '@/constants/design';
 import { AppFonts } from '@/constants/theme';
 
 /** Web draws its own focus ring over the card border; the card is the affordance. */
@@ -43,7 +43,7 @@ export const SettingsField = forwardRef<TextInput, SettingsFieldProps>(function 
         <View style={styles.row}>
           <TextInput
             editable={editable}
-            placeholderTextColor={HalcyonColors.textSecondary}
+            placeholderTextColor={PassageColors.textSecondary}
             ref={ref}
             {...inputProps}
             multiline={multiline}
@@ -73,7 +73,7 @@ export function RevealToggle({ shown, onPress }: { shown: boolean; onPress: () =
       hitSlop={10}
       onPress={onPress}>
       <Ionicons
-        color={HalcyonColors.textSecondary}
+        color={PassageColors.textSecondary}
         name={shown ? 'eye-off-outline' : 'eye-outline'}
         size={18}
       />
@@ -92,9 +92,9 @@ const styles = StyleSheet.create({
     marginBottom: 14,
   },
   card: {
-    backgroundColor: HalcyonColors.surface,
-    borderColor: HalcyonColors.border,
-    borderRadius: HalcyonRadius.card,
+    backgroundColor: PassageColors.surface,
+    borderColor: PassageColors.border,
+    borderRadius: PassageRadius.card,
     borderWidth: 1,
     paddingHorizontal: 16,
     paddingVertical: 12,
@@ -106,7 +106,7 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(211,137,126,0.78)',
   },
   label: {
-    color: HalcyonColors.textSecondary,
+    color: PassageColors.textSecondary,
     fontFamily: AppFonts.sansMedium,
     fontSize: 12,
     fontWeight: '500',
@@ -120,7 +120,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
   },
   input: {
-    color: HalcyonColors.textPrimary,
+    color: PassageColors.textPrimary,
     flex: 1,
     fontFamily: AppFonts.sansRegular,
     fontSize: 15,
@@ -133,10 +133,10 @@ const styles = StyleSheet.create({
     textAlignVertical: 'top',
   },
   inputReadOnly: {
-    color: HalcyonColors.textSecondary,
+    color: PassageColors.textSecondary,
   },
   hint: {
-    color: HalcyonColors.textSecondary,
+    color: PassageColors.textSecondary,
     fontFamily: AppFonts.sansRegular,
     fontSize: 12,
     lineHeight: 17,
@@ -144,7 +144,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 4,
   },
   error: {
-    color: HalcyonColors.accent,
+    color: PassageColors.accent,
     fontFamily: AppFonts.sansRegular,
     fontSize: 13,
     lineHeight: 18,

@@ -21,10 +21,10 @@ import { PlaylistPickerSheet } from '@/components/PlaylistPickerSheet';
 import { TimerSheet } from '@/components/TimerSheet';
 import { Toast, useToast } from '@/components/Toast';
 import {
-  HalcyonColors,
-  HalcyonModal,
-  HalcyonRadius,
-  HalcyonSpacing,
+  PassageColors,
+  PassageModal,
+  PassageRadius,
+  PassageSpacing,
 } from '@/constants/design';
 import { getModeLabel } from '@/constants/modes';
 import { formatTimerCountdown, formatTimerLabel, UNTIL_I_STOP } from '@/constants/timers';
@@ -138,7 +138,7 @@ export default function PlayerScreen() {
             hitSlop={10}
             onPress={() => router.back()}
             style={({ pressed }) => [styles.iconButton, pressed && styles.pressed]}>
-            <Ionicons color={HalcyonColors.textPrimary} name="chevron-down" size={28} />
+            <Ionicons color={PassageColors.textPrimary} name="chevron-down" size={28} />
           </Pressable>
 
           <View style={styles.topBarRight}>
@@ -149,7 +149,7 @@ export default function PlayerScreen() {
               onPress={() => toggleFavourite(soundscape, isFavourite)}
               style={({ pressed }) => [styles.iconButton, pressed && styles.pressed]}>
               <Ionicons
-                color={isFavourite ? HalcyonColors.accent : HalcyonColors.textPrimary}
+                color={isFavourite ? PassageColors.accent : PassageColors.textPrimary}
                 name={isFavourite ? 'heart' : 'heart-outline'}
                 size={26}
               />
@@ -160,7 +160,7 @@ export default function PlayerScreen() {
               hitSlop={10}
               onPress={() => setMenuVisible(true)}
               style={({ pressed }) => [styles.iconButton, pressed && styles.pressed]}>
-              <Ionicons color={HalcyonColors.textPrimary} name="ellipsis-horizontal" size={21} />
+              <Ionicons color={PassageColors.textPrimary} name="ellipsis-horizontal" size={21} />
             </Pressable>
           </View>
         </View>
@@ -185,7 +185,7 @@ export default function PlayerScreen() {
                   hitSlop={10}
                   onPress={() => void togglePlayPause()}
                   style={({ pressed }) => [styles.retryButton, pressed && styles.pressed]}>
-                  <Ionicons color={HalcyonColors.accent} name="refresh" size={14} />
+                  <Ionicons color={PassageColors.accent} name="refresh" size={14} />
                   <Text style={styles.retryLabel}>Try again</Text>
                 </Pressable>
               )}
@@ -229,7 +229,7 @@ export default function PlayerScreen() {
                   pressed && styles.pressed,
                 ]}>
                 <Ionicons
-                  color={hasPrevious ? HalcyonColors.textPrimary : HalcyonColors.textSecondary}
+                  color={hasPrevious ? PassageColors.textPrimary : PassageColors.textSecondary}
                   name="play-skip-back"
                   size={26}
                 />
@@ -241,10 +241,10 @@ export default function PlayerScreen() {
                 onPress={() => void togglePlayPause()}
                 style={({ pressed }) => [styles.playButton, pressed && styles.playButtonPressed]}>
                 {isBuffering && !isPlaying ? (
-                  <ActivityIndicator color={HalcyonColors.background} />
+                  <ActivityIndicator color={PassageColors.background} />
                 ) : (
                   <Ionicons
-                    color={HalcyonColors.background}
+                    color={PassageColors.background}
                     name={isPlaying ? 'pause' : 'play'}
                     size={34}
                     style={isPlaying ? undefined : styles.playIcon}
@@ -265,7 +265,7 @@ export default function PlayerScreen() {
                   pressed && styles.pressed,
                 ]}>
                 <Ionicons
-                  color={hasNext ? HalcyonColors.textPrimary : HalcyonColors.textSecondary}
+                  color={hasNext ? PassageColors.textPrimary : PassageColors.textSecondary}
                   name="play-skip-forward"
                   size={26}
                 />
@@ -278,7 +278,7 @@ export default function PlayerScreen() {
                 accessibilityRole="button"
                 onPress={() => setTimerVisible(true)}
                 style={({ pressed }) => [styles.settingPill, pressed && styles.pressed]}>
-                <Ionicons color={HalcyonColors.textPrimary} name="stopwatch-outline" size={22} />
+                <Ionicons color={PassageColors.textPrimary} name="stopwatch-outline" size={22} />
                 <View style={styles.pillCopy}>
                   <Text numberOfLines={1} style={styles.pillLabel}>Timer</Text>
                   <Text
@@ -289,7 +289,7 @@ export default function PlayerScreen() {
                     {timerLabel}
                   </Text>
                 </View>
-                <Ionicons color={HalcyonColors.textSecondary} name="chevron-forward" size={16} />
+                <Ionicons color={PassageColors.textSecondary} name="chevron-forward" size={16} />
               </Pressable>
               <Pressable
                 accessibilityLabel="Continuous loop"
@@ -297,7 +297,7 @@ export default function PlayerScreen() {
                 accessibilityState={{ checked: loopEnabled }}
                 onPress={toggleLoop}
                 style={({ pressed }) => [styles.settingPill, pressed && styles.pressed]}>
-                <Ionicons color={HalcyonColors.textPrimary} name="repeat" size={22} />
+                <Ionicons color={PassageColors.textPrimary} name="repeat" size={22} />
                 <View style={styles.pillCopy}>
                   <Text
                     adjustsFontSizeToFit
@@ -318,7 +318,7 @@ export default function PlayerScreen() {
               accessibilityRole="button"
               onPress={() => setPlaylistSheetVisible(true)}
               style={({ pressed }) => [styles.playlistButton, pressed && styles.pressed]}>
-              <Ionicons color={HalcyonColors.textPrimary} name="list-outline" size={26} />
+              <Ionicons color={PassageColors.textPrimary} name="list-outline" size={26} />
               <Text style={styles.playlistLabel}>Playlist</Text>
             </Pressable>
           </View>
@@ -408,7 +408,7 @@ function MenuRow({
       accessibilityRole="button"
       onPress={onPress}
       style={({ pressed }) => [styles.menuRow, pressed && styles.pressed]}>
-      <Ionicons color={HalcyonColors.textPrimary} name={icon} size={19} />
+      <Ionicons color={PassageColors.textPrimary} name={icon} size={19} />
       <Text style={styles.menuLabel}>{label}</Text>
     </Pressable>
   );
@@ -418,7 +418,7 @@ const PLAYER_GOLD = '#E2BB88';
 
 const styles = StyleSheet.create({
   screen: {
-    backgroundColor: HalcyonColors.background,
+    backgroundColor: PassageColors.background,
     flex: 1,
   },
   safeArea: {
@@ -430,17 +430,17 @@ const styles = StyleSheet.create({
   emptyScreen: {
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: HalcyonSpacing.screenX,
+    paddingHorizontal: PassageSpacing.screenX,
   },
   emptyTitle: {
-    color: HalcyonColors.textPrimary,
+    color: PassageColors.textPrimary,
     fontFamily: AppFonts.displaySemiBold,
     fontSize: 24,
     fontWeight: '600',
     lineHeight: 32,
   },
   emptyBody: {
-    color: HalcyonColors.textSecondary,
+    color: PassageColors.textSecondary,
     fontFamily: AppFonts.sansRegular,
     fontSize: 14,
     lineHeight: 20,
@@ -448,15 +448,15 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   emptyButton: {
-    borderColor: HalcyonColors.border,
-    borderRadius: HalcyonRadius.pill,
+    borderColor: PassageColors.border,
+    borderRadius: PassageRadius.pill,
     borderWidth: 1,
     marginTop: 24,
     paddingHorizontal: 28,
     paddingVertical: 12,
   },
   emptyButtonLabel: {
-    color: HalcyonColors.textPrimary,
+    color: PassageColors.textPrimary,
     fontFamily: AppFonts.sansMedium,
     fontSize: 15,
     fontWeight: '500',
@@ -466,7 +466,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     flexDirection: 'row',
     justifyContent: 'space-between',
-    paddingHorizontal: HalcyonSpacing.screenX,
+    paddingHorizontal: PassageSpacing.screenX,
     paddingTop: 6,
   },
   topBarRight: {
@@ -485,7 +485,7 @@ const styles = StyleSheet.create({
   },
   body: {
     flexGrow: 1,
-    paddingHorizontal: HalcyonSpacing.screenX,
+    paddingHorizontal: PassageSpacing.screenX,
     paddingTop: 20,
   },
   artworkSpace: { flexGrow: 1 },
@@ -501,7 +501,7 @@ const styles = StyleSheet.create({
   },
   titleCompact: { fontSize: 36, lineHeight: 38 },
   error: {
-    color: HalcyonColors.accent,
+    color: PassageColors.accent,
     fontFamily: AppFonts.sansRegular,
     fontSize: 13,
     lineHeight: 18,
@@ -510,8 +510,8 @@ const styles = StyleSheet.create({
   retryButton: {
     alignItems: 'center',
     alignSelf: 'center',
-    borderColor: HalcyonColors.accent,
-    borderRadius: HalcyonRadius.pill,
+    borderColor: PassageColors.accent,
+    borderRadius: PassageRadius.pill,
     borderWidth: 1,
     columnGap: 6,
     flexDirection: 'row',
@@ -520,7 +520,7 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
   },
   retryLabel: {
-    color: HalcyonColors.accent,
+    color: PassageColors.accent,
     fontFamily: AppFonts.sansMedium,
     fontSize: 13,
     fontWeight: '500',
@@ -539,7 +539,7 @@ const styles = StyleSheet.create({
     marginTop: -4,
   },
   time: {
-    color: HalcyonColors.textSecondary,
+    color: PassageColors.textSecondary,
     fontFamily: AppFonts.sansRegular,
     fontSize: 12,
     lineHeight: 16,
@@ -569,7 +569,7 @@ const styles = StyleSheet.create({
     width: 84,
   },
   playButtonPressed: {
-    backgroundColor: HalcyonColors.accentPressed,
+    backgroundColor: PassageColors.accentPressed,
   },
   playIcon: {
     marginLeft: 4,
@@ -605,15 +605,15 @@ const styles = StyleSheet.create({
   },
   menuBackdrop: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: HalcyonModal.backdrop,
+    backgroundColor: PassageModal.backdrop,
   },
   menu: {
-    backgroundColor: HalcyonColors.surface,
-    borderTopColor: HalcyonColors.border,
-    borderTopLeftRadius: HalcyonRadius.sheet,
-    borderTopRightRadius: HalcyonRadius.sheet,
+    backgroundColor: PassageColors.surface,
+    borderTopColor: PassageColors.border,
+    borderTopLeftRadius: PassageRadius.sheet,
+    borderTopRightRadius: PassageRadius.sheet,
     borderTopWidth: 1,
-    paddingHorizontal: HalcyonSpacing.screenX,
+    paddingHorizontal: PassageSpacing.screenX,
     paddingTop: 12,
   },
   menuRow: {
@@ -623,7 +623,7 @@ const styles = StyleSheet.create({
     minHeight: 54,
   },
   menuLabel: {
-    color: HalcyonColors.textPrimary,
+    color: PassageColors.textPrimary,
     fontFamily: AppFonts.sansRegular,
     fontSize: 15,
     lineHeight: 21,

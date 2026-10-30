@@ -81,7 +81,7 @@ function createClientHarness(responses) {
       if (id === '@/lib/auth/offline-session') {
         return { markLoggedOut: async () => {} };
       }
-      if (id === '@/lib/haven-api') {
+      if (id === '@/lib/passage-api') {
         return {
           clearAuthTokens: () => {},
           getAccessToken: () => null,

@@ -3,10 +3,10 @@ import { Modal, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import {
-  HalcyonColors,
-  HalcyonModal,
-  HalcyonRadius,
-  HalcyonSpacing,
+  PassageColors,
+  PassageModal,
+  PassageRadius,
+  PassageSpacing,
   Typography,
 } from '@/constants/design';
 import { SORT_OPTIONS, type SortValue } from '@/constants/filters';
@@ -42,7 +42,7 @@ export function SortSheet({ visible, value, onClose, onSelect }: SortSheetProps)
             accessibilityRole="button"
             hitSlop={10}
             onPress={onClose}>
-            <Ionicons color={HalcyonColors.textPrimary} name="close" size={22} />
+            <Ionicons color={PassageColors.textPrimary} name="close" size={22} />
           </Pressable>
         </View>
 
@@ -62,7 +62,7 @@ export function SortSheet({ visible, value, onClose, onSelect }: SortSheetProps)
               style={({ pressed }) => [styles.row, pressed && styles.rowPressed]}>
               <Text style={[styles.label, isActive && styles.labelActive]}>{option.label}</Text>
               {isActive && (
-                <Ionicons color={HalcyonColors.accent} name="checkmark" size={19} />
+                <Ionicons color={PassageColors.accent} name="checkmark" size={19} />
               )}
             </Pressable>
           );
@@ -80,15 +80,15 @@ const styles = StyleSheet.create({
   },
   backdrop: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: HalcyonModal.backdrop,
+    backgroundColor: PassageModal.backdrop,
   },
   sheet: {
-    backgroundColor: HalcyonColors.surface,
-    borderTopColor: HalcyonColors.border,
-    borderTopLeftRadius: HalcyonRadius.sheet,
-    borderTopRightRadius: HalcyonRadius.sheet,
+    backgroundColor: PassageColors.surface,
+    borderTopColor: PassageColors.border,
+    borderTopLeftRadius: PassageRadius.sheet,
+    borderTopRightRadius: PassageRadius.sheet,
     borderTopWidth: 1,
-    paddingHorizontal: HalcyonSpacing.screenX,
+    paddingHorizontal: PassageSpacing.screenX,
     paddingTop: 16,
   },
   header: {
@@ -110,13 +110,13 @@ const styles = StyleSheet.create({
     opacity: 0.7,
   },
   label: {
-    color: HalcyonColors.textPrimary,
+    color: PassageColors.textPrimary,
     fontFamily: AppFonts.sansRegular,
     fontSize: 15,
     lineHeight: 21,
   },
   labelActive: {
-    color: HalcyonColors.accent,
+    color: PassageColors.accent,
     fontFamily: AppFonts.sansMedium,
     fontWeight: '500',
   },

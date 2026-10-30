@@ -1,6 +1,6 @@
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
-import { HalcyonColors, HalcyonSpacing } from '@/constants/design';
+import { PassageColors, PassageSpacing } from '@/constants/design';
 import { AppFonts } from '@/constants/theme';
 
 export type Segment<T extends string> = { value: T; label: string };
@@ -54,7 +54,7 @@ const styles = StyleSheet.create({
   },
   content: {
     columnGap: 24,
-    paddingHorizontal: HalcyonSpacing.screenX,
+    paddingHorizontal: PassageSpacing.screenX,
   },
   segment: {
     alignItems: 'center',
@@ -64,7 +64,7 @@ const styles = StyleSheet.create({
     opacity: 0.7,
   },
   label: {
-    color: HalcyonColors.textSecondary,
+    color: PassageColors.textSecondary,
     fontFamily: AppFonts.sansMedium,
     fontSize: 14,
     fontWeight: '500',
@@ -72,7 +72,7 @@ const styles = StyleSheet.create({
     paddingBottom: 10,
   },
   labelActive: {
-    color: HalcyonColors.accent,
+    color: PassageColors.accent,
   },
   underline: {
     backgroundColor: 'transparent',
@@ -81,10 +81,10 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   underlineActive: {
-    backgroundColor: HalcyonColors.accent,
+    backgroundColor: PassageColors.accent,
   },
   hairline: {
-    backgroundColor: HalcyonColors.border,
+    backgroundColor: PassageColors.border,
     bottom: 0,
     height: 1,
     left: 0,

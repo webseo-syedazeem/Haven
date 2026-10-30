@@ -35,7 +35,7 @@ import {
 } from '@/lib/local-settings';
 import { queryClient } from '@/lib/query-client';
 import { engine } from './engine';
-import { hasLocalSource, toPlayableTrack } from './types';
+import { toPlayableTrack } from './types';
 
 const PERSIST_DEBOUNCE_MS = 900;
 const PERIODIC_PERSIST_MS = 15000;
@@ -46,7 +46,6 @@ const UNAVAILABLE_MESSAGE =
     ? 'Playback is not available on web yet.'
     : 'Audio needs the Passage dev build — it cannot run in Expo Go.';
 const STALLED_MESSAGE = 'Playback stopped unexpectedly. Check your connection and try again.';
-const LOCAL_FAILURE_MESSAGE = 'This soundscape could not be played.';
 const PLAY_HISTORY_LIMIT = 50;
 const GUEST_PLAYER_STATE_STORAGE_KEY = 'passage.guest.player-state.v1';
 
@@ -624,8 +623,7 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
           ...current,
           isPlaying: false,
           isBuffering: false,
-          error:
-            soundscape && hasLocalSource(soundscape.id) ? LOCAL_FAILURE_MESSAGE : STALLED_MESSAGE,
+          error: STALLED_MESSAGE,
           canRetry: true,
         }));
         refreshResumable();
@@ -845,9 +843,7 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
           isPlaying: false,
           // Audio-session errors and stream errors both arrive here. Do not
           // incorrectly describe every native failure as a network outage.
-          error: hasLocalSource(soundscape.id)
-            ? LOCAL_FAILURE_MESSAGE
-            : 'Audio could not start. Check your connection and try again.',
+          error: 'Audio could not start. Check your connection and try again.',
           canRetry: true,
         }));
         return false;

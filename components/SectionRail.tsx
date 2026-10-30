@@ -2,7 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import type { ReactNode } from 'react';
 
-import { HalcyonColors, HalcyonRadius, HalcyonSpacing, Typography } from '@/constants/design';
+import { PassageColors, PassageRadius, PassageSpacing, Typography } from '@/constants/design';
 import { AppFonts } from '@/constants/theme';
 
 const SKELETON_COUNT = 3;
@@ -54,7 +54,7 @@ export function SectionRail<T>({
   
   // Calculate dynamic card width for grid layout - always use 2 columns to fill width
   const gridItemWidth = layout === 'grid'
-    ? (screenWidth - HalcyonSpacing.screenX * 2 - 14) / 2
+    ? (screenWidth - PassageSpacing.screenX * 2 - 14) / 2
     : itemWidth;
   
   // A refetch that failed while cached rows are on screen is not worth a
@@ -79,7 +79,7 @@ export function SectionRail<T>({
             style={({ pressed }) => [styles.seeAllButton, pressed && styles.seeAllPressed]}>
             <Text style={styles.seeAll}>{seeAllLabel}</Text>
             <Ionicons 
-              color={HalcyonColors.accent} 
+              color={PassageColors.accent}
               name={seeAllLabel === 'Show less' ? 'chevron-down' : 'chevron-forward'} 
               size={14} 
             />
@@ -136,14 +136,14 @@ export function SectionRail<T>({
 
 const styles = StyleSheet.create({
   section: {
-    marginTop: HalcyonSpacing.section,
+    marginTop: PassageSpacing.section,
   },
   header: {
     alignItems: 'center',
     flexDirection: 'row',
     justifyContent: 'space-between',
     marginBottom: 14,
-    paddingHorizontal: HalcyonSpacing.screenX,
+    paddingHorizontal: PassageSpacing.screenX,
   },
   title: {
     ...Typography.sectionHeading,
@@ -156,7 +156,7 @@ const styles = StyleSheet.create({
     gap: 2,
   },
   seeAll: {
-    color: HalcyonColors.accent,
+    color: PassageColors.accent,
     fontFamily: AppFonts.sansMedium,
     fontSize: 13,
     fontWeight: '500',
@@ -167,26 +167,26 @@ const styles = StyleSheet.create({
   },
   rowContent: {
     columnGap: 14,
-    paddingHorizontal: HalcyonSpacing.screenX,
+    paddingHorizontal: PassageSpacing.screenX,
   },
   row: {
     columnGap: 14,
     flexDirection: 'row',
-    paddingHorizontal: HalcyonSpacing.screenX,
+    paddingHorizontal: PassageSpacing.screenX,
   },
   grid: {
     columnGap: 14,
     flexDirection: 'row',
     flexWrap: 'wrap',
-    paddingHorizontal: HalcyonSpacing.screenX,
+    paddingHorizontal: PassageSpacing.screenX,
     rowGap: 18,
   },
   skeletonBlock: {
-    backgroundColor: HalcyonColors.skeleton,
-    borderRadius: HalcyonRadius.artwork,
+    backgroundColor: PassageColors.skeleton,
+    borderRadius: PassageRadius.artwork,
   },
   skeletonLine: {
-    backgroundColor: HalcyonColors.skeleton,
+    backgroundColor: PassageColors.skeleton,
     borderRadius: 4,
     height: 10,
   },
@@ -199,19 +199,19 @@ const styles = StyleSheet.create({
     width: '46%',
   },
   note: {
-    color: HalcyonColors.textSecondary,
+    color: PassageColors.textSecondary,
     fontFamily: AppFonts.sansRegular,
     fontSize: 13,
     lineHeight: 18,
-    paddingHorizontal: HalcyonSpacing.screenX,
+    paddingHorizontal: PassageSpacing.screenX,
   },
   emptyTitle: {
-    color: HalcyonColors.textPrimary,
+    color: PassageColors.textPrimary,
     fontFamily: AppFonts.sansMedium,
     fontSize: 14,
     fontWeight: '500',
     lineHeight: 19,
-    paddingHorizontal: HalcyonSpacing.screenX,
+    paddingHorizontal: PassageSpacing.screenX,
   },
   emptyNote: {
     marginTop: 3,

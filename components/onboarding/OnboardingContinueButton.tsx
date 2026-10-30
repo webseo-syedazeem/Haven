@@ -9,7 +9,7 @@ import {
   type ViewStyle,
 } from 'react-native';
 
-import { HalcyonColors, HalcyonRadius } from '@/constants/design';
+import { PassageColors, PassageRadius } from '@/constants/design';
 import { AppFonts } from '@/constants/theme';
 import { useSinglePress } from '@/hooks/useSinglePress';
 
@@ -44,10 +44,10 @@ export function OnboardingContinueButton({
   const usesCustomAccent = Boolean(accentColor);
   const labelColor =
     variant === 'secondary'
-      ? HalcyonColors.textPrimary
+      ? PassageColors.textPrimary
       : isAmber || isLavender
         ? '#0B0B0D'
-        : HalcyonColors.background;
+        : PassageColors.background;
 
   return (
     <Pressable
@@ -105,8 +105,8 @@ const styles = StyleSheet.create({
   },
   button: {
     alignItems: 'center',
-    backgroundColor: HalcyonColors.accent,
-    borderRadius: HalcyonRadius.card,
+    backgroundColor: PassageColors.accent,
+    borderRadius: PassageRadius.card,
     justifyContent: 'center',
     minHeight: 60,
     paddingHorizontal: 20,
@@ -116,7 +116,7 @@ const styles = StyleSheet.create({
     opacity: 0.42,
   },
   label: {
-    color: HalcyonColors.background,
+    color: PassageColors.background,
     fontFamily: AppFonts.sansSemiBold,
     fontSize: 16,
     fontWeight: '600',
@@ -132,19 +132,19 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
   },
   pill: {
-    borderRadius: HalcyonRadius.pill,
+    borderRadius: PassageRadius.pill,
     minHeight: 60,
   },
   pressed: {
-    backgroundColor: HalcyonColors.accentPressed,
+    backgroundColor: PassageColors.accentPressed,
     transform: [{ scale: 0.995 }],
   },
   pressedScale: {
     transform: [{ scale: 0.995 }],
   },
   secondary: {
-    backgroundColor: HalcyonColors.surface,
-    borderColor: HalcyonColors.border,
+    backgroundColor: PassageColors.surface,
+    borderColor: PassageColors.border,
     borderWidth: 1,
   },
   amber: {
@@ -162,6 +162,6 @@ const styles = StyleSheet.create({
     transform: [{ scale: 0.995 }],
   },
   secondaryLabel: {
-    color: HalcyonColors.textPrimary,
+    color: PassageColors.textPrimary,
   },
 });

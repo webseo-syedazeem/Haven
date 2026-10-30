@@ -2,7 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import type { ReactNode } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
-import { HalcyonColors, RELAX_ACCENT } from '@/constants/design';
+import { PassageColors, RELAX_ACCENT } from '@/constants/design';
 import { RELAX_ONBOARDING } from '@/constants/relax-onboarding';
 import { AppFonts } from '@/constants/theme';
 
@@ -38,7 +38,7 @@ export function RelaxChoiceRow({
       <Text style={styles.label}>{label}</Text>
       <View style={[styles.indicator, selected && styles.indicatorSelected]}>
         {selected ? (
-          <Ionicons color={HalcyonColors.background} name="checkmark" size={14} />
+          <Ionicons color={PassageColors.background} name="checkmark" size={14} />
         ) : null}
       </View>
     </Pressable>
@@ -66,7 +66,7 @@ const styles = StyleSheet.create({
     borderColor: RELAX_ACCENT,
   },
   label: {
-    color: HalcyonColors.textPrimary,
+    color: PassageColors.textPrimary,
     flex: 1,
     fontFamily: AppFonts.sansMedium,
     fontSize: RELAX_ONBOARDING.optionRow.labelFontSize,

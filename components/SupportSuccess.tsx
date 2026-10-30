@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
-import { HalcyonColors, HalcyonRadius } from '@/constants/design';
+import { PassageColors, PassageRadius } from '@/constants/design';
 import { AppFonts } from '@/constants/theme';
 
 type SupportSuccessProps = {
@@ -25,7 +25,7 @@ export function SupportSuccess({
   return (
     <View style={styles.wrapper}>
       <View style={styles.iconRing}>
-        <Ionicons color={HalcyonColors.accent} name="checkmark" size={28} />
+        <Ionicons color={PassageColors.accent} name="checkmark" size={28} />
       </View>
 
       <Text style={styles.title}>{title}</Text>
@@ -59,7 +59,7 @@ const styles = StyleSheet.create({
   },
   iconRing: {
     alignItems: 'center',
-    borderColor: HalcyonColors.accent,
+    borderColor: PassageColors.accent,
     borderRadius: 32,
     borderWidth: 1,
     height: 64,
@@ -67,7 +67,7 @@ const styles = StyleSheet.create({
     width: 64,
   },
   title: {
-    color: HalcyonColors.textPrimary,
+    color: PassageColors.textPrimary,
     fontFamily: AppFonts.displaySemiBold,
     fontSize: 22,
     fontWeight: '600',
@@ -76,7 +76,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   message: {
-    color: HalcyonColors.textSecondary,
+    color: PassageColors.textSecondary,
     fontFamily: AppFonts.sansRegular,
     fontSize: 13,
     lineHeight: 20,
@@ -86,18 +86,18 @@ const styles = StyleSheet.create({
   },
   primary: {
     alignItems: 'center',
-    backgroundColor: HalcyonColors.accent,
-    borderRadius: HalcyonRadius.pill,
+    backgroundColor: PassageColors.accent,
+    borderRadius: PassageRadius.pill,
     justifyContent: 'center',
     marginTop: 26,
     minHeight: 48,
     paddingHorizontal: 34,
   },
   primaryPressed: {
-    backgroundColor: HalcyonColors.accentPressed,
+    backgroundColor: PassageColors.accentPressed,
   },
   primaryLabel: {
-    color: HalcyonColors.background,
+    color: PassageColors.background,
     fontFamily: AppFonts.sansSemiBold,
     fontSize: 15,
     fontWeight: '600',
@@ -108,7 +108,7 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
   },
   secondaryLabel: {
-    color: HalcyonColors.textSecondary,
+    color: PassageColors.textSecondary,
     fontFamily: AppFonts.sansMedium,
     fontSize: 14,
     fontWeight: '500',

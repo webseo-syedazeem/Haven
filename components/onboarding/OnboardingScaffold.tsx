@@ -13,7 +13,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { OnboardingBrandHeader } from '@/components/onboarding/OnboardingBrandHeader';
-import { HalcyonColors } from '@/constants/design';
+import { PassageColors } from '@/constants/design';
 
 type Props = {
   backgroundImage?: ImageSourcePropType;
@@ -102,7 +102,7 @@ const styles = StyleSheet.create({
   },
   safeArea: { flex: 1 },
   screen: {
-    backgroundColor: HalcyonColors.background,
+    backgroundColor: PassageColors.background,
     flex: 1,
   },
   scrollContent: {

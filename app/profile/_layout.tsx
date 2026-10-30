@@ -1,6 +1,6 @@
 import { Stack } from 'expo-router';
 
-import { HalcyonColors } from '@/constants/design';
+import { PassageColors } from '@/constants/design';
 
 /** Every profile, settings and support screen, on one stack. */
 export default function ProfileLayout() {
@@ -8,7 +8,7 @@ export default function ProfileLayout() {
     <Stack
       screenOptions={{
         headerShown: false,
-        contentStyle: { backgroundColor: HalcyonColors.background },
+        contentStyle: { backgroundColor: PassageColors.background },
       }}>
       <Stack.Screen name="account-setting" />
       <Stack.Screen name="edit-name" />

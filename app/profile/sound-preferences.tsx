@@ -6,7 +6,7 @@ import { ChipGroup, FilterChip } from '@/components/FilterChip';
 import { RequireAuth } from '@/components/RequireAuth';
 import { SettingsScreen } from '@/components/SettingsScreen';
 import { Toast, useToast } from '@/components/Toast';
-import { HalcyonColors } from '@/constants/design';
+import { PassageColors } from '@/constants/design';
 import {
   DETAIL_LEVEL_LABELS,
   DETAIL_LEVEL_VALUES,
@@ -75,7 +75,7 @@ function SoundPreferencesContent() {
     if (isInitialLoading) {
       return (
         <View style={styles.loading}>
-          <ActivityIndicator color={HalcyonColors.accent} />
+          <ActivityIndicator color={PassageColors.accent} />
         </View>
       );
     }
@@ -189,14 +189,14 @@ const styles = StyleSheet.create({
     marginBottom: 28,
   },
   sectionTitle: {
-    color: HalcyonColors.textPrimary,
+    color: PassageColors.textPrimary,
     fontFamily: AppFonts.displaySemiBold,
     fontSize: 19,
     fontWeight: '600',
     lineHeight: 26,
   },
   sectionHint: {
-    color: HalcyonColors.textSecondary,
+    color: PassageColors.textSecondary,
     fontFamily: AppFonts.sansRegular,
     fontSize: 12,
     lineHeight: 17,
@@ -204,7 +204,7 @@ const styles = StyleSheet.create({
     marginTop: 3,
   },
   footnote: {
-    color: HalcyonColors.textSecondary,
+    color: PassageColors.textSecondary,
     fontFamily: AppFonts.sansRegular,
     fontSize: 12,
     lineHeight: 17,

@@ -16,11 +16,11 @@ import { AuthLegalFooter } from '@/components/auth/AuthLegalFooter';
 import { AuthTextField } from '@/components/auth/AuthTextField';
 import { OnboardingContinueButton } from '@/components/onboarding/OnboardingContinueButton';
 import { OnboardingScaffold } from '@/components/onboarding/OnboardingScaffold';
-import { HalcyonColors, Typography } from '@/constants/design';
+import { PassageColors, Typography } from '@/constants/design';
 import { AppFonts } from '@/constants/theme';
 import { signInWithApple } from '@/lib/apple-auth';
 import { signInWithGoogle } from '@/lib/google-auth';
-import { signIn } from '@/lib/haven-api';
+import { signIn } from '@/lib/passage-api';
 import {
   emailIssue,
   parseAuthError,
@@ -210,7 +210,7 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   divider: {
-    backgroundColor: HalcyonColors.border,
+    backgroundColor: PassageColors.border,
     flex: 1,
     height: 1,
   },
@@ -251,11 +251,11 @@ const styles = StyleSheet.create({
   },
   heading: {
     ...Typography.screenHeading,
-    color: HalcyonColors.textPrimary,
+    color: PassageColors.textPrimary,
     textAlign: 'center',
   },
   keyboardView: {
-    backgroundColor: HalcyonColors.background,
+    backgroundColor: PassageColors.background,
     flex: 1,
   },
   primaryButton: { marginTop: 6 },
@@ -266,7 +266,7 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
   },
   signupLink: {
-    color: HalcyonColors.accent,
+    color: PassageColors.accent,
     fontFamily: AppFonts.sansSemiBold,
     fontWeight: '600',
   },

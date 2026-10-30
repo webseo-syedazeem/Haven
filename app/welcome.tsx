@@ -7,7 +7,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { AuthButton } from '@/components/AuthButton';
 import { AuthLegalFooter } from '@/components/auth/AuthLegalFooter';
 import { OnboardingScaffold } from '@/components/onboarding/OnboardingScaffold';
-import { HalcyonColors, Typography } from '@/constants/design';
+import { PassageColors, Typography } from '@/constants/design';
 import { AppFonts } from '@/constants/theme';
 import { signInWithApple } from '@/lib/apple-auth';
 import { isGuestModeActive, setGuestModeActive } from '@/lib/auth/session-state';
@@ -208,7 +208,7 @@ export default function SaveYourSpaceScreen() {
         <AuthButton
           disabled={Boolean(loading)}
           iconSource={appleIcon}
-          iconTintColor={HalcyonColors.textPrimary}
+          iconTintColor={PassageColors.textPrimary}
           label="Continue with Apple"
           loading={loading === 'apple'}
           onPress={() => void handleApple()}
@@ -223,7 +223,7 @@ export default function SaveYourSpaceScreen() {
         <AuthButton
           disabled={Boolean(loading)}
           iconSource={emailIcon}
-          iconTintColor={HalcyonColors.textPrimary}
+          iconTintColor={PassageColors.textPrimary}
           label="Sign up with email"
           loading={loading === 'email'}
           onPress={() => void handleEmail()}
@@ -280,7 +280,7 @@ const styles = StyleSheet.create({
     paddingBottom: 28,
   },
   error: {
-    color: HalcyonColors.textPrimary,
+    color: PassageColors.textPrimary,
     fontFamily: AppFonts.sansRegular,
     fontSize: 12,
     lineHeight: 18,
@@ -307,7 +307,7 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
   },
   signInLink: {
-    color: HalcyonColors.accent,
+    color: PassageColors.accent,
     fontFamily: AppFonts.sansSemiBold,
     fontWeight: '600',
   },

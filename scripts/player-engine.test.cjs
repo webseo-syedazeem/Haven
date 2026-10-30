@@ -989,8 +989,8 @@ function loadTypes() {
   return module.exports;
 }
 
-test('the onboarding preview plays preview_url, falls back to file_url, and the app player keeps the full file', () => {
-  const { toPreviewTrack, toPlayableTrack, setLocalSourceResolver } = loadTypes();
+test('the onboarding preview plays preview_url, falls back to file_url, and the app player streams the full file', () => {
+  const { toPreviewTrack, toPlayableTrack } = loadTypes();
   const row = {
     id: 's1', title: 'Rain', artwork_url: ' https://example.test/s1.jpg ',
     file_url: 'https://example.test/s1.mp3', preview_url: ' https://example.test/s1-clip.mp3 ',
@@ -1012,13 +1012,10 @@ test('the onboarding preview plays preview_url, falls back to file_url, and the 
   }
   assert.equal(toPreviewTrack({ ...row, preview_url: null, file_url: '  ' }), null);
 
-  // The app-wide player is untouched: the full file, or the download when there is one.
+  // The app-wide player always uses the full streaming file.
   assert.deepEqual(plain(toPlayableTrack(row)), full);
   assert.equal(toPlayableTrack({ ...row, is_loop: true }).isLoop, true);
-  setLocalSourceResolver(() => ({ url: 'file:///saved/s1.mp3' }));
-  assert.equal(toPlayableTrack(row).url, 'file:///saved/s1.mp3');
   assert.equal(toPreviewTrack(row).url, 'https://example.test/s1-clip.mp3');
-  setLocalSourceResolver(null);
 });
 
 // ── Lock screen artwork ──────────────────────────────────────────────────────

@@ -99,7 +99,7 @@ export type OnboardingResumeRoute =
   | '/why-passage'
   | IncompleteOnboardingRoute
   | '/backed-by-science'
-  | '/onboarding/relax-ritual';
+  | '/onboarding/relax-your-fit';
 
 export const DEFAULT_GUEST_ONBOARDING_ANSWERS: GuestOnboardingAnswers = {
   mode: null,
@@ -364,7 +364,7 @@ export function getOnboardingResumeRoute(
     if (!value.main_goal) return '/onboarding/relax-main-goal';
     if (value.relax_causes.length === 0) return '/onboarding/relax-causes';
     if (!value.calming_moments) return '/onboarding/relax-calming-moments';
-    return '/onboarding/relax-ritual';
+    return '/onboarding/relax-your-fit';
   }
 
   if (value.mode_breakers.length === 0) return '/onboarding/situation';

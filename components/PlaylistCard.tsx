@@ -2,7 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { CoverImage } from '@/components/CoverImage';
-import { HalcyonColors, HalcyonRadius } from '@/constants/design';
+import { PassageColors, PassageRadius } from '@/constants/design';
 import { AppFonts } from '@/constants/theme';
 import type { Playlist } from '@/lib/api/playlists';
 
@@ -40,7 +40,7 @@ export function PlaylistCard({ playlist, collage = [], onPress, width }: Playlis
           </View>
         ) : (
           <View style={styles.placeholder}>
-            <Ionicons color={HalcyonColors.textSecondary} name="musical-notes-outline" size={26} />
+            <Ionicons color={PassageColors.textSecondary} name="musical-notes-outline" size={26} />
           </View>
         )}
       </View>
@@ -60,9 +60,9 @@ const styles = StyleSheet.create({
     opacity: 0.84,
   },
   artworkFrame: {
-    backgroundColor: HalcyonColors.surface,
-    borderColor: HalcyonColors.border,
-    borderRadius: HalcyonRadius.artwork,
+    backgroundColor: PassageColors.surface,
+    borderColor: PassageColors.border,
+    borderRadius: PassageRadius.artwork,
     borderWidth: 1,
     overflow: 'hidden',
   },
@@ -86,12 +86,12 @@ const styles = StyleSheet.create({
   },
   placeholder: {
     alignItems: 'center',
-    backgroundColor: HalcyonColors.surfaceRaised,
+    backgroundColor: PassageColors.surfaceRaised,
     flex: 1,
     justifyContent: 'center',
   },
   title: {
-    color: HalcyonColors.textPrimary,
+    color: PassageColors.textPrimary,
     fontFamily: AppFonts.sansMedium,
     fontSize: 14,
     fontWeight: '500',
@@ -99,7 +99,7 @@ const styles = StyleSheet.create({
     marginTop: 10,
   },
   meta: {
-    color: HalcyonColors.textSecondary,
+    color: PassageColors.textSecondary,
     fontFamily: AppFonts.sansRegular,
     fontSize: 12,
     lineHeight: 16,

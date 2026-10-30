@@ -7,7 +7,7 @@ import { SettingsGroup, SettingsRow } from '@/components/SettingsRow';
 import { SettingsScreen } from '@/components/SettingsScreen';
 import { formatTimeLabel, TimePickerSheet } from '@/components/TimePickerSheet';
 import { Toast, useToast } from '@/components/Toast';
-import { HalcyonColors } from '@/constants/design';
+import { PassageColors } from '@/constants/design';
 import { AppFonts } from '@/constants/theme';
 import { useNotificationSettings, useRegisterPushDevice, useUpdateNotificationSettings } from '@/hooks/usePreferences';
 import type { NotificationSettings } from '@/lib/api/preferences';
@@ -123,7 +123,7 @@ function NotificationContent() {
     if (isInitialLoading) {
       return (
         <View style={styles.loading}>
-          <ActivityIndicator color={HalcyonColors.accent} />
+          <ActivityIndicator color={PassageColors.accent} />
         </View>
       );
     }
@@ -204,14 +204,14 @@ const styles = StyleSheet.create({
     paddingVertical: 64,
   },
   explainer: {
-    color: HalcyonColors.textSecondary,
+    color: PassageColors.textSecondary,
     fontFamily: AppFonts.sansRegular,
     fontSize: 13,
     lineHeight: 19,
     marginBottom: 18,
   },
   footnote: {
-    color: HalcyonColors.textSecondary,
+    color: PassageColors.textSecondary,
     fontFamily: AppFonts.sansRegular,
     fontSize: 12,
     lineHeight: 17,

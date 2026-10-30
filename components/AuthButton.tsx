@@ -10,7 +10,7 @@ import {
   type ViewStyle,
 } from 'react-native';
 
-import { HalcyonColors, HalcyonRadius } from '@/constants/design';
+import { PassageColors, PassageRadius } from '@/constants/design';
 import { AppFonts } from '@/constants/theme';
 
 type AuthButtonProps = {
@@ -46,7 +46,7 @@ export function AuthButton({
       ]}>
       <View style={styles.iconWrap}>
         {loading ? (
-          <ActivityIndicator color={HalcyonColors.accent} size="small" />
+          <ActivityIndicator color={PassageColors.accent} size="small" />
         ) : (
           <Image
             resizeMode="contain"
@@ -66,9 +66,9 @@ export function AuthButton({
 const styles = StyleSheet.create({
   button: {
     alignItems: 'center',
-    backgroundColor: HalcyonColors.surface,
-    borderColor: HalcyonColors.border,
-    borderRadius: HalcyonRadius.card,
+    backgroundColor: PassageColors.surface,
+    borderColor: PassageColors.border,
+    borderRadius: PassageRadius.card,
     borderWidth: 1,
     flexDirection: 'row',
     minHeight: 52,
@@ -83,7 +83,7 @@ const styles = StyleSheet.create({
     width: 28,
   },
   label: {
-    color: HalcyonColors.textPrimary,
+    color: PassageColors.textPrimary,
     flex: 1,
     fontFamily: AppFonts.sansSemiBold,
     fontSize: 16,
@@ -93,7 +93,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   pressed: {
-    backgroundColor: HalcyonColors.surfaceRaised,
+    backgroundColor: PassageColors.surfaceRaised,
     transform: [{ scale: 0.995 }],
   },
   rightSpacer: { width: 28 },

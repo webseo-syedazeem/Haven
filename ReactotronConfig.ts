@@ -2,7 +2,7 @@ import Reactotron from 'reactotron-react-native';
 
 if (__DEV__) {
   Reactotron
-    .configure({ name: 'Halcyon App' })
+    .configure({ name: 'Passage App' })
     .useReactNative({
       asyncStorage: true,
       networking: {

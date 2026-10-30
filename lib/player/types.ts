@@ -92,29 +92,6 @@ export type EngineOptions = {
   releaseAudioSession?: boolean;
 };
 
-/** A copy of the soundscape already saved to this device. */
-export type LocalSource = { url: string; artwork?: string };
-
-let resolveLocalSource: ((soundscapeId: string) => LocalSource | null) | null = null;
-
-/**
- * Nothing registers a resolver any more — the permanent-downloads feature that
- * used to call this from `lib/local-downloads.ts` has been removed — so the
- * player always streams. The hook stays because removing it would mean
- * reworking `toPlayableTrack` below and the error-message branching in
- * `PlayerProvider.tsx` that still calls `hasLocalSource`, for a code path that
- * is already fully inert.
- *
- * Injected rather than imported so the player never pulls `expo-file-system`
- * into its module graph — the engine and provider tests load these files in a
- * bare VM with no native modules.
- */
-export function setLocalSourceResolver(
-  resolver: ((soundscapeId: string) => LocalSource | null) | null
-) {
-  resolveLocalSource = resolver;
-}
-
 /** Local copies of remote covers, so the lock screen never depends on its own fetch. */
 export type ArtworkCache = {
   /** The saved copy's URI, or null when there is none yet. Synchronous, so `load` never waits. */
@@ -126,8 +103,8 @@ export type ArtworkCache = {
 let artworkCache: ArtworkCache | null = null;
 
 /**
- * Registered once by `lib/startup-cleanup.ts` when it loads, for the same
- * reason as the local source resolver: the engine loads in a bare VM in tests.
+ * Registered once by `lib/startup-cleanup.ts` when it loads. The indirection
+ * keeps the engine loadable in bare-VM tests without native filesystem modules.
  * With none registered the lock screen is given the remote URL.
  */
 export function setArtworkCache(cache: ArtworkCache | null) {
@@ -138,18 +115,8 @@ export function getArtworkCache(): ArtworkCache | null {
   return artworkCache;
 }
 
-/** True when this soundscape can play with no connection. */
-export function hasLocalSource(soundscapeId: string): boolean {
-  return !!resolveLocalSource?.(soundscapeId);
-}
-
-/**
- * A downloaded soundscape plays from the file on disk, which is what makes it
- * work with no connection. Streaming is the fallback, not the default.
- */
 export function toPlayableTrack(soundscape: Soundscape): PlayableTrack | null {
-  const local = resolveLocalSource?.(soundscape.id) ?? null;
-  const url = local?.url ?? soundscape.file_url?.trim();
+  const url = soundscape.file_url?.trim();
   if (!url) return null;
 
   const remoteArtwork = soundscape.artwork_url?.trim();
@@ -160,15 +127,14 @@ export function toPlayableTrack(soundscape: Soundscape): PlayableTrack | null {
     title: soundscape.title,
     artist: 'Passage',
     isLoop: soundscape.is_loop ?? false,
-    artwork: local?.artwork ?? (remoteArtwork || undefined),
+    artwork: remoteArtwork || undefined,
     duration: soundscape.duration_seconds ?? undefined,
   };
 }
 
 /**
  * The onboarding preview plays the short clip made for it. The full file is
- * only a fallback for a row that has no clip yet, and a download is never
- * used: a saved copy is the full soundscape, not the preview.
+ * only a fallback for a row that has no clip yet.
  */
 export function toPreviewTrack(soundscape: Soundscape): PlayableTrack | null {
   const previewUrl = soundscape.preview_url?.trim();

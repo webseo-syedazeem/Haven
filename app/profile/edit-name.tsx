@@ -6,7 +6,7 @@ import { RequireAuth } from '@/components/RequireAuth';
 import { FieldError, SettingsField } from '@/components/SettingsField';
 import { SettingsPrimaryButton, SettingsScreen } from '@/components/SettingsScreen';
 import { Toast, useToast } from '@/components/Toast';
-import { HalcyonColors } from '@/constants/design';
+import { PassageColors } from '@/constants/design';
 import { useUpdateName, useUser } from '@/hooks/useUser';
 import { getFirstName, getLastName } from '@/lib/api/user';
 import { nameIssue, parseAuthError, type AuthFieldErrors } from '@/lib/auth/form-errors';
@@ -102,7 +102,7 @@ function EditNameContent() {
           label="Save"
           onPress={handleSave}>
           {updateName.isPending ? (
-            <ActivityIndicator color={HalcyonColors.background} />
+            <ActivityIndicator color={PassageColors.background} />
           ) : undefined}
         </SettingsPrimaryButton>
       </KeyboardAvoidingView>

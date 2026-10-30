@@ -3,7 +3,7 @@ import { StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { MINI_PLAYER_HEIGHT } from '@/components/MiniPlayer';
-import { HALCYON_TAB_BAR_HEIGHT, HalcyonColors, HalcyonSpacing } from '@/constants/design';
+import { PASSAGE_TAB_BAR_HEIGHT, PassageColors, PassageSpacing } from '@/constants/design';
 import { AppFonts } from '@/constants/theme';
 import { usePlayerState } from '@/lib/player/PlayerProvider';
 
@@ -20,14 +20,14 @@ export function ComingSoonScreen({
   message = "We're working on something beautiful.",
 }: ComingSoonScreenProps) {
   const { soundscape } = usePlayerState();
-  const dockHeight = HALCYON_TAB_BAR_HEIGHT + (soundscape ? MINI_PLAYER_HEIGHT : 0);
+  const dockHeight = PASSAGE_TAB_BAR_HEIGHT + (soundscape ? MINI_PLAYER_HEIGHT : 0);
 
   return (
     <View style={styles.screen}>
       <SafeAreaView edges={['top']} style={styles.safeArea}>
         <View style={[styles.content, { paddingBottom: dockHeight }]}>
           <View style={styles.iconCircle}>
-            <Ionicons color={HalcyonColors.textSecondary} name={icon} size={30} />
+            <Ionicons color={PassageColors.textSecondary} name={icon} size={30} />
           </View>
           <Text style={styles.title}>{title}</Text>
           <Text style={styles.subtitle}>Coming soon</Text>
@@ -40,7 +40,7 @@ export function ComingSoonScreen({
 
 const styles = StyleSheet.create({
   screen: {
-    backgroundColor: HalcyonColors.background,
+    backgroundColor: PassageColors.background,
     flex: 1,
   },
   safeArea: {
@@ -50,11 +50,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     flex: 1,
     justifyContent: 'center',
-    paddingHorizontal: HalcyonSpacing.screenX,
+    paddingHorizontal: PassageSpacing.screenX,
   },
   iconCircle: {
     alignItems: 'center',
-    borderColor: HalcyonColors.border,
+    borderColor: PassageColors.border,
     borderRadius: 36,
     borderWidth: 1,
     height: 72,
@@ -63,7 +63,7 @@ const styles = StyleSheet.create({
     width: 72,
   },
   title: {
-    color: HalcyonColors.textPrimary,
+    color: PassageColors.textPrimary,
     fontFamily: AppFonts.displaySemiBold,
     fontSize: 26,
     fontWeight: '600',
@@ -71,7 +71,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   subtitle: {
-    color: HalcyonColors.textPrimary,
+    color: PassageColors.textPrimary,
     fontFamily: AppFonts.sansMedium,
     fontSize: 15,
     fontWeight: '500',
@@ -80,7 +80,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   message: {
-    color: HalcyonColors.textSecondary,
+    color: PassageColors.textSecondary,
     fontFamily: AppFonts.sansRegular,
     fontSize: 13,
     lineHeight: 20,

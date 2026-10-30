@@ -2,7 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { CoverImage } from '@/components/CoverImage';
-import { HalcyonColors, HalcyonRadius } from '@/constants/design';
+import { PassageColors, PassageRadius } from '@/constants/design';
 import { getModeLabel } from '@/constants/modes';
 import { AppFonts } from '@/constants/theme';
 import type { Soundscape } from '@/lib/api/home';
@@ -65,7 +65,7 @@ export function ContinueCard({
         hitSlop={8}
         onPress={() => onPlay?.(soundscape)}
         style={({ pressed }) => [styles.playButton, pressed && styles.playButtonPressed]}>
-        <Ionicons color={HalcyonColors.background} name="play" size={18} style={styles.playIcon} />
+        <Ionicons color={PassageColors.background} name="play" size={18} style={styles.playIcon} />
       </Pressable>
     </Pressable>
   );
@@ -88,9 +88,9 @@ export function ContinueCardSkeleton() {
 const styles = StyleSheet.create({
   card: {
     alignItems: 'center',
-    backgroundColor: HalcyonColors.surface,
-    borderColor: HalcyonColors.border,
-    borderRadius: HalcyonRadius.card,
+    backgroundColor: PassageColors.surface,
+    borderColor: PassageColors.border,
+    borderRadius: PassageRadius.card,
     borderWidth: 1,
     flexDirection: 'row',
     minHeight: 88,
@@ -100,10 +100,10 @@ const styles = StyleSheet.create({
     opacity: 0.9,
   },
   skeletonBlock: {
-    backgroundColor: HalcyonColors.skeleton,
+    backgroundColor: PassageColors.skeleton,
   },
   skeletonLine: {
-    backgroundColor: HalcyonColors.skeleton,
+    backgroundColor: PassageColors.skeleton,
     borderRadius: 4,
     height: 11,
   },
@@ -120,7 +120,7 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   artworkFrame: {
-    backgroundColor: HalcyonColors.surfaceRaised,
+    backgroundColor: PassageColors.surfaceRaised,
     borderRadius: 12,
     height: 62,
     overflow: 'hidden',
@@ -131,7 +131,7 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   artworkFallback: {
-    backgroundColor: HalcyonColors.surfaceRaised,
+    backgroundColor: PassageColors.surfaceRaised,
   },
   copy: {
     flex: 1,
@@ -139,14 +139,14 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
   },
   title: {
-    color: HalcyonColors.textPrimary,
+    color: PassageColors.textPrimary,
     fontFamily: AppFonts.sansMedium,
     fontSize: 15,
     fontWeight: '500',
     lineHeight: 20,
   },
   meta: {
-    color: HalcyonColors.textSecondary,
+    color: PassageColors.textSecondary,
     fontFamily: AppFonts.sansRegular,
     fontSize: 12,
     lineHeight: 16,
@@ -161,10 +161,10 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   progressFill: {
-    backgroundColor: HalcyonColors.accent,
+    backgroundColor: PassageColors.accent,
   },
   time: {
-    color: HalcyonColors.textSecondary,
+    color: PassageColors.textSecondary,
     fontFamily: AppFonts.sansRegular,
     fontSize: 11,
     lineHeight: 16,
@@ -172,14 +172,14 @@ const styles = StyleSheet.create({
   },
   playButton: {
     alignItems: 'center',
-    backgroundColor: HalcyonColors.accent,
+    backgroundColor: PassageColors.accent,
     borderRadius: 22,
     height: 44,
     justifyContent: 'center',
     width: 44,
   },
   playButtonPressed: {
-    backgroundColor: HalcyonColors.accentPressed,
+    backgroundColor: PassageColors.accentPressed,
   },
   playIcon: {
     marginLeft: 3,

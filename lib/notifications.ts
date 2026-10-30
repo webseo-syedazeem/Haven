@@ -9,7 +9,8 @@ import { Platform } from 'react-native';
  * receives no reminder, and the preference the user set is still saved.
  */
 
-const REMINDER_CHANNEL_ID = 'halcyon-reminders';
+const REMINDER_CHANNEL_ID = 'passage-reminders';
+const LEGACY_REMINDER_CHANNEL_ID = 'halcyon-reminders';
 
 const REMINDER_CONTENT = {
   title: 'Time to wind down',
@@ -44,6 +45,12 @@ export async function requestNotificationPermission(): Promise<boolean> {
 
 async function ensureAndroidChannel(Notifications: any): Promise<void> {
   if (Platform.OS !== 'android') return;
+
+  try {
+    await Notifications.deleteNotificationChannelAsync(LEGACY_REMINDER_CHANNEL_ID);
+  } catch {
+    // Older installs may not have the retired channel.
+  }
 
   await Notifications.setNotificationChannelAsync(REMINDER_CHANNEL_ID, {
     name: 'Passage Reminders',

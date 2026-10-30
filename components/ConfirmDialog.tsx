@@ -2,7 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { ActivityIndicator, Modal, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { DESTRUCTIVE_COLOR } from '@/components/SettingsRow';
-import { HalcyonColors, HalcyonModal, HalcyonRadius, Typography } from '@/constants/design';
+import { PassageColors, PassageModal, PassageRadius, Typography } from '@/constants/design';
 import { AppFonts } from '@/constants/theme';
 
 type ConfirmDialogProps = {
@@ -42,7 +42,7 @@ export function ConfirmDialog({
   onConfirm,
   onCancel,
 }: ConfirmDialogProps) {
-  const accent = destructive ? DESTRUCTIVE_COLOR : HalcyonColors.accent;
+  const accent = destructive ? DESTRUCTIVE_COLOR : PassageColors.accent;
 
   return (
     <Modal
@@ -67,7 +67,7 @@ export function ConfirmDialog({
             hitSlop={10}
             onPress={onCancel}
             style={({ pressed }) => [styles.closeButton, pressed && styles.pressed]}>
-            <Ionicons color={HalcyonColors.textSecondary} name="close" size={19} />
+            <Ionicons color={PassageColors.textSecondary} name="close" size={19} />
           </Pressable>
 
           {showIcon ? (
@@ -91,7 +91,7 @@ export function ConfirmDialog({
               loading && styles.disabled,
             ]}>
             {loading ? (
-              <ActivityIndicator color={HalcyonColors.background} />
+              <ActivityIndicator color={PassageColors.background} />
             ) : (
               <Text style={styles.confirmLabel}>{confirmLabel}</Text>
             )}
@@ -116,16 +116,16 @@ export function ConfirmDialog({
 const styles = StyleSheet.create({
   overlay: {
     alignItems: 'center',
-    backgroundColor: HalcyonModal.backdrop,
+    backgroundColor: PassageModal.backdrop,
     flex: 1,
     justifyContent: 'center',
     paddingHorizontal: 26,
   },
   card: {
     alignItems: 'center',
-    backgroundColor: HalcyonColors.surface,
-    borderColor: HalcyonColors.border,
-    borderRadius: HalcyonRadius.card,
+    backgroundColor: PassageColors.surface,
+    borderColor: PassageColors.border,
+    borderRadius: PassageRadius.card,
     borderWidth: 1,
     maxWidth: 360,
     padding: 24,
@@ -156,7 +156,7 @@ const styles = StyleSheet.create({
   },
   message: {
     ...Typography.body,
-    color: HalcyonColors.textSecondary,
+    color: PassageColors.textSecondary,
     marginBottom: 26,
     marginTop: 8,
     maxWidth: 280,
@@ -164,13 +164,13 @@ const styles = StyleSheet.create({
   },
   confirm: {
     alignItems: 'center',
-    borderRadius: HalcyonRadius.pill,
+    borderRadius: PassageRadius.pill,
     justifyContent: 'center',
     minHeight: 48,
     width: '100%',
   },
   confirmLabel: {
-    color: HalcyonColors.background,
+    color: PassageColors.background,
     fontFamily: AppFonts.sansSemiBold,
     fontSize: 16,
     fontWeight: '600',

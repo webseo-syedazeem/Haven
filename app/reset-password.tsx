@@ -14,10 +14,10 @@ import { AuthLegalFooter } from '@/components/auth/AuthLegalFooter';
 import { AuthTextField } from '@/components/auth/AuthTextField';
 import { OnboardingContinueButton } from '@/components/onboarding/OnboardingContinueButton';
 import { OnboardingScaffold } from '@/components/onboarding/OnboardingScaffold';
-import { HalcyonColors, Typography } from '@/constants/design';
+import { PassageColors, Typography } from '@/constants/design';
 import { AppFonts } from '@/constants/theme';
 import { emailIssue, parseAuthError } from '@/lib/auth/form-errors';
-import { forgotPassword } from '@/lib/haven-api';
+import { forgotPassword } from '@/lib/passage-api';
 import { safeGoBack } from '@/lib/navigation';
 
 const background = require('@/assets/images/auth-reset-pond-realistic.webp');
@@ -157,7 +157,7 @@ const styles = StyleSheet.create({
   },
   heading: {
     ...Typography.screenHeading,
-    color: HalcyonColors.textPrimary,
+    color: PassageColors.textPrimary,
     textAlign: 'center',
   },
   helperText: {
@@ -170,7 +170,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   keyboardView: {
-    backgroundColor: HalcyonColors.background,
+    backgroundColor: PassageColors.background,
     flex: 1,
   },
   scrollContent: {
@@ -182,7 +182,7 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
   },
   signInLink: {
-    color: HalcyonColors.accent,
+    color: PassageColors.accent,
     fontFamily: AppFonts.sansSemiBold,
     fontWeight: '600',
   },

@@ -2,7 +2,7 @@ import { StyleSheet, Text } from 'react-native';
 
 import { ArticleBody } from '@/components/ArticleBody';
 import { SettingsScreen } from '@/components/SettingsScreen';
-import { HalcyonColors } from '@/constants/design';
+import { PassageColors } from '@/constants/design';
 import { LEGAL_LAST_UPDATED, TERMS_OF_SERVICE } from '@/constants/legal';
 import { AppFonts } from '@/constants/theme';
 
@@ -21,7 +21,7 @@ export default function TermsScreen() {
 
 const styles = StyleSheet.create({
   lede: {
-    color: HalcyonColors.textSecondary,
+    color: PassageColors.textSecondary,
     fontFamily: AppFonts.sansRegular,
     fontSize: 16,
     lineHeight: 24,

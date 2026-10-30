@@ -13,7 +13,7 @@ import {
 import { RelaxContinueButton } from '@/components/onboarding/RelaxContinueButton';
 import { OnboardingScaffold } from '@/components/onboarding/OnboardingScaffold';
 import { RelaxStepHeader } from '@/components/onboarding/RelaxStepHeader';
-import { HalcyonColors, RELAX_ACCENT } from '@/constants/design';
+import { PassageColors, RELAX_ACCENT } from '@/constants/design';
 import { RELAX_ONBOARDING } from '@/constants/relax-onboarding';
 import { AppFonts } from '@/constants/theme';
 import { safeGoBack } from '@/lib/navigation';
@@ -131,7 +131,7 @@ export default function RelaxYourFitScreen() {
           <Image contentFit="cover" source={fitBanner} style={styles.bannerImage} />
           <LinearGradient
             colors={[
-              HalcyonColors.background,
+              PassageColors.background,
               'rgba(11,11,13,0.58)',
               'rgba(11,11,13,0)',
             ]}
@@ -143,7 +143,7 @@ export default function RelaxYourFitScreen() {
             colors={[
               'rgba(11,11,13,0)',
               'rgba(11,11,13,0.56)',
-              HalcyonColors.background,
+              PassageColors.background,
             ]}
             locations={[0, 0.62, 1]}
             pointerEvents="none"
@@ -285,7 +285,7 @@ const styles = StyleSheet.create({
     borderBottomWidth: 0,
   },
   summaryValue: {
-    color: HalcyonColors.textPrimary,
+    color: PassageColors.textPrimary,
     flex: 1.1,
     fontFamily: AppFonts.sansMedium,
     fontSize: 15,

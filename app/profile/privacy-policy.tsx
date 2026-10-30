@@ -2,15 +2,11 @@ import { StyleSheet, Text } from 'react-native';
 
 import { ArticleBody } from '@/components/ArticleBody';
 import { SettingsScreen } from '@/components/SettingsScreen';
-import { HalcyonColors } from '@/constants/design';
+import { PassageColors } from '@/constants/design';
 import { LEGAL_LAST_UPDATED, PRIVACY_POLICY } from '@/constants/legal';
 import { AppFonts } from '@/constants/theme';
 
-/**
- * The copy lives in `constants/legal.ts` — see the compliance note there. The
- * canonical markdown the backend serves at `GET /privacy-policy.md` still
- * describes another product's subscriptions, so it is not rendered here.
- */
+/** The app renders the Passage-specific copy from `constants/legal.ts`. */
 export default function PrivacyPolicyScreen() {
   return (
     <SettingsScreen subtitle={LEGAL_LAST_UPDATED} title="Privacy Policy">
@@ -25,7 +21,7 @@ export default function PrivacyPolicyScreen() {
 
 const styles = StyleSheet.create({
   lede: {
-    color: HalcyonColors.textSecondary,
+    color: PassageColors.textSecondary,
     fontFamily: AppFonts.sansRegular,
     fontSize: 16,
     lineHeight: 24,

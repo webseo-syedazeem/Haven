@@ -95,7 +95,7 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
 });
 
 // Google/Apple sign in store their session with Supabase rather than with the
-// Haven API tokens, so mirror it into the shared session flag. This also fires
+// Passage API tokens, so mirror it into the shared session flag. This also fires
 // once on start up with the session restored from SecureStore (or `null` on a
 // fresh install, which keeps authenticated queries disabled).
 supabase.auth.onAuthStateChange((_event, session) => {

@@ -7,7 +7,7 @@ import { RequireAuth } from '@/components/RequireAuth';
 import { SettingsGroup, SettingsRow } from '@/components/SettingsRow';
 import { SettingsScreen } from '@/components/SettingsScreen';
 import { Toast, useToast } from '@/components/Toast';
-import { HalcyonColors } from '@/constants/design';
+import { PassageColors } from '@/constants/design';
 import { usePlaybackSettings, useUpdatePlaybackSettings } from '@/hooks/usePreferences';
 import type { PlaybackSettings } from '@/lib/api/preferences';
 
@@ -50,7 +50,7 @@ function PlaybackSettingsContent() {
     if (isInitialLoading) {
       return (
         <View style={styles.loading}>
-          <ActivityIndicator color={HalcyonColors.accent} />
+          <ActivityIndicator color={PassageColors.accent} />
         </View>
       );
     }

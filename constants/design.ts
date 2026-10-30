@@ -50,12 +50,12 @@ export const AppShadow = {
 };
 
 /**
- * Halcyon "black opal" palette — the dark surface used by Home, the mode hubs
+ * Passage "black opal" palette — the dark surface used by Home, the mode hubs
  * and the soundscape screens. The lighter `AppColors` set above still belongs
  * to onboarding/auth, so the two live side by side rather than replacing
  * each other.
  */
-export const HalcyonColors = {
+export const PassageColors = {
   background: '#0B0B0D',
   surface: '#17161A',
   surfaceRaised: '#1D1C21',
@@ -85,10 +85,10 @@ export const ONBOARDING_MODE_ACCENTS_PRESSED = {
 } as const;
 
 /** Transparent → near-black, for artwork so overlaid text stays readable. */
-export const HalcyonCardGradient = ['transparent', 'rgba(8,8,10,0.55)', HalcyonColors.scrim] as const;
-export const HalcyonCardGradientLocations = [0, 0.55, 1] as const;
+export const PassageCardGradient = ['transparent', 'rgba(8,8,10,0.55)', PassageColors.scrim] as const;
+export const PassageCardGradientLocations = [0, 0.55, 1] as const;
 
-export const HalcyonRadius = {
+export const PassageRadius = {
   card: 18,
   artwork: 14,
   sheet: 28,
@@ -96,18 +96,18 @@ export const HalcyonRadius = {
 };
 
 /** Shared modal treatment: dim the whole screen and keep sheets visibly raised. */
-export const HalcyonModal = {
+export const PassageModal = {
   backdrop: 'rgba(3, 5, 6, 0.72)',
 } as const;
 
-export const HalcyonSpacing = {
+export const PassageSpacing = {
   screenX: 20,
   section: 28,
   card: 14,
 };
 
 /** Height of the custom bottom tab bar, excluding the safe-area inset. */
-export const HALCYON_TAB_BAR_HEIGHT = 62;
+export const PASSAGE_TAB_BAR_HEIGHT = 62;
 
 /**
  * Base text styles, taken from the approved onboarding screens. Spread into a
@@ -139,7 +139,7 @@ export const Typography = {
   },
   /** Muted supporting copy at caption size. */
   muted: {
-    color: HalcyonColors.textSecondary,
+    color: PassageColors.textSecondary,
     fontFamily: ThemeFonts.sansRegular,
     fontSize: 13,
     lineHeight: 19,

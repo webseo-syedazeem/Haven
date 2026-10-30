@@ -21,7 +21,7 @@ import { FilterChip } from '@/components/FilterChip';
 import { FilterSheet } from '@/components/FilterSheet';
 import { SortSheet } from '@/components/SortSheet';
 import { SoundscapeRow, SoundscapeRowSkeletonList } from '@/components/SoundscapeRow';
-import { HalcyonColors, HalcyonRadius, HalcyonSpacing, Typography } from '@/constants/design';
+import { PassageColors, PassageRadius, PassageSpacing, Typography } from '@/constants/design';
 import {
   countActiveFilters,
   EMPTY_FILTERS,
@@ -139,7 +139,7 @@ export default function LibraryScreen() {
         {/* Search bar */}
         <View style={styles.searchWrapper}>
           <View style={styles.searchBar}>
-            <Ionicons color={HalcyonColors.textSecondary} name="search-outline" size={18} />
+            <Ionicons color={PassageColors.textSecondary} name="search-outline" size={18} />
             <TextInput
               autoCapitalize="none"
               autoCorrect={false}
@@ -148,7 +148,7 @@ export default function LibraryScreen() {
               onFocus={() => setIsFocused(true)}
               onSubmitEditing={() => commitSearch(draftQuery)}
               placeholder="Search soundscapes, places, moods…"
-              placeholderTextColor={HalcyonColors.textSecondary}
+              placeholderTextColor={PassageColors.textSecondary}
               ref={inputRef}
               returnKeyType="search"
               style={styles.searchInput}
@@ -160,7 +160,7 @@ export default function LibraryScreen() {
                 accessibilityRole="button"
                 hitSlop={10}
                 onPress={clearSearch}>
-                <Ionicons color={HalcyonColors.textSecondary} name="close-circle" size={17} />
+                <Ionicons color={PassageColors.textSecondary} name="close-circle" size={17} />
               </Pressable>
             )}
           </View>
@@ -169,7 +169,7 @@ export default function LibraryScreen() {
             <View style={styles.suggestions}>
               {suggestions.isFetching && !suggestions.data ? (
                 <View style={styles.suggestionLoading}>
-                  <ActivityIndicator color={HalcyonColors.accent} size="small" />
+                  <ActivityIndicator color={PassageColors.accent} size="small" />
                 </View>
               ) : (suggestions.data ?? []).length === 0 ? (
                 <Text style={styles.suggestionEmpty}>No matches yet.</Text>
@@ -182,7 +182,7 @@ export default function LibraryScreen() {
                     onPress={() => commitSearch(suggestion.title)}
                     style={({ pressed }) => [styles.suggestionRow, pressed && styles.pressed]}>
                     <Ionicons
-                      color={HalcyonColors.textSecondary}
+                      color={PassageColors.textSecondary}
                       name="search-outline"
                       size={15}
                     />
@@ -197,7 +197,7 @@ export default function LibraryScreen() {
                       )}
                     </View>
                     <Ionicons
-                      color={HalcyonColors.textSecondary}
+                      color={PassageColors.textSecondary}
                       name="arrow-up-outline"
                       size={14}
                       style={styles.suggestionArrow}
@@ -220,7 +220,7 @@ export default function LibraryScreen() {
               accessibilityRole="button"
               onPress={() => setFilterSheetVisible(true)}
               style={({ pressed }) => [styles.filterButton, pressed && styles.pressed]}>
-              <Ionicons color={HalcyonColors.textPrimary} name="options-outline" size={16} />
+              <Ionicons color={PassageColors.textPrimary} name="options-outline" size={16} />
               <Text style={styles.filterLabel}>Filters</Text>
               {activeCount > 0 && (
                 <View style={styles.filterBadge}>
@@ -247,14 +247,14 @@ export default function LibraryScreen() {
             <Text numberOfLines={1} style={styles.sortLabel}>
               {getSortLabel(sort)}
             </Text>
-            <Ionicons color={HalcyonColors.textPrimary} name="chevron-down" size={14} />
+            <Ionicons color={PassageColors.textPrimary} name="chevron-down" size={14} />
           </Pressable>
         </View>
 
         <View style={styles.countRow}>
           <Text style={styles.count}>{countLabel}</Text>
           {isFetching && !isLoading && (
-            <ActivityIndicator color={HalcyonColors.accent} size="small" />
+            <ActivityIndicator color={PassageColors.accent} size="small" />
           )}
         </View>
 
@@ -387,7 +387,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   header: {
-    paddingHorizontal: HalcyonSpacing.screenX,
+    paddingHorizontal: PassageSpacing.screenX,
     paddingTop: 12,
   },
   heading: {
@@ -397,15 +397,15 @@ const styles = StyleSheet.create({
     opacity: 0.74,
   },
   searchWrapper: {
-    paddingHorizontal: HalcyonSpacing.screenX,
+    paddingHorizontal: PassageSpacing.screenX,
     paddingTop: 14,
     zIndex: 20,
   },
   searchBar: {
     alignItems: 'center',
-    backgroundColor: HalcyonColors.surface,
-    borderColor: HalcyonColors.border,
-    borderRadius: HalcyonRadius.pill,
+    backgroundColor: PassageColors.surface,
+    borderColor: PassageColors.border,
+    borderRadius: PassageRadius.pill,
     borderWidth: 1,
     columnGap: 10,
     flexDirection: 'row',
@@ -418,9 +418,9 @@ const styles = StyleSheet.create({
     padding: 0,
   },
   suggestions: {
-    backgroundColor: HalcyonColors.surfaceRaised,
-    borderColor: HalcyonColors.border,
-    borderRadius: HalcyonRadius.card,
+    backgroundColor: PassageColors.surfaceRaised,
+    borderColor: PassageColors.border,
+    borderRadius: PassageRadius.card,
     borderWidth: 1,
     marginTop: 8,
     overflow: 'hidden',
@@ -434,7 +434,7 @@ const styles = StyleSheet.create({
   },
   suggestionRow: {
     alignItems: 'center',
-    borderTopColor: HalcyonColors.border,
+    borderTopColor: PassageColors.border,
     borderTopWidth: StyleSheet.hairlineWidth,
     columnGap: 10,
     flexDirection: 'row',
@@ -458,17 +458,17 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     columnGap: 10,
     flexDirection: 'row',
-    paddingRight: HalcyonSpacing.screenX,
+    paddingRight: PassageSpacing.screenX,
     paddingTop: 14,
   },
   controlsContent: {
     columnGap: 8,
-    paddingHorizontal: HalcyonSpacing.screenX,
+    paddingHorizontal: PassageSpacing.screenX,
   },
   filterButton: {
     alignItems: 'center',
-    borderColor: HalcyonColors.border,
-    borderRadius: HalcyonRadius.pill,
+    borderColor: PassageColors.border,
+    borderRadius: PassageRadius.pill,
     borderWidth: 1,
     columnGap: 6,
     flexDirection: 'row',
@@ -476,7 +476,7 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
   },
   filterLabel: {
-    color: HalcyonColors.textPrimary,
+    color: PassageColors.textPrimary,
     fontFamily: AppFonts.sansMedium,
     fontSize: 13,
     fontWeight: '500',
@@ -484,7 +484,7 @@ const styles = StyleSheet.create({
   },
   filterBadge: {
     alignItems: 'center',
-    backgroundColor: HalcyonColors.accent,
+    backgroundColor: PassageColors.accent,
     borderRadius: 9,
     height: 18,
     justifyContent: 'center',
@@ -492,7 +492,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 5,
   },
   filterBadgeLabel: {
-    color: HalcyonColors.background,
+    color: PassageColors.background,
     fontFamily: AppFonts.sansSemiBold,
     fontSize: 11,
     fontWeight: '600',
@@ -505,7 +505,7 @@ const styles = StyleSheet.create({
     maxWidth: 140,
   },
   sortLabel: {
-    color: HalcyonColors.textPrimary,
+    color: PassageColors.textPrimary,
     fontFamily: AppFonts.sansMedium,
     fontSize: 13,
     fontWeight: '500',
@@ -516,14 +516,14 @@ const styles = StyleSheet.create({
     columnGap: 8,
     flexDirection: 'row',
     paddingBottom: 6,
-    paddingHorizontal: HalcyonSpacing.screenX,
+    paddingHorizontal: PassageSpacing.screenX,
     paddingTop: 16,
   },
   count: {
     ...Typography.muted,
   },
   rescueBlock: {
-    paddingHorizontal: HalcyonSpacing.screenX,
+    paddingHorizontal: PassageSpacing.screenX,
     paddingTop: 4,
   },
   rescueTitle: {
@@ -538,7 +538,7 @@ const styles = StyleSheet.create({
     rowGap: 8,
   },
   rescueAction: {
-    color: HalcyonColors.accent,
+    color: PassageColors.accent,
     fontFamily: AppFonts.sansMedium,
     fontSize: 14,
     fontWeight: '500',

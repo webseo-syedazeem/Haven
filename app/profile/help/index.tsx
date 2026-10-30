@@ -6,7 +6,7 @@ import { ActivityIndicator, Pressable, StyleSheet, TextInput, View } from 'react
 import { EmptyState, ErrorState } from '@/components/EmptyState';
 import { SettingsGroup, SettingsRow } from '@/components/SettingsRow';
 import { SettingsScreen } from '@/components/SettingsScreen';
-import { HalcyonColors, HalcyonRadius } from '@/constants/design';
+import { PassageColors, PassageRadius } from '@/constants/design';
 import { AppFonts } from '@/constants/theme';
 import { useFilteredHelpArticles, useHelpArticles } from '@/hooks/useHelp';
 import { formatHelpCategory } from '@/lib/api/help';
@@ -29,7 +29,7 @@ export default function HelpCentreScreen() {
     if (isInitialLoading) {
       return (
         <View style={styles.loading}>
-          <ActivityIndicator color={HalcyonColors.accent} />
+          <ActivityIndicator color={PassageColors.accent} />
         </View>
       );
     }
@@ -80,13 +80,13 @@ export default function HelpCentreScreen() {
       subtitle="Answers to the things people ask most."
       title="Help Centre">
       <View style={styles.searchBar}>
-        <Ionicons color={HalcyonColors.textSecondary} name="search-outline" size={18} />
+        <Ionicons color={PassageColors.textSecondary} name="search-outline" size={18} />
         <TextInput
           autoCapitalize="none"
           autoCorrect={false}
           onChangeText={setQuery}
           placeholder="Search help"
-          placeholderTextColor={HalcyonColors.textSecondary}
+          placeholderTextColor={PassageColors.textSecondary}
           returnKeyType="search"
           style={styles.searchInput}
           value={query}
@@ -97,7 +97,7 @@ export default function HelpCentreScreen() {
             accessibilityRole="button"
             hitSlop={10}
             onPress={() => setQuery('')}>
-            <Ionicons color={HalcyonColors.textSecondary} name="close-circle" size={17} />
+            <Ionicons color={PassageColors.textSecondary} name="close-circle" size={17} />
           </Pressable>
         )}
       </View>
@@ -130,9 +130,9 @@ export default function HelpCentreScreen() {
 const styles = StyleSheet.create({
   searchBar: {
     alignItems: 'center',
-    backgroundColor: HalcyonColors.surface,
-    borderColor: HalcyonColors.border,
-    borderRadius: HalcyonRadius.pill,
+    backgroundColor: PassageColors.surface,
+    borderColor: PassageColors.border,
+    borderRadius: PassageRadius.pill,
     borderWidth: 1,
     columnGap: 10,
     flexDirection: 'row',
@@ -141,7 +141,7 @@ const styles = StyleSheet.create({
     paddingVertical: 11,
   },
   searchInput: {
-    color: HalcyonColors.textPrimary,
+    color: PassageColors.textPrimary,
     flex: 1,
     fontFamily: AppFonts.sansRegular,
     fontSize: 15,
