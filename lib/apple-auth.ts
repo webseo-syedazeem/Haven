@@ -44,6 +44,20 @@ export const signInWithApple = async () => {
       setSessionSource('supabase', Boolean(nativeData.session?.access_token));
       await markLoggedIn();
       try { await apiClient('/api/auth/sync-profile', { method: 'POST' }); await queryClient.invalidateQueries({ queryKey: ME_QUERY_KEY }); } catch (profileError) { console.warn('[auth] Apple profile sync remains pending', profileError); }
+      // Hand the one-time authorization code to the backend so it can exchange it
+      // for an Apple refresh token and revoke it on account deletion (App Store
+      // 5.1.1(v)). Best-effort and only available on the native sign-in, which is
+      // where the code is returned; a no-op server-side until Apple is configured.
+      if (credential.authorizationCode) {
+        try {
+          await apiClient('/api/auth/apple/register-revocation', {
+            method: 'POST',
+            body: JSON.stringify({ authorization_code: credential.authorizationCode }),
+          });
+        } catch (revocationError) {
+          console.warn('[auth] Apple revocation registration remains pending', revocationError);
+        }
+      }
       return nativeData;
     } catch (error) {
       if (error && typeof error === 'object' && 'code' in error && error.code === 'ERR_REQUEST_CANCELED') return null;
