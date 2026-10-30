@@ -44,6 +44,7 @@ function createClientHarness(responses) {
   vm.runInNewContext(compiled, {
     module,
     exports: module.exports,
+    AbortController,
     process: { env: { EXPO_PUBLIC_API_BASE_URL: 'https://example.test' } },
     fetch: async () => {
       const response = responses[requests];
@@ -52,6 +53,10 @@ function createClientHarness(responses) {
       return response;
     },
     setTimeout(callback, delay) {
+      // The 15s per-request timeout guard (send()) never fires in these tests —
+      // the mocked response always arrives first — so it is neither recorded
+      // against the backoff delays nor invoked.
+      if (delay === 15_000) return 0;
       delays.push(delay);
       queueMicrotask(callback);
       return delays.length;

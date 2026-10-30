@@ -5,11 +5,12 @@ import { useCallback, useEffect, useState, type ReactNode } from 'react'
 import { AppFonts } from '@/constants/theme'
 import {
   isServiceUnavailable,
+  setHealthCheckRequester,
   setServiceUnavailable,
   subscribeToServiceStatus,
 } from '@/lib/service-status'
 
-const API_BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL?.trim().replace(/\/+$/, '') || 'https://thehappyapp.co.uk'
+const API_BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL?.trim().replace(/\/+$/, '') || 'https://passagesounds.app'
 
 async function checkHealth() {
   try {
@@ -37,6 +38,13 @@ export function ServiceAvailability({ children }: { children: ReactNode }) {
   useEffect(() => {
     void checkHealth()
   }, [])
+  // A 503 from any endpoint routes here (via the global bridge) to confirm the
+  // outage against `/health`, rather than each endpoint flipping the takeover
+  // itself (audit H-4).
+  useEffect(() => {
+    setHealthCheckRequester(() => void checkHealth())
+    return () => setHealthCheckRequester(null)
+  }, [])
   useEffect(() => {
     if (!unavailable) return
     const interval = setInterval(() => void checkHealth(), 15_000)
@@ -49,32 +57,39 @@ export function ServiceAvailability({ children }: { children: ReactNode }) {
     setRetrying(false)
   }, [])
 
-  if (!unavailable) return <>{children}</>
-
+  // The app stays mounted underneath at all times: the maintenance screen is an
+  // overlay, not a replacement, so navigation history, scroll position, form
+  // input and the mini-player/audio survive a transient outage (audit H-4).
   return (
-    <ImageBackground
-      source={require('../assets/images/service-unavailable-nature.png')}
-      resizeMode="cover"
-      style={styles.background}
-    >
-      <View style={styles.scrim} />
-      <View style={styles.card}>
-        <View style={styles.icon}><Ionicons name="leaf-outline" size={28} color="#F5F1E8" /></View>
-        <Text style={styles.title}>A quiet pause</Text>
-        <Text style={styles.message}>
-          Passage is temporarily unavailable while we restore the service. Your space and saved settings are safe.
-        </Text>
-        <Pressable accessibilityRole="button" onPress={() => void retry()} style={styles.button}>
-          <Text style={styles.buttonText}>{retrying ? 'Checking…' : 'Try again'}</Text>
-        </Pressable>
-        <Text style={styles.note}>We’ll reconnect automatically when everything is ready.</Text>
-      </View>
-    </ImageBackground>
+    <View style={styles.root}>
+      {children}
+      {unavailable ? (
+        <ImageBackground
+          source={require('../assets/images/service-unavailable-nature.png')}
+          resizeMode="cover"
+          style={[StyleSheet.absoluteFill, styles.background]}
+        >
+          <View style={styles.scrim} />
+          <View style={styles.card}>
+            <View style={styles.icon}><Ionicons name="leaf-outline" size={28} color="#F5F1E8" /></View>
+            <Text style={styles.title}>A quiet pause</Text>
+            <Text style={styles.message}>
+              Passage is temporarily unavailable while we restore the service. Your space and saved settings are safe.
+            </Text>
+            <Pressable accessibilityRole="button" onPress={() => void retry()} style={styles.button}>
+              <Text style={styles.buttonText}>{retrying ? 'Checking…' : 'Try again'}</Text>
+            </Pressable>
+            <Text style={styles.note}>We’ll reconnect automatically when everything is ready.</Text>
+          </View>
+        </ImageBackground>
+      ) : null}
+    </View>
   )
 }
 
 const styles = StyleSheet.create({
-  background: { flex: 1, justifyContent: 'flex-end' },
+  root: { flex: 1 },
+  background: { justifyContent: 'flex-end' },
   scrim: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(8, 24, 29, 0.38)' },
   card: {
     margin: 20, marginBottom: 42, paddingHorizontal: 26, paddingVertical: 30,

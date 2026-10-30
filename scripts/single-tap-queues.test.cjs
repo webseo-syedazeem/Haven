@@ -25,12 +25,15 @@ test('individual soundscape handlers do not pass their surrounding list as a que
   }
 });
 
-test('Continue Listening resumes one track while both Play All handlers retain full queues', () => {
+test('Continue Listening restores the full saved queue, like both Play All handlers', () => {
   const provider = read('lib/player/PlayerProvider.tsx');
   const collection = read('app/collection/[id].tsx');
   const playlist = read('app/playlist/[id].tsx');
 
-  assert.match(provider, /queue:\s*\[resumable\.soundscape\]/);
+  // M-2: resume now hands back the whole saved queue so next/previous and
+  // autoplay-next survive "Continue listening", falling back to the single
+  // track only when no queue was saved.
+  assert.match(provider, /queue:\s*resumable\.queue\.length\s*>\s*0\s*\?\s*resumable\.queue\s*:\s*\[resumable\.soundscape\]/);
   assert.match(collection, /playSoundscape\(first,\s*\{ queue: soundscapes \}\)/);
   assert.match(playlist, /playSoundscape\(first,\s*\{ queue: tracks \}\)/);
 });

@@ -46,40 +46,44 @@ export const signInWithApple = async () => {
 
   const result = await WebBrowser.openAuthSessionAsync(authUrl, redirectUri);
 
-  if (result.type === 'success') {
-    const { access_token, refresh_token } = getAuthTokens(result.url);
-
-    if (access_token && refresh_token) {
-      const { data: sessionData, error: sessionError } = await supabase.auth.setSession({
-        access_token,
-        refresh_token,
-      });
-
-      if (sessionError) {
-        throw new Error(sessionError.message);
-      }
-
-      setSessionSource('supabase', Boolean(sessionData.session?.access_token));
-      await markLoggedIn();
-
-      try {
-        await apiClient('/api/auth/sync-profile', { method: 'POST' });
-        await queryClient.invalidateQueries({ queryKey: ME_QUERY_KEY });
-        const me = await queryClient.fetchQuery({
-          queryKey: ME_QUERY_KEY,
-          queryFn: userApi.get,
-          staleTime: 0,
-        });
-        await cacheProfile(me);
-      } catch (profileError) {
-        // Authentication has completed even if the app profile projection is
-        // briefly unavailable; the onboarding import has its own retry UI.
-        console.warn('[auth] Apple profile sync remains pending', profileError);
-      }
-
-      return sessionData;
-    }
+  // The user dismissed or cancelled the Apple sheet — not an error to surface
+  // (audit L-6). The caller treats null as "nothing happened".
+  if (result.type !== 'success') {
+    return null;
   }
 
-  throw new Error('Apple sign in cancelled or failed');
+  const { access_token, refresh_token } = getAuthTokens(result.url);
+
+  if (!access_token || !refresh_token) {
+    throw new Error('Apple sign in could not be completed. Please try again.');
+  }
+
+  const { data: sessionData, error: sessionError } = await supabase.auth.setSession({
+    access_token,
+    refresh_token,
+  });
+
+  if (sessionError) {
+    throw new Error(sessionError.message);
+  }
+
+  setSessionSource('supabase', Boolean(sessionData.session?.access_token));
+  await markLoggedIn();
+
+  try {
+    await apiClient('/api/auth/sync-profile', { method: 'POST' });
+    await queryClient.invalidateQueries({ queryKey: ME_QUERY_KEY });
+    const me = await queryClient.fetchQuery({
+      queryKey: ME_QUERY_KEY,
+      queryFn: userApi.get,
+      staleTime: 0,
+    });
+    await cacheProfile(me);
+  } catch (profileError) {
+    // Authentication has completed even if the app profile projection is
+    // briefly unavailable; the onboarding import has its own retry UI.
+    console.warn('[auth] Apple profile sync remains pending', profileError);
+  }
+
+  return sessionData;
 };

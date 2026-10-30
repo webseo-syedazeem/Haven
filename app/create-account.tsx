@@ -34,8 +34,12 @@ function firstParam(value: string | string[] | undefined): string {
 
 export default function CreateAccountScreen() {
   const router = useRouter();
-  const params = useLocalSearchParams<{ email?: string | string[] }>();
+  const params = useLocalSearchParams<{
+    email?: string | string[];
+    origin?: string | string[];
+  }>();
   const initialEmail = useMemo(() => firstParam(params.email), [params.email]);
+  const origin = useMemo(() => firstParam(params.origin), [params.origin]);
   const [email, setEmail] = useState(initialEmail);
   const [errorMessage, setErrorMessage] = useState('');
   const [fieldErrors, setFieldErrors] = useState<AuthFieldErrors>({});
@@ -133,7 +137,7 @@ export default function CreateAccountScreen() {
           <OnboardingContinueButton label={'Create account'} loading={isSubmitting} onPress={() => void handleCreateAccount()} style={styles.primaryButton} />
         </View>
 
-        <Pressable accessibilityRole={'button'} hitSlop={8} onPress={() => router.replace('/login')} style={styles.signInButton}>
+        <Pressable accessibilityRole={'button'} hitSlop={8} onPress={() => router.replace(origin === 'guest-sign-out' ? '/login?origin=guest-sign-out' : '/login')} style={styles.signInButton}>
           <Text style={styles.signInPrompt}>Already have an account? <Text style={styles.signInLink}>Sign in</Text></Text>
         </Pressable>
         </View>

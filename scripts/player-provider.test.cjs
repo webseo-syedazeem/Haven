@@ -363,7 +363,7 @@ test('queue is a stable snapshot, deduplicates history, and contains the picked 
   assert.deepEqual(ids(player.state.queue), ['c', 'a', 'b']);
 });
 
-test('save and stop preserve progress, while resume restores a one-item queue and timer', async () => {
+test('save and stop preserve progress, while resume restores the full saved queue and timer', async () => {
   const player = createPlayer({ hasSession: true });
   await player.settle();
   await player.act('playSoundscape', tracks[1], { queue: tracks });
@@ -378,14 +378,16 @@ test('save and stop preserve progress, while resume restores a one-item queue an
   assert.equal(player.state.soundscape, null);
   await player.act('resume');
   assert.equal(player.state.soundscape.id, 'b');
-  assert.deepEqual(ids(player.state.queue), ['b']);
-  assert.equal(player.state.queueIndex, 0);
+  // M-2: resume restores the whole saved queue (not just the one track), so
+  // next/previous work again, with the current track at its original index.
+  assert.deepEqual(ids(player.state.queue), ['a', 'b', 'c']);
+  assert.equal(player.state.queueIndex, 1);
   assert.equal(player.calls.loads.at(-1).startAt, 12);
   assert.equal(player.state.timerSelection, 10);
   await player.act('skipNext');
+  assert.equal(player.state.soundscape.id, 'c');
   await player.background();
-  assert.equal(player.calls.saves.at(-1).soundscape_id, 'b');
-  assert.equal(player.calls.saves.at(-1).position_seconds, 12);
+  assert.equal(player.calls.saves.at(-1).soundscape_id, 'c');
 });
 
 test('guest playback is saved locally without calling the account player-state API', async () => {
@@ -447,12 +449,14 @@ test('cold resume restores saved queue order, removes missing tracks and finds c
   await player.settle();
   assert.deepEqual(ids(player.state.resumable.queue), ['a', 'b', 'c']);
   await player.act('resume');
-  assert.deepEqual(ids(player.state.queue), ['b']);
-  assert.equal(player.state.queueIndex, 0);
+  // M-2: the cleaned, de-duplicated saved queue is restored in full, with the
+  // current track found at its proper index, so skipNext advances to the next.
+  assert.deepEqual(ids(player.state.queue), ['a', 'b', 'c']);
+  assert.equal(player.state.queueIndex, 1);
   assert.equal(player.progress.position, 25);
   assert.equal(player.state.timerSelection, 10);
   await player.act('skipNext');
-  assert.equal(player.state.soundscape.id, 'b');
+  assert.equal(player.state.soundscape.id, 'c');
 });
 
 test('natural completion advances, then stops at the end without wrapping', async () => {

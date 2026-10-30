@@ -38,7 +38,10 @@ import { engine } from './engine';
 import { toPlayableTrack } from './types';
 
 const PERSIST_DEBOUNCE_MS = 900;
-const PERIODIC_PERSIST_MS = 15000;
+// Player state is also persisted on pause/background/stop/track-change, so a
+// long periodic interval is enough while playing. 15s meant ~240 network
+// wake-ups per hour of overnight audio (audit M-9); 60s cuts that by 75%.
+const PERIODIC_PERSIST_MS = 60000;
 const FADE_STEP_MS = 250;
 
 const UNAVAILABLE_MESSAGE =
@@ -46,6 +49,7 @@ const UNAVAILABLE_MESSAGE =
     ? 'Playback is not available on web yet.'
     : 'Audio needs the Passage dev build — it cannot run in Expo Go.';
 const STALLED_MESSAGE = 'Playback stopped unexpectedly. Check your connection and try again.';
+const RECOVERING_MESSAGE = 'Slow connection';
 const PLAY_HISTORY_LIMIT = 50;
 const GUEST_PLAYER_STATE_STORAGE_KEY = 'passage.guest.player-state.v1';
 
@@ -233,6 +237,7 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
   const skipNextRef = useRef<PlayerActions['skipNext'] | undefined>(undefined);
   const skipPreviousRef = useRef<PlayerActions['skipPrevious'] | undefined>(undefined);
   const setTimerRef = useRef<PlayerActions['setTimer'] | undefined>(undefined);
+  const togglePlayPauseRef = useRef<PlayerActions['togglePlayPause'] | undefined>(undefined);
   const autoplayNextRef = useRef(PLAYBACK_SETTING_DEFAULTS.autoplay_next);
   const defaultTimerMinutesRef = useRef(PLAYBACK_SETTING_DEFAULTS.default_timer_minutes);
   const fadeEnabledRef = useRef(PLAYBACK_SETTING_DEFAULTS.fade_enabled);
@@ -577,6 +582,15 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
           };
         });
       },
+      onRecoveryStateChange: ({ isRecovering }) => {
+        setState((current) => {
+          if (isRecovering) {
+            return { ...current, error: RECOVERING_MESSAGE, canRetry: false };
+          }
+          if (current.error !== RECOVERING_MESSAGE) return current;
+          return { ...current, error: null, canRetry: false };
+        });
+      },
       onProgress: ({ position, duration, trackId }) => {
         // An event already in flight when a newer track was loaded still
         // carries the track it was captured for; one that does not match the
@@ -888,6 +902,21 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
         soundscapeRef.current?.id === soundscape.id &&
         queueRef.current.length === queue.length &&
         queueRef.current.every((item, i) => item.id === queue[i].id);
+
+      // M-1: Re-tapping the exact same session (same track AND same queue) while
+      // it is already loaded must not reload it from 0:00 — `loadAndPlay` →
+      // `engine.load(track, 0)` would re-buffer and discard the listening
+      // position. Just make sure it is playing. A different queue (e.g. "Play
+      // All" that happens to start on the current track) is NOT the same session
+      // and still starts fresh below.
+      const wantsExplicitSeek = typeof options.startAt === 'number' && options.startAt > 0;
+      if (isSameSession && engine.hasSource() && !wantsExplicitSeek) {
+        if (!isPlayingRef.current) {
+          await togglePlayPauseRef.current?.();
+        }
+        return;
+      }
+
       if (!isSameSession) cancelTimerForNewStart();
 
       const didStart = await loadAndPlay(
@@ -1068,6 +1097,7 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
   );
 
   setTimerRef.current = setTimer;
+  togglePlayPauseRef.current = togglePlayPause;
 
   const setLoopEnabled = useCallback((enabled: boolean) => {
     // An explicit choice, even to turn it back off, is a real preference from
@@ -1136,7 +1166,9 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
     if (!resumable) return;
 
     await playSoundscape(resumable.soundscape, {
-      queue: [resumable.soundscape],
+      // M-2: restore the whole saved queue, not just the single track, so
+      // next/previous and autoplay-next still work after "Continue listening".
+      queue: resumable.queue.length > 0 ? resumable.queue : [resumable.soundscape],
       startAt: resumable.positionSeconds,
     });
     if (typeof resumable.timerMinutes === 'number' && resumable.timerMinutes > 0) {

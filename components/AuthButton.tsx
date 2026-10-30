@@ -9,13 +9,15 @@ import {
   type StyleProp,
   type ViewStyle,
 } from 'react-native';
+import type { ReactNode } from 'react';
 
 import { PassageColors, PassageRadius } from '@/constants/design';
 import { AppFonts } from '@/constants/theme';
 
 type AuthButtonProps = {
   disabled?: boolean;
-  iconSource: ImageSourcePropType;
+  icon?: ReactNode;
+  iconSource?: ImageSourcePropType;
   iconTintColor?: string;
   label: string;
   loading?: boolean;
@@ -25,6 +27,7 @@ type AuthButtonProps = {
 
 export function AuthButton({
   disabled = false,
+  icon,
   iconSource,
   iconTintColor,
   label,
@@ -47,13 +50,15 @@ export function AuthButton({
       <View style={styles.iconWrap}>
         {loading ? (
           <ActivityIndicator color={PassageColors.accent} size="small" />
-        ) : (
+        ) : icon ? (
+          icon
+        ) : iconSource ? (
           <Image
             resizeMode="contain"
             source={iconSource}
             style={[styles.icon, iconTintColor ? { tintColor: iconTintColor } : null]}
           />
-        )}
+        ) : null}
       </View>
       <Text adjustsFontSizeToFit numberOfLines={1} style={styles.label}>
         {label}

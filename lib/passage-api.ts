@@ -6,12 +6,13 @@ import { markLoggedIn, markLoggedOut } from '@/lib/auth/offline-session';
 import { setGuestModeActive, setSessionSource } from '@/lib/auth/session-state';
 import { supabase } from '@/lib/supabase';
 
-const REMOTE_API_BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL?.trim().replace(/\/+$/, '') || 'https://thehappyapp.co.uk';
+const REMOTE_API_BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL?.trim().replace(/\/+$/, '') || 'https://passagesounds.app';
 const API_BASE_URL = Platform.OS === 'web' ? '/api-proxy' : REMOTE_API_BASE_URL;
 const ACCESS_TOKEN_KEY = 'passage.auth.access_token';
 const REFRESH_TOKEN_KEY = 'passage.auth.refresh_token';
 const LEGACY_ACCESS_TOKEN_KEYS = ['access_token', 'haven.auth.access_token'] as const;
 const LEGACY_REFRESH_TOKEN_KEY = 'haven.auth.refresh_token';
+const REQUEST_TIMEOUT_MS = 15_000;
 
 export type AuthUser = {
   id?: string;
@@ -205,9 +206,15 @@ function buildHeaders(options: RequestInit) {
 async function apiRequest<T>(path: string, options: RequestInit = {}) {
   let response: Response;
 
+  // Bound every request so a stalled network cannot hang a sign-in or the
+  // launch-time token refresh indefinitely (audit M-3).
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(new Error('Request timed out')), REQUEST_TIMEOUT_MS);
+
   try {
     response = await fetch(apiUrl(path), {
       ...options,
+      signal: options.signal ?? controller.signal,
       headers: buildHeaders(options),
     });
   } catch (error) {
@@ -218,6 +225,8 @@ async function apiRequest<T>(path: string, options: RequestInit = {}) {
       `Unable to reach the API server. Please check the backend URL or deployment.${details}`,
       { cause: error }
     );
+  } finally {
+    clearTimeout(timer);
   }
 
   const data = await parseResponse(response);
@@ -266,13 +275,15 @@ async function rememberToken(response: AuthResponse, requireAccessToken = true) 
   const nextAccessToken = accessTokenCandidate?.value;
   const nextRefreshToken = refreshTokenCandidate?.value;
 
-  console.log(
-    'AUTH token exists:',
-    Boolean(nextAccessToken),
-    getShortTokenLog(nextAccessToken),
-    'source:',
-    accessTokenCandidate?.source ?? 'none'
-  );
+  if (__DEV__) {
+    console.log(
+      'AUTH token exists:',
+      Boolean(nextAccessToken),
+      getShortTokenLog(nextAccessToken),
+      'source:',
+      accessTokenCandidate?.source ?? 'none'
+    );
+  }
 
   if (!nextAccessToken) {
     if (requireAccessToken) {
@@ -418,10 +429,18 @@ export function resetPassword(payload: { newPassword: string; access_token?: str
   });
 }
 
+/**
+ * Routed through `apiClient` (not the in-memory-only `apiRequest`) so it also
+ * works for Google/Apple sessions, whose token lives in the Supabase client
+ * rather than the Passage `accessToken` variable, and so an expired token is
+ * refreshed on a 401 instead of failing outright (audit H-1).
+ */
 export function changePassword(payload: { oldPassword: string; newPassword: string }) {
-  return apiRequest<{ message?: string }>('/api/change-password', {
-    body: JSON.stringify(payload),
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const { apiClient } = require('./api/client') as typeof import('./api/client');
+  return apiClient<{ message?: string }>('/api/change-password', {
     method: 'POST',
+    body: JSON.stringify(payload),
   });
 }
 
@@ -451,17 +470,30 @@ export function uploadProfileImage(image: ProfileImageUpload) {
 }
 
 export async function logout() {
-  const response = await apiRequest<ApiResponse<{ message?: string }>>('/api/logout', {
-    method: 'POST',
-  });
-
-  clearAuthTokens();
-  await markLoggedOut();
-  return response;
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const { apiClient } = require('./api/client') as typeof import('./api/client');
+  try {
+    return await apiClient<ApiResponse<{ message?: string }>>('/api/logout', {
+      method: 'POST',
+    });
+  } finally {
+    // Always drop the local session even if the server call fails — the user
+    // asked to sign out.
+    clearAuthTokens();
+    await markLoggedOut();
+  }
 }
 
+/**
+ * Routed through `apiClient` so account deletion works for Google/Apple users
+ * in the same session they signed in. Apple requires working in-app deletion
+ * (Guideline 5.1.1(v)); the old in-memory-only client sent no Authorization for
+ * social sessions and the DELETE 401'd (audit H-1).
+ */
 export async function deleteAccount() {
-  const response = await apiRequest<ApiResponse<{ message?: string }>>('/api/delete-account', {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const { apiClient } = require('./api/client') as typeof import('./api/client');
+  const response = await apiClient<ApiResponse<{ message?: string }>>('/api/delete-account', {
     method: 'DELETE',
   });
 

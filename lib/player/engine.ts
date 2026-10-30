@@ -6,6 +6,7 @@ import {
   type AudioPlayer,
   type AudioStatus,
 } from 'expo-audio';
+import * as Network from 'expo-network';
 import { Platform } from 'react-native';
 
 import {
@@ -44,7 +45,6 @@ const LOCK_SCREEN_OPTIONS = { showSeekForward: true, showSeekBackward: true };
  */
 const WATCHDOG_INTERVAL_MS = 1000;
 const AUDIO_OPERATION_TIMEOUT_MS = 15_000;
-const MAX_RECOVERY_ATTEMPTS = 5;
 
 function withAudioTimeout<T>(operation: Promise<T>): Promise<T> {
   return new Promise((resolve, reject) => {
@@ -64,9 +64,10 @@ const BUFFERING_TIMEOUT_MS = 10_000;
 /**
  * The first two recovery reloads happen as soon as the watchdog declares the
  * source stuck. Later reloads back off so a long offline spell does not hammer
- * the network. Persistent failure eventually exposes an explicit retry.
+ * the network. The final delay is reused indefinitely: a slow connection must
+ * never become a permanent failure merely because it stayed slow for a while.
  */
-const RECOVERY_BACKOFF_MS = [0, 0, 5_000, 10_000, 20_000, 30_000] as const;
+const RECOVERY_BACKOFF_MS = [0, 0, 5_000, 10_000, 20_000, 30_000, 60_000] as const;
 /** Unbroken playback this long closes a failure, restoring the full retry budget. */
 const RECOVERY_RESET_MS = 20_000;
 /** Movement smaller than this is rounding, not progress. */
@@ -188,6 +189,9 @@ export function createPlayerEngine(options: EngineOptions = {}): PlayerEngine {
   let recoveryAttempts = 0;
   /** Earliest time another recovery reload may run after repeated failures. */
   let nextRecoveryAt = 0;
+  let recoveryActive = false;
+  let networkUnavailable: boolean | null = null;
+  let networkSubscription: { remove: () => void } | null = null;
 
   const listenerSets = new Set<EngineListeners>();
 
@@ -207,6 +211,46 @@ export function createPlayerEngine(options: EngineOptions = {}): PlayerEngine {
     lastIsPlaying = isPlaying;
     lastIsBuffering = isBuffering;
     emit('onPlaybackChange', { isPlaying, isBuffering });
+  }
+
+  function reportRecovery(isRecovering: boolean) {
+    if (recoveryActive === isRecovering) return;
+    recoveryActive = isRecovering;
+    emit('onRecoveryStateChange', { isRecovering });
+  }
+
+  function applyNetworkState(state: Network.NetworkState) {
+    const nextUnavailable =
+      state.isConnected === false || state.isInternetReachable === false;
+    const wasUnavailable = networkUnavailable;
+    networkUnavailable = nextUnavailable;
+
+    // Connectivity returning is a stronger signal than the retry timer. Resume
+    // immediately instead of making the listener wait out a 60-second backoff.
+    if (
+      wasUnavailable === true &&
+      !nextUnavailable &&
+      wantsPlayback &&
+      hasSource &&
+      recoveryActive
+    ) {
+      nextRecoveryAt = 0;
+      handleStall('connection was restored');
+    }
+  }
+
+  function startNetworkMonitoring() {
+    if (networkSubscription) return;
+    networkSubscription = Network.addNetworkStateListener(applyNetworkState);
+    void Network.getNetworkStateAsync().then(applyNetworkState).catch(() => {
+      // The watchdog still provides timed recovery if state cannot be read.
+    });
+  }
+
+  function stopNetworkMonitoring() {
+    networkSubscription?.remove();
+    networkSubscription = null;
+    networkUnavailable = null;
   }
 
   function lockScreenMetadata(track: PlayableTrack): AudioMetadata {
@@ -405,6 +449,7 @@ export function createPlayerEngine(options: EngineOptions = {}): PlayerEngine {
         if (now - movingSince >= RECOVERY_RESET_MS) {
           recoveryAttempts = 0;
           nextRecoveryAt = 0;
+          reportRecovery(false);
         }
         return;
       }
@@ -421,22 +466,22 @@ export function createPlayerEngine(options: EngineOptions = {}): PlayerEngine {
     }
   }
 
-  /** Recover transient failures, then offer an explicit retry instead of an endless spinner. */
+  /** Recover transient stream failures for as long as playback is still wanted. */
   function handleStall(reason: string) {
     const now = Date.now();
     if (now < nextRecoveryAt) return;
 
-    if (recoveryAttempts >= MAX_RECOVERY_ATTEMPTS) {
-      void giveUp('exceeded the automatic retry limit');
-      return;
-    }
+    reportRecovery(true);
+    // Avoid repeated URL opens while the OS knows the device is offline. The
+    // network listener retries immediately when connectivity returns.
+    if (networkUnavailable === true) return;
 
     recoveryAttempts += 1;
     const backoffIndex = Math.min(recoveryAttempts, RECOVERY_BACKOFF_MS.length - 1);
     nextRecoveryAt = now + RECOVERY_BACKOFF_MS[backoffIndex];
     console.warn(
       `[player] playback ${reason}; reloading at ${Math.round(resumeTarget)}s ` +
-        `(attempt ${recoveryAttempts}; automatic retries remain enabled)`
+        `(attempt ${recoveryAttempts}; will keep retrying)`
     );
     reportPlayerDiagnostic({ event: 'recovery', trackId: currentTrack?.id, attempt: recoveryAttempts, reason });
     reload(resumeTarget);
@@ -489,6 +534,7 @@ export function createPlayerEngine(options: EngineOptions = {}): PlayerEngine {
     reportPlayerDiagnostic({ event: 'failed', trackId: trackId ?? undefined, reason, attempt: recoveryAttempts });
     wantsPlayback = false;
     stopWatching();
+    reportRecovery(false);
 
     emit('onProgress', { position, duration, trackId });
     emit('onPlaybackFailed');
@@ -618,6 +664,7 @@ export function createPlayerEngine(options: EngineOptions = {}): PlayerEngine {
     knownDuration = 0;
     recoveryAttempts = 0;
     nextRecoveryAt = 0;
+    recoveryActive = false;
     lastPosition = -1;
     lastDuration = -1;
     lastIsPlaying = false;
@@ -684,6 +731,7 @@ export function createPlayerEngine(options: EngineOptions = {}): PlayerEngine {
     playRequest += 1;
     waitingForSession = false;
     stopWatching();
+    stopNetworkMonitoring();
 
     statusSubscription?.remove();
     statusSubscription = null;
@@ -691,6 +739,7 @@ export function createPlayerEngine(options: EngineOptions = {}): PlayerEngine {
     if (current) disposePlayer(current);
 
     // Reset synchronously: a late session deactivation must never erase a newer load.
+    reportRecovery(false);
     resetBookkeeping();
     emit('onPlaybackChange', { isPlaying: false, isBuffering: false });
     if (emitResetProgress) {
@@ -762,6 +811,7 @@ export function createPlayerEngine(options: EngineOptions = {}): PlayerEngine {
       playRequest += 1;
       waitingForSession = false;
       currentTrack = track;
+      startNetworkMonitoring();
       reportPlayerDiagnostic({ event: 'load', trackId: track.id });
       completionFired = false;
       sourceOpen = false;
@@ -774,6 +824,7 @@ export function createPlayerEngine(options: EngineOptions = {}): PlayerEngine {
       nextRecoveryAt = 0;
       wantsPlayback = false;
       stopWatching();
+      reportRecovery(false);
       lastPosition = -1;
       lastDuration = -1;
 
@@ -867,6 +918,7 @@ export function createPlayerEngine(options: EngineOptions = {}): PlayerEngine {
       wantsPlayback = false;
       resumeAfterSeek = false;
       stopWatching();
+      reportRecovery(false);
       player.pause();
       reportPlayback(false, false);
       reportPlayerDiagnostic({ event: 'pause', trackId: currentTrack?.id });
@@ -938,12 +990,14 @@ export function createPlayerEngine(options: EngineOptions = {}): PlayerEngine {
       backgroundPlaybackEnabled = enabled;
       if (!ready) return;
 
-      await setAudioModeAsync({
+      // Wrapped like every other audio-session call so a hung native request
+      // cannot stall the caller indefinitely (audit L-3).
+      await withAudioTimeout(setAudioModeAsync({
         playsInSilentMode: true,
         shouldPlayInBackground: enabled,
         interruptionMode: 'doNotMix',
         allowsRecording: false,
-      });
+      }));
     },
 
     setLoopEnabled: (enabled: boolean) => {

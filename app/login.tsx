@@ -38,10 +38,11 @@ const background = require('@/assets/images/auth-login-oak-blue-hour-v6.webp');
 
 export default function LoginScreen() {
   const router = useRouter();
-  const { signedOut, from, launch } = useLocalSearchParams<{
+  const { signedOut, from, launch, origin } = useLocalSearchParams<{
     signedOut?: string;
     from?: string;
     launch?: string;
+    origin?: string;
   }>();
   const isFromIntro = from === 'intro';
   const isSignedOut = signedOut === '1';
@@ -192,7 +193,7 @@ export default function LoginScreen() {
           <AuthSocialButton disabled={isSubmitting} icon={appleIcon} label={'Continue with Apple'} onPress={() => void handleApplePress()} />
           <AuthSocialButton disabled={isSubmitting} icon={googleIcon} label={'Continue with Google'} onPress={() => void handleGooglePress()} />
         </View>
-        <Pressable accessibilityRole={'button'} hitSlop={8} onPress={() => router.push('/welcome')} style={styles.signupButton}>
+        <Pressable accessibilityRole={'button'} hitSlop={8} onPress={() => router.push(origin === 'guest-sign-out' ? '/welcome?from=guest-sign-out' : '/welcome')} style={styles.signupButton}>
           <Text style={styles.signupPrompt}>Don&apos;t have an account? <Text style={styles.signupLink}>Sign up</Text></Text>
         </Pressable>
         </View>

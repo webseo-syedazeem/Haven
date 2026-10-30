@@ -6,10 +6,18 @@ import { markLoggedOut } from '@/lib/auth/offline-session';
 import { clearAuthTokens, getAccessToken, getRefreshToken, refreshSession } from '@/lib/passage-api';
 import { Platform } from 'react-native';
 
-export const API_BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL?.trim().replace(/\/+$/, '') || 'https://thehappyapp.co.uk';
+export const API_BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL?.trim().replace(/\/+$/, '') || 'https://passagesounds.app';
 export const AUTH_TOKEN_KEY = 'passage.auth.access_token';
 const LEGACY_AUTH_TOKEN_KEYS = ['access_token', 'haven.auth.access_token'] as const;
 const RATE_LIMIT_MAX_RETRIES = 2;
+/**
+ * No request may hang forever. Without this, a captive portal or a server that
+ * accepts the socket but never responds left the launch screen (which awaits
+ * `/api/me`) waiting for the OS socket timeout (audit M-3). A timeout surfaces
+ * as a `NetworkError`, which the launch path treats as "offline" — the session
+ * is kept, not dropped.
+ */
+const REQUEST_TIMEOUT_MS = 15_000;
 const RATE_LIMIT_FALLBACK_DELAYS_MS = [1_000, 2_000] as const;
 /** A long server window must not leave a screen apparently hung for minutes. */
 const RATE_LIMIT_MAX_DELAY_MS = 10_000;
@@ -62,15 +70,6 @@ async function getStoredItem(key: string) {
   return SecureStore.getItemAsync(key);
 }
 
-async function setStoredItem(key: string, value: string) {
-  if (Platform.OS === 'web') {
-    getWebStorage()?.setItem(key, value);
-    return;
-  }
-
-  await SecureStore.setItemAsync(key, value);
-}
-
 async function deleteStoredItem(key: string) {
   if (Platform.OS === 'web') {
     getWebStorage()?.removeItem(key);
@@ -80,16 +79,38 @@ async function deleteStoredItem(key: string) {
   await SecureStore.deleteItemAsync(key);
 }
 
-async function getStoredToken() {
+type TokenSource = 'passage' | 'supabase';
+
+export type ResolvedToken = { token: string | null; source: TokenSource | null };
+
+/**
+ * Resolves the bearer token for an authenticated request and records which
+ * system it came from, so a 401 is refreshed against the right one.
+ *
+ * - Passage (email/password) sessions live in memory / SecureStore.
+ * - Google, Apple and email-confirm sessions live only in the Supabase client.
+ *   Those are read *live* here on every call — `getSession()` transparently
+ *   refreshes an expired access token — and are **never** copied into
+ *   SecureStore. Caching that copy, which supabase-js could never refresh, was
+ *   the root cause of social/Apple users being force-signed-out about an hour
+ *   after signing in (audit C-1). A live Supabase session therefore takes
+ *   precedence over any older SecureStore copy a previous build may have left.
+ */
+async function resolveRequestToken(): Promise<ResolvedToken> {
   const inMemory = getAccessToken();
-  if (inMemory) return inMemory;
+  if (inMemory) return { token: inMemory, source: 'passage' };
+
+  const { data } = await supabase.auth.getSession();
+  const supabaseToken = data.session?.access_token ?? null;
+  if (supabaseToken) return { token: supabaseToken, source: 'supabase' };
+
   const current = await getStoredItem(AUTH_TOKEN_KEY);
-  if (current) return current;
+  if (current) return { token: current, source: 'passage' };
   for (const key of LEGACY_AUTH_TOKEN_KEYS) {
     const legacy = await getStoredItem(key);
-    if (legacy) return legacy;
+    if (legacy) return { token: legacy, source: 'passage' };
   }
-  return null;
+  return { token: null, source: null };
 }
 
 export async function clearStoredAccessToken() {
@@ -140,25 +161,10 @@ let refreshInFlight: Promise<string | null> | null = null;
  * refresh token, offline, or the server has genuinely refused the session —
  * that last case also drops the session, see `forceSignOutStaleSession`).
  */
-async function refreshAccessToken(): Promise<string | null> {
-  refreshInFlight ??= (async () => {
-    const refreshToken = getRefreshToken();
-    if (!refreshToken) {
-      await forceSignOutStaleSession();
-      return null;
-    }
-
-    try {
-      await refreshSession(refreshToken);
-      return getAccessToken();
-    } catch (error) {
-      if (isNetworkError(error) || !isAuthFailure(error)) return null;
-      // The server specifically refused the refresh token: the session is over.
-      // Rate limits and transient server errors must leave the session intact.
-      await forceSignOutStaleSession();
-      return null;
-    }
-  })();
+async function refreshAccessToken(source: TokenSource): Promise<string | null> {
+  refreshInFlight ??= source === 'supabase'
+    ? refreshSupabaseToken()
+    : refreshPassageToken();
 
   try {
     return await refreshInFlight;
@@ -167,14 +173,66 @@ async function refreshAccessToken(): Promise<string | null> {
   }
 }
 
+/**
+ * Google/Apple/email-confirm sessions refresh through supabase-js, the only
+ * holder of their rotating refresh token. A reachable auth rejection (4xx) ends
+ * the session; anything else (offline, 5xx) is transient and keeps it.
+ */
+async function refreshSupabaseToken(): Promise<string | null> {
+  try {
+    const { data, error } = await supabase.auth.refreshSession();
+    const next = data.session?.access_token ?? null;
+    if (next) return next;
+
+    const status = (error as { status?: number } | null)?.status;
+    if (typeof status === 'number' && status >= 400 && status < 500) {
+      await forceSignOutStaleSession();
+    }
+    return null;
+  } catch {
+    // Network/transient failure — the session is still presumed valid.
+    return null;
+  }
+}
+
+async function refreshPassageToken(): Promise<string | null> {
+  const refreshToken = getRefreshToken();
+  if (!refreshToken) {
+    await forceSignOutStaleSession();
+    return null;
+  }
+
+  try {
+    await refreshSession(refreshToken);
+    return getAccessToken();
+  } catch (error) {
+    if (isNetworkError(error) || !isAuthFailure(error)) return null;
+    // The server specifically refused the refresh token: the session is over.
+    // Rate limits and transient server errors must leave the session intact.
+    await forceSignOutStaleSession();
+    return null;
+  }
+}
+
 async function send(path: string, options: RequestInit, token: string | null): Promise<Response> {
-  const { body, headers: optionHeaders, ...fetchOptions } = options;
+  const { body, headers: optionHeaders, signal: callerSignal, ...fetchOptions } = options;
   const hasBody = body !== undefined && body !== null;
+
+  // A dedicated controller enforces the timeout while still honouring a caller's
+  // own abort signal (e.g. the rate-limit backoff), so neither source is lost.
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(new Error('Request timed out')), REQUEST_TIMEOUT_MS);
+  const onCallerAbort = () => controller.abort(callerSignal?.reason);
+  if (callerSignal) {
+    if (callerSignal.aborted) controller.abort(callerSignal.reason);
+    else callerSignal.addEventListener('abort', onCallerAbort, { once: true });
+  }
 
   try {
     return await fetch(apiUrl(path), {
       ...fetchOptions,
       ...(hasBody ? { body } : {}),
+      signal: controller.signal,
       headers: {
         ...(hasBody ? { 'Content-Type': 'application/json' } : {}),
         ...(token ? { Authorization: `Bearer ${token}` } : {}),
@@ -182,9 +240,13 @@ async function send(path: string, options: RequestInit, token: string | null): P
       },
     });
   } catch (error) {
-    // Nobody answered. This says nothing about the session, so it is raised as
-    // a distinct type the launch path can tell apart from a rejection.
+    // Nobody answered (or we timed out). This says nothing about the session, so
+    // it is raised as a distinct type the launch path can tell apart from a
+    // rejection.
     throw new NetworkError('Could not reach the server.', { cause: error });
+  } finally {
+    clearTimeout(timer);
+    callerSignal?.removeEventListener('abort', onCallerAbort);
   }
 }
 
@@ -254,21 +316,7 @@ export async function apiClient<T>(
   // manual refetch or deep link still must not put a token-only request on the
   // wire while the explicit guest flag is active.
   assertGuestMayCall(path);
-  let token = await getStoredToken();
-
-  // 2. SecureStore se try karo
-  if (!token) {
-    token = await getStoredToken();
-  }
-
-  // 3. Supabase session se try karo
-  if (!token) {
-    const { data } = await supabase.auth.getSession();
-    token = data.session?.access_token ?? null;
-    if (token) {
-      await setStoredItem(AUTH_TOKEN_KEY, token);
-    }
-  }
+  const { token, source } = await resolveRequestToken();
 
   const res = await sendWithRateLimitRetry(
     () => send(path, options, token),
@@ -279,8 +327,8 @@ export async function apiClient<T>(
     return await readEnvelope<T>(res);
   } catch (error) {
     if (error instanceof ApiError && error.status === 401) {
-      if (token) {
-        const freshToken = await refreshAccessToken();
+      if (token && source) {
+        const freshToken = await refreshAccessToken(source);
         if (freshToken) {
           return readEnvelope<T>(
             await sendWithRateLimitRetry(
@@ -330,10 +378,13 @@ async function readEnvelope<T>(res: Response): Promise<T> {
   }
 
   if (res.status === 503) {
+    // Do NOT blank the app on one endpoint's 503 (audit H-4). Ask the
+    // maintenance guard to confirm against `/health`; only a real `/health`
+    // outage takes over, and then only as an overlay above the live Stack.
     const statusBridge = globalThis as typeof globalThis & {
-      __passageSetServiceUnavailable?: (value: boolean) => void;
+      __passageRequestHealthCheck?: () => void;
     };
-    statusBridge.__passageSetServiceUnavailable?.(true);
+    statusBridge.__passageRequestHealthCheck?.();
   }
   if (!res.ok) {
     throw new ApiError(data?.error ?? `Request failed with status ${res.status}`, res.status, data);
@@ -352,19 +403,7 @@ export async function apiClientFormData<T>(
   method = 'POST'
 ): Promise<T> {
   assertGuestMayCall(path);
-  let token = getAccessToken();
-
-  if (!token) {
-    token = await getStoredToken();
-  }
-
-  if (!token) {
-    const { data } = await supabase.auth.getSession();
-    token = data.session?.access_token ?? null;
-    if (token) {
-      await setStoredItem(AUTH_TOKEN_KEY, token);
-    }
-  }
+  const { token, source } = await resolveRequestToken();
 
   const sendForm = async (bearer: string | null): Promise<Response> => {
     try {
@@ -386,8 +425,8 @@ export async function apiClientFormData<T>(
     return await readEnvelope<T>(res);
   } catch (error) {
     if (error instanceof ApiError && error.status === 401) {
-      if (token) {
-        const freshToken = await refreshAccessToken();
+      if (token && source) {
+        const freshToken = await refreshAccessToken(source);
         if (freshToken) {
           return readEnvelope<T>(
             await sendWithRateLimitRetry(() => sendForm(freshToken))

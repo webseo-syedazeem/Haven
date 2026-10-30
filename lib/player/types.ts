@@ -30,6 +30,12 @@ export type PlayableTrack = {
 export type EngineListeners = {
   onPlaybackChange?: (state: { isPlaying: boolean; isBuffering: boolean }) => void;
   /**
+   * True while the engine is keeping a stalled stream alive and retrying it.
+   * During a backoff window the native player can be idle even though Passage
+   * is still waiting for the stream.
+   */
+  onRecoveryStateChange?: (state: { isRecovering: boolean }) => void;
+  /**
    * `trackId` is the track this position was captured for — null for an event
    * that is not about any one track (e.g. a full reset). A listener that
    * tracks "the current track" should drop a non-null id that does not match

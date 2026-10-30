@@ -1,4 +1,5 @@
 import { useFocusEffect } from '@react-navigation/native';
+import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useQuery } from '@tanstack/react-query';
 import { useCallback, useState } from 'react';
@@ -34,7 +35,8 @@ type Provider = 'apple' | 'email' | 'google' | 'guest' | null;
 
 export default function SaveYourSpaceScreen() {
   const router = useRouter();
-  const { startTrack } = useLocalSearchParams<{ startTrack?: string }>();
+  const { startTrack, from } = useLocalSearchParams<{ startTrack?: string; from?: string }>();
+  const isGuestSignOutFlow = from === 'guest-sign-out' && isGuestModeActive();
 
   // If the user pressed back from onboarding (guest mode was set but onboarding
   // is not complete), clear guest mode so the app does not skip onboarding on
@@ -52,6 +54,19 @@ export default function SaveYourSpaceScreen() {
   const { playSoundscape } = usePlayerActions();
   const [loading, setLoading] = useState<Provider>(null);
   const [errorMessage, setErrorMessage] = useState('');
+
+  const handleBack = useCallback(() => {
+    if (!isGuestSignOutFlow) {
+      router.back();
+      return;
+    }
+
+    // This is an intentional exit from the completed guest experience, not a
+    // return to the Profile tab. Start a fresh root stack at the first screen;
+    // `reset=1` clears guest/onboarding state before showing "Get started".
+    if (router.canDismiss()) router.dismissAll();
+    router.replace('/?reset=1');
+  }, [isGuestSignOutFlow, router]);
 
   // Reuses the cached pick from the recommendations screen (same query key,
   // still within its staleTime) rather than re-fetching it here.
@@ -162,7 +177,11 @@ export default function SaveYourSpaceScreen() {
     try {
       // Email registration collects the account details first. Once the email
       // is confirmed, /verified routes a new profile into onboarding.
-      router.push('/create-account?from=onboarding');
+      router.push(
+        isGuestSignOutFlow
+          ? '/create-account?from=onboarding&origin=guest-sign-out'
+          : '/create-account?from=onboarding'
+      );
     } finally {
       setLoading(null);
     }
@@ -197,8 +216,20 @@ export default function SaveYourSpaceScreen() {
       backgroundImage={background}
       backgroundOverlayColor="rgba(7, 11, 16, 0.30)"
       contentContainerStyle={styles.content}
-      footer={<AuthLegalFooter />}
-      onBack={() => router.back()}>
+      footer={
+        <View style={styles.footerContent}>
+          {isGuestSignOutFlow && (
+            <AuthButton
+              disabled={Boolean(loading)}
+              icon={<Ionicons color={PassageColors.textPrimary} name="home-outline" size={19} />}
+              label="Back to Home"
+              onPress={() => resetToMainApp(router)}
+            />
+          )}
+          <AuthLegalFooter />
+        </View>
+      }
+      onBack={handleBack}>
       <Text style={styles.heading}>Save your space</Text>
       <Text style={styles.body}>
         Create an account to keep your preferences with you.
@@ -236,7 +267,9 @@ export default function SaveYourSpaceScreen() {
         accessibilityRole="button"
         disabled={Boolean(loading)}
         hitSlop={8}
-        onPress={() => router.push('/login')}
+        onPress={() =>
+          router.push(isGuestSignOutFlow ? '/login?origin=guest-sign-out' : '/login')
+        }
         style={styles.signInButton}>
         <Text style={styles.signInPrompt}>
           Already have an account? <Text style={styles.signInLink}>Sign in</Text>
@@ -286,6 +319,10 @@ const styles = StyleSheet.create({
     lineHeight: 18,
     marginTop: 12,
     textAlign: 'center',
+  },
+  footerContent: {
+    rowGap: 14,
+    width: '100%',
   },
   guestLink: {
     color: 'rgba(255, 255, 255, 0.72)',

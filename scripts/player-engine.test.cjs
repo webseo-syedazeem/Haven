@@ -120,19 +120,17 @@ test('late teardown completion cannot erase a newly loaded source', async () => 
   assert.equal(named(harness.players[1].calls, 'play').length, 1);
 });
 
-test('persistent buffering stops after bounded recovery and a user can retry', async () => {
+test('persistent buffering keeps recovering with bounded backoff instead of permanently stopping', async () => {
   const harness = createEngineHarness();
   await harness.engine.load(track('a'));
   await harness.engine.play();
   const seen = watch(harness.engine);
   await harness.advance(180_000);
-  assert.equal(seen.failures, 1);
-  assert.equal(harness.players[0].released, true);
-  assert.equal(named(harness.players[0].calls, 'replace').length, 6);
-  assert.equal(harness.diagnostics.filter((event) => event.event === 'failed').length, 1);
-  await harness.engine.load(track('a'));
-  await harness.engine.play();
-  assert.equal(harness.players.length, 2);
+  assert.equal(seen.failures, 0);
+  assert.equal(harness.players[0].released, false);
+  assert.ok(named(harness.players[0].calls, 'replace').length > 6);
+  assert.equal(harness.diagnostics.filter((event) => event.event === 'failed').length, 0);
+  assert.equal(harness.players.length, 1);
   assert.equal(harness.engine.hasSource(), true);
 });
 
@@ -142,6 +140,8 @@ function createEngineHarness({ artworkCache = null, platformOS = 'android' } = {
   const audioActive = [];
   const warnings = [];
   const diagnostics = [];
+  const networkListeners = new Set();
+  let networkState = { isConnected: true, isInternetReachable: true };
   const scheduled = new Map();
   const intervals = new Map();
   let nextTimeout = 1;
@@ -235,6 +235,13 @@ function createEngineHarness({ artworkCache = null, platformOS = 'android' } = {
     Date: class extends Date { static now() { return now; } },
     require(id) {
       if (id === 'expo-audio') return audio;
+      if (id === 'expo-network') return {
+        addNetworkStateListener(listener) {
+          networkListeners.add(listener);
+          return { remove: () => networkListeners.delete(listener) };
+        },
+        getNetworkStateAsync: async () => networkState,
+      };
       if (id === 'react-native') return { Platform: { OS: platformOS } };
       if (id === '@/assets/audio/end-tone.wav') return 'end-tone.wav';
       if (id === './types') return { getArtworkCache: () => artworkCache, reportPlayerDiagnostic: (event) => diagnostics.push(plain(event)) };
@@ -258,6 +265,10 @@ function createEngineHarness({ artworkCache = null, platformOS = 'android' } = {
   return {
     engine: module.exports.engine, createPlayerEngine: module.exports.createPlayerEngine,
     players, audioModes, audioActive, scheduled, warnings, flush, audio, diagnostics,
+    setNetworkState(nextState) {
+      networkState = { ...networkState, ...nextState };
+      for (const listener of networkListeners) listener(networkState);
+    },
     runTimeouts(delay) {
       for (const [id, timeout] of [...scheduled]) {
         if (timeout.delay !== delay) continue;
@@ -740,7 +751,7 @@ test('a seek that leaves the native player idle is reloaded at the seek target a
   assert.deepEqual(seen.progress.at(-1), { position: 1200, duration: 3600, trackId: 'hour' });
   assert.match(
     harness.warnings[0],
-    /went idle; reloading at 1200s \(attempt 1; automatic retries remain enabled\)/
+    /went idle; reloading at 1200s \(attempt 1; will keep retrying\)/
   );
 
   // The fresh source opens: the target lands first, and only then does it play.
@@ -796,7 +807,7 @@ test('recovery keeps retrying with backoff and resumes when the source becomes a
   assert.equal(native.released, false);
   await harness.advance(1000);
   assert.equal(named(native.calls, 'replace').length, 4);
-  assert.match(harness.warnings.at(-1), /attempt 3; automatic retries remain enabled/);
+  assert.match(harness.warnings.at(-1), /attempt 3; will keep retrying/);
 
   // Connectivity returns while that reload is opening. It seeks back to the
   // saved position and starts without another listener action.
@@ -811,6 +822,22 @@ test('recovery keeps retrying with backoff and resumes when the source becomes a
   assert.equal(native.released, false);
   assert.deepEqual(seen.changes.at(-1), { isPlaying: true, isBuffering: false });
   assert.equal(harness.players.length, 1);
+});
+
+test('offline recovery waits without hammering and retries immediately when internet returns', async () => {
+  const harness = createEngineHarness();
+  const native = await startPlaying(harness);
+  const seen = watch(harness.engine);
+
+  harness.setNetworkState({ isConnected: false, isInternetReachable: false });
+  native.emit(idleAt(5));
+  await harness.advance(120_000);
+  assert.equal(named(native.calls, 'replace').length, 1);
+  assert.equal(seen.failures, 0);
+
+  harness.setNetworkState({ isConnected: true, isInternetReachable: true });
+  assert.equal(named(native.calls, 'replace').length, 2);
+  assert.match(harness.warnings.at(-1), /connection was restored/);
 });
 
 test('slow buffering after a seek is given time rather than treated as a failure', async () => {

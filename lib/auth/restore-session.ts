@@ -18,6 +18,7 @@ import {
 } from '@/lib/auth/session-state';
 import { clearAuthTokens, refreshSession, setAccessToken, setAuthTokens } from '@/lib/passage-api';
 import { queryClient } from '@/lib/query-client';
+import { supabase } from '@/lib/supabase';
 
 const ACCESS_TOKEN_KEY = 'passage.auth.access_token';
 const REFRESH_TOKEN_KEY = 'passage.auth.refresh_token';
@@ -123,6 +124,30 @@ async function runRestore(): Promise<SessionRestoreStatus> {
     }
 
     if (!accessToken) {
+      // Google/Apple/email-confirm sessions live only in the Supabase client,
+      // not in the Passage SecureStore keys. supabase-js has already restored
+      // (and, if expired, refreshed) that session from its own storage by now,
+      // so validate it the same way — `userApi.get` reads the live Supabase
+      // token through `apiClient`. Without this, those users were sent to the
+      // login screen on every cold start (audit C-1).
+      const { data: supabaseSession } = await supabase.auth.getSession();
+      if (supabaseSession.session?.access_token) {
+        try {
+          const me = await userApi.get();
+          queryClient.setQueryData(ME_QUERY_KEY, me);
+          await cacheProfile(me);
+          await markLoggedIn();
+          return 'restored';
+        } catch (error) {
+          if (isNetworkError(error) || !isAuthFailure(error)) return offlineOutcome();
+          // A reachable server rejected the Supabase session: it is genuinely over.
+          try {
+            await supabase.auth.signOut();
+          } catch {
+            // Best effort — the markLoggedOut below is what gates the next launch.
+          }
+        }
+      }
       await markLoggedOut();
       return 'signed-out';
     }

@@ -5,7 +5,6 @@ import { apiClient } from '@/lib/api/client';
 import { userApi, type MeApiResponse } from '@/lib/api/user';
 import { cacheProfile, markLoggedIn } from '@/lib/auth/offline-session';
 import { setSessionSource } from '@/lib/auth/session-state';
-import { setAuthTokens } from '@/lib/passage-api';
 import { migrateGuestOnboardingAfterAuth } from '@/lib/onboarding';
 import { queryClient } from '@/lib/query-client';
 
@@ -22,10 +21,10 @@ export function hasEmailIdentity(user: User | null | undefined): boolean {
 
 /** Finalises a real Supabase session obtained from a confirmation/OAuth link. */
 export async function completeSupabaseAuth(session: Session): Promise<MeApiResponse> {
-  setAuthTokens({
-    accessToken: session.access_token,
-    refreshToken: session.refresh_token,
-  });
+  // The Supabase client already holds this session and is its sole refresher.
+  // Handing its rotating refresh token to the Passage layer as well used to let
+  // two refreshers race on the same token and force a sign-out (audit M-6).
+  // `apiClient` reads the live Supabase token on each request instead (C-1).
   setSessionSource('supabase', true);
   await markLoggedIn();
 

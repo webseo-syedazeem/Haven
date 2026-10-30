@@ -14,6 +14,46 @@ function getWebStorage() {
     : undefined;
 }
 
+const CHUNK_SIZE = 1800;
+
+/**
+ * A failed secure-store write otherwise surfaces only as "logged out on next
+ * launch", which is almost impossible to diagnose in the field. Report it.
+ */
+function reportSecureStoreError(operation: string, error: unknown) {
+  if (__DEV__) {
+    console.warn(`[secure-store] ${operation} failed`, error);
+  }
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const Sentry = require('@sentry/react-native');
+    Sentry.captureException?.(error, { tags: { subsystem: 'secure-store', operation } });
+  } catch {
+    // Sentry may be unavailable (e.g. web/test) — the dev warning above still fires.
+  }
+}
+
+/**
+ * Deletes every representation of `key` — the single-value entry, and any
+ * chunk set with its `_count`. Shared by setItem and removeItem so a write
+ * always starts from a clean slate.
+ */
+async function deleteAllChunks(key: string): Promise<void> {
+  const chunkCount = await SecureStore.getItemAsync(`${key}_count`);
+  if (chunkCount) {
+    const count = parseInt(chunkCount, 10);
+    // Delete the count FIRST so a crash mid-delete can never leave a count that
+    // outlives its chunks (which getItem would then reassemble into garbage).
+    await SecureStore.deleteItemAsync(`${key}_count`);
+    await Promise.all(
+      Array.from({ length: Number.isFinite(count) ? count : 0 }, (_, i) =>
+        SecureStore.deleteItemAsync(`${key}_${i}`)
+      )
+    );
+  }
+  await SecureStore.deleteItemAsync(key);
+}
+
 const createChunkedSecureStore = () => {
   return {
     async getItem(key: string): Promise<string | null> {
@@ -31,7 +71,8 @@ const createChunkedSecureStore = () => {
           if (chunk) value += chunk;
         }
         return value || null;
-      } catch {
+      } catch (error) {
+        reportSecureStoreError('getItem', error);
         return null;
       }
     },
@@ -43,20 +84,29 @@ const createChunkedSecureStore = () => {
           return;
         }
 
-        const chunkSize = 1800;
-        if (value.length <= chunkSize) {
+        // Clear any previous representation first: a short write after a chunked
+        // write used to leave a stale `${key}_count`, so getItem kept returning
+        // the OLD chunked value forever (audit H-7).
+        await deleteAllChunks(key);
+
+        if (value.length <= CHUNK_SIZE) {
           await SecureStore.setItemAsync(key, value);
           return;
         }
-        const chunks = [];
-        for (let i = 0; i < value.length; i += chunkSize) {
-          chunks.push(value.slice(i, i + chunkSize));
+
+        const chunks: string[] = [];
+        for (let i = 0; i < value.length; i += CHUNK_SIZE) {
+          chunks.push(value.slice(i, i + CHUNK_SIZE));
         }
-        await SecureStore.setItemAsync(`${key}_count`, String(chunks.length));
+        // Write the chunks first and the count LAST, so a crash mid-write never
+        // leaves a count pointing at chunks that aren't all there.
         await Promise.all(
           chunks.map((chunk, i) => SecureStore.setItemAsync(`${key}_${i}`, chunk))
         );
-      } catch {}
+        await SecureStore.setItemAsync(`${key}_count`, String(chunks.length));
+      } catch (error) {
+        reportSecureStoreError('setItem', error);
+      }
     },
 
     async removeItem(key: string): Promise<void> {
@@ -65,19 +115,10 @@ const createChunkedSecureStore = () => {
           getWebStorage()?.removeItem(key);
           return;
         }
-
-        const chunkCount = await SecureStore.getItemAsync(`${key}_count`);
-        if (chunkCount) {
-          const count = parseInt(chunkCount, 10);
-          await SecureStore.deleteItemAsync(`${key}_count`);
-          await Promise.all(
-            Array.from({ length: count }, (_, i) =>
-              SecureStore.deleteItemAsync(`${key}_${i}`)
-            )
-          );
-        }
-        await SecureStore.deleteItemAsync(key);
-      } catch {}
+        await deleteAllChunks(key);
+      } catch (error) {
+        reportSecureStoreError('removeItem', error);
+      }
     },
   };
 };

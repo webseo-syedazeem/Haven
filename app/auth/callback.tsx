@@ -288,9 +288,13 @@ export default function AuthCallback() {
         }
 
         if (recoveryCallback) {
+          // M-7: pass only a flow marker, not the access token. The recovery
+          // session is already set on the Supabase client above; the
+          // change-password screen reads the token from there at submit time,
+          // so it never lands in navigation state or screen analytics.
           const destination = {
             pathname: '/change-password',
-            params: { access_token: session.access_token },
+            params: { flow: 'recovery' },
           } as Href;
           setNavigationFallback({
             body: 'The recovery link is ready. Continue to choose a new password.',

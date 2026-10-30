@@ -31,13 +31,16 @@ export const unstable_settings = { anchor: '(tabs)' };
 function RootLayout() {
   const colorScheme = useColorScheme();
 
-  const [fontsLoaded] = useFonts({
+  const [fontsLoaded, fontError] = useFonts({
     [AppFonts.sansRegular]: require('../assets/fonts/Inter-VariableFont_opsz,wght.ttf'),
     [AppFonts.displayRegular]: require('../assets/fonts/CormorantGaramond-VariableFont_wght.ttf'),
     [AppFonts.displayMediumItalic]: CormorantGaramond_500Medium_Italic,
     [AppFonts.playfairRegular]: require('../assets/fonts/PlayfairDisplay-Regular.ttf'),
     [AppFonts.playfairMedium]: require('../assets/fonts/PlayfairDisplay-Medium.ttf'),
   });
+  // Proceed with system fonts if a font fails to load, rather than holding the
+  // splash screen forever on a null render (audit L-5).
+  const fontsReady = fontsLoaded || Boolean(fontError);
 
   useEffect(() => {
     void SystemUI.setBackgroundColorAsync('transparent');
@@ -49,12 +52,12 @@ function RootLayout() {
   }, []);
 
   useEffect(() => {
-    if (fontsLoaded) {
+    if (fontsReady) {
       void SplashScreen.hideAsync();
     }
-  }, [fontsLoaded]);
+  }, [fontsReady]);
 
-  if (!fontsLoaded) {
+  if (!fontsReady) {
     return null;
   }
 
@@ -122,7 +125,6 @@ function RootLayout() {
                   }}
                 />
                 <Stack.Screen name="auth/callback" options={{ headerShown: false }} />
-                <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />
                   </Stack>
                 </ServiceAvailability>
                 {/* `light` means light bar content, i.e. white navigation arrows. */}

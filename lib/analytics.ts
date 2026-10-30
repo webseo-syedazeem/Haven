@@ -12,7 +12,7 @@ import {
   type ProductEventProperties,
 } from '@/lib/analytics-events'
 
-const API_BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL?.trim().replace(/\/+$/, '') || 'https://thehappyapp.co.uk'
+const API_BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL?.trim().replace(/\/+$/, '') || 'https://passagesounds.app'
 export const ONBOARDING_PROGRESS_KEY = 'passage.analytics.onboarding_progress'
 export const analyticsSessionId = Crypto.randomUUID()
 

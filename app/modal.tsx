@@ -1,29 +1,12 @@
-import { Link } from 'expo-router';
-import { StyleSheet } from 'react-native';
+import { Redirect } from 'expo-router';
 
-import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
-
-export default function ModalScreen() {
-  return (
-    <ThemedView style={styles.container}>
-      <ThemedText type="title">This is a modal</ThemedText>
-      <Link href="/" dismissTo style={styles.link}>
-        <ThemedText type="link">Go to home screen</ThemedText>
-      </Link>
-    </ThemedView>
-  );
+/**
+ * Retired Expo-template modal screen. The original "This is a modal" template
+ * content was removed (audit M-11, App Store 2.1 completeness). Expo Router
+ * still registers every file under `app/` as a route, so rather than ship a
+ * stray screen this route simply bounces back to the app. The file can be
+ * deleted outright once the route is confirmed unused.
+ */
+export default function RetiredModalRoute() {
+  return <Redirect href="/" />;
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 20,
-  },
-  link: {
-    marginTop: 15,
-    paddingVertical: 15,
-  },
-});

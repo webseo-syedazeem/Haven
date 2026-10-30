@@ -13,8 +13,9 @@ Passage does not collect or process payment information.
 - Your preferences: preferred environments and sounds, sounds you have asked us to avoid, detail and session-length preferences, and your playback and notification settings.
 - Support messages: anything you send us through Contact Support, a problem report, or a soundscape request, including the email address you give us if you are not signed in.
 - Device notification token: only if you turn a notification on, so we have somewhere to send it.
+- Usage and diagnostics data: how you move through the app (screens viewed and actions such as starting or saving a soundscape), together with your account identifier so we can tell sessions apart, and crash, error and performance reports if the app misbehaves. These reports are configured not to include your name, email, soundscape titles or the web addresses of the audio you play.
 
-We do not collect health data, location, contacts, or advertising identifiers.
+We do not collect health data, precise location, contacts, or advertising identifiers.
 
 ## 2. How we use it
 
@@ -22,6 +23,7 @@ We do not collect health data, location, contacts, or advertising identifiers.
 - To choose what to recommend, and to hide anything you have asked to avoid.
 - To keep your library, playlists and preferences available when you sign in on another device.
 - To answer your support messages.
+- To understand how Passage is used, and to diagnose crashes, errors and performance problems, so we can fix and improve the app.
 - To keep the app and your account secure.
 
 We use your information only to operate, secure and improve the soundscape service described in this policy. We do not sell it.
@@ -36,6 +38,10 @@ We do not sell your personal data. We share it only with the services needed to 
 
 - Supabase — sign-in, database and file storage, including your profile picture.
 - Firebase Cloud Messaging — delivery of push notifications, only if you have turned one on and only for as long as it is on.
+- PostHog — product usage analytics (which screens and features are used), linked to your account identifier, so we can understand and improve the app.
+- Sentry — crash, error and performance diagnostics, configured to exclude personal information.
+
+We also record the same usage events on our own servers so we can measure and improve the service.
 
 We may also disclose information where the law requires it, or to protect the rights and safety of our users.
 

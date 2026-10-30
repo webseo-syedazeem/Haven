@@ -95,7 +95,7 @@ export default function ProfileScreen() {
   // authentication owns the transition; backing out returns to the same guest data.
   function openLoginWithoutDiscardingGuestData() {
     setGuestLoginVisible(false);
-    router.push('/welcome' as Href);
+    router.push('/welcome?from=guest-sign-out' as Href);
   }
 
   async function confirmSignOut() {

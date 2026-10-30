@@ -79,3 +79,42 @@ test('native service teardown pauses audio and clears the Android media card bef
   assert.ok(pause > 0 && pause < hide && hide < clear && clear < destroy);
   assert.equal(patchAudioControlsServiceSource(patched), patched, 'patch must be idempotent');
 });
+
+test('the ExoPlayer builder patch adds becoming-noisy + wake mode before build()', () => {
+  const pluginPath = path.join(root, 'plugins/with-expo-audio-stop-with-app.js');
+  delete require.cache[pluginPath];
+  const { patchAudioPlayerSource } = require(pluginPath);
+  const source = [
+    '  ExoPlayer.Builder(context)',
+    '    .setLooper(context.mainLooper)',
+    '    .setAudioAttributes(AudioAttributes.DEFAULT, false)',
+    '    .setSeekForwardIncrementMs(SEEK_JUMP_INTERVAL_MS)',
+    '    .setSeekBackIncrementMs(SEEK_JUMP_INTERVAL_MS)',
+    '    .build(),',
+  ].join('\n');
+
+  const patched = patchAudioPlayerSource(source);
+  const noisy = patched.indexOf('.setHandleAudioBecomingNoisy(true)');
+  const wake = patched.indexOf('.setWakeMode(C.WAKE_MODE_NETWORK)');
+  const build = patched.indexOf('.build(),');
+  assert.ok(noisy > 0 && wake > noisy && build > wake, 'both calls must precede build()');
+  assert.equal(patchAudioPlayerSource(patched), patched, 'patch must be idempotent');
+});
+
+// Guards against expo-audio changing its ExoPlayer.Builder: the patch regex
+// must still match the real vendored source, or the build would silently ship
+// without the headphone-disconnect fix.
+test('the ExoPlayer builder patch still matches the vendored expo-audio source', () => {
+  const vendored = path.join(
+    root,
+    'node_modules/expo-audio/android/src/main/java/expo/modules/audio/AudioPlayer.kt'
+  );
+  if (!fs.existsSync(vendored)) return; // node_modules not installed in this environment
+  const pluginPath = path.join(root, 'plugins/with-expo-audio-stop-with-app.js');
+  delete require.cache[pluginPath];
+  const { patchAudioPlayerSource } = require(pluginPath);
+  const source = fs.readFileSync(vendored, 'utf8');
+  const patched = patchAudioPlayerSource(source);
+  assert.ok(patched.includes('.setHandleAudioBecomingNoisy(true)'));
+  assert.ok(patched.includes('.setWakeMode(C.WAKE_MODE_NETWORK)'));
+});

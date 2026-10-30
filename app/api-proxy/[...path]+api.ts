@@ -1,4 +1,4 @@
-const REMOTE_API_BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL?.trim().replace(/\/+$/, '') || 'https://thehappyapp.co.uk';
+const REMOTE_API_BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL?.trim().replace(/\/+$/, '') || 'https://passagesounds.app';
 const PROXY_TIMEOUT_MS = 5000;
 
 function createCorsHeaders(headers = new Headers()) {

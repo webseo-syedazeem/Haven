@@ -18,6 +18,21 @@ const EXPO_AUDIO_SERVICE_SOURCE = path.join(
 );
 const TASK_REMOVAL_PATCH_MARKER = 'Passage: clear playback when Android removes the app task.';
 
+const EXPO_AUDIO_PLAYER_SOURCE = path.join(
+  'node_modules',
+  'expo-audio',
+  'android',
+  'src',
+  'main',
+  'java',
+  'expo',
+  'modules',
+  'audio',
+  'AudioPlayer.kt'
+);
+const BECOMING_NOISY_PATCH_MARKER =
+  'Passage: pause on headset/Bluetooth disconnect and keep the radio awake while playing.';
+
 function patchAudioControlsServiceSource(source) {
   if (source.includes(TASK_REMOVAL_PATCH_MARKER)) return source;
 
@@ -37,6 +52,35 @@ function patchAudioControlsServiceSource(source) {
       '    hideNotification()\n' +
       '    clearSessionInternal()\n' +
       '$2'
+  );
+}
+
+/**
+ * ExoPlayer, unlike iOS AVPlayer, does not pause when the audio output route
+ * disappears unless "becoming noisy" handling is enabled, and it will not hold
+ * a wake lock while streaming with the screen off unless a wake mode is set.
+ * expo-audio@1.1.1 builds the player without either, so a sleep/relaxation app
+ * would keep playing through the phone speaker when earbuds are removed at
+ * night (audit H-5) and could stall during long screen-off sessions (P-3).
+ * Add both to the ExoPlayer.Builder.
+ */
+function patchAudioPlayerSource(source) {
+  if (source.includes(BECOMING_NOISY_PATCH_MARKER)) return source;
+
+  const builderTail =
+    /(\.setSeekBackIncrementMs\(SEEK_JUMP_INTERVAL_MS\)\r?\n)([ \t]*)\.build\(\),/;
+  if (!builderTail.test(source)) {
+    throw new Error(
+      'Could not patch expo-audio AudioPlayer ExoPlayer.Builder; its native source has changed.'
+    );
+  }
+
+  return source.replace(
+    builderTail,
+    `$1$2// ${BECOMING_NOISY_PATCH_MARKER}\n` +
+      `$2.setHandleAudioBecomingNoisy(true)\n` +
+      `$2.setWakeMode(C.WAKE_MODE_NETWORK)\n` +
+      `$2.build(),`
   );
 }
 
@@ -70,10 +114,16 @@ function withExpoAudioStopWithApp(config) {
   return withDangerousMod(config, [
     'android',
     async (modConfig) => {
-      const sourcePath = path.join(modConfig.modRequest.projectRoot, EXPO_AUDIO_SERVICE_SOURCE);
-      const source = await fs.readFile(sourcePath, 'utf8');
-      const patched = patchAudioControlsServiceSource(source);
-      if (patched !== source) await fs.writeFile(sourcePath, patched, 'utf8');
+      const servicePath = path.join(modConfig.modRequest.projectRoot, EXPO_AUDIO_SERVICE_SOURCE);
+      const serviceSource = await fs.readFile(servicePath, 'utf8');
+      const patchedService = patchAudioControlsServiceSource(serviceSource);
+      if (patchedService !== serviceSource) await fs.writeFile(servicePath, patchedService, 'utf8');
+
+      const playerPath = path.join(modConfig.modRequest.projectRoot, EXPO_AUDIO_PLAYER_SOURCE);
+      const playerSource = await fs.readFile(playerPath, 'utf8');
+      const patchedPlayer = patchAudioPlayerSource(playerSource);
+      if (patchedPlayer !== playerSource) await fs.writeFile(playerPath, patchedPlayer, 'utf8');
+
       return modConfig;
     },
   ]);
@@ -81,3 +131,4 @@ function withExpoAudioStopWithApp(config) {
 
 module.exports = withExpoAudioStopWithApp;
 module.exports.patchAudioControlsServiceSource = patchAudioControlsServiceSource;
+module.exports.patchAudioPlayerSource = patchAudioPlayerSource;

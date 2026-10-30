@@ -29,16 +29,16 @@ const { coverUrl, pickActiveCoverUrl } = loadImageUrl();
 
 test('rewrites an original passage_soundscape_images_webp URL to the requested variant folder', () => {
   assert.equal(
-    coverUrl('https://thehappyapp.co.uk/passage_soundscape_images_webp/P-S042-x.webp', 'sm'),
-    'https://thehappyapp.co.uk/passage_soundscape_images_webp/sm/P-S042-x.webp'
+    coverUrl('https://passagesounds.app/passage_soundscape_images_webp/P-S042-x.webp', 'sm'),
+    'https://passagesounds.app/passage_soundscape_images_webp/sm/P-S042-x.webp'
   );
   assert.equal(
-    coverUrl('https://thehappyapp.co.uk/passage_soundscape_images_webp/P-S042-x.webp', 'md'),
-    'https://thehappyapp.co.uk/passage_soundscape_images_webp/md/P-S042-x.webp'
+    coverUrl('https://passagesounds.app/passage_soundscape_images_webp/P-S042-x.webp', 'md'),
+    'https://passagesounds.app/passage_soundscape_images_webp/md/P-S042-x.webp'
   );
   assert.equal(
-    coverUrl('https://thehappyapp.co.uk/passage_soundscape_images_webp/P-S042-x.webp', 'lg'),
-    'https://thehappyapp.co.uk/passage_soundscape_images_webp/lg/P-S042-x.webp'
+    coverUrl('https://passagesounds.app/passage_soundscape_images_webp/P-S042-x.webp', 'lg'),
+    'https://passagesounds.app/passage_soundscape_images_webp/lg/P-S042-x.webp'
   );
 });
 
@@ -54,8 +54,8 @@ test('passes through URLs on other hosts / other paths unchanged', () => {
     'https://cdn.example.com/avatars/user-123.webp'
   );
   assert.equal(
-    coverUrl('https://thehappyapp.co.uk/other_folder/P-S042-x.webp', 'sm'),
-    'https://thehappyapp.co.uk/other_folder/P-S042-x.webp'
+    coverUrl('https://passagesounds.app/other_folder/P-S042-x.webp', 'sm'),
+    'https://passagesounds.app/other_folder/P-S042-x.webp'
   );
 });
 
@@ -65,9 +65,9 @@ test('passes through local file:// URIs unchanged', () => {
 });
 
 test('does not double-rewrite a URL already inside a variant folder', () => {
-  const smUrl = 'https://thehappyapp.co.uk/passage_soundscape_images_webp/sm/P-S042-x.webp';
-  const mdUrl = 'https://thehappyapp.co.uk/passage_soundscape_images_webp/md/P-S042-x.webp';
-  const lgUrl = 'https://thehappyapp.co.uk/passage_soundscape_images_webp/lg/P-S042-x.webp';
+  const smUrl = 'https://passagesounds.app/passage_soundscape_images_webp/sm/P-S042-x.webp';
+  const mdUrl = 'https://passagesounds.app/passage_soundscape_images_webp/md/P-S042-x.webp';
+  const lgUrl = 'https://passagesounds.app/passage_soundscape_images_webp/lg/P-S042-x.webp';
 
   assert.equal(coverUrl(smUrl, 'sm'), smUrl);
   assert.equal(coverUrl(smUrl, 'md'), smUrl); // never rewrites an already-variant URL, even to a different size
@@ -88,15 +88,15 @@ test('never throws on malformed-looking input', () => {
 // onError-driven render test would.
 
 test('pickActiveCoverUrl requests the variant URL by default (nothing has failed yet)', () => {
-  const uri = 'https://thehappyapp.co.uk/passage_soundscape_images_webp/P-S042-x.webp';
-  const variant = 'https://thehappyapp.co.uk/passage_soundscape_images_webp/sm/P-S042-x.webp';
+  const uri = 'https://passagesounds.app/passage_soundscape_images_webp/P-S042-x.webp';
+  const variant = 'https://passagesounds.app/passage_soundscape_images_webp/sm/P-S042-x.webp';
 
   assert.equal(pickActiveCoverUrl(uri, variant, null), variant);
 });
 
 test('pickActiveCoverUrl falls back to the original exactly once it has failed for this uri', () => {
-  const uri = 'https://thehappyapp.co.uk/passage_soundscape_images_webp/P-S042-x.webp';
-  const variant = 'https://thehappyapp.co.uk/passage_soundscape_images_webp/sm/P-S042-x.webp';
+  const uri = 'https://passagesounds.app/passage_soundscape_images_webp/P-S042-x.webp';
+  const variant = 'https://passagesounds.app/passage_soundscape_images_webp/sm/P-S042-x.webp';
 
   // The variant 404s: CoverImage records `fallbackForUri = uri`.
   assert.equal(pickActiveCoverUrl(uri, variant, uri), uri);
@@ -106,9 +106,9 @@ test('pickActiveCoverUrl falls back to the original exactly once it has failed f
 });
 
 test('pickActiveCoverUrl ignores a fallback recorded for a different uri (recycled list item)', () => {
-  const previousUri = 'https://thehappyapp.co.uk/passage_soundscape_images_webp/old-item.webp';
-  const newUri = 'https://thehappyapp.co.uk/passage_soundscape_images_webp/new-item.webp';
-  const newVariant = 'https://thehappyapp.co.uk/passage_soundscape_images_webp/sm/new-item.webp';
+  const previousUri = 'https://passagesounds.app/passage_soundscape_images_webp/old-item.webp';
+  const newUri = 'https://passagesounds.app/passage_soundscape_images_webp/new-item.webp';
+  const newVariant = 'https://passagesounds.app/passage_soundscape_images_webp/sm/new-item.webp';
 
   // A FlatList item got recycled onto a new uri; the previous item's failure must not leak in —
   // the new item gets a fresh attempt at its own variant.

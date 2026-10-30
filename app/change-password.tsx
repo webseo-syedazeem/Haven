@@ -15,6 +15,7 @@ import {
 } from '@/lib/auth/form-errors';
 import { changePassword, resetPassword } from '@/lib/passage-api';
 import { safeGoBack } from '@/lib/navigation';
+import { supabase } from '@/lib/supabase';
 
 function firstParam(value: string | string[] | undefined) {
   return Array.isArray(value) ? value[0] : value;
@@ -25,9 +26,15 @@ export default function ChangePasswordScreen() {
   const params = useLocalSearchParams<{
     access_token?: string | string[];
     token?: string | string[];
+    flow?: string | string[];
   }>();
-  const resetToken = firstParam(params.access_token) ?? firstParam(params.token);
-  const isResetFlow = Boolean(resetToken);
+  // M-7: the recovery flow no longer carries the access token through the URL
+  // (where navigation state and screen analytics could capture it). The
+  // callback sets the recovery session on the Supabase client; the token is
+  // read from there at submit time. `access_token`/`token` params are still
+  // honoured for backward compatibility with any already-sent links.
+  const legacyResetToken = firstParam(params.access_token) ?? firstParam(params.token);
+  const isResetFlow = firstParam(params.flow) === 'recovery' || Boolean(legacyResetToken);
   const [confirmPassword, setConfirmPassword] = useState('');
   const [confirmVisible, setConfirmVisible] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
@@ -67,7 +74,20 @@ export default function ChangePasswordScreen() {
 
     try {
       if (isResetFlow) {
-        await resetPassword({ newPassword, token: resetToken });
+        const token =
+          legacyResetToken ?? (await supabase.auth.getSession()).data.session?.access_token ?? undefined;
+        if (!token) {
+          setErrorMessage('Your reset link has expired. Please request a new one.');
+          setIsSubmitting(false);
+          return;
+        }
+        await resetPassword({ newPassword, token });
+        // Don't leave the one-time recovery session active after the reset.
+        try {
+          await supabase.auth.signOut();
+        } catch {
+          // Best effort — the password change already succeeded.
+        }
       } else {
         await changePassword({ oldPassword, newPassword });
       }
