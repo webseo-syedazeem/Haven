@@ -6,7 +6,10 @@ import { Platform } from 'react-native';
 import { realtimeTransport } from './realtimeTransport';
 
 const supabaseUrl = 'https://wqludhqymhcyrjhazjcq.supabase.co';
-const supabaseAnonKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY!;
+export const supabaseConfigurationError = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY?.trim()
+  ? null
+  : 'EXPO_PUBLIC_SUPABASE_ANON_KEY is missing. Configure the production EAS environment.';
+const supabaseAnonKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY?.trim() || 'missing-supabase-anon-key';
 
 function getWebStorage() {
   return typeof globalThis !== 'undefined'

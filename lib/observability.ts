@@ -34,6 +34,7 @@ export const posthog = posthogKey
       host: process.env.EXPO_PUBLIC_POSTHOG_HOST || 'https://us.i.posthog.com',
       captureAppLifecycleEvents: true,
       disableGeoip: true,
+      defaultOptIn: false,
     })
   : null
 

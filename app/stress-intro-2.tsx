@@ -13,9 +13,9 @@ import { safeGoBack } from '@/lib/navigation';
 const background = require('@/assets/images/relax-intro-2-bg-realistic.webp');
 
 const BENEFITS = [
-  { icon: 'waves', label: 'Reduce stress and anxiety' },
-  { icon: 'crystal', label: 'Feel calmer in minutes' },
-  { icon: 'heart', label: 'A more balanced you' },
+  { icon: 'waves', label: 'Make space to unwind' },
+  { icon: 'crystal', label: 'Settle in, at your own pace' },
+  { icon: 'heart', label: 'A gentler listening routine' },
 ] as const;
 
 type BenefitIconName = (typeof BENEFITS)[number]['icon'];
@@ -76,8 +76,8 @@ export default function StressIntroTwoScreen() {
       <View style={styles.copyBlock}>
         <Text style={styles.heading}>It&apos;s more than{'\n'}just sound.</Text>
         <Text style={styles.body}>
-          Our soundscapes are designed to calm your nervous system, quiet mental
-          noise and help you feel more present.
+          Our soundscapes are designed to provide a steady background for quiet
+          moments and help you feel more present.
         </Text>
       </View>
 

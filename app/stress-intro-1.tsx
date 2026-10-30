@@ -21,13 +21,13 @@ export default function StressIntroOneScreen() {
       header={<RelaxStepHeader currentStep={1} onBack={() => safeGoBack(router)} />}
       scroll={false}>
       <View style={styles.copyBlock}>
-        <Text style={styles.eyebrow}>REDUCE STRESS</Text>
+        <Text style={styles.eyebrow}>MAKE SPACE TO UNWIND</Text>
         <Text style={styles.heading}>
           Quieter{'\n'}thoughts.{'\n'}Brighter days.
         </Text>
         <Text style={styles.body}>
-          Calming soundscapes to help you release tension, slow down and feel
-          more in control.
+          Immersive soundscapes for taking a pause, slowing down and creating a
+          gentler moment in your day.
         </Text>
       </View>
       <View style={styles.buttonWrap}>

@@ -8,6 +8,7 @@ import {
   captureScreen,
   clearOnboardingProgress,
   identifyObservabilityUser,
+  loadAnalyticsConsent,
   readOnboardingProgress,
   saveOnboardingProgress,
 } from '@/lib/analytics'
@@ -21,8 +22,10 @@ export function AnalyticsLifecycle() {
   useEffect(() => {
     if (launched.current) return
     launched.current = true
-    void identifyObservabilityUser()
-    captureEvent('app_open', appOpenProperties())
+    void loadAnalyticsConsent().then(async () => {
+      await identifyObservabilityUser()
+      captureEvent('app_open', appOpenProperties())
+    })
     void readOnboardingProgress().then((progress) => {
       if (progress) {
         captureEvent('onboarding_dropoff', {

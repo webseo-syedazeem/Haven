@@ -14,7 +14,23 @@ import {
 
 const API_BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL?.trim().replace(/\/+$/, '') || 'https://passagesounds.app'
 export const ONBOARDING_PROGRESS_KEY = 'passage.analytics.onboarding_progress'
+export const ANALYTICS_CONSENT_KEY = 'passage.settings.analytics_enabled'
 export const analyticsSessionId = Crypto.randomUUID()
+let analyticsEnabled = false
+
+export async function loadAnalyticsConsent() {
+  analyticsEnabled = (await AsyncStorage.getItem(ANALYTICS_CONSENT_KEY)) === 'true'
+  if (analyticsEnabled) posthog?.optIn()
+  else posthog?.optOut()
+  return analyticsEnabled
+}
+
+export async function setAnalyticsConsent(enabled: boolean) {
+  analyticsEnabled = enabled
+  await AsyncStorage.setItem(ANALYTICS_CONSENT_KEY, String(enabled))
+  if (enabled) posthog?.optIn()
+  else { posthog?.optOut(); posthog?.reset() }
+}
 
 export type AnalyticsProperties = ProductEventProperties
 
@@ -41,6 +57,7 @@ async function sendToBackend(eventName: string, properties: AnalyticsProperties)
         ...(bearer ? { Authorization: `Bearer ${bearer}` } : {}),
       },
       body: JSON.stringify({
+        consented: analyticsEnabled,
         event_name: eventName,
         event_data: clean(properties),
         session_id: analyticsSessionId,
@@ -52,6 +69,7 @@ async function sendToBackend(eventName: string, properties: AnalyticsProperties)
 }
 
 function dispatchEvent(eventName: string, properties: AnalyticsProperties = {}) {
+  if (!analyticsEnabled) return
   const safeProperties = clean(properties)
   posthog?.capture(eventName, safeProperties)
   void sendToBackend(eventName, safeProperties)
@@ -61,6 +79,7 @@ configureProductEventSink(dispatchEvent)
 export const captureEvent = captureProductEvent
 
 export function captureScreen(screenName: string) {
+  if (!analyticsEnabled) return
   const properties = { screen_name: screenName, platform: Platform.OS }
   posthog?.screen(screenName, properties)
   void sendToBackend('screen_view', properties)
@@ -74,7 +93,7 @@ export async function identifyObservabilityUser() {
     return
   }
   Sentry.setUser({ id: user.id })
-  posthog?.identify(user.id)
+  if (analyticsEnabled) posthog?.identify(user.id)
 }
 
 export function appOpenProperties(): AnalyticsProperties {

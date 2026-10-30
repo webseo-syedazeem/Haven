@@ -1,5 +1,7 @@
 import * as Linking from 'expo-linking';
+import * as AppleAuthentication from 'expo-apple-authentication';
 import * as WebBrowser from 'expo-web-browser';
+import { Platform } from 'react-native';
 
 import { ME_QUERY_KEY } from '@/hooks/useUser';
 import { cacheProfile, markLoggedIn } from '@/lib/auth/offline-session';
@@ -28,6 +30,27 @@ const withRedirectTo = (authUrl: string, redirectUri: string) => {
 };
 
 export const signInWithApple = async () => {
+  if (Platform.OS === 'ios' && await AppleAuthentication.isAvailableAsync()) {
+    try {
+      const credential = await AppleAuthentication.signInAsync({
+        requestedScopes: [AppleAuthentication.AppleAuthenticationScope.FULL_NAME, AppleAuthentication.AppleAuthenticationScope.EMAIL],
+      });
+      if (!credential.identityToken) throw new Error('Apple did not return an identity token.');
+      const { data: nativeData, error: nativeError } = await supabase.auth.signInWithIdToken({ provider: 'apple', token: credential.identityToken });
+      if (nativeError) throw new Error(nativeError.message);
+      if (credential.fullName?.givenName || credential.fullName?.familyName) {
+        await supabase.auth.updateUser({ data: { full_name: [credential.fullName.givenName, credential.fullName.familyName].filter(Boolean).join(' ') } });
+      }
+      setSessionSource('supabase', Boolean(nativeData.session?.access_token));
+      await markLoggedIn();
+      try { await apiClient('/api/auth/sync-profile', { method: 'POST' }); await queryClient.invalidateQueries({ queryKey: ME_QUERY_KEY }); } catch (profileError) { console.warn('[auth] Apple profile sync remains pending', profileError); }
+      return nativeData;
+    } catch (error) {
+      if (error && typeof error === 'object' && 'code' in error && error.code === 'ERR_REQUEST_CANCELED') return null;
+      throw error;
+    }
+  }
+
   const redirectUri = Linking.createURL('auth/callback');
 
   const { data, error } = await supabase.auth.signInWithOAuth({

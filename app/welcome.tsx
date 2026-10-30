@@ -3,7 +3,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useQuery } from '@tanstack/react-query';
 import { useCallback, useState } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { AuthButton } from '@/components/AuthButton';
 import { AuthLegalFooter } from '@/components/auth/AuthLegalFooter';
@@ -236,14 +236,16 @@ export default function SaveYourSpaceScreen() {
       </Text>
 
       <View style={styles.buttons}>
-        <AuthButton
-          disabled={Boolean(loading)}
-          iconSource={appleIcon}
-          iconTintColor={PassageColors.textPrimary}
-          label="Continue with Apple"
-          loading={loading === 'apple'}
-          onPress={() => void handleApple()}
-        />
+        {Platform.OS !== 'android' ? (
+          <AuthButton
+            disabled={Boolean(loading)}
+            iconSource={appleIcon}
+            iconTintColor={PassageColors.textPrimary}
+            label="Continue with Apple"
+            loading={loading === 'apple'}
+            onPress={() => void handleApple()}
+          />
+        ) : null}
         <AuthButton
           disabled={Boolean(loading)}
           iconSource={googleIcon}

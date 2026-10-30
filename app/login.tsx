@@ -190,7 +190,9 @@ export default function LoginScreen() {
         </View>
         <View style={styles.dividerRow}><View style={styles.divider} /><Text style={styles.dividerText}>or</Text><View style={styles.divider} /></View>
         <View style={styles.socialButtons}>
-          <AuthSocialButton disabled={isSubmitting} icon={appleIcon} label={'Continue with Apple'} onPress={() => void handleApplePress()} />
+          {Platform.OS !== 'android' ? (
+            <AuthSocialButton disabled={isSubmitting} icon={appleIcon} label={'Continue with Apple'} onPress={() => void handleApplePress()} />
+          ) : null}
           <AuthSocialButton disabled={isSubmitting} icon={googleIcon} label={'Continue with Google'} onPress={() => void handleGooglePress()} />
         </View>
         <Pressable accessibilityRole={'button'} hitSlop={8} onPress={() => router.push(origin === 'guest-sign-out' ? '/welcome?from=guest-sign-out' : '/welcome')} style={styles.signupButton}>

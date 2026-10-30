@@ -29,20 +29,20 @@ test('the client-approved onboarding route names are preserved', () => {
   }
 });
 
-test('client-approved onboarding screen copy is preserved', () => {
+test('onboarding screen copy avoids unsupported health outcomes', () => {
   const introOne = read('app/stress-intro-1.tsx');
-  assert.match(introOne, /REDUCE STRESS/);
+  assert.match(introOne, /MAKE SPACE TO UNWIND/);
   assert.match(introOne, /Quieter/);
   assert.match(introOne, /Brighter days/);
 
   const introTwo = read('app/stress-intro-2.tsx');
-  assert.match(introTwo, /Reduce stress and anxiety/);
-  assert.match(introTwo, /calm your nervous system/);
+  assert.match(introTwo, /Make space to unwind/);
+  assert.doesNotMatch(introTwo, /calm your nervous system/);
 
   const relaxScience = read('app/onboarding/relax-science.tsx');
-  assert.match(relaxScience, /Backed by/);
-  assert.match(relaxScience, /Binaural rhythms support relaxation/);
-  assert.match(relaxScience, /parasympathetic nervous system/);
+  assert.match(relaxScience, /Shaped by/);
+  assert.match(relaxScience, /Inspired by research on sound and relaxation/);
+  assert.match(relaxScience, /not a substitute for professional care/);
 
   const modes = read('constants/modes.ts');
   assert.match(modes, /Deep work and productivity/);

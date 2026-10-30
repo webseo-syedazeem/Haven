@@ -15,15 +15,15 @@ const background = require('@/assets/images/relax-science-greenhouse-v2.webp');
 const FINDINGS = [
   {
     icon: 'brain',
-    label: 'Binaural rhythms support relaxation',
+    label: 'Steady, rhythmic sound to help you unwind',
   },
   {
     icon: 'soundwave',
-    label: 'Nature soundscapes lower stress levels',
+    label: 'Nature sound many people find calming',
   },
   {
     icon: 'heart',
-    label: 'Shown to reduce anxiety in research reviews',
+    label: 'Inspired by research on sound and relaxation',
   },
 ] as const;
 
@@ -89,10 +89,10 @@ export default function RelaxScienceScreen() {
       contentContainerStyle={styles.content}
       header={<RelaxStepHeader currentStep={3} onBack={() => safeGoBack(router)} />}>
       <View style={styles.copyBlock}>
-        <Text style={styles.heading}>Backed by{'\n'}real science.</Text>
+        <Text style={styles.heading}>Shaped by{'\n'}research.</Text>
         <Text style={styles.body}>
-          Our soundscapes use proven auditory techniques to help activate your
-          parasympathetic nervous system{' \u2014 '}your body&apos;s natural calm mode.
+          Our soundscapes are designed using research on how sound can support
+          relaxation and a comfortable listening routine.
         </Text>
       </View>
 
@@ -111,7 +111,7 @@ export default function RelaxScienceScreen() {
       </View>
 
       <Text style={styles.disclaimer}>
-        {/* {'Passage supports wellbeing\u003B it is not a substitute for professional care.'} */}
+        Passage supports wellbeing; it is not a substitute for professional care.
       </Text>
       <View style={styles.buttonWrap}>
         <RelaxContinueButton
@@ -148,10 +148,10 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   disclaimer: {
-    color: 'rgba(255,255,255,0.48)',
+    color: 'rgba(255,255,255,0.6)',
     fontFamily: AppFonts.sansRegular,
-    fontSize: 10,
-    lineHeight: 14,
+    fontSize: 13,
+    lineHeight: 19,
     marginTop: 'auto',
     maxWidth: 330,
     paddingTop: 12,

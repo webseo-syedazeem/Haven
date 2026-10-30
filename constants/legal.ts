@@ -13,7 +13,7 @@ Passage does not collect or process payment information.
 - Your preferences: preferred environments and sounds, sounds you have asked us to avoid, detail and session-length preferences, and your playback and notification settings.
 - Support messages: anything you send us through Contact Support, a problem report, or a soundscape request, including the email address you give us if you are not signed in.
 - Device notification token: only if you turn a notification on, so we have somewhere to send it.
-- Usage and diagnostics data: how you move through the app (screens viewed and actions such as starting or saving a soundscape), together with your account identifier so we can tell sessions apart, and crash, error and performance reports if the app misbehaves. These reports are configured not to include your name, email, soundscape titles or the web addresses of the audio you play.
+- Optional usage analytics: if you turn it on under Privacy & Data, product events such as screens viewed and feature actions, linked to your account identifier. Crash, error and performance diagnostics are processed separately and configured not to include your name or email.
 
 We do not collect health data, precise location, contacts, or advertising identifiers.
 
@@ -37,9 +37,10 @@ All notifications are off by default. Turning one on registers this device with 
 We do not sell your personal data. We share it only with the services needed to run Passage:
 
 - Supabase — sign-in, database and file storage, including your profile picture.
-- Firebase Cloud Messaging — delivery of push notifications, only if you have turned one on and only for as long as it is on.
-- PostHog — product usage analytics (which screens and features are used), linked to your account identifier, so we can understand and improve the app.
+- Expo Push Service and Apple Push Notification service — delivery of push notifications, only if you have turned one on and only for as long as it is on.
+- PostHog — optional product usage analytics, linked to your account identifier, only after you switch analytics on.
 - Sentry — crash, error and performance diagnostics, configured to exclude personal information.
+- Apple and Google — sign-in, only when you choose the corresponding sign-in option.
 
 We also record the same usage events on our own servers so we can measure and improve the service.
 
@@ -53,6 +54,7 @@ We keep your account information while your account exists. Delete your account 
 
 - Delete your account: Account → Delete Account, or Privacy & Data → Delete Account. This cannot be undone.
 - Turn notifications on or off at any time in Notifications.
+- Turn usage analytics on or off at any time under Privacy & Data.
 - Update your name, profile picture and password in Account.
 
 Depending on where you live, you may also have the right to access, correct or restrict the use of your information, and to complain to your data protection regulator.

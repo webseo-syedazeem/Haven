@@ -9,6 +9,8 @@ import { resetGuestOnboardingState } from '@/lib/onboarding';
 import { clearAuthTokens } from '@/lib/passage-api';
 import { clearPersistedQueryCache } from '@/lib/query-persist';
 import { supabase } from '@/lib/supabase';
+import { posthog, Sentry } from '@/lib/observability';
+import { setAnalyticsConsent } from '@/lib/analytics';
 
 /**
  * Signs the user out and leaves nothing of them behind on the device.
@@ -45,6 +47,9 @@ export async function clearUserSession(queryClient: QueryClient) {
     // Ignore if Google native sign out is unavailable or already cleared.
   }
   await supabase.auth.signOut();
+  posthog?.reset();
+  Sentry.setUser(null);
+  await setAnalyticsConsent(false);
   // Signing out must never leave guest mode on: back from the sign-in screen
   // would otherwise drop the person into the guest app they did not choose.
   await setGuestModeActive(false);
