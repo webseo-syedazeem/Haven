@@ -35,6 +35,7 @@ import {
 } from '@/lib/local-settings';
 import { queryClient } from '@/lib/query-client';
 import { engine } from './engine';
+import { createPlaybackHealthMonitor, type PlaybackHealthMonitor } from './playbackHealth';
 import { toPlayableTrack } from './types';
 
 const PERSIST_DEBOUNCE_MS = 900;
@@ -49,15 +50,17 @@ const UNAVAILABLE_MESSAGE =
     ? 'Playback is not available on web yet.'
     : 'Audio needs the Passage dev build — it cannot run in Expo Go.';
 const STALLED_MESSAGE = 'Playback stopped unexpectedly. Check your connection and try again.';
-const SLOW_CONNECTION_MESSAGE = 'Slow connection';
 const RECOVERING_MESSAGE = 'Reconnecting...';
 /**
- * How long playback may stay buffering before the non-terminal "Slow connection"
- * hint appears. This is measured from the player's ACTUAL buffering state, not
- * the network type — a fast cellular link is not slow, and a slow Wi-Fi one is,
- * so connection type says nothing useful about real throughput (audit M-NET-1).
+ * Shown once the playback health monitor (`lib/player/playbackHealth.ts`)
+ * sees a real pattern — repeated or sustained stalls — rather than a single
+ * buffering timeout. A fast connection can legitimately take a while on its
+ * first buffer (CDN cold start, audio session setup); only a pattern after
+ * that is real evidence (audit M-NET-1).
  */
-const SLOW_CONNECTION_BUFFERING_MS = 8000;
+const INTERRUPTIONS_MESSAGE = 'Playback is experiencing interruptions.';
+/** Shown only when the device is actually disconnected, never guessed from buffering alone. */
+const OFFLINE_MESSAGE = 'Unable to connect. Please check your connection.';
 const PLAY_HISTORY_LIMIT = 50;
 const GUEST_PLAYER_STATE_STORAGE_KEY = 'passage.guest.player-state.v1';
 
@@ -144,6 +147,10 @@ export type PlayerStateValue = {
   queueIndex: number;
   isPlaying: boolean;
   isBuffering: boolean;
+  /** Remains true across retry events until playback position genuinely advances. */
+  isRecovering: boolean;
+  /** A play was requested but the playback clock has not advanced yet. */
+  isPlaybackPending: boolean;
   hasNext: boolean;
   hasPrevious: boolean;
   error: string | null;
@@ -187,6 +194,8 @@ const INITIAL_STATE: PlayerStateValue = {
   queueIndex: -1,
   isPlaying: false,
   isBuffering: false,
+  isRecovering: false,
+  isPlaybackPending: false,
   hasNext: false,
   hasPrevious: false,
   error: null,
@@ -241,6 +250,12 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
   /** True only while loop is on because a timer auto-enabled it, never a user choice; session-only. */
   const loopAutoEnabledRef = useRef(false);
   const isPlayingRef = useRef(false);
+  const playbackPendingRef = useRef(false);
+  const playbackPendingPositionRef = useRef(0);
+  const healthMonitorRef = useRef<PlaybackHealthMonitor | null>(null);
+  if (healthMonitorRef.current === null) healthMonitorRef.current = createPlaybackHealthMonitor();
+  const isBufferingRef = useRef(false);
+  const bufferingStartedAtRef = useRef<number | null>(null);
   const resumableRef = useRef<ResumableState | null>(null);
   const skipNextRef = useRef<PlayerActions['skipNext'] | undefined>(undefined);
   const skipPreviousRef = useRef<PlayerActions['skipPrevious'] | undefined>(undefined);
@@ -554,49 +569,35 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
     }
   }, [clearTimerState, handleTimerEnd, startFadeOut]);
 
-  // ---------------------------------------------------------- slow-connection hint
+  // ---------------------------------------------------------- connection hint
   //
-  // A non-terminal "Slow connection" hint shown only when playback has been
-  // genuinely buffering for a while. It is driven by the player's own buffering
-  // state (the real signal) rather than the network type — the engine watchdog
-  // still performs the actual recovery/back-off; this just stops a long buffer
-  // from looking frozen. Depending only on isPlaying/isBuffering (never on the
-  // error it sets) keeps this from re-arming itself in a loop (audit M-NET-1).
+  // The message to show alongside an active recovery, decided from the health
+  // monitor's rolling-window evidence rather than a single buffering timeout
+  // (audit M-NET-1). Offline (actual disconnection) beats a repeated-stalls
+  // guess, which beats the plain "Reconnecting…" shown for a single episode.
+  const connectionHintMessage = useCallback(() => {
+    const monitor = healthMonitorRef.current;
+    if (!monitor) return RECOVERING_MESSAGE;
+    if (monitor.isOffline()) return OFFLINE_MESSAGE;
+    if (monitor.getVerdict() === 'interruptions') return INTERRUPTIONS_MESSAGE;
+    return RECOVERING_MESSAGE;
+  }, []);
+
+  // The sustained-recovery case escalates the message without a new engine
+  // event arriving (the engine's own `isRecovering` stays true throughout),
+  // so the monitor pings here when that timer elapses and this re-evaluates.
   useEffect(() => {
-    // `isBuffering` on its own is the real "trying to play but waiting for data"
-    // signal: the engine only reports it while a source is loaded and actively
-    // fetching, and never while paused or while sound is flowing. (It is not
-    // gated on `isPlaying`, which the engine reports as false during a stall —
-    // the exact moment a slow-connection hint should appear.)
-    if (!state.isBuffering) {
-      // Buffering ended: drop a stale "Slow connection" hint if it is showing.
-      setState((current) =>
-        current.error === SLOW_CONNECTION_MESSAGE
-          ? { ...current, error: null, canRetry: false }
-          : current
-      );
-      return;
-    }
+    const monitor = healthMonitorRef.current;
+    if (!monitor) return undefined;
 
-    // Still buffering: after a sustained stall, surface the hint — unless the
-    // engine's own "Reconnecting…" state, or a real retryable error, is already
-    // showing (those take precedence).
-    const timer = setTimeout(() => {
+    return monitor.subscribe(() => {
       setState((current) => {
-        if (
-          current.isBuffering &&
-          !current.canRetry &&
-          current.error !== RECOVERING_MESSAGE &&
-          current.error !== SLOW_CONNECTION_MESSAGE
-        ) {
-          return { ...current, error: SLOW_CONNECTION_MESSAGE, canRetry: false };
-        }
-        return current;
+        if (!current.isRecovering) return current;
+        const message = connectionHintMessage();
+        return current.error === message ? current : { ...current, error: message };
       });
-    }, SLOW_CONNECTION_BUFFERING_MS);
-
-    return () => clearTimeout(timer);
-  }, [state.isBuffering]);
+    });
+  }, [connectionHintMessage]);
 
   // ---------------------------------------------------------------- engine wiring
 
@@ -605,6 +606,23 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
       onPlaybackChange: ({ isPlaying, isBuffering }) => {
         const wasPlaying = isPlayingRef.current;
         isPlayingRef.current = isPlaying;
+
+        // Feeds the health monitor's rolling window: a completed buffering
+        // episode (not during this track's own startup, which the monitor
+        // itself ignores) is evidence for the "repeated stalls" verdict. A
+        // *starting* buffer that already has enough prior evidence shows the
+        // hint now; one that just ended drops it again.
+        let bufferingEdge: 'start' | 'end' | null = null;
+        if (isBuffering && !isBufferingRef.current) {
+          bufferingStartedAtRef.current = Date.now();
+          bufferingEdge = 'start';
+        } else if (!isBuffering && isBufferingRef.current && bufferingStartedAtRef.current !== null) {
+          healthMonitorRef.current?.reportBufferingEpisode(Date.now() - bufferingStartedAtRef.current);
+          bufferingStartedAtRef.current = null;
+          bufferingEdge = 'end';
+        }
+        isBufferingRef.current = isBuffering;
+
         // Covers every pause/resume source, not just the in-app toggle: the
         // lock screen, a call interruption, a headset unplugged. An action
         // that already updated the ref itself (toggling, a failure) makes
@@ -616,13 +634,36 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
           freezeTimer();
           pauseListeningSegment();
         }
+
         setState((current) => {
           // Sound is flowing again, so an earlier failure message no longer applies.
           const clearError = isPlaying && current.canRetry;
+
+          // Never over a terminal error or the engine's own active-recovery
+          // message — those take precedence and are handled separately.
+          let hintUpdate: { error: string | null } | null = null;
+          if (!clearError && !current.canRetry && !current.isRecovering) {
+            const monitor = healthMonitorRef.current;
+            if (bufferingEdge === 'start' && monitor) {
+              const hint = monitor.isOffline()
+                ? OFFLINE_MESSAGE
+                : monitor.getVerdict() === 'interruptions'
+                  ? INTERRUPTIONS_MESSAGE
+                  : null;
+              if (hint) hintUpdate = { error: hint };
+            } else if (
+              bufferingEdge === 'end' &&
+              (current.error === INTERRUPTIONS_MESSAGE || current.error === OFFLINE_MESSAGE)
+            ) {
+              hintUpdate = { error: null };
+            }
+          }
+
           if (
             current.isPlaying === isPlaying &&
             current.isBuffering === isBuffering &&
-            !clearError
+            !clearError &&
+            !hintUpdate
           ) {
             return current;
           }
@@ -630,19 +671,32 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
             ...current,
             isPlaying,
             isBuffering,
-            ...(clearError ? { error: null, canRetry: false } : null),
+            ...(clearError ? { error: null, canRetry: false } : hintUpdate),
           };
         });
       },
       onRecoveryStateChange: ({ isRecovering }) => {
+        healthMonitorRef.current?.reportRecoveryEpisode(isRecovering);
         setState((current) => {
           if (isRecovering) {
-            return { ...current, error: RECOVERING_MESSAGE, canRetry: false };
+            playbackPendingRef.current = true;
+            playbackPendingPositionRef.current = positionRef.current;
+            return {
+              ...current,
+              isRecovering: true,
+              isPlaybackPending: true,
+              error: connectionHintMessage(),
+              canRetry: false,
+            };
           }
-          if (current.error === RECOVERING_MESSAGE || current.error === SLOW_CONNECTION_MESSAGE) {
-            return { ...current, error: null, canRetry: false };
+          if (
+            current.error === RECOVERING_MESSAGE ||
+            current.error === INTERRUPTIONS_MESSAGE ||
+            current.error === OFFLINE_MESSAGE
+          ) {
+            return { ...current, isRecovering: false, error: null, canRetry: false };
           }
-          return current;
+          return current.isRecovering ? { ...current, isRecovering: false } : current;
         });
       },
       onProgress: ({ position, duration, trackId }) => {
@@ -651,6 +705,16 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
         // track now playing can never be applied, however it was captured —
         // a stale status update, a recovery reload, a queued seek.
         if (trackId !== null && trackId !== soundscapeRef.current?.id) return;
+
+        const confirmsPlayback =
+          playbackPendingRef.current &&
+          isPlayingRef.current &&
+          Math.abs(position - playbackPendingPositionRef.current) > 0.05;
+        if (confirmsPlayback) {
+          playbackPendingRef.current = false;
+          healthMonitorRef.current?.confirmPlaybackStarted();
+          setState((current) => ({ ...current, isPlaybackPending: false }));
+        }
 
         positionRef.current = position;
         if (duration > 0) durationRef.current = duration;
@@ -684,6 +748,7 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
         // The engine's own reloads could not revive the source and it has released
         // the player, so the next play loads afresh from the position it reported.
         isPlayingRef.current = false;
+        playbackPendingRef.current = false;
         flushListeningSession('playback_failed');
         freezeTimer();
         const soundscape = soundscapeRef.current;
@@ -691,6 +756,8 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
           ...current,
           isPlaying: false,
           isBuffering: false,
+          isRecovering: false,
+          isPlaybackPending: false,
           error: STALLED_MESSAGE,
           canRetry: true,
         }));
@@ -711,7 +778,7 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
       // expected to run this JS cleanup after a swipe-close.
       void engine.reset();
     };
-  }, [beginListeningSegment, finishPlayback, flushListeningSession, freezeTimer, pauseListeningSegment, persistNow, refreshResumable, unfreezeTimer]);
+  }, [beginListeningSegment, connectionHintMessage, finishPlayback, flushListeningSession, freezeTimer, pauseListeningSegment, persistNow, refreshResumable, unfreezeTimer]);
 
   // The loop preference is read once per app launch; missing or unreadable
   // storage keeps the safe default of off.
@@ -831,6 +898,7 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
       flushListeningSession('provider_unmounted');
       if (persistTimeout.current) clearTimeout(persistTimeout.current);
       if (fadeInterval.current) clearInterval(fadeInterval.current);
+      healthMonitorRef.current?.destroy();
     },
     [flushListeningSession]
   );
@@ -850,7 +918,14 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
       queueRef.current = queue;
       indexRef.current = index;
       positionRef.current = startAt;
+      playbackPendingRef.current = true;
+      playbackPendingPositionRef.current = startAt;
       durationRef.current = soundscape.duration_seconds ?? 0;
+      // A new track/session: the health monitor's window belongs to the
+      // track that just ended, not this one.
+      healthMonitorRef.current?.reset();
+      isBufferingRef.current = false;
+      bufferingStartedAtRef.current = null;
 
       setState((current) => ({
         ...current,
@@ -860,6 +935,8 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
         hasNext: index >= 0 && index < queue.length - 1,
         hasPrevious: index > 0,
         isBuffering: true,
+        isRecovering: false,
+        isPlaybackPending: true,
         error: track ? null : 'This soundscape has no audio file yet.',
         canRetry: false,
         resumable: null,
@@ -876,17 +953,26 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
       });
 
       if (!track) {
-        setState((current) => ({ ...current, isBuffering: false, isPlaying: false }));
+        playbackPendingRef.current = false;
+        setState((current) => ({
+          ...current,
+          isBuffering: false,
+          isPlaying: false,
+          isPlaybackPending: false,
+        }));
         return false;
       }
 
       const available = await engine.setup();
       if (request !== playbackRequestRef.current) return false;
       if (!available) {
+        playbackPendingRef.current = false;
         setState((current) => ({
           ...current,
           isBuffering: false,
           isPlaying: false,
+          isRecovering: false,
+          isPlaybackPending: false,
           error: UNAVAILABLE_MESSAGE,
         }));
         return false;
@@ -904,11 +990,14 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
         beginListeningSegment();
       } catch (error) {
         if (request !== playbackRequestRef.current) return false;
+        playbackPendingRef.current = false;
         console.warn('[player] playback failed', error);
         setState((current) => ({
           ...current,
           isBuffering: false,
           isPlaying: false,
+          isRecovering: false,
+          isPlaybackPending: false,
           // Audio-session errors and stream errors both arrive here. Do not
           // incorrectly describe every native failure as a network outage.
           error: 'Audio could not start. Check your connection and try again.',
@@ -996,8 +1085,14 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
       // scheduled fade/stop; resuming reschedules from the banked remainder.
       freezeTimer();
       isPlayingRef.current = false;
+      playbackPendingRef.current = false;
       // Optimistic UI: swap Pause to Play before the native command resolves.
-      setState((current) => ({ ...current, isPlaying: false, isFadingOut: false }));
+      setState((current) => ({
+        ...current,
+        isPlaying: false,
+        isPlaybackPending: false,
+        isFadingOut: false,
+      }));
       try {
         await engine.pause();
         if (request !== playbackRequestRef.current) return;
@@ -1027,10 +1122,12 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
 
     const timerResumed = unfreezeTimer();
     isPlayingRef.current = true;
-    // Optimistic UI: show Pause at once while the native player resumes.
+    playbackPendingRef.current = true;
+    playbackPendingPositionRef.current = positionRef.current;
     setState((current) => ({
       ...current,
       isPlaying: true,
+      isPlaybackPending: true,
       ...(current.canRetry ? { error: null, canRetry: false } : null),
     }));
     try {
@@ -1043,10 +1140,12 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
       if (request !== playbackRequestRef.current) return;
       freezeTimer();
       isPlayingRef.current = false;
+      playbackPendingRef.current = false;
       setState((current) => ({
         ...current,
         isPlaying: false,
         isBuffering: false,
+        isPlaybackPending: false,
         error: 'Unable to start playback. Try again.',
         canRetry: true,
       }));
@@ -1206,6 +1305,9 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
     positionRef.current = 0;
     durationRef.current = 0;
     timerRef.current = { selection: null, endsAt: null, pausedRemainingMs: null, pausedAt: null };
+    healthMonitorRef.current?.reset();
+    isBufferingRef.current = false;
+    bufferingStartedAtRef.current = null;
 
     setState((current) => ({
       ...INITIAL_STATE,

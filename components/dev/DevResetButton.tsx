@@ -24,17 +24,11 @@ const SECURE_STORE_KEYS = [
   'passage.auth.access_token',
   'passage.auth.refresh_token',
   'access_token',
-  'haven.auth.access_token',
-  'haven.auth.refresh_token',
   // local-settings
   'passage.settings.analytics_enabled',
   'passage.settings.reminder_time',
   'passage.settings.guest_mode_active',
   'passage.settings.loop_enabled',
-  'halcyon.settings.analytics_enabled',
-  'halcyon.settings.reminder_time',
-  'halcyon.settings.guest_mode_active',
-  'halcyon.settings.loop_enabled',
   // supabase chunked session key
   'sb-wqludhqymhcyrjhazjcq-auth-token',
   'sb-wqludhqymhcyrjhazjcq-auth-token_count',

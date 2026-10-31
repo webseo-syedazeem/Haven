@@ -1,4 +1,3 @@
-import { Image as ExpoImage } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter, type Href } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -39,7 +38,7 @@ import {
 import { useGuestModeActive, useHasSession } from '@/hooks/useSession';
 import { useUser } from '@/hooks/useUser';
 import type { Collection, Soundscape } from '@/lib/api/home';
-import { coverUrl } from '@/lib/image-url';
+import { prefetchArtwork } from '@/lib/notification-artwork';
 import { usePlayerActions, usePlayerState } from '@/lib/player/PlayerProvider';
 import { getFirstName } from '@/lib/api/user';
 import {
@@ -65,16 +64,11 @@ function prefetchHomeCovers(options: {
   soundscapeRails: (Soundscape[] | undefined)[];
   collections?: Collection[];
 }) {
-  const seen = new Set<string>();
-  const urls: string[] = [];
+  const entries: { url: string; size: 'sm' | 'md' }[] = [];
 
   const addUrl = (raw: string | null | undefined, size: 'sm' | 'md') => {
-    if (urls.length >= HOME_PREFETCH_MAX_TOTAL) return;
-    const url = coverUrl(raw, size);
-    if (url && !seen.has(url)) {
-      seen.add(url);
-      urls.push(url);
-    }
+    if (entries.length >= HOME_PREFETCH_MAX_TOTAL || !raw) return;
+    entries.push({ url: raw, size });
   };
 
   if (options.continueSoundscape) addUrl(options.continueSoundscape.artwork_url, 'sm');
@@ -91,8 +85,8 @@ function prefetchHomeCovers(options: {
     addUrl(collection.cover_image_url, 'md');
   }
 
-  if (urls.length === 0) return;
-  void ExpoImage.prefetch(urls, { cachePolicy: 'memory-disk' });
+  if (entries.length === 0) return;
+  void prefetchArtwork(entries);
 }
 
 const HERO_BACKGROUNDS: Record<UkWeekday, Record<TimeOfDay, number>> = {

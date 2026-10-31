@@ -4,6 +4,7 @@ import type { StyleProp } from 'react-native';
 
 import { PassageColors } from '@/constants/design';
 import { coverUrl, pickActiveCoverUrl, type CoverSize } from '@/lib/image-url';
+import { fetchArtwork, getCachedArtwork } from '@/lib/notification-artwork';
 
 export type { CoverSize } from '@/lib/image-url';
 
@@ -11,41 +12,68 @@ type CoverImageProps = Omit<
   ImageProps,
   'source' | 'cachePolicy' | 'contentFit' | 'transition' | 'onError' | 'recyclingKey' | 'style'
 > & {
-  /** The ORIGINAL (non-variant) cover URL — e.g. `soundscape.artwork_url` or
-   * `collection.cover_image_url`. `CoverImage` picks the right-sized variant itself. */
+  /** The original API artwork URL; this component selects and saves the suitable variant. */
   uri: string | null | undefined;
-  /** Which resized variant to request. See lib/image-url.ts for the size thresholds used
-   * across the app: sm <=160dp, md for larger cards/hero rails/detail heroes, lg for
-   * full-screen player artwork. */
   size: CoverSize;
   style?: StyleProp<ImageStyle>;
 };
 
 /**
- * Shared cover-image renderer for every soundscape/collection cover in the app (rail cards,
- * rows, collection cards, detail heroes, mini-player, full player). Not used for local bundled
- * assets (e.g. mode backgrounds) or for notification/lock-screen artwork — see
- * lib/notification-artwork.ts, which stays untouched.
+ * Shared soundscape/collection artwork renderer.
  *
- * - Requests the `sm`/`md`/`lg` resized variant instead of the (sometimes ~1.8MB) original.
- * - Falls back to the original URL exactly once if the variant 404s (e.g. an image saved
- *   before variants existed, or not yet backfilled) — never loops or retries further.
- * - Dark placeholder background so there is never a white flash or layout jump.
- * - Stable `recyclingKey` derived from the original URL so FlatList/FlashList item recycling
- *   does not cause refetching or flicker.
+ * Successful images are stored as local files and reused across launches by
+ * cards, detail screens, the full player and notification metadata. A failed
+ * requested variant falls through the other sm/md/lg files and the original.
  */
 export function CoverImage({ uri, size, style, ...rest }: CoverImageProps) {
   const requestedUrl = coverUrl(uri, size);
-  // Keyed by which *original* URL it was for, so a recycled list item (different `uri`) always
-  // gets a clean attempt at its own variant instead of inheriting a sibling's fallback state.
+  const cacheKey = `${size}:${uri ?? ''}`;
+  const [local, setLocal] = useState<{ key: string; uri: string | null }>(() => ({
+    key: cacheKey,
+    uri: uri ? getCachedArtwork(uri, size) : null,
+  }));
+  const [cacheSettledFor, setCacheSettledFor] = useState<string | null>(
+    local.uri ? cacheKey : null
+  );
   const [fallbackForUri, setFallbackForUri] = useState<string | null>(null);
 
   useEffect(() => {
     setFallbackForUri(null);
-  }, [uri]);
+    setCacheSettledFor(null);
+
+    if (!uri) {
+      setLocal({ key: cacheKey, uri: null });
+      return;
+    }
+
+    const cached = getCachedArtwork(uri, size);
+    setLocal({ key: cacheKey, uri: cached });
+    if (cached) {
+      setCacheSettledFor(cacheKey);
+      return;
+    }
+
+    let cancelled = false;
+    void fetchArtwork(uri, size).then((savedUri) => {
+      if (cancelled) return;
+      setLocal({ key: cacheKey, uri: savedUri });
+      setCacheSettledFor(cacheKey);
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [cacheKey, size, uri]);
 
   const hasFallenBack = !!uri && fallbackForUri === uri;
-  const activeUrl = pickActiveCoverUrl(uri, requestedUrl, fallbackForUri);
+  const localUri = local.key === cacheKey ? local.uri : null;
+  // Wait for the shared downloader so Expo Image does not issue a duplicate request. If all
+  // candidates fail, allow one direct request in case the server recovered in the meantime.
+  const activeUrl = localUri ?? (
+    cacheSettledFor === cacheKey
+      ? pickActiveCoverUrl(uri, requestedUrl, fallbackForUri)
+      : null
+  );
 
   if (!activeUrl) {
     return <Image cachePolicy="memory-disk" style={[placeholderStyle, style]} {...rest} />;
@@ -60,9 +88,13 @@ export function CoverImage({ uri, size, style, ...rest }: CoverImageProps) {
       source={{ uri: activeUrl }}
       style={[placeholderStyle, style]}
       onError={() => {
-        // Only fall back once: if the variant URL failed and we have not already swapped to
-        // the original for this exact uri, swap now. If the original itself then fails too,
-        // this does not fire again (activeUrl === uri already, nothing left to change).
+        if (localUri) {
+          // The OS can evict a cache file between our check and image decoding.
+          setLocal({ key: cacheKey, uri: null });
+          setCacheSettledFor(cacheKey);
+          return;
+        }
+
         if (!hasFallenBack && activeUrl !== uri && uri) {
           setFallbackForUri(uri);
         }

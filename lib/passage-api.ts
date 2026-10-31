@@ -10,8 +10,7 @@ const REMOTE_API_BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL?.trim().replace
 const API_BASE_URL = Platform.OS === 'web' ? '/api-proxy' : REMOTE_API_BASE_URL;
 const ACCESS_TOKEN_KEY = 'passage.auth.access_token';
 const REFRESH_TOKEN_KEY = 'passage.auth.refresh_token';
-const LEGACY_ACCESS_TOKEN_KEYS = ['access_token', 'haven.auth.access_token'] as const;
-const LEGACY_REFRESH_TOKEN_KEY = 'haven.auth.refresh_token';
+const LEGACY_ACCESS_TOKEN_KEYS = ['access_token'] as const;
 const REQUEST_TIMEOUT_MS = 15_000;
 
 export type AuthUser = {
@@ -145,7 +144,6 @@ async function clearStoredAccessTokens() {
     setStoredItem(ACCESS_TOKEN_KEY, null),
     setStoredItem(REFRESH_TOKEN_KEY, null),
     ...LEGACY_ACCESS_TOKEN_KEYS.map((key) => setStoredItem(key, null)),
-    setStoredItem(LEGACY_REFRESH_TOKEN_KEY, null),
   ]);
 }
 

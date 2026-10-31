@@ -701,9 +701,10 @@ async function startPlaying(harness, at = 5, trackToLoad = hour) {
 }
 
 function watch(engine) {
-  const seen = { changes: [], progress: [], failures: 0 };
+  const seen = { changes: [], progress: [], recoveries: [], failures: 0 };
   engine.subscribe({
     onPlaybackChange: (value) => seen.changes.push(plain(value)),
+    onRecoveryStateChange: (value) => seen.recoveries.push(plain(value)),
     onProgress: (value) => seen.progress.push(plain(value)),
     onPlaybackFailed: () => seen.failures++,
   });
@@ -808,6 +809,7 @@ test('recovery keeps retrying with backoff and resumes when the source becomes a
   await harness.advance(1000);
   assert.equal(named(native.calls, 'replace').length, 4);
   assert.match(harness.warnings.at(-1), /attempt 3; will keep retrying/);
+  assert.deepEqual(seen.recoveries.at(-1), { isRecovering: true });
 
   // Connectivity returns while that reload is opening. It seeks back to the
   // saved position and starts without another listener action.
@@ -821,6 +823,8 @@ test('recovery keeps retrying with backoff and resumes when the source becomes a
   assert.equal(harness.engine.hasSource(), true);
   assert.equal(native.released, false);
   assert.deepEqual(seen.changes.at(-1), { isPlaying: true, isBuffering: false });
+  assert.deepEqual(seen.recoveries.at(-1), { isRecovering: false },
+    'recovery ends only after the playback clock moves');
   assert.equal(harness.players.length, 1);
 });
 

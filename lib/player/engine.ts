@@ -413,8 +413,10 @@ export function createPlayerEngine(options: EngineOptions = {}): PlayerEngine {
     if (phase === 'paused' && !waitingOnSeek) {
       // Loaded and not buffering: paused from outside the app — the lock
       // screen, a headset, a call. Nothing is stuck. Playing again re-arms this.
+      console.warn('[player] [PassageDiag] external pause detected by watchdog (lock screen, headset, or call)');
       wantsPlayback = false;
       stopWatching();
+      reportRecovery(false);
       return;
     }
 
@@ -429,6 +431,7 @@ export function createPlayerEngine(options: EngineOptions = {}): PlayerEngine {
         // Native looping moves straight from the end to zero. Treat that jump as
         // healthy progress and make the new cycle the recovery/resume baseline.
         seekCheck = null;
+        if (recoveryActive) reportRecovery(false);
         resumeTarget = position;
         watchedPosition = position;
         lastMovedAt = now;
@@ -443,6 +446,9 @@ export function createPlayerEngine(options: EngineOptions = {}): PlayerEngine {
         }
 
         seekCheck = null;
+        // Native can briefly claim "playing" during a failed retry. Recovery
+        // is only visibly complete once the clock genuinely moves.
+        if (recoveryActive) reportRecovery(false);
         watchedPosition = position;
         lastMovedAt = now;
         if (!movingSince) movingSince = now;
@@ -585,6 +591,7 @@ export function createPlayerEngine(options: EngineOptions = {}): PlayerEngine {
 
     if (isPlaying && hasSource && !wantsPlayback) {
       // Started from outside the app, from the lock screen or notification.
+      console.warn('[player] [PassageDiag] external resume detected (lock screen, notification, or call ended)');
       wantsPlayback = true;
       restartWatch(safeSeconds(status.currentTime));
       startWatching();

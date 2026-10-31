@@ -274,6 +274,8 @@ export default function TryPassageScreen() {
   const renderCard = (item: Soundscape, index: number) => {
     const isActive = player.activeId === item.id;
     const playing = isActive && player.isPlaying;
+    const loading =
+      isActive && (player.isBuffering || player.isRecovering || player.isPlaybackPending);
     // Every preview is presented as a one-minute sample immediately; once the
     // native source reports its real clip length, that value takes over.
     const total = isActive ? player.duration || PREVIEW_DURATION_SECONDS : 0;
@@ -282,9 +284,10 @@ export default function TryPassageScreen() {
 
     return (
       <Pressable
-        accessibilityLabel={`${playing ? 'Pause' : 'Play'} ${item.title}`}
+        accessibilityLabel={`${loading ? 'Loading' : playing ? 'Pause' : 'Play'} ${item.title}`}
         accessibilityRole="button"
-        accessibilityState={{ selected: isActive }}
+        accessibilityState={{ busy: loading, selected: isActive }}
+        disabled={loading}
         key={item.id}
         onPress={() => void player.toggle(item)}
         style={[
@@ -309,12 +312,16 @@ export default function TryPassageScreen() {
                 styles.playButton,
                 isActive ? { backgroundColor: accentColor } : null,
               ]}>
-              <Ionicons
-                color={isActive ? '#0B0B0D' : '#FFFFFF'}
-                name={playing ? 'pause' : 'play'}
-                size={16}
-                style={!playing ? styles.playIconOffset : undefined}
-              />
+              {loading ? (
+                <ActivityIndicator color="#0B0B0D" size="small" />
+              ) : (
+                <Ionicons
+                  color={isActive ? '#0B0B0D' : '#FFFFFF'}
+                  name={playing ? 'pause' : 'play'}
+                  size={16}
+                  style={!playing ? styles.playIconOffset : undefined}
+                />
+              )}
             </View>
 
             <Waveform

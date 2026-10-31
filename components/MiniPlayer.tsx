@@ -19,7 +19,14 @@ export const MINI_PLAYER_HEIGHT = MINI_PLAYER_CARD_HEIGHT + MINI_PLAYER_BOTTOM_G
  */
 export function MiniPlayer() {
   const router = useRouter();
-  const { soundscape, isPlaying, isBuffering, error } = usePlayerState();
+  const {
+    soundscape,
+    isPlaying,
+    isBuffering,
+    isRecovering,
+    isPlaybackPending,
+    error,
+  } = usePlayerState();
   const { position, duration } = usePlayerProgress();
   const { togglePlayPause } = usePlayerActions();
   if (!soundscape) return null;
@@ -29,6 +36,7 @@ export function MiniPlayer() {
   const progress = total > 0 ? Math.min(1, Math.max(0, position / total)) : 0;
   const modeLabel = getModeLabel(soundscape.mode);
   const subtitle = error ?? modeLabel;
+  const playerLoading = isBuffering || isRecovering || isPlaybackPending;
 
   return (
     <Pressable
@@ -57,15 +65,17 @@ export function MiniPlayer() {
         </View>
 
         <Pressable
-          accessibilityLabel={isPlaying ? 'Pause' : 'Play'}
+          accessibilityLabel={playerLoading ? 'Loading' : isPlaying ? 'Pause' : 'Play'}
           accessibilityRole="button"
+          accessibilityState={{ busy: playerLoading }}
+          disabled={playerLoading}
           hitSlop={10}
           onPress={(event) => {
             event.stopPropagation();
             void togglePlayPause();
           }}
           style={({ pressed }) => [styles.playButton, pressed && styles.playButtonPressed]}>
-          {isBuffering && !isPlaying ? (
+          {playerLoading ? (
             <ActivityIndicator color={PassageColors.background} size="small" />
           ) : (
             <Ionicons

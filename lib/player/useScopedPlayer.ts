@@ -12,6 +12,10 @@ export type ScopedPlayerState = {
   activeId: string | null;
   /** Mirrors the native player: the tap that starts playback, and any pause from outside the app. */
   isPlaying: boolean;
+  /** True from the tap until audio starts, including automatic recovery attempts. */
+  isBuffering: boolean;
+  isRecovering: boolean;
+  isPlaybackPending: boolean;
   position: number;
   duration: number;
   error: string | null;
@@ -20,6 +24,9 @@ export type ScopedPlayerState = {
 const IDLE: ScopedPlayerState = {
   activeId: null,
   isPlaying: false,
+  isBuffering: false,
+  isRecovering: false,
+  isPlaybackPending: false,
   position: 0,
   duration: 0,
   error: null,
@@ -54,6 +61,9 @@ export function useScopedPlayer() {
   const requestRef = useRef(0);
   const activeIdRef = useRef<string | null>(null);
   const playingRef = useRef(false);
+  const recoveringRef = useRef(false);
+  const pendingPositionRef = useRef(0);
+  const positionRef = useRef(0);
   /** Set once the current track has actually reported playing, so start-up states are not read as a pause. */
   const startedRef = useRef(false);
   const [state, setState] = useState<ScopedPlayerState>(IDLE);
@@ -62,6 +72,8 @@ export function useScopedPlayer() {
     requestRef.current += 1;
     activeIdRef.current = null;
     playingRef.current = false;
+    recoveringRef.current = false;
+    positionRef.current = 0;
     startedRef.current = false;
     setState({ ...IDLE, error });
   }, []);
@@ -76,7 +88,13 @@ export function useScopedPlayer() {
     if (!playingRef.current) return;
 
     playingRef.current = false;
-    setState((current) => ({ ...current, isPlaying: false }));
+    setState((current) => ({
+      ...current,
+      isPlaying: false,
+      isBuffering: false,
+      isRecovering: false,
+      isPlaybackPending: false,
+    }));
     void engineRef.current?.pause();
   }, []);
 
@@ -91,10 +109,18 @@ export function useScopedPlayer() {
 
           if (isPlaying) {
             startedRef.current = true;
-            if (!playingRef.current) {
-              playingRef.current = true;
-              setState((current) => ({ ...current, isPlaying: true }));
-            }
+            playingRef.current = true;
+            setState((current) => ({ ...current, isPlaying: true, isBuffering: false }));
+            return;
+          }
+
+          if (isBuffering) {
+            setState((current) => ({ ...current, isPlaying: false, isBuffering: true }));
+            return;
+          }
+
+          if (recoveringRef.current) {
+            setState((current) => ({ ...current, isPlaying: false, isBuffering: false }));
             return;
           }
 
@@ -102,21 +128,46 @@ export function useScopedPlayer() {
           // interruption such as a call.
           if (!isBuffering && startedRef.current && playingRef.current) {
             playingRef.current = false;
-            setState((current) => ({ ...current, isPlaying: false }));
+            setState((current) => ({ ...current, isPlaying: false, isBuffering: false }));
+          }
+        },
+        onRecoveryStateChange: ({ isRecovering }) => {
+          recoveringRef.current = isRecovering;
+          if (activeIdRef.current !== null) {
+            if (isRecovering) pendingPositionRef.current = positionRef.current;
+            setState((current) => ({
+              ...current,
+              isRecovering,
+              ...(isRecovering ? { isPlaybackPending: true } : null),
+            }));
           }
         },
         onProgress: ({ position, duration }) => {
           if (activeIdRef.current === null) return;
+          positionRef.current = position;
 
           setState((current) => ({
             ...current,
+            isPlaybackPending:
+              current.isPlaybackPending &&
+              playingRef.current &&
+              Math.abs(position - pendingPositionRef.current) > 0.05
+                ? false
+                : current.isPlaybackPending,
             position,
             duration: duration > 0 ? duration : current.duration,
           }));
         },
         onTrackEnd: () => {
           playingRef.current = false;
-          setState((current) => ({ ...current, isPlaying: false, position: 0 }));
+          setState((current) => ({
+            ...current,
+            isPlaying: false,
+            isBuffering: false,
+            isRecovering: false,
+            isPlaybackPending: false,
+            position: 0,
+          }));
           void engine.seekTo(0);
         },
         onPlaybackFailed: () => {
@@ -146,7 +197,15 @@ export function useScopedPlayer() {
         }
 
         playingRef.current = true;
-        setState((current) => ({ ...current, isPlaying: true, error: null }));
+        pendingPositionRef.current = positionRef.current;
+        setState((current) => ({
+          ...current,
+          isPlaying: false,
+          isBuffering: true,
+          isRecovering: false,
+          isPlaybackPending: true,
+          error: null,
+        }));
         try {
           await engine.play();
         } catch (error) {
@@ -163,9 +222,14 @@ export function useScopedPlayer() {
       activeIdRef.current = soundscape.id;
       playingRef.current = true;
       startedRef.current = false;
+      pendingPositionRef.current = 0;
+      positionRef.current = 0;
       setState({
         activeId: soundscape.id,
-        isPlaying: true,
+        isPlaying: false,
+        isBuffering: true,
+        isRecovering: false,
+        isPlaybackPending: true,
         position: 0,
         // A clip's real length arrives from the player once it loads; only the
         // full-file fallback has a length known up front.

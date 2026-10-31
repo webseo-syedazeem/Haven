@@ -14,18 +14,24 @@ test('stream recovery has no fixed retry ceiling and resumes on reconnect', () =
   assert.match(engine, /networkUnavailable === true\) return/);
 });
 
-test('player exposes a non-terminal slow connection message driven by buffering, not network type', () => {
+test('player exposes non-terminal connection hints driven by playback evidence, not network type', () => {
   const provider = fs.readFileSync(path.join(root, 'lib/player/PlayerProvider.tsx'), 'utf8');
+  const monitor = fs.readFileSync(path.join(root, 'lib/player/playbackHealth.ts'), 'utf8');
 
-  // A non-terminal "Slow connection" hint still exists, distinct from the
-  // engine's own "Reconnecting…" recovery state.
-  assert.match(provider, /SLOW_CONNECTION_MESSAGE = 'Slow connection'/);
+  // Non-terminal hints exist, distinct from the engine's own "Reconnecting…"
+  // recovery state, and are driven by the adaptive health monitor
+  // (lib/player/playbackHealth.ts) rather than a single fixed buffering
+  // timeout.
+  assert.match(provider, /INTERRUPTIONS_MESSAGE = 'Playback is experiencing interruptions\.'/);
+  assert.match(provider, /OFFLINE_MESSAGE = 'Unable to connect\. Please check your connection\.'/);
   assert.match(provider, /RECOVERING_MESSAGE = 'Reconnecting\.\.\.'/);
   assert.doesNotMatch(provider, /reconnecting automatically/);
   assert.match(provider, /onRecoveryStateChange/);
   assert.match(provider, /canRetry: false/);
-  // Audit M-NET-1: the hint is driven by actual buffering duration, never by
-  // the network connection type.
+  // Audit M-NET-1: the hint is driven by actual playback evidence (buffering
+  // episodes, recovery episodes, real connectivity), never guessed from the
+  // network connection type.
   assert.doesNotMatch(provider, /NetworkStateType/);
-  assert.match(provider, /SLOW_CONNECTION_BUFFERING_MS/);
+  assert.doesNotMatch(monitor, /NetworkStateType/);
+  assert.match(monitor, /isOffline/);
 });

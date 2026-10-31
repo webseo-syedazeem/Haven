@@ -8,7 +8,7 @@ import { Platform } from 'react-native';
 
 export const API_BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL?.trim().replace(/\/+$/, '') || 'https://passagesounds.app';
 export const AUTH_TOKEN_KEY = 'passage.auth.access_token';
-const LEGACY_AUTH_TOKEN_KEYS = ['access_token', 'haven.auth.access_token'] as const;
+const LEGACY_AUTH_TOKEN_KEYS = ['access_token'] as const;
 const RATE_LIMIT_MAX_RETRIES = 2;
 /**
  * No request may hang forever. Without this, a captive portal or a server that

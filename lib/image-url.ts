@@ -9,16 +9,24 @@
  * unchanged. Never throws.
  */
 
-export type CoverSize = 'sm' | 'md' | 'lg';
+export type CoverSize = 'sm' | 'md' | 'lg' | 'original';
 
 const COVER_IMAGES_MARKER = '/passage_soundscape_images_webp/';
 const VARIANT_DIR_NAMES = new Set<string>(['sm', 'md', 'lg']);
+
+const FALLBACK_ORDER: Record<CoverSize, CoverSize[]> = {
+  sm: ['sm', 'md', 'lg'],
+  md: ['md', 'lg', 'sm'],
+  lg: ['lg', 'md', 'sm'],
+  original: ['lg', 'md', 'sm'],
+};
 
 export function coverUrl(
   url: string | null | undefined,
   size: CoverSize
 ): string | null | undefined {
   if (!url) return url;
+  if (size === 'original') return url;
 
   try {
     const markerIndex = url.indexOf(COVER_IMAGES_MARKER);
@@ -45,6 +53,55 @@ export function coverUrl(
   } catch {
     return url;
   }
+}
+
+/** Ordered download choices: requested size, sibling sizes, then the original. */
+export function coverCandidateUrls(
+  url: string | null | undefined,
+  size: CoverSize
+): string[] {
+  if (!url) return [];
+
+  try {
+    const markerIndex = url.indexOf(COVER_IMAGES_MARKER);
+    if (markerIndex === -1) return [url];
+
+    const prefix = url.slice(0, markerIndex + COVER_IMAGES_MARKER.length);
+    const segments = url.slice(prefix.length).split('/');
+    let filename: string;
+
+    if (segments.length === 1) {
+      filename = segments[0];
+    } else if (segments.length === 2 && VARIANT_DIR_NAMES.has(segments[0])) {
+      filename = segments[1];
+    } else {
+      return [url];
+    }
+
+    if (!filename) return [url];
+
+    const original = `${prefix}${filename}`;
+    const variants = FALLBACK_ORDER[size].map((variant) => `${prefix}${variant}/${filename}`);
+    return size === 'original' ? [original, ...variants] : [...variants, original];
+  } catch {
+    return [url];
+  }
+}
+
+/**
+ * Files allowed to bypass the network on first render.
+ *
+ * The full player is quality-first: a cached resized image must not prevent an
+ * original request. Resized files become eligible only after that request
+ * fails inside `fetchArtwork`. Other surfaces remain performance-first and may
+ * immediately reuse any already-downloaded compatible size.
+ */
+export function initialCachedCoverUrls(
+  url: string | null | undefined,
+  size: CoverSize
+): string[] {
+  const candidates = coverCandidateUrls(url, size);
+  return size === 'original' ? candidates.slice(0, 1) : candidates;
 }
 
 /**

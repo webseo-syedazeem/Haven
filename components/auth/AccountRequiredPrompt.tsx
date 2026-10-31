@@ -18,6 +18,7 @@ import {
   Typography,
 } from '@/constants/design';
 import { AppFonts } from '@/constants/theme';
+import { useGuestModeActive } from '@/hooks/useSession';
 
 type PromptOptions = {
   title?: string;
@@ -41,6 +42,7 @@ const DEFAULT_MESSAGE =
 /** One app-wide, centered account prompt shared by every guest-only gate. */
 export function AccountRequiredPromptProvider({ children }: { children: ReactNode }) {
   const router = useRouter();
+  const isGuest = useGuestModeActive();
   const [prompt, setPrompt] = useState<Required<PromptOptions> | null>(null);
 
   const dismissAccountRequiredPrompt = useCallback(() => setPrompt(null), []);
@@ -58,8 +60,10 @@ export function AccountRequiredPromptProvider({ children }: { children: ReactNod
 
   const openLoginFlow = useCallback(() => {
     dismissAccountRequiredPrompt();
-    router.push('/welcome' as Href);
-  }, [dismissAccountRequiredPrompt, router]);
+    router.push(
+      (isGuest ? '/welcome?from=guest-sign-out' : '/welcome') as Href
+    );
+  }, [dismissAccountRequiredPrompt, isGuest, router]);
 
   return (
     <AccountRequiredPromptContext.Provider value={value}>

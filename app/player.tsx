@@ -44,6 +44,8 @@ export default function PlayerScreen() {
     soundscape,
     isPlaying,
     isBuffering,
+    isRecovering,
+    isPlaybackPending,
     hasNext,
     hasPrevious,
     error,
@@ -99,14 +101,15 @@ export default function PlayerScreen() {
   }
 
   const total = duration || soundscape.duration_seconds || 0;
+  const playerLoading = isBuffering || isRecovering || isPlaybackPending;
   const sliderValue = scrubValue ?? Math.min(position, total || position);
   const modeLabel = getModeLabel(soundscape.mode);
   const hasTimerCountdown =
     timerSelection !== null &&
     timerSelection !== UNTIL_I_STOP &&
     timerRemainingSeconds !== null;
-  const timerLoading = isBuffering && !isPlaying && hasTimerCountdown;
-  const timerPaused = !isBuffering && !isPlaying && hasTimerCountdown;
+  const timerLoading = playerLoading && hasTimerCountdown;
+  const timerPaused = !playerLoading && !isPlaying && hasTimerCountdown;
   const timerLabel = timerLoading
     ? `Loading, ${formatTimerCountdown(timerRemainingSeconds)} left`
     : timerPaused
@@ -123,7 +126,7 @@ export default function PlayerScreen() {
 
   return (
     <View style={styles.screen}>
-      <CoverImage size="lg" style={StyleSheet.absoluteFill} uri={soundscape.artwork_url} />
+      <CoverImage size="original" style={StyleSheet.absoluteFill} uri={soundscape.artwork_url} />
       <LinearGradient
         colors={['rgba(3,10,18,0.25)', 'rgba(3,10,18,0.08)', 'rgba(3,10,18,0.78)', '#030A12']}
         locations={[0, 0.3, 0.62, 1]}
@@ -236,11 +239,13 @@ export default function PlayerScreen() {
               </Pressable>
 
               <Pressable
-                accessibilityLabel={isPlaying ? 'Pause' : 'Play'}
+                accessibilityLabel={playerLoading ? 'Loading' : isPlaying ? 'Pause' : 'Play'}
                 accessibilityRole="button"
+                accessibilityState={{ busy: playerLoading }}
+                disabled={playerLoading}
                 onPress={() => void togglePlayPause()}
                 style={({ pressed }) => [styles.playButton, pressed && styles.playButtonPressed]}>
-                {isBuffering && !isPlaying ? (
+                {playerLoading ? (
                   <ActivityIndicator color={PassageColors.background} />
                 ) : (
                   <Ionicons

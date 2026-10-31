@@ -22,8 +22,7 @@ import { supabase } from '@/lib/supabase';
 
 const ACCESS_TOKEN_KEY = 'passage.auth.access_token';
 const REFRESH_TOKEN_KEY = 'passage.auth.refresh_token';
-const LEGACY_ACCESS_TOKEN_KEYS = ['access_token', 'haven.auth.access_token'] as const;
-const LEGACY_REFRESH_TOKEN_KEY = 'haven.auth.refresh_token';
+const LEGACY_ACCESS_TOKEN_KEYS = ['access_token'] as const;
 
 function getWebStorage() {
   return typeof globalThis !== 'undefined'
@@ -110,11 +109,7 @@ async function runRestore(): Promise<SessionRestoreStatus> {
       }
       if (accessToken) await setStoredItem(ACCESS_TOKEN_KEY, accessToken);
     }
-    let refreshToken = await getStoredItem(REFRESH_TOKEN_KEY);
-    if (!refreshToken) {
-      refreshToken = await getStoredItem(LEGACY_REFRESH_TOKEN_KEY);
-      if (refreshToken) await setStoredItem(REFRESH_TOKEN_KEY, refreshToken);
-    }
+    const refreshToken = await getStoredItem(REFRESH_TOKEN_KEY);
 
     // Seed the cache before anything is validated, so an offline launch has a
     // name and an avatar to draw the moment the tabs mount.
@@ -205,7 +200,6 @@ async function runRestore(): Promise<SessionRestoreStatus> {
       deleteStoredItem(ACCESS_TOKEN_KEY),
       ...LEGACY_ACCESS_TOKEN_KEYS.map((key) => deleteStoredItem(key)),
       deleteStoredItem(REFRESH_TOKEN_KEY),
-      deleteStoredItem(LEGACY_REFRESH_TOKEN_KEY),
     ]);
 
     return 'signed-out';

@@ -166,18 +166,23 @@ function createPlayer({
     timers.set(id, { callback, at: now + delay, interval });
     return id;
   };
+  const networkListeners = new Set();
+  let networkState = { type: 'WIFI', isConnected: true, isInternetReachable: true };
   const stubs = {
     react,
     'react/jsx-runtime': { jsx: (type, props) => ({ type, props }), jsxs: (type, props) => ({ type, props }) },
     'react-native': { Platform: { OS: 'android' }, AppState: { addEventListener: (_, callback) => { background = callback; return { remove: () => { background = null; } }; } } },
-    // Defensive stub (audit M-TEST-1): the slow-connection hint no longer reads
-    // the network, but keep expo-network resolvable so re-introducing it cannot
-    // silently break the whole suite the way it did at e22903e. Mirrors
-    // scripts/player-engine.test.cjs.
+    // The playback health monitor (lib/player/playbackHealth.ts) reads this
+    // only to tell "actually offline" from "buffering is slow" — never a
+    // speed guess from connection type (audit M-NET-1). Mirrors the stub in
+    // scripts/player-engine.test.cjs, with a settable state for tests below.
     'expo-network': {
       NetworkStateType: { CELLULAR: 'CELLULAR', WIFI: 'WIFI', UNKNOWN: 'UNKNOWN' },
-      getNetworkStateAsync: async () => ({ type: 'WIFI', isConnected: true, isInternetReachable: true }),
-      addNetworkStateListener: () => ({ remove: () => {} }),
+      getNetworkStateAsync: async () => networkState,
+      addNetworkStateListener: (listener) => {
+        networkListeners.add(listener);
+        return { remove: () => networkListeners.delete(listener) };
+      },
     },
     '@/hooks/useSession': {
       useHasSession: () => hasSession,
@@ -303,6 +308,11 @@ function createPlayer({
     async background() { background?.('background'); await settle(); },
     async active() { background?.('active'); await settle(); },
     async elapse(milliseconds) { now += milliseconds; await settle(); },
+    async setNetworkState(nextState) {
+      networkState = { ...networkState, ...nextState };
+      for (const listener of [...networkListeners]) listener(networkState);
+      await settle();
+    },
     async advance(milliseconds) {
       const until = now + milliseconds;
       for (;;) {
@@ -1076,32 +1086,37 @@ test('an external pause (lock screen, a call, a headset) freezes the timer exact
   assert.equal(player.progress.timerRemainingSeconds, 530);
 });
 
-// -------------------------------------------- slow-connection hint (audit M-NET-1)
+// ------------------------------------- adaptive connection hint (audit M-NET-1)
+//
+// lib/player/playbackHealth.ts replaces a single fixed buffering timeout
+// with a rolling-window monitor fed from the engine listeners the provider
+// already subscribes to. See scripts/playback-health.test.cjs for unit
+// coverage of the monitor itself; these tests cover how PlayerProvider
+// wires it in.
 
-test('sustained buffering surfaces a non-terminal slow connection hint, then clears', async () => {
+/** Advances past this track's own startup, as `confirmsPlayback` requires. */
+async function confirmPlaybackStarted(player, track) {
+  await player.event('onProgress', { position: 1, duration: track.duration_seconds, trackId: track.id });
+}
+
+test('initial startup buffering never shows a connection hint, however long it takes', async () => {
   const player = createPlayer();
   await player.act('playSoundscape', tracks[0]);
 
-  // A real stall: the engine reports buffering while NOT actively playing.
+  // Still starting up: no confirmed playback yet. A long buffer here is a
+  // CDN cold start or audio-session setup, not evidence of a problem.
   await player.event('onPlaybackChange', { isPlaying: false, isBuffering: true });
+  await player.advance(20000);
+  assert.equal(player.state.error, null);
 
-  // Below the threshold, nothing is shown yet.
-  await player.advance(7000);
-  assert.notEqual(player.state.error, 'Slow connection');
-
-  // After a sustained stall, the non-terminal hint appears (no retry button).
-  await player.advance(2000);
-  assert.equal(player.state.error, 'Slow connection');
-  assert.equal(player.state.canRetry, false);
-
-  // When data flows again, the hint clears on its own.
   await player.event('onPlaybackChange', { isPlaying: true, isBuffering: false });
   assert.equal(player.state.error, null);
 });
 
-test('brief buffering never shows the slow connection hint', async () => {
+test('a single brief buffering episode after confirmed playback shows no hint', async () => {
   const player = createPlayer();
   await player.act('playSoundscape', tracks[0]);
+  await confirmPlaybackStarted(player, tracks[0]);
 
   await player.event('onPlaybackChange', { isPlaying: false, isBuffering: true });
   await player.advance(3000);
@@ -1110,16 +1125,147 @@ test('brief buffering never shows the slow connection hint', async () => {
   assert.equal(player.state.error, null);
 });
 
-test('the slow connection hint never overrides the engine reconnecting state', async () => {
+test('repeated buffering after confirmed playback surfaces the interruptions message on the next episode', async () => {
   const player = createPlayer();
   await player.act('playSoundscape', tracks[0]);
+  await confirmPlaybackStarted(player, tracks[0]);
+
+  // Three 6s episodes: enough episodes and enough total time, but each one
+  // stays silent while it is only buffering, not actively recovering.
+  for (let i = 0; i < 3; i++) {
+    await player.event('onPlaybackChange', { isPlaying: false, isBuffering: true });
+    await player.advance(6000);
+    await player.event('onPlaybackChange', { isPlaying: true, isBuffering: false });
+  }
+  assert.equal(player.state.error, null);
+
+  // The next buffer already has enough prior evidence to surface the hint.
+  await player.event('onPlaybackChange', { isPlaying: false, isBuffering: true });
+  assert.equal(player.state.error, 'Playback is experiencing interruptions.');
+  assert.equal(player.state.canRetry, false);
+
+  // It clears again once this episode ends too.
+  await player.event('onPlaybackChange', { isPlaying: true, isBuffering: false });
+  assert.equal(player.state.error, null);
+});
+
+test('a second engine-confirmed recovery episode upgrades the message to interruptions', async () => {
+  const player = createPlayer();
+  await player.act('playSoundscape', tracks[0]);
+  await confirmPlaybackStarted(player, tracks[0]);
+
+  await player.event('onRecoveryStateChange', { isRecovering: true });
+  assert.equal(player.state.error, 'Reconnecting...');
+  await player.event('onRecoveryStateChange', { isRecovering: false });
+  assert.equal(player.state.error, null);
+
+  await player.event('onRecoveryStateChange', { isRecovering: true });
+  assert.equal(player.state.error, 'Playback is experiencing interruptions.');
+  assert.equal(player.state.canRetry, false);
+});
+
+test('a single recovery episode sustained past the threshold escalates on its own', async () => {
+  const player = createPlayer();
+  await player.act('playSoundscape', tracks[0]);
+  await confirmPlaybackStarted(player, tracks[0]);
 
   await player.event('onRecoveryStateChange', { isRecovering: true });
   assert.equal(player.state.error, 'Reconnecting...');
 
+  await player.advance(24000);
+  assert.equal(player.state.error, 'Reconnecting...', 'not sustained yet');
+
+  await player.advance(2000);
+  assert.equal(player.state.error, 'Playback is experiencing interruptions.');
+});
+
+test('an active recovery during an actual disconnection shows the offline message', async () => {
+  const player = createPlayer();
+  await player.act('playSoundscape', tracks[0]);
+  await confirmPlaybackStarted(player, tracks[0]);
+
+  await player.setNetworkState({ isConnected: false, isInternetReachable: false });
+  await player.event('onRecoveryStateChange', { isRecovering: true });
+  assert.equal(player.state.error, 'Unable to connect. Please check your connection.');
+
+  await player.setNetworkState({ isConnected: true, isInternetReachable: true });
+  await player.event('onRecoveryStateChange', { isRecovering: false });
+  assert.equal(player.state.error, null);
+});
+
+test('a new track resets the health monitor window', async () => {
+  const player = createPlayer();
+  await player.act('playSoundscape', tracks[0]);
+  await confirmPlaybackStarted(player, tracks[0]);
+
+  await player.event('onRecoveryStateChange', { isRecovering: true });
+  await player.event('onRecoveryStateChange', { isRecovering: false });
+  await player.event('onRecoveryStateChange', { isRecovering: true });
+  assert.equal(player.state.error, 'Playback is experiencing interruptions.');
+  await player.event('onRecoveryStateChange', { isRecovering: false });
+
+  await player.act('playSoundscape', tracks[1]);
+  await player.event('onRecoveryStateChange', { isRecovering: true });
+  assert.equal(player.state.error, 'Reconnecting...', 'the new track starts with a clean window');
+});
+
+test('the connection hint never overrides a terminal, retryable error', async () => {
+  const player = createPlayer();
+  await player.act('playSoundscape', tracks[0]);
+  await confirmPlaybackStarted(player, tracks[0]);
+
+  await player.event('onRecoveryStateChange', { isRecovering: true });
+  await player.event('onRecoveryStateChange', { isRecovering: false });
+  await player.event('onRecoveryStateChange', { isRecovering: true });
+  assert.equal(player.state.error, 'Playback is experiencing interruptions.');
+  await player.event('onRecoveryStateChange', { isRecovering: false });
+
+  await player.failPlayback(5);
+  assert.equal(player.state.error, 'Playback stopped unexpectedly. Check your connection and try again.');
+  assert.equal(player.state.canRetry, true);
+
+  // A buffer starting while a terminal, retryable error is showing must not
+  // be replaced by a connection hint.
   await player.event('onPlaybackChange', { isPlaying: false, isBuffering: true });
-  await player.advance(10000);
-  // "Reconnecting…" takes precedence; it is not clobbered by "Slow connection".
-  assert.equal(player.state.error, 'Reconnecting...');
+  assert.equal(player.state.canRetry, true);
+  assert.equal(player.state.error, 'Playback stopped unexpectedly. Check your connection and try again.');
+});
+
+test('recovery keeps the player loading across idle status events until audio resumes', async () => {
+  const player = createPlayer();
+  await player.act('playSoundscape', tracks[0]);
+
+  await player.event('onRecoveryStateChange', { isRecovering: true });
+  await player.event('onPlaybackChange', { isPlaying: false, isBuffering: false });
+  assert.equal(player.state.isRecovering, true, 'idle between retries must remain loading');
+
+  // Native can claim "playing" before its clock moves; that must not end loading.
+  await player.event('onPlaybackChange', { isPlaying: true, isBuffering: false });
+  assert.equal(player.state.isPlaying, true);
+  assert.equal(player.state.isRecovering, true);
+
+  // The engine emits this only after observing real position movement.
+  await player.event('onRecoveryStateChange', { isRecovering: false });
+  assert.equal(player.state.isRecovering, false);
+  assert.equal(player.state.isBuffering, false, 'real playback switches the spinner to Pause');
+});
+
+test('the first idle event cannot flash Play before the first recovery attempt', async () => {
+  const player = createPlayer();
+  await player.act('playSoundscape', tracks[0]);
+
+  await player.event('onPlaybackChange', { isPlaying: false, isBuffering: false });
+  assert.equal(player.state.isPlaybackPending, true);
+
+  // Even a premature native "playing" event is not confirmation by itself.
+  await player.event('onPlaybackChange', { isPlaying: true, isBuffering: false });
+  assert.equal(player.state.isPlaybackPending, true);
+
+  await player.event('onProgress', {
+    position: 1,
+    duration: tracks[0].duration_seconds,
+    trackId: tracks[0].id,
+  });
+  assert.equal(player.state.isPlaybackPending, false);
 });
 

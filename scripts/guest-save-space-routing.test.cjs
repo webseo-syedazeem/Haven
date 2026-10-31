@@ -41,3 +41,16 @@ test('guest origin survives the Save Space sign-in and sign-up branches', () => 
   assert.match(login, /welcome\?from=guest-sign-out/);
   assert.match(createAccount, /login\?origin=guest-sign-out/);
 });
+
+test('every shared guest account popup opens the Back to Home auth flow', () => {
+  const prompt = fs.readFileSync(
+    path.join(root, 'components/auth/AccountRequiredPrompt.tsx'),
+    'utf8'
+  );
+
+  assert.match(prompt, /const isGuest = useGuestModeActive\(\)/);
+  assert.match(
+    prompt,
+    /isGuest \? '\/welcome\?from=guest-sign-out' : '\/welcome'/
+  );
+});

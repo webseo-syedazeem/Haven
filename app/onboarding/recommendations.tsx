@@ -1,5 +1,4 @@
 import { Ionicons } from '@expo/vector-icons';
-import { Image } from 'expo-image';
 import type { Href } from 'expo-router';
 import { useRouter } from 'expo-router';
 import { useQuery } from '@tanstack/react-query';
@@ -12,7 +11,7 @@ import { OnboardingScaffold } from '@/components/onboarding/OnboardingScaffold';
 import { PassageColors, PassageRadius } from '@/constants/design';
 import { AppFonts } from '@/constants/theme';
 import { useSinglePress } from '@/hooks/useSinglePress';
-import { coverUrl } from '@/lib/image-url';
+import { prefetchArtwork } from '@/lib/notification-artwork';
 import type { Soundscape } from '@/lib/api/home';
 import {
   finishOnboardingForAppEntry,
@@ -40,11 +39,12 @@ export default function FirstRecommendationsScreen() {
     const recommendations = query.data;
     if (!recommendations) return;
 
-    const urls = [recommendations.best_match, ...recommendations.alternatives]
-      .map((item) => coverUrl(item?.artwork_url, 'sm'))
-      .filter((url): url is string => !!url);
-    if (urls.length === 0) return;
-    void Image.prefetch(urls, { cachePolicy: 'memory-disk' });
+    void prefetchArtwork(
+      [recommendations.best_match, ...recommendations.alternatives].map((item) => ({
+        url: item?.artwork_url,
+        size: 'sm',
+      }))
+    );
   }, [query.data]);
 
   // Neither button marks onboarding complete here: guest mode is only ever

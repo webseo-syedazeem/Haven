@@ -25,7 +25,12 @@ function loadImageUrl() {
   return module.exports;
 }
 
-const { coverUrl, pickActiveCoverUrl } = loadImageUrl();
+const {
+  coverCandidateUrls,
+  coverUrl,
+  initialCachedCoverUrls,
+  pickActiveCoverUrl,
+} = loadImageUrl();
 
 test('rewrites an original passage_soundscape_images_webp URL to the requested variant folder', () => {
   assert.equal(
@@ -78,6 +83,53 @@ test('does not double-rewrite a URL already inside a variant folder', () => {
 test('never throws on malformed-looking input', () => {
   assert.doesNotThrow(() => coverUrl('not a url at all /// passage_soundscape_images_webp/', 'sm'));
   assert.doesNotThrow(() => coverUrl('passage_soundscape_images_webp', 'sm'));
+});
+
+test('orders sibling variants before the original when a requested size fails', () => {
+  const original = 'https://passagesounds.app/passage_soundscape_images_webp/P-S042-x.webp';
+
+  assert.deepEqual(Array.from(coverCandidateUrls(original, 'sm')), [
+    'https://passagesounds.app/passage_soundscape_images_webp/sm/P-S042-x.webp',
+    'https://passagesounds.app/passage_soundscape_images_webp/md/P-S042-x.webp',
+    'https://passagesounds.app/passage_soundscape_images_webp/lg/P-S042-x.webp',
+    original,
+  ]);
+  assert.deepEqual(Array.from(coverCandidateUrls(original, 'md')), [
+    'https://passagesounds.app/passage_soundscape_images_webp/md/P-S042-x.webp',
+    'https://passagesounds.app/passage_soundscape_images_webp/lg/P-S042-x.webp',
+    'https://passagesounds.app/passage_soundscape_images_webp/sm/P-S042-x.webp',
+    original,
+  ]);
+});
+
+test('normalizes an already-variant URL so other sizes can still be fallbacks', () => {
+  const sm = 'https://passagesounds.app/passage_soundscape_images_webp/sm/P-S042-x.webp';
+  assert.deepEqual(Array.from(coverCandidateUrls(sm, 'lg')), [
+    'https://passagesounds.app/passage_soundscape_images_webp/lg/P-S042-x.webp',
+    'https://passagesounds.app/passage_soundscape_images_webp/md/P-S042-x.webp',
+    sm,
+    'https://passagesounds.app/passage_soundscape_images_webp/P-S042-x.webp',
+  ]);
+});
+
+test('full player requests the original first, then falls back through resized files', () => {
+  const original = 'https://passagesounds.app/passage_soundscape_images_webp/P-S042-x.webp';
+  assert.equal(coverUrl(original, 'original'), original);
+  assert.deepEqual(Array.from(coverCandidateUrls(original, 'original')), [
+    original,
+    'https://passagesounds.app/passage_soundscape_images_webp/lg/P-S042-x.webp',
+    'https://passagesounds.app/passage_soundscape_images_webp/md/P-S042-x.webp',
+    'https://passagesounds.app/passage_soundscape_images_webp/sm/P-S042-x.webp',
+  ]);
+});
+
+test('a cached resized file cannot bypass the full player original request', () => {
+  const original = 'https://passagesounds.app/passage_soundscape_images_webp/P-S042-x.webp';
+  assert.deepEqual(Array.from(initialCachedCoverUrls(original, 'original')), [original]);
+  assert.deepEqual(
+    Array.from(initialCachedCoverUrls(original, 'lg')),
+    Array.from(coverCandidateUrls(original, 'lg'))
+  );
 });
 
 // --- CoverImage's one-time fallback-to-original behavior ---------------------------------
