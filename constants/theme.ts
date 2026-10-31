@@ -6,18 +6,34 @@
 const tintColorLight = '#0a7ea4';
 const tintColorDark = '#fff';
 
+/**
+ * Font family tokens. Each name maps 1:1 to a statically-registered weight file
+ * loaded in `app/_layout.tsx` from the bundled `@expo-google-fonts/inter`
+ * package, so a token always renders its own weight without relying on a
+ * separate `fontWeight` (audit M-FONT-2).
+ *
+ * There is exactly ONE font family for the entire app: Inter. The former
+ * second (serif) display face — first Cormorant Garamond, then Playfair
+ * Display — has been fully retired, including its naming: no token name
+ * mentions a second typeface any more, so a plain source search for one comes
+ * back empty (client requirement: "same font across the app"). The `display*`
+ * names are kept as the token surface most screens already import — they
+ * still carry the heading/display *role* (size, weight, letter-spacing
+ * applied at the call site) — but now resolve to Inter weights instead of a
+ * different family. `displayMediumItalic` resolves to Inter's own italic cut,
+ * which keeps the premium onboarding quote-card treatment without a second
+ * family.
+ */
 export const AppFonts = {
-  sansRegular: 'Inter',
-  sansMedium: 'Inter',
-  sansSemiBold: 'Inter',
-  sansBold: 'Inter',
-  displayRegular: 'CormorantGaramond',
-  displayMedium: 'CormorantGaramond',
-  displayMediumItalic: 'CormorantGaramond-MediumItalic',
-  displaySemiBold: 'CormorantGaramond',
-  displayBold: 'CormorantGaramond',
-  playfairRegular: 'PlayfairDisplay',
-  playfairMedium: 'PlayfairDisplay-Medium',
+  sansRegular: 'Inter_400Regular',
+  sansMedium: 'Inter_500Medium',
+  sansSemiBold: 'Inter_600SemiBold',
+  sansBold: 'Inter_700Bold',
+  displayRegular: 'Inter_400Regular',
+  displayMedium: 'Inter_500Medium',
+  displayMediumItalic: 'Inter_500Medium_Italic',
+  displaySemiBold: 'Inter_600SemiBold',
+  displayBold: 'Inter_700Bold',
 };
 
 export const Colors = {
@@ -39,9 +55,3 @@ export const Colors = {
   },
 };
 
-export const Fonts = {
-  sans: AppFonts.sansRegular,
-  serif: AppFonts.displaySemiBold,
-  rounded: AppFonts.sansRegular,
-  mono: 'monospace',
-};

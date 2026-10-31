@@ -262,7 +262,7 @@ const styles = StyleSheet.create({
   },
   title: {
     color: PassageColors.textPrimary,
-    fontFamily: AppFonts.playfairRegular,
+    fontFamily: AppFonts.displayRegular,
     fontSize: 28,
     letterSpacing: -0.35,
     lineHeight: 35,

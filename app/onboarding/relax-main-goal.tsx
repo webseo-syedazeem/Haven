@@ -196,7 +196,7 @@ const styles = StyleSheet.create({
   },
   heading: {
     color: '#FFFFFF',
-    fontFamily: AppFonts.playfairRegular,
+    fontFamily: AppFonts.displayRegular,
     fontSize: RELAX_ONBOARDING.heading.fontSize,
     fontWeight: '600',
     letterSpacing: RELAX_ONBOARDING.heading.letterSpacing,

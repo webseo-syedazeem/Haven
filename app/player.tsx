@@ -583,10 +583,10 @@ const styles = StyleSheet.create({
   },
   pillCopy: { flex: 1, minWidth: 0 },
   pillLabel: {
-    color: '#F6F0E6', fontFamily: AppFonts.sansRegular, fontSize: 11, lineHeight: 15,
+    color: '#F6F0E6', fontFamily: AppFonts.sansRegular, fontSize: 13, lineHeight: 18,
   },
   pillDetail: {
-    color: '#B7B6B4', fontFamily: AppFonts.sansRegular, fontSize: 10, lineHeight: 14,
+    color: '#B7B6B4', fontFamily: AppFonts.sansRegular, fontSize: 12, lineHeight: 16,
   },
   loopIndicator: {
     width: 7, height: 7, borderRadius: 4, backgroundColor: 'rgba(240,232,217,0.2)',

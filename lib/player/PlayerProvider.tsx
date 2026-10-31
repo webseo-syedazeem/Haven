@@ -10,7 +10,6 @@ import {
 } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { AppState, Platform } from 'react-native';
-import * as Network from 'expo-network';
 import { captureProductEvent } from '@/lib/analytics-events';
 
 import {
@@ -52,6 +51,13 @@ const UNAVAILABLE_MESSAGE =
 const STALLED_MESSAGE = 'Playback stopped unexpectedly. Check your connection and try again.';
 const SLOW_CONNECTION_MESSAGE = 'Slow connection';
 const RECOVERING_MESSAGE = 'Reconnecting...';
+/**
+ * How long playback may stay buffering before the non-terminal "Slow connection"
+ * hint appears. This is measured from the player's ACTUAL buffering state, not
+ * the network type — a fast cellular link is not slow, and a slow Wi-Fi one is,
+ * so connection type says nothing useful about real throughput (audit M-NET-1).
+ */
+const SLOW_CONNECTION_BUFFERING_MS = 8000;
 const PLAY_HISTORY_LIMIT = 50;
 const GUEST_PLAYER_STATE_STORAGE_KEY = 'passage.guest.player-state.v1';
 
@@ -548,70 +554,49 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
     }
   }, [clearTimerState, handleTimerEnd, startFadeOut]);
 
-  // -------------------------------------------------------- network quality monitoring
-  
-  // Monitor network quality to show slow connection indicator based on actual network speed
+  // ---------------------------------------------------------- slow-connection hint
+  //
+  // A non-terminal "Slow connection" hint shown only when playback has been
+  // genuinely buffering for a while. It is driven by the player's own buffering
+  // state (the real signal) rather than the network type — the engine watchdog
+  // still performs the actual recovery/back-off; this just stops a long buffer
+  // from looking frozen. Depending only on isPlaying/isBuffering (never on the
+  // error it sets) keeps this from re-arming itself in a loop (audit M-NET-1).
   useEffect(() => {
-    let slowConnectionTimer: ReturnType<typeof setTimeout> | null = null;
-    let networkSubscription: ReturnType<typeof Network.addNetworkStateListener> | null = null;
-
-    const checkNetworkQuality = async () => {
-      if (!state.isPlaying || !state.isBuffering) {
-        // Clear slow connection message if not buffering
-        if (slowConnectionTimer) {
-          clearTimeout(slowConnectionTimer);
-          slowConnectionTimer = null;
-        }
-        setState((current) => {
-          if (current.error === SLOW_CONNECTION_MESSAGE) {
-            return { ...current, error: null, canRetry: false };
-          }
-          return current;
-        });
-        return;
-      }
-
-      try {
-        const networkState = await Network.getNetworkStateAsync();
-        
-        // Show slow connection if on cellular or slow network while buffering
-        const isSlowNetwork = 
-          networkState.type === Network.NetworkStateType.CELLULAR ||
-          networkState.type === Network.NetworkStateType.UNKNOWN;
-
-        if (isSlowNetwork && state.isBuffering && state.isPlaying && !slowConnectionTimer) {
-          // Show slow connection after 8 seconds of continuous buffering
-          slowConnectionTimer = setTimeout(() => {
-            setState((current) => {
-              if (current.isBuffering && current.isPlaying && current.error !== RECOVERING_MESSAGE) {
-                return { ...current, error: SLOW_CONNECTION_MESSAGE, canRetry: false };
-              }
-              return current;
-            });
-          }, 8000);
-        }
-      } catch (error) {
-        // Ignore network state errors
-        console.warn('[player] network quality check failed', error);
-      }
-    };
-
-    void checkNetworkQuality();
-    
-    // Monitor network changes
-    if (Platform.OS !== 'web') {
-      networkSubscription = Network.addNetworkStateListener(() => {
-        void checkNetworkQuality();
-      });
+    // `isBuffering` on its own is the real "trying to play but waiting for data"
+    // signal: the engine only reports it while a source is loaded and actively
+    // fetching, and never while paused or while sound is flowing. (It is not
+    // gated on `isPlaying`, which the engine reports as false during a stall —
+    // the exact moment a slow-connection hint should appear.)
+    if (!state.isBuffering) {
+      // Buffering ended: drop a stale "Slow connection" hint if it is showing.
+      setState((current) =>
+        current.error === SLOW_CONNECTION_MESSAGE
+          ? { ...current, error: null, canRetry: false }
+          : current
+      );
+      return;
     }
 
-    return () => {
-      networkSubscription?.remove();
-      if (slowConnectionTimer) {
-        clearTimeout(slowConnectionTimer);
-      }
-    };
-  }, [state.isBuffering, state.isPlaying, state.error]);
+    // Still buffering: after a sustained stall, surface the hint — unless the
+    // engine's own "Reconnecting…" state, or a real retryable error, is already
+    // showing (those take precedence).
+    const timer = setTimeout(() => {
+      setState((current) => {
+        if (
+          current.isBuffering &&
+          !current.canRetry &&
+          current.error !== RECOVERING_MESSAGE &&
+          current.error !== SLOW_CONNECTION_MESSAGE
+        ) {
+          return { ...current, error: SLOW_CONNECTION_MESSAGE, canRetry: false };
+        }
+        return current;
+      });
+    }, SLOW_CONNECTION_BUFFERING_MS);
+
+    return () => clearTimeout(timer);
+  }, [state.isBuffering]);
 
   // ---------------------------------------------------------------- engine wiring
 

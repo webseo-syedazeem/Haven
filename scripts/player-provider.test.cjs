@@ -170,6 +170,15 @@ function createPlayer({
     react,
     'react/jsx-runtime': { jsx: (type, props) => ({ type, props }), jsxs: (type, props) => ({ type, props }) },
     'react-native': { Platform: { OS: 'android' }, AppState: { addEventListener: (_, callback) => { background = callback; return { remove: () => { background = null; } }; } } },
+    // Defensive stub (audit M-TEST-1): the slow-connection hint no longer reads
+    // the network, but keep expo-network resolvable so re-introducing it cannot
+    // silently break the whole suite the way it did at e22903e. Mirrors
+    // scripts/player-engine.test.cjs.
+    'expo-network': {
+      NetworkStateType: { CELLULAR: 'CELLULAR', WIFI: 'WIFI', UNKNOWN: 'UNKNOWN' },
+      getNetworkStateAsync: async () => ({ type: 'WIFI', isConnected: true, isInternetReachable: true }),
+      addNetworkStateListener: () => ({ remove: () => {} }),
+    },
     '@/hooks/useSession': {
       useHasSession: () => hasSession,
       useGuestModeActive: () => guestMode,
@@ -1065,5 +1074,52 @@ test('an external pause (lock screen, a call, a headset) freezes the timer exact
   await player.event('onPlaybackChange', { isPlaying: true, isBuffering: false });
   await player.advance(10000);
   assert.equal(player.progress.timerRemainingSeconds, 530);
+});
+
+// -------------------------------------------- slow-connection hint (audit M-NET-1)
+
+test('sustained buffering surfaces a non-terminal slow connection hint, then clears', async () => {
+  const player = createPlayer();
+  await player.act('playSoundscape', tracks[0]);
+
+  // A real stall: the engine reports buffering while NOT actively playing.
+  await player.event('onPlaybackChange', { isPlaying: false, isBuffering: true });
+
+  // Below the threshold, nothing is shown yet.
+  await player.advance(7000);
+  assert.notEqual(player.state.error, 'Slow connection');
+
+  // After a sustained stall, the non-terminal hint appears (no retry button).
+  await player.advance(2000);
+  assert.equal(player.state.error, 'Slow connection');
+  assert.equal(player.state.canRetry, false);
+
+  // When data flows again, the hint clears on its own.
+  await player.event('onPlaybackChange', { isPlaying: true, isBuffering: false });
+  assert.equal(player.state.error, null);
+});
+
+test('brief buffering never shows the slow connection hint', async () => {
+  const player = createPlayer();
+  await player.act('playSoundscape', tracks[0]);
+
+  await player.event('onPlaybackChange', { isPlaying: false, isBuffering: true });
+  await player.advance(3000);
+  await player.event('onPlaybackChange', { isPlaying: true, isBuffering: false });
+  await player.advance(10000);
+  assert.equal(player.state.error, null);
+});
+
+test('the slow connection hint never overrides the engine reconnecting state', async () => {
+  const player = createPlayer();
+  await player.act('playSoundscape', tracks[0]);
+
+  await player.event('onRecoveryStateChange', { isRecovering: true });
+  assert.equal(player.state.error, 'Reconnecting...');
+
+  await player.event('onPlaybackChange', { isPlaying: false, isBuffering: true });
+  await player.advance(10000);
+  // "Reconnecting…" takes precedence; it is not clobbered by "Slow connection".
+  assert.equal(player.state.error, 'Reconnecting...');
 });
 

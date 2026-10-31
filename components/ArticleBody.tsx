@@ -111,7 +111,7 @@ export function ArticleBody({ body }: { body: string }) {
 const styles = StyleSheet.create({
   heading: {
     color: PassageColors.textPrimary,
-    fontFamily: AppFonts.playfairRegular,
+    fontFamily: AppFonts.displayRegular,
     fontSize: 21,
     letterSpacing: -0.2,
     lineHeight: 28,

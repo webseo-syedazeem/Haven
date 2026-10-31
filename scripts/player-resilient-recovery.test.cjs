@@ -14,11 +14,18 @@ test('stream recovery has no fixed retry ceiling and resumes on reconnect', () =
   assert.match(engine, /networkUnavailable === true\) return/);
 });
 
-test('player exposes a non-terminal slow connection message', () => {
+test('player exposes a non-terminal slow connection message driven by buffering, not network type', () => {
   const provider = fs.readFileSync(path.join(root, 'lib/player/PlayerProvider.tsx'), 'utf8');
 
-  assert.match(provider, /RECOVERING_MESSAGE = 'Slow connection'/);
+  // A non-terminal "Slow connection" hint still exists, distinct from the
+  // engine's own "Reconnecting…" recovery state.
+  assert.match(provider, /SLOW_CONNECTION_MESSAGE = 'Slow connection'/);
+  assert.match(provider, /RECOVERING_MESSAGE = 'Reconnecting\.\.\.'/);
   assert.doesNotMatch(provider, /reconnecting automatically/);
   assert.match(provider, /onRecoveryStateChange/);
   assert.match(provider, /canRetry: false/);
+  // Audit M-NET-1: the hint is driven by actual buffering duration, never by
+  // the network connection type.
+  assert.doesNotMatch(provider, /NetworkStateType/);
+  assert.match(provider, /SLOW_CONNECTION_BUFFERING_MS/);
 });

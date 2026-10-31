@@ -97,8 +97,9 @@ const styles = StyleSheet.create({
   heading: {
     color: PassageColors.textPrimary,
     fontFamily: AppFonts.displayRegular,
-    fontSize: 29,
-    lineHeight: 34,
+    fontSize: 32,
+    letterSpacing: -0.3,
+    lineHeight: 38,
     marginTop: 32,
     maxWidth: 300,
     textAlign: 'center',

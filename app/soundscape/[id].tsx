@@ -483,8 +483,8 @@ const styles = StyleSheet.create({
   iconActionLabel: {
     color: PassageColors.textSecondary,
     fontFamily: AppFonts.sansRegular,
-    fontSize: 11,
-    lineHeight: 15,
+    fontSize: 12,
+    lineHeight: 16,
   },
   iconActionLabelActive: {
     color: PassageColors.accent,

@@ -39,7 +39,7 @@ export default function RelaxTrustScreen() {
       {index < testimonials.length - 1 ? <View style={styles.divider} /> : null}
     </View>) : <View style={styles.emptyState}>
           <Text style={styles.emptyTitle}>No testimonials yet</Text>
-          <Text style={styles.emptyBody}>We're just getting started. Real stories from our community will appear here soon.</Text>
+          <Text style={styles.emptyBody}>We&rsquo;re just getting started. Real stories from our community will appear here soon.</Text>
         </View>}
   </OnboardingScaffold>;
 }

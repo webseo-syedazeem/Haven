@@ -166,7 +166,7 @@ const styles = StyleSheet.create({
   time: {
     color: PassageColors.textSecondary,
     fontFamily: AppFonts.sansRegular,
-    fontSize: 11,
+    fontSize: 12,
     lineHeight: 16,
     marginTop: 6,
   },

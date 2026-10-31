@@ -491,7 +491,7 @@ const styles = StyleSheet.create({
   },
   heading: {
     color: '#FFFFFF',
-    fontFamily: AppFonts.playfairRegular,
+    fontFamily: AppFonts.displayRegular,
     fontSize: 42,
     fontWeight: '400',
     letterSpacing: -0.55,
@@ -613,8 +613,8 @@ const styles = StyleSheet.create({
   timeText: {
     color: 'rgba(255,255,255,0.72)',
     fontFamily: AppFonts.sansRegular,
-    fontSize: 11,
-    minWidth: 54,
+    fontSize: 12,
+    minWidth: 60,
     flexShrink: 0,
     textAlign: 'right',
   },

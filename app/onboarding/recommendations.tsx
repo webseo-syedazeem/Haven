@@ -225,7 +225,7 @@ const styles = StyleSheet.create({
   eyebrow: {
     color: PassageColors.accent,
     fontFamily: AppFonts.sansSemiBold,
-    fontSize: 10,
+    fontSize: 12,
     fontWeight: '600',
     letterSpacing: 1.6,
     marginTop: 10,
@@ -266,8 +266,9 @@ const styles = StyleSheet.create({
   heading: {
     color: PassageColors.textPrimary,
     fontFamily: AppFonts.displayRegular,
-    fontSize: 31,
-    lineHeight: 36,
+    fontSize: 32,
+    letterSpacing: -0.3,
+    lineHeight: 38,
     marginTop: 4,
     textAlign: 'center',
   },

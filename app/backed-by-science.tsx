@@ -213,7 +213,7 @@ const styles = StyleSheet.create({
   },
   title: {
     color: '#FFFFFF',
-    fontFamily: AppFonts.playfairRegular,
+    fontFamily: AppFonts.displayRegular,
     fontSize: 42,
     letterSpacing: -0.5,
     lineHeight: 48,

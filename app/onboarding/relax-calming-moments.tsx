@@ -163,7 +163,7 @@ const styles = StyleSheet.create({
   },
   heading: {
     color: '#FFFFFF',
-    fontFamily: AppFonts.playfairRegular,
+    fontFamily: AppFonts.displayRegular,
     fontSize: RELAX_ONBOARDING.longHeading.fontSize,
     fontWeight: '600',
     letterSpacing: RELAX_ONBOARDING.longHeading.letterSpacing,

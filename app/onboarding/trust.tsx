@@ -74,7 +74,7 @@ export default function TrustScreen() {
         <View style={styles.cardCopy}><Text style={styles.quote}>”{item.quote}”</Text><Text style={styles.attribution}>{item.name}{item.role ? ` — ${item.role}` : ''}</Text></View>
       </View>) : <View style={styles.emptyState}>
           <Text style={styles.emptyTitle}>No testimonials yet</Text>
-          <Text style={styles.emptyBody}>We're just getting started. Real stories from our community will appear here soon.</Text>
+          <Text style={styles.emptyBody}>We&rsquo;re just getting started. Real stories from our community will appear here soon.</Text>
         </View>}
     </View>
   </OnboardingScaffold>;
@@ -89,7 +89,7 @@ const styles = StyleSheet.create({
   cards: { gap: 14, marginTop: 14 },
   content: { paddingBottom: 20, paddingTop: 0 },
   footer: { alignItems: 'center', width: '100%' },
-  heading: { color: '#FFFFFF', fontFamily: AppFonts.playfairRegular, fontSize: 38, left: 26, lineHeight: 44, position: 'absolute', right: 24, top: 88 },
+  heading: { color: '#FFFFFF', fontFamily: AppFonts.displayRegular, fontSize: 38, left: 26, lineHeight: 44, position: 'absolute', right: 24, top: 88 },
   hero: { alignSelf: 'stretch', marginHorizontal: -20, marginTop: -66, overflow: 'hidden' },
   heroImage: { ...StyleSheet.absoluteFillObject, height: '100%', resizeMode: 'cover', width: '100%' },
   note: { color: '#8A8A8E', fontFamily: AppFonts.sansRegular, fontSize: 12, marginTop: 8 },

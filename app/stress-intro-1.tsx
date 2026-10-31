@@ -75,7 +75,7 @@ const styles = StyleSheet.create({
   },
   heading: {
     color: '#FFFFFF',
-    fontFamily: AppFonts.playfairRegular,
+    fontFamily: AppFonts.displayRegular,
     fontSize: 44,
     fontWeight: '600',
     letterSpacing: -0.8,

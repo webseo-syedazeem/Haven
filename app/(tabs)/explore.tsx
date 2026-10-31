@@ -580,10 +580,10 @@ const styles = StyleSheet.create({
   featuredEyebrow: {
     color: CHIP_ACTIVE,
     fontFamily: AppFonts.sansMedium,
-    fontSize: 11,
+    fontSize: 12,
     fontWeight: '500',
     letterSpacing: 1.1,
-    lineHeight: 15,
+    lineHeight: 16,
     textTransform: 'uppercase',
   },
   featuredTitle: {

@@ -178,7 +178,7 @@ const styles = StyleSheet.create({
   eyebrow: {
     color: RELAX_ACCENT,
     fontFamily: AppFonts.sansSemiBold,
-    fontSize: 10,
+    fontSize: 12,
     fontWeight: '600',
     letterSpacing: 1.7,
     textTransform: 'uppercase',

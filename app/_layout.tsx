@@ -1,5 +1,11 @@
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
-import { CormorantGaramond_500Medium_Italic } from '@expo-google-fonts/cormorant-garamond';
+import {
+  Inter_400Regular,
+  Inter_500Medium,
+  Inter_500Medium_Italic,
+  Inter_600SemiBold,
+  Inter_700Bold,
+} from '@expo-google-fonts/inter';
 import { useFonts } from 'expo-font';
 import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
@@ -31,12 +37,19 @@ export const unstable_settings = { anchor: '(tabs)' };
 function RootLayout() {
   const colorScheme = useColorScheme();
 
+  // Static, per-weight Inter font files — ONE family for the entire app
+  // (client requirement: "same font across the app"). `AppFonts.sans*` and
+  // `AppFonts.display*` are both role-based tokens (weight/heading), but every
+  // one of them resolves to an Inter weight below, so this single map
+  // registers each unique file once. `displayMediumItalic` loads Inter's own
+  // italic cut, so the onboarding quote-card treatment stays italic without
+  // pulling in a second typeface.
   const [fontsLoaded, fontError] = useFonts({
-    [AppFonts.sansRegular]: require('../assets/fonts/Inter-VariableFont_opsz,wght.ttf'),
-    [AppFonts.displayRegular]: require('../assets/fonts/CormorantGaramond-VariableFont_wght.ttf'),
-    [AppFonts.displayMediumItalic]: CormorantGaramond_500Medium_Italic,
-    [AppFonts.playfairRegular]: require('../assets/fonts/PlayfairDisplay-Regular.ttf'),
-    [AppFonts.playfairMedium]: require('../assets/fonts/PlayfairDisplay-Medium.ttf'),
+    [AppFonts.sansRegular]: Inter_400Regular,
+    [AppFonts.sansMedium]: Inter_500Medium,
+    [AppFonts.sansSemiBold]: Inter_600SemiBold,
+    [AppFonts.sansBold]: Inter_700Bold,
+    [AppFonts.displayMediumItalic]: Inter_500Medium_Italic,
   });
   // Proceed with system fonts if a font fails to load, rather than holding the
   // splash screen forever on a null render (audit L-5).

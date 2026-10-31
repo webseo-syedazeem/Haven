@@ -210,9 +210,9 @@ const styles = StyleSheet.create({
   title: {
     color: PassageColors.textPrimary,
     fontFamily: AppFonts.displaySemiBold,
-    fontSize: 26,
-    fontWeight: '600',
-    lineHeight: 33,
+    fontSize: 24,
+    letterSpacing: -0.2,
+    lineHeight: 30,
     marginTop: 20,
     textAlign: 'center',
   },
