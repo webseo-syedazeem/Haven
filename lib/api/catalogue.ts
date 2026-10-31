@@ -43,6 +43,11 @@ export type LibraryResult = {
   soundscapes: Soundscape[];
   /** The server's own count, before any client side trimming. */
   result_count: number;
+  pagination?: {
+    offset: number;
+    limit: number;
+    has_more: boolean;
+  };
 };
 
 /** API compatibility for catalogue fields that are not exposed in the Library UI. */
@@ -59,7 +64,11 @@ type LibraryApiFilters = LibraryFilters & {
  * than sent blank, because the RPC treats an empty array as "no filter" but a
  * stray `?contains=` would still round trip as one.
  */
-export function buildLibraryQuery(filters: LibraryApiFilters, sort: SortValue): string {
+export function buildLibraryQuery(
+  filters: LibraryApiFilters, 
+  sort: SortValue,
+  options?: { limit?: number; offset?: number }
+): string {
   const params = new URLSearchParams();
 
   const lists: [string, string[]][] = [
@@ -81,6 +90,10 @@ export function buildLibraryQuery(filters: LibraryApiFilters, sort: SortValue): 
   if (filters.maxMinutes != null) params.set('max_duration', String(filters.maxMinutes * 60));
 
   params.set('sort', sort);
+
+  // Add pagination parameters if provided
+  if (options?.limit != null) params.set('limit', String(options.limit));
+  if (options?.offset != null) params.set('offset', String(options.offset));
 
   return params.toString();
 }
@@ -132,13 +145,18 @@ export const catalogueApi = {
     return { ...collection, soundscapes: collection.soundscapes ?? [] };
   },
 
-  library: async (filters: LibraryFilters, sort: SortValue): Promise<LibraryResult> => {
-    const query = buildLibraryQuery(filters, sort);
+  library: async (
+    filters: LibraryFilters, 
+    sort: SortValue,
+    options?: { limit?: number; offset?: number }
+  ): Promise<LibraryResult> => {
+    const query = buildLibraryQuery(filters, sort, options);
     const res = await apiClient<Envelope<LibraryResult>>(`/api/library?${query}`);
 
     return {
       soundscapes: res.data?.soundscapes ?? [],
       result_count: res.data?.result_count ?? res.data?.soundscapes?.length ?? 0,
+      pagination: res.data?.pagination,
     };
   },
 

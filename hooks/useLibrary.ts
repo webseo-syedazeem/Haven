@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query';
+import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
 import { useEffect, useMemo, useState } from 'react';
 
 import type { LibraryFilters, SortValue } from '@/constants/filters';
@@ -16,8 +16,10 @@ const SUGGESTION_DEBOUNCE_MS = 300;
 export const FILTER_COUNT_DEBOUNCE_MS = 350;
 const MIN_QUERY_LENGTH = 2;
 
-/** `/api/library` ignores `limit`, so the page size is enforced here. */
-export const LIBRARY_PAGE_SIZE = 60;
+/** Initial page size - 30 soundscapes */
+export const LIBRARY_PAGE_SIZE = 30;
+/** Old page size kept for backwards compatibility */
+export const LIBRARY_PAGE_SIZE_OLD = 60;
 
 export function useDebounced<T>(value: T, delayMs: number): T {
   const [debounced, setDebounced] = useState(value);
@@ -37,6 +39,28 @@ export function useLibrary(filters: LibraryFilters, sort: SortValue, enabled = t
     queryFn: () => catalogueApi.library(filters, sort),
     enabled,
     keepPreviousData: true,
+    staleTime: 1000 * 60 * 60 * 24 * 7, // 7 days cache
+    cacheTime: 1000 * 60 * 60 * 24 * 7, // 7 days cache
+  });
+}
+
+/** Infinite query for library with pagination support */
+export function useLibraryInfinite(filters: LibraryFilters, sort: SortValue, enabled = true) {
+  return useInfiniteQuery({
+    queryKey: LIBRARY_QUERY_KEYS.library(filters, sort),
+    queryFn: ({ pageParam = 0 }) => 
+      catalogueApi.library(filters, sort, { 
+        limit: LIBRARY_PAGE_SIZE, 
+        offset: pageParam 
+      }),
+    enabled,
+    getNextPageParam: (lastPage, allPages) => {
+      const loadedCount = allPages.reduce((sum, page) => sum + page.soundscapes.length, 0);
+      return lastPage.pagination?.has_more ? loadedCount : undefined;
+    },
+    keepPreviousData: true,
+    staleTime: 1000 * 60 * 60 * 24 * 7, // 7 days cache
+    cacheTime: 1000 * 60 * 60 * 24 * 7, // 7 days cache
   });
 }
 
@@ -181,6 +205,7 @@ export function applySortClientSide(soundscapes: Soundscape[], sort: SortValue):
 /**
  * The Library list: search when there is a committed query, structured filters
  * otherwise, and both combined client side when both are active.
+ * Now with infinite scroll support for better performance.
  */
 export function useLibraryResults(
   committedQuery: string,
@@ -191,16 +216,18 @@ export function useLibraryResults(
   const isSearching = committedQuery.trim().length >= MIN_QUERY_LENGTH;
 
   const searchQuery = useSearchSoundscapes(isSearching ? committedQuery : '');
-  const libraryQuery = useLibrary(filters, sort, !isSearching);
+  const libraryQuery = useLibraryInfinite(filters, sort, !isSearching);
 
   const results = useMemo<Soundscape[]>(() => {
     if (isSearching) {
       const base = searchQuery.data ?? [];
       const filtered = hasActiveFilters ? applyFiltersClientSide(base, filters) : base;
-      return applySortClientSide(filtered, sort).slice(0, LIBRARY_PAGE_SIZE);
+      return applySortClientSide(filtered, sort).slice(0, LIBRARY_PAGE_SIZE_OLD);
     }
 
-    return (libraryQuery.data?.soundscapes ?? []).slice(0, LIBRARY_PAGE_SIZE);
+    // Flatten all pages from infinite query
+    const allPages = libraryQuery.data?.pages ?? [];
+    return allPages.flatMap(page => page.soundscapes);
   }, [filters, hasActiveFilters, isSearching, libraryQuery.data, searchQuery.data, sort]);
 
   /** The true total before the client side page trim. */
@@ -208,7 +235,7 @@ export function useLibraryResults(
     ? hasActiveFilters
       ? applyFiltersClientSide(searchQuery.data ?? [], filters).length
       : (searchQuery.data ?? []).length
-    : libraryQuery.data?.result_count ?? 0;
+    : libraryQuery.data?.pages?.[0]?.result_count ?? 0;
 
   const active = isSearching ? searchQuery : libraryQuery;
 
@@ -220,5 +247,9 @@ export function useLibraryResults(
     isFetching: active.isFetching,
     isError: active.isError,
     refetch: active.refetch,
+    // Infinite scroll specific
+    hasNextPage: !isSearching && libraryQuery.hasNextPage,
+    fetchNextPage: !isSearching ? libraryQuery.fetchNextPage : undefined,
+    isFetchingNextPage: !isSearching && libraryQuery.isFetchingNextPage,
   };
 }

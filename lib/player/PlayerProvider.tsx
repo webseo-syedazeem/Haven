@@ -10,6 +10,7 @@ import {
 } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { AppState, Platform } from 'react-native';
+import * as Network from 'expo-network';
 import { captureProductEvent } from '@/lib/analytics-events';
 
 import {
@@ -49,7 +50,8 @@ const UNAVAILABLE_MESSAGE =
     ? 'Playback is not available on web yet.'
     : 'Audio needs the Passage dev build — it cannot run in Expo Go.';
 const STALLED_MESSAGE = 'Playback stopped unexpectedly. Check your connection and try again.';
-const RECOVERING_MESSAGE = 'Slow connection';
+const SLOW_CONNECTION_MESSAGE = 'Slow connection';
+const RECOVERING_MESSAGE = 'Reconnecting...';
 const PLAY_HISTORY_LIMIT = 50;
 const GUEST_PLAYER_STATE_STORAGE_KEY = 'passage.guest.player-state.v1';
 
@@ -546,6 +548,71 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
     }
   }, [clearTimerState, handleTimerEnd, startFadeOut]);
 
+  // -------------------------------------------------------- network quality monitoring
+  
+  // Monitor network quality to show slow connection indicator based on actual network speed
+  useEffect(() => {
+    let slowConnectionTimer: ReturnType<typeof setTimeout> | null = null;
+    let networkSubscription: ReturnType<typeof Network.addNetworkStateListener> | null = null;
+
+    const checkNetworkQuality = async () => {
+      if (!state.isPlaying || !state.isBuffering) {
+        // Clear slow connection message if not buffering
+        if (slowConnectionTimer) {
+          clearTimeout(slowConnectionTimer);
+          slowConnectionTimer = null;
+        }
+        setState((current) => {
+          if (current.error === SLOW_CONNECTION_MESSAGE) {
+            return { ...current, error: null, canRetry: false };
+          }
+          return current;
+        });
+        return;
+      }
+
+      try {
+        const networkState = await Network.getNetworkStateAsync();
+        
+        // Show slow connection if on cellular or slow network while buffering
+        const isSlowNetwork = 
+          networkState.type === Network.NetworkStateType.CELLULAR ||
+          networkState.type === Network.NetworkStateType.UNKNOWN;
+
+        if (isSlowNetwork && state.isBuffering && state.isPlaying && !slowConnectionTimer) {
+          // Show slow connection after 8 seconds of continuous buffering
+          slowConnectionTimer = setTimeout(() => {
+            setState((current) => {
+              if (current.isBuffering && current.isPlaying && current.error !== RECOVERING_MESSAGE) {
+                return { ...current, error: SLOW_CONNECTION_MESSAGE, canRetry: false };
+              }
+              return current;
+            });
+          }, 8000);
+        }
+      } catch (error) {
+        // Ignore network state errors
+        console.warn('[player] network quality check failed', error);
+      }
+    };
+
+    void checkNetworkQuality();
+    
+    // Monitor network changes
+    if (Platform.OS !== 'web') {
+      networkSubscription = Network.addNetworkStateListener(() => {
+        void checkNetworkQuality();
+      });
+    }
+
+    return () => {
+      networkSubscription?.remove();
+      if (slowConnectionTimer) {
+        clearTimeout(slowConnectionTimer);
+      }
+    };
+  }, [state.isBuffering, state.isPlaying, state.error]);
+
   // ---------------------------------------------------------------- engine wiring
 
   useEffect(() => {
@@ -587,8 +654,10 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
           if (isRecovering) {
             return { ...current, error: RECOVERING_MESSAGE, canRetry: false };
           }
-          if (current.error !== RECOVERING_MESSAGE) return current;
-          return { ...current, error: null, canRetry: false };
+          if (current.error === RECOVERING_MESSAGE || current.error === SLOW_CONNECTION_MESSAGE) {
+            return { ...current, error: null, canRetry: false };
+          }
+          return current;
         });
       },
       onProgress: ({ position, duration, trackId }) => {

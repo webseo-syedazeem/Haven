@@ -57,8 +57,18 @@ export default function LibraryScreen() {
   const hasActiveFilters = activeCount > 0;
   const activeChips = useMemo(() => toActiveChips(filters), [filters]);
 
-  const { results, totalCount, isSearching, isLoading, isFetching, isError, refetch } =
-    useLibraryResults(committedQuery, filters, sort, hasActiveFilters);
+  const { 
+    results, 
+    totalCount, 
+    isSearching, 
+    isLoading, 
+    isFetching, 
+    isError, 
+    refetch,
+    hasNextPage,
+    fetchNextPage,
+    isFetchingNextPage,
+  } = useLibraryResults(committedQuery, filters, sort, hasActiveFilters);
 
   // Suggestions only while the field is focused and nothing is committed yet.
   const showSuggestions = isFocused && draftQuery.trim().length >= 2 && draftQuery !== committedQuery;
@@ -100,6 +110,12 @@ export default function LibraryScreen() {
     [router]
   );
 
+  const handleLoadMore = useCallback(() => {
+    if (hasNextPage && !isFetchingNextPage && fetchNextPage) {
+      void fetchNextPage();
+    }
+  }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
+
   const renderRow = useCallback(
     ({ item }: { item: Soundscape }) => (
       <SoundscapeRow
@@ -114,6 +130,15 @@ export default function LibraryScreen() {
     ),
     [favouriteIds, openSoundscape, playSoundscape, toggleFavourite]
   );
+
+  const renderFooter = useCallback(() => {
+    if (!isFetchingNextPage) return null;
+    return (
+      <View style={styles.footerLoader}>
+        <ActivityIndicator color={PassageColors.accent} size="small" />
+      </View>
+    );
+  }, [isFetchingNextPage]);
 
   const countLabel = isLoading
     ? 'Searching…'
@@ -329,6 +354,9 @@ export default function LibraryScreen() {
             renderItem={renderRow}
             showsVerticalScrollIndicator={false}
             windowSize={7}
+            onEndReached={handleLoadMore}
+            onEndReachedThreshold={0.5}
+            ListFooterComponent={renderFooter}
           />
         )}
         </SafeAreaView>
@@ -544,5 +572,9 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     lineHeight: 19,
     marginBottom: 22,
+  },
+  footerLoader: {
+    alignItems: 'center',
+    paddingVertical: 20,
   },
 });
