@@ -342,9 +342,8 @@ const styles = StyleSheet.create({
   sectionCountLabel: {
     color: PassageColors.background,
     fontFamily: AppFonts.sansSemiBold,
-    fontSize: 11,
-    fontWeight: '600',
-    lineHeight: 15,
+    fontSize: 12,
+    lineHeight: 16,
   },
   seeAll: {
     color: PassageColors.accent,
@@ -396,8 +395,7 @@ const styles = StyleSheet.create({
   showBadgeLabel: {
     color: PassageColors.background,
     fontFamily: AppFonts.sansSemiBold,
-    fontSize: 11,
-    fontWeight: '600',
-    lineHeight: 15,
+    fontSize: 12,
+    lineHeight: 16,
   },
 });

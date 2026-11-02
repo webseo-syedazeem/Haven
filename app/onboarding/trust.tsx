@@ -72,10 +72,7 @@ export default function TrustScreen() {
       {testimonials.length ? testimonials.map((item) => <View key={item.id} style={styles.card}>
         {item.avatar_url ? <Image source={{ uri: item.avatar_url }} style={styles.avatar} /> : null}
         <View style={styles.cardCopy}><Text style={styles.quote}>”{item.quote}”</Text><Text style={styles.attribution}>{item.name}{item.role ? ` — ${item.role}` : ''}</Text></View>
-      </View>) : <View style={styles.emptyState}>
-          <Text style={styles.emptyTitle}>No testimonials yet</Text>
-          <Text style={styles.emptyBody}>We&rsquo;re just getting started. Real stories from our community will appear here soon.</Text>
-        </View>}
+      </View>) : null}
     </View>
   </OnboardingScaffold>;
 }

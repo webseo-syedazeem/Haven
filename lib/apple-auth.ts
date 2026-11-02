@@ -1,5 +1,6 @@
 import * as Linking from 'expo-linking';
 import * as AppleAuthentication from 'expo-apple-authentication';
+import * as Crypto from 'expo-crypto';
 import * as WebBrowser from 'expo-web-browser';
 import { Platform } from 'react-native';
 
@@ -32,11 +33,20 @@ const withRedirectTo = (authUrl: string, redirectUri: string) => {
 export const signInWithApple = async () => {
   if (Platform.OS === 'ios' && await AppleAuthentication.isAvailableAsync()) {
     try {
+      // A per-request nonce binds the identity token to this specific sign-in
+      // attempt, preventing replay attacks (L-03). Apple receives the SHA-256
+      // hash; Supabase verifies using the raw value.
+      const rawNonce = Crypto.randomUUID();
+      const hashedNonce = await Crypto.digestStringAsync(
+        Crypto.CryptoDigestAlgorithm.SHA256,
+        rawNonce,
+      );
       const credential = await AppleAuthentication.signInAsync({
         requestedScopes: [AppleAuthentication.AppleAuthenticationScope.FULL_NAME, AppleAuthentication.AppleAuthenticationScope.EMAIL],
+        nonce: hashedNonce,
       });
       if (!credential.identityToken) throw new Error('Apple did not return an identity token.');
-      const { data: nativeData, error: nativeError } = await supabase.auth.signInWithIdToken({ provider: 'apple', token: credential.identityToken });
+      const { data: nativeData, error: nativeError } = await supabase.auth.signInWithIdToken({ provider: 'apple', token: credential.identityToken, nonce: rawNonce });
       if (nativeError) throw new Error(nativeError.message);
       if (credential.fullName?.givenName || credential.fullName?.familyName) {
         await supabase.auth.updateUser({ data: { full_name: [credential.fullName.givenName, credential.fullName.familyName].filter(Boolean).join(' ') } });

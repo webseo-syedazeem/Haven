@@ -140,18 +140,18 @@ export default function VerifyEmailScreen() {
     setOpeningMail(true);
     setMessage('');
     try {
-      const nativeCandidates = Platform.OS === 'ios' ? IOS_MAIL_CLIENTS : ['mailto:'];
-
-      for (const url of nativeCandidates) {
+      // Try native app deep-link schemes on both platforms — these open the
+      // inbox directly rather than a compose view.
+      for (const url of IOS_MAIL_CLIENTS) {
         if (await tryOpenUrl(url)) return;
       }
 
-      // `mailto:` respects the user's default iOS email client. It opens a
-      // compose view, so keep it behind the direct inbox schemes above.
-      if (Platform.OS === 'ios' && (await tryOpenUrl('mailto:'))) return;
+      // mailto: opens the device's default email app. On iOS this shows a
+      // compose view; on Android behaviour varies by app but it keeps the
+      // user inside their email client, which is preferable to the browser.
+      if (await tryOpenUrl('mailto:')) return;
 
-      // iOS users can remove Mail and may not have another supported client.
-      // A provider inbox in the browser is a reliable final fallback.
+      // Only open the browser when no email app is installed at all.
       const inboxUrl = webInboxUrl(email);
       if (inboxUrl && (await tryOpenUrl(inboxUrl))) return;
 

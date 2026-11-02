@@ -11,6 +11,8 @@ import { clearPersistedQueryCache } from '@/lib/query-persist';
 import { supabase } from '@/lib/supabase';
 import { posthog, Sentry } from '@/lib/observability';
 import { setAnalyticsConsent } from '@/lib/analytics';
+import { cancelWindDownReminder } from '@/lib/notifications';
+import { preferencesApi } from '@/lib/api/preferences';
 
 /**
  * Signs the user out and leaves nothing of them behind on the device.
@@ -27,6 +29,25 @@ export async function clearUserSession(queryClient: QueryClient) {
   // layout's own "no session" redirect does not fire mid-cleanup — see
   // `beginExplicitSignOut`'s comment for why that race exists.
   beginExplicitSignOut();
+
+  // Unregister the device push token and cancel the local wind-down reminder
+  // before the session is cleared. The API call needs a valid token, so this
+  // must happen while the session is still live. Best-effort: a failure here
+  // must never prevent the rest of the sign-out from completing.
+  try {
+    if (typeof window === 'undefined') {
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
+      const Notifications = require('expo-notifications');
+      const tokenResponse = await Notifications.getExpoPushTokenAsync().catch(() => null);
+      const token = tokenResponse?.data;
+      if (token) {
+        await preferencesApi.unregisterDevice(token).catch(() => {});
+      }
+    }
+  } catch {
+    // Native module may be absent in tests or on web.
+  }
+  await cancelWindDownReminder().catch(() => {});
 
   try {
     await apiClient('/api/logout', { method: 'POST' });

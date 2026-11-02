@@ -602,16 +602,16 @@ const styles = StyleSheet.create({
   sceneReviewLabel: {
     color: '#FFFFFF',
     fontFamily: AppFonts.sansBold,
-    fontSize: 10,
+    fontSize: 12,
     letterSpacing: 0.5,
-    lineHeight: 13,
+    lineHeight: 16,
   },
   sceneReviewNext: {
     color: 'rgba(255, 255, 255, 0.76)',
     fontFamily: AppFonts.sansBold,
-    fontSize: 7,
+    fontSize: 12,
     letterSpacing: 0.7,
-    lineHeight: 10,
+    lineHeight: 16,
   },
   content: {
     flexGrow: 1,

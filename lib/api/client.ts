@@ -7,6 +7,9 @@ import { clearAuthTokens, getAccessToken, getRefreshToken, refreshSession } from
 import { Platform } from 'react-native';
 
 export const API_BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL?.trim().replace(/\/+$/, '') || 'https://passagesounds.app';
+if (!process.env.EXPO_PUBLIC_API_BASE_URL && !__DEV__) {
+  console.warn('[Passage] EXPO_PUBLIC_API_BASE_URL is not set — using fallback domain. Set this in your EAS production environment.');
+}
 export const AUTH_TOKEN_KEY = 'passage.auth.access_token';
 const LEGACY_AUTH_TOKEN_KEYS = ['access_token'] as const;
 const RATE_LIMIT_MAX_RETRIES = 2;

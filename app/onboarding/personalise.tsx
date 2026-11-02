@@ -355,7 +355,7 @@ const styles = StyleSheet.create({
   dividerText: {
     color: '#7E7A74',
     fontFamily: AppFonts.sansSemiBold,
-    fontSize: 11,
+    fontSize: 12,
     letterSpacing: 1.2,
     paddingHorizontal: 10,
   },

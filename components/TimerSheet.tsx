@@ -334,8 +334,8 @@ const styles = StyleSheet.create({
   timelineLabel: {
     color: PassageColors.textSecondary,
     fontFamily: AppFonts.sansRegular,
-    fontSize: 11,
-    lineHeight: 16,
+    fontSize: 12,
+    lineHeight: 17,
   },
   untilStopCard: {
     alignItems: 'center',

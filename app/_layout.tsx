@@ -10,7 +10,7 @@ import { useFonts } from 'expo-font';
 import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import * as SystemUI from 'expo-system-ui';
-import { useEffect } from 'react';
+import React, { Component, useEffect } from 'react';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SystemBars } from 'react-native-edge-to-edge';
 import { AppFonts } from '@/constants/theme';
@@ -32,6 +32,54 @@ import { Sentry } from '@/lib/observability';
 void SplashScreen.preventAutoHideAsync();
 
 export const unstable_settings = { anchor: '(tabs)' };
+
+// Expo Router reads this named export and wraps the layout with it automatically.
+export class ErrorBoundary extends Component<
+  { children: React.ReactNode },
+  { hasError: boolean }
+> {
+  state = { hasError: false };
+
+  static getDerivedStateFromError() {
+    return { hasError: true };
+  }
+
+  componentDidCatch(error: Error, info: React.ErrorInfo) {
+    Sentry.captureException(error, { extra: { componentStack: info.componentStack } });
+  }
+
+  render() {
+    if (this.state.hasError) {
+      const { View, Text, Pressable, StyleSheet } = require('react-native');
+      return (
+        <View style={eb.container}>
+          <Text style={eb.title}>Something went wrong</Text>
+          <Text style={eb.body}>Please restart the app to continue.</Text>
+          <Pressable
+            style={eb.button}
+            onPress={() => this.setState({ hasError: false })}
+            accessibilityRole="button"
+            accessibilityLabel="Try again"
+          >
+            <Text style={eb.buttonLabel}>Try again</Text>
+          </Pressable>
+        </View>
+      );
+    }
+    return this.props.children;
+  }
+}
+
+const eb = (() => {
+  const { StyleSheet } = require('react-native');
+  return StyleSheet.create({
+    container: { flex: 1, backgroundColor: '#0B0B0D', alignItems: 'center', justifyContent: 'center', padding: 32 },
+    title: { color: '#F5F0EB', fontSize: 20, fontWeight: '600', textAlign: 'center', marginBottom: 12 },
+    body: { color: '#9C978E', fontSize: 15, textAlign: 'center', marginBottom: 32 },
+    button: { backgroundColor: '#1A1A1F', borderRadius: 12, paddingHorizontal: 24, paddingVertical: 14 },
+    buttonLabel: { color: '#C3A17A', fontSize: 15, fontWeight: '600' },
+  });
+})();
 
 
 function RootLayout() {

@@ -172,7 +172,7 @@ export default function LibraryScreen() {
               onChangeText={setDraftQuery}
               onFocus={() => setIsFocused(true)}
               onSubmitEditing={() => commitSearch(draftQuery)}
-              placeholder="Search soundscapes, places, moods…"
+              placeholder="Search soundscapes, places, themes…"
               placeholderTextColor={PassageColors.textSecondary}
               ref={inputRef}
               returnKeyType="search"
@@ -522,9 +522,8 @@ const styles = StyleSheet.create({
   filterBadgeLabel: {
     color: PassageColors.background,
     fontFamily: AppFonts.sansSemiBold,
-    fontSize: 11,
-    fontWeight: '600',
-    lineHeight: 15,
+    fontSize: 12,
+    lineHeight: 16,
   },
   sortButton: {
     alignItems: 'center',

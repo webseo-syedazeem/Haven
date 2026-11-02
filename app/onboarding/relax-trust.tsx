@@ -37,10 +37,7 @@ export default function RelaxTrustScreen() {
         <View style={styles.testimonialCopy}><Text style={styles.quote}>”{testimonial.quote}”</Text><Text style={styles.attribution}>— {testimonial.name}{testimonial.role ? ` — ${testimonial.role}` : ''}</Text></View>
       </View>
       {index < testimonials.length - 1 ? <View style={styles.divider} /> : null}
-    </View>) : <View style={styles.emptyState}>
-          <Text style={styles.emptyTitle}>No testimonials yet</Text>
-          <Text style={styles.emptyBody}>We&rsquo;re just getting started. Real stories from our community will appear here soon.</Text>
-        </View>}
+    </View>) : null}
   </OnboardingScaffold>;
 }
 
@@ -58,7 +55,7 @@ const styles = StyleSheet.create({
   content: { paddingBottom: 18, paddingHorizontal: RELAX_ONBOARDING.screenPaddingHorizontal, paddingTop: RELAX_ONBOARDING.content.paddingTop },
   divider: { backgroundColor: 'rgba(255,255,255,0.20)', height: StyleSheet.hairlineWidth, width: '100%' },
   footer: { alignItems: 'center' },
-  footerNote: { color: PassageColors.textSecondary, fontFamily: AppFonts.sansRegular, fontSize: 11, lineHeight: 16, marginTop: 8, textAlign: 'center' },
+  footerNote: { color: PassageColors.textSecondary, fontFamily: AppFonts.sansRegular, fontSize: 12, lineHeight: 17, marginTop: 8, textAlign: 'center' },
   heading: { color: PassageColors.textPrimary, fontFamily: AppFonts.displayRegular, fontSize: RELAX_ONBOARDING.heading.fontSize, fontWeight: '500', letterSpacing: RELAX_ONBOARDING.heading.letterSpacing, lineHeight: RELAX_ONBOARDING.heading.lineHeight },
   headingDivider: { marginTop: RELAX_ONBOARDING.gaps.headingToContent },
   quote: { color: PassageColors.textPrimary, fontFamily: AppFonts.sansRegular, fontSize: RELAX_ONBOARDING.body.fontSize, lineHeight: RELAX_ONBOARDING.body.lineHeight },

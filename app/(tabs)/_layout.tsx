@@ -179,10 +179,9 @@ const styles = StyleSheet.create({
   tabBarLabel: {
     color: PassageColors.textSecondary,
     fontFamily: AppFonts.sansMedium,
-    fontSize: 11,
-    fontWeight: '500',
+    fontSize: 12,
     letterSpacing: 0.3,
-    lineHeight: 15,
+    lineHeight: 16,
     marginTop: 5,
     textAlign: 'center',
   },

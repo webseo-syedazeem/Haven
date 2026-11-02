@@ -6,7 +6,7 @@
     "orientation": "portrait",
     "icon": "./assets/images/passage-brand-assets/icon.png",
     "scheme": "passage",
-    "userInterfaceStyle": "automatic",
+    "userInterfaceStyle": "dark",
     "newArchEnabled": true,
     "ios": {
       "supportsTablet": false,

@@ -686,7 +686,9 @@ test('native config retains background audio and Android swipe-close service tea
   module.exports({ modResults: {} });
   assert.equal(application.service.length, 1);
   assert.equal(application.service[0].$['android:name'], 'expo.modules.audio.service.AudioControlsService');
-  assert.equal(application.service[0].$['android:stopWithTask'], 'true');
+  // false so the service receives onTaskRemoved on a Recents swipe, where the
+  // native patch stops playback and removes the lingering media notification.
+  assert.equal(application.service[0].$['android:stopWithTask'], 'false');
 });
 
 // ------------------------------------------------------------ stall recovery

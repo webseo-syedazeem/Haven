@@ -92,7 +92,10 @@ export async function identifyObservabilityUser() {
     Sentry.setUser(null)
     return
   }
-  Sentry.setUser({ id: user.id })
+  // Only link the Sentry user identity when the user has opted in to analytics/
+  // diagnostics. Crash data still flows when consent is off; it just isn't
+  // attributed to a specific account (M-02 / privacy policy alignment).
+  Sentry.setUser(analyticsEnabled ? { id: user.id } : null)
   if (analyticsEnabled) posthog?.identify(user.id)
 }
 

@@ -11,6 +11,7 @@ import {
   useHasSession,
   useSessionRestoring,
 } from '@/hooks/useSession';
+import { isExplicitSignOutInFlight } from '@/lib/auth/session-state';
 import { useAccountRequiredPrompt } from '@/components/auth/AccountRequiredPrompt';
 
 /**
@@ -59,6 +60,11 @@ export function RequireAuth({
   // back, is worse than a spinner — and this branch renders neither the
   // children nor a request, so nothing fires either way.
   if (isRestoring) return <>{waiting ?? <GateSpinner />}</>;
+
+  // An explicit sign-out/account-deletion clears the session before navigation
+  // to the login screen completes. Show a spinner instead of the sign-in prompt
+  // to avoid a flash of the gate during that brief window.
+  if (isExplicitSignOutInFlight()) return <GateSpinner />;
 
   if (isGuest) {
     return <GuestAuthGate />;
