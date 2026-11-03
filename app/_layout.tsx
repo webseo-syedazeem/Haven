@@ -7,10 +7,10 @@ import {
   Inter_700Bold,
 } from '@expo-google-fonts/inter';
 import { useFonts } from 'expo-font';
-import { Stack } from 'expo-router';
+import { Redirect, Stack, useSegments } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import * as SystemUI from 'expo-system-ui';
-import React, { Component, useEffect } from 'react';
+import React, { Component, type ReactNode, useEffect } from 'react';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SystemBars } from 'react-native-edge-to-edge';
 import { AppFonts } from '@/constants/theme';
@@ -28,6 +28,57 @@ import { DevOnboardingReplayButton } from '@/components/dev/DevOnboardingReplayB
 import { AnalyticsLifecycle } from '@/components/AnalyticsLifecycle';
 import { ServiceAvailability } from '@/components/ServiceAvailability';
 import { Sentry } from '@/lib/observability';
+import { useHasSession, useSessionRestoring } from '@/hooks/useSession';
+import { isExplicitSignOutInFlight } from '@/lib/auth/session-state';
+
+const PUBLIC_AUTH_ROUTES = new Set([
+  'index',
+  'welcome',
+  'login',
+  'create-account',
+  'verify-email',
+  'verified',
+  'reset-password',
+  'auth/callback',
+]);
+
+const PUBLIC_PRE_AUTH_ONBOARDING_ROUTES = new Set([
+  'why-passage',
+  'what-it-does',
+  'select-focus',
+  'stress-intro-1',
+  'stress-intro-2',
+  'backed-by-science',
+  'onboarding/situation',
+  'onboarding/personalise',
+  'onboarding/relax-science',
+  'onboarding/relax-main-goal',
+  'onboarding/relax-causes',
+  'onboarding/relax-calming-moments',
+  'onboarding/relax-your-fit',
+  'onboarding/relax-trust',
+  'onboarding/your-fit',
+  'onboarding/trust',
+  'onboarding/try-passage',
+]);
+
+function AuthenticationBoundary({ children }: { children: ReactNode }) {
+  const segments = useSegments();
+  const hasSession = useHasSession();
+  const restoring = useSessionRestoring();
+  const route = segments.join('/') || 'index';
+
+  if (restoring) return null;
+  if (
+    !hasSession &&
+    !isExplicitSignOutInFlight() &&
+    !PUBLIC_AUTH_ROUTES.has(route) &&
+    !PUBLIC_PRE_AUTH_ONBOARDING_ROUTES.has(route)
+  ) {
+    return <Redirect href="/login?launch=1" />;
+  }
+  return <>{children}</>;
+}
 
 void SplashScreen.preventAutoHideAsync();
 
@@ -134,6 +185,7 @@ function RootLayout() {
               <PlayerProvider>
                 <ServiceAvailability>
                   <AnalyticsLifecycle />
+                  <AuthenticationBoundary>
                   <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: 'transparent' } }}>
                 <Stack.Screen name="index" options={{ headerShown: false }} />
                 <Stack.Screen name="why-passage" options={{ headerShown: false }} />
@@ -187,6 +239,7 @@ function RootLayout() {
                 />
                 <Stack.Screen name="auth/callback" options={{ headerShown: false }} />
                   </Stack>
+                  </AuthenticationBoundary>
                 </ServiceAvailability>
                 {/* `light` means light bar content, i.e. white navigation arrows. */}
                 <SystemBars style={{ navigationBar: 'light', statusBar: 'light' }} />

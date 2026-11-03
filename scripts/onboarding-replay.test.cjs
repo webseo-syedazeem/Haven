@@ -60,8 +60,8 @@ function load({ diskStore, liveAnswers, restoreCalls, invalidateCalls, requireAl
       requireAllowlist?.add(id);
       if (id === '@/lib/onboarding') {
         return {
-          getGuestOnboardingAnswers: async () => liveAnswers.current,
-          restoreGuestOnboardingAnswers: async (answers) => {
+          getOnboardingAnswers: async () => liveAnswers.current,
+          restoreOnboardingAnswers: async (answers) => {
             restoreCalls.push(answers);
             liveAnswers.current = answers;
           },

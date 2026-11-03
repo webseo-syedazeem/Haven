@@ -7,7 +7,7 @@ import { resetToMainApp } from '@/lib/navigation';
 import {
   getOnboardingAnswers,
   getOnboardingResumeRoute,
-  migrateGuestOnboardingAfterAuth,
+  submitOnboardingDraftAfterAuth,
 } from '@/lib/onboarding';
 import { queryClient } from '@/lib/query-client';
 
@@ -59,9 +59,9 @@ export async function fetchAndCacheCurrentUser(): Promise<MeApiResponse> {
 }
 
 export async function routeAfterSignIn(router: Router): Promise<void> {
-  // A failed import stays pending (see `migrateGuestOnboardingAfterAuth`) and is
-  // retried on later launches; it must not stop someone who is signed in.
-  await migrateGuestOnboardingAfterAuth().catch((error) => {
+  // The public onboarding preview marks a complete draft before authentication.
+  // Submit that draft through the authenticated endpoint once sign-in succeeds.
+  await submitOnboardingDraftAfterAuth().catch((error) => {
     console.warn('[onboarding] import remains pending after sign in', error);
   });
   const me = await fetchAndCacheCurrentUser();

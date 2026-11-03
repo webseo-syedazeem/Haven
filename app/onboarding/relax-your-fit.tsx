@@ -19,7 +19,7 @@ import { AppFonts } from '@/constants/theme';
 import { safeGoBack } from '@/lib/navigation';
 import {
   getOnboardingAnswers,
-  type GuestOnboardingAnswers,
+  type OnboardingAnswers,
 } from '@/lib/onboarding';
 
 const fitBanner = require('@/assets/images/relax-your-fit-countryside-v2.webp');
@@ -45,7 +45,7 @@ function rhythmLabel(value: string | null) {
   return labels[value] ?? value;
 }
 
-function summaryRows(answers: GuestOnboardingAnswers) {
+function summaryRows(answers: OnboardingAnswers) {
   return [
     {
       label: 'Your goal',
@@ -68,7 +68,7 @@ function summaryRows(answers: GuestOnboardingAnswers) {
 
 export default function RelaxYourFitScreen() {
   const router = useRouter();
-  const [answers, setAnswers] = useState<GuestOnboardingAnswers | null>(null);
+  const [answers, setAnswers] = useState<OnboardingAnswers | null>(null);
   const [viewportHeight, setViewportHeight] = useState(0);
   const [headingHeight, setHeadingHeight] = useState(0);
   const [summaryHeight, setSummaryHeight] = useState(0);

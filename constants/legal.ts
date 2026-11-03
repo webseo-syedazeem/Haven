@@ -1,17 +1,19 @@
 /** Passage-specific legal copy for the soundscape app. */
 
-export const LEGAL_LAST_UPDATED = 'Last updated: 30 October 2026';
+export const LEGAL_LAST_UPDATED = 'Last updated: 2 November 2026';
 
 export const PRIVACY_POLICY = `Passage is a soundscape app for sleep, relaxation and focus. This policy explains what we collect, why, and what you can do about it.
 
 Passage does not collect or process payment information.
+
+You must create an account or sign in before accessing the Passage catalogue or full soundscapes. During onboarding, you may listen to three short public preview clips before signing in. We store the authenticated session token in device-protected storage and validate it before allowing access to the catalogue, account data, or full soundscape audio.
 
 ## 1. Information we collect
 
 - Account details: your name, your email address, and your profile picture if you add one. If you sign in with Google or Apple, we receive the basic profile information that sign-in provides.
 - What you listen to: your play history, where you paused, your favourites, and your playlists.
 - Your preferences: preferred environments and sounds, sounds you have asked us to avoid, detail and session-length preferences, and your playback and notification settings.
-- Support messages: anything you send us through Contact Support, a problem report, or a soundscape request, including the email address you give us if you are not signed in.
+- Support messages: anything you send us through Contact Support, a problem report, or a soundscape request, and any reply email address you choose to provide. Requests are linked to your authenticated account.
 - Device notification token: only if you turn a notification on, so we have somewhere to send it.
 - Optional usage analytics: if you turn it on under Privacy & Data, product events such as screens viewed and feature actions, linked to your account identifier. Crash, error and performance diagnostics are linked to your account identifier only when you have enabled diagnostics sharing; otherwise they are unlinked.
 
@@ -20,6 +22,7 @@ We do not collect health data, precise location, contacts, or advertising identi
 ## 2. How we use it
 
 - To play soundscapes and to pick up where you left off.
+- To provide short onboarding previews and to authorise catalogue and full-soundscape access for your signed-in session.
 - To choose what to recommend, and to hide anything you have asked to avoid.
 - To keep your library, playlists and preferences available when you sign in on another device.
 - To answer your support messages.
@@ -41,6 +44,7 @@ We do not sell your personal data. We share it only with the services needed to 
 - PostHog — optional product usage analytics, linked to your account identifier, only after you switch analytics on.
 - Sentry — crash, error and performance diagnostics, linked to your account identifier only when diagnostics sharing is enabled.
 - Apple and Google — sign-in, only when you choose the corresponding sign-in option.
+- Amazon Web Services / CloudFront — delivery of public onboarding preview clips, and delivery of full soundscape audio and artwork after access is authorised.
 
 We also record the same usage events on our own servers so we can measure and improve the service.
 

@@ -8,7 +8,6 @@ import {
   useState,
   type ReactNode,
 } from 'react';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { AppState, Platform } from 'react-native';
 import { captureProductEvent } from '@/lib/analytics-events';
 
@@ -18,7 +17,7 @@ import {
   UNTIL_I_STOP,
   type TimerSelection,
 } from '@/constants/timers';
-import { useGuestModeActive, useHasSession } from '@/hooks/useSession';
+import { useHasSession } from '@/hooks/useSession';
 import { usePlaybackSettings } from '@/hooks/usePreferences';
 import { homeApi, type Soundscape } from '@/lib/api/home';
 import { PLAYBACK_SETTING_DEFAULTS } from '@/lib/api/preferences';
@@ -62,7 +61,6 @@ const INTERRUPTIONS_MESSAGE = 'Playback is experiencing interruptions.';
 /** Shown only when the device is actually disconnected, never guessed from buffering alone. */
 const OFFLINE_MESSAGE = 'Unable to connect. Please check your connection.';
 const PLAY_HISTORY_LIMIT = 50;
-const GUEST_PLAYER_STATE_STORAGE_KEY = 'passage.guest.player-state.v1';
 
 const LOOP_NOTICE_ENABLED = 'Loop turned on so your timer can finish.';
 const LOOP_NOTICE_WILL_STOP = 'Playback will stop when this track ends.';
@@ -120,26 +118,6 @@ export type ResumableState = {
   durationSeconds: number | null;
   timerMinutes: number | null;
 };
-
-type StoredGuestPlayerState = ResumableState & { savedAt: string };
-
-function isStoredGuestPlayerState(value: unknown): value is StoredGuestPlayerState {
-  if (!value || typeof value !== 'object') return false;
-  const candidate = value as Partial<StoredGuestPlayerState>;
-  return (
-    !!candidate.soundscape &&
-    typeof candidate.soundscape === 'object' &&
-    typeof candidate.soundscape.id === 'string' &&
-    Array.isArray(candidate.queue) &&
-    candidate.queue.every((item) => !!item && typeof item.id === 'string') &&
-    typeof candidate.positionSeconds === 'number' &&
-    Number.isFinite(candidate.positionSeconds) &&
-    (candidate.durationSeconds === null ||
-      (typeof candidate.durationSeconds === 'number' && Number.isFinite(candidate.durationSeconds))) &&
-    (candidate.timerMinutes === null ||
-      (typeof candidate.timerMinutes === 'number' && Number.isFinite(candidate.timerMinutes)))
-  );
-}
 
 export type PlayerStateValue = {
   soundscape: Soundscape | null;
@@ -219,7 +197,6 @@ const PlayerActionsContext = createContext<PlayerActions | null>(null);
 
 export function PlayerProvider({ children }: { children: ReactNode }) {
   const hasSession = useHasSession();
-  const guestModeActive = useGuestModeActive();
   const { data: playbackSettings = PLAYBACK_SETTING_DEFAULTS } = usePlaybackSettings();
   const [state, setState] = useState<PlayerStateValue>(INITIAL_STATE);
   const [progress, setProgress] = useState<PlayerProgressValue>(INITIAL_PROGRESS);
@@ -268,13 +245,11 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
   const lastPersistAt = useRef(0);
   const fadeInterval = useRef<ReturnType<typeof setInterval> | null>(null);
   const hasSessionRef = useRef(hasSession);
-  const guestModeActiveRef = useRef(guestModeActive);
   const listeningStartedAtRef = useRef<number | null>(null);
   const listeningSecondsRef = useRef(0);
   const listeningTrackIdRef = useRef<string | null>(null);
 
   hasSessionRef.current = hasSession;
-  guestModeActiveRef.current = guestModeActive;
   resumableRef.current = state.resumable;
 
   useEffect(() => {
@@ -316,12 +291,6 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
           queue: resumable.queue.map((item) => item.id),
           timer_minutes: resumable.timerMinutes,
         });
-      } else if (guestModeActiveRef.current) {
-        const stored: StoredGuestPlayerState = {
-          ...resumable,
-          savedAt: new Date().toISOString(),
-        };
-        await AsyncStorage.setItem(GUEST_PLAYER_STATE_STORAGE_KEY, JSON.stringify(stored));
       }
     } catch {
       // Saving player state is best effort; playback must not depend on it.
@@ -823,32 +792,13 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
     return () => subscription.remove();
   }, [flushListeningSession, persistNow, reconcileTimer]);
 
-  // Anything saved by a previous account or guest session becomes the resume offer on Home.
+  // Saved authenticated player state becomes the resume offer on Home.
   useEffect(() => {
-    if (!hasSession && !guestModeActive) return;
+    if (!hasSession) return;
     let cancelled = false;
 
     void (async () => {
       try {
-        if (guestModeActive && !hasSession) {
-          const raw = await AsyncStorage.getItem(GUEST_PLAYER_STATE_STORAGE_KEY);
-          if (!raw || cancelled) return;
-
-          const saved: unknown = JSON.parse(raw);
-          if (!isStoredGuestPlayerState(saved)) {
-            await AsyncStorage.removeItem(GUEST_PLAYER_STATE_STORAGE_KEY);
-            return;
-          }
-
-          const queue = saved.queue.some((item) => item.id === saved.soundscape.id)
-            ? saved.queue
-            : [saved.soundscape, ...saved.queue];
-          setState((current) =>
-            current.soundscape ? current : { ...current, resumable: { ...saved, queue } }
-          );
-          return;
-        }
-
         const saved = await playerApi.getState();
         if (!saved?.soundscape_id || cancelled) return;
 
@@ -891,7 +841,7 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
     return () => {
       cancelled = true;
     };
-  }, [guestModeActive, hasSession]);
+  }, [hasSession]);
 
   useEffect(
     () => () => {
@@ -1289,9 +1239,6 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
     await persistNow();
     if (request !== playbackRequestRef.current) return;
     if (!forgetResumable) refreshResumable();
-    if (forgetResumable && guestModeActiveRef.current) {
-      await AsyncStorage.removeItem(GUEST_PLAYER_STATE_STORAGE_KEY).catch(() => {});
-    }
     await pausing;
     if (request !== playbackRequestRef.current) return;
     await engine.reset();

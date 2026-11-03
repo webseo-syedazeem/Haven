@@ -3,7 +3,11 @@ import { Platform } from 'react-native';
 
 import { ApiError, NetworkError } from '@/lib/api/errors';
 import { markLoggedIn, markLoggedOut } from '@/lib/auth/offline-session';
-import { setGuestModeActive, setSessionSource } from '@/lib/auth/session-state';
+import {
+  beginExplicitSignOut,
+  endExplicitSignOut,
+  setSessionSource,
+} from '@/lib/auth/session-state';
 import { supabase } from '@/lib/supabase';
 
 const REMOTE_API_BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL?.trim().replace(/\/+$/, '') || 'https://passagesounds.app';
@@ -362,10 +366,6 @@ export async function signUp(payload: {
     method: 'POST',
   });
 
-  // A successful account creation ends an earlier explicit guest session even
-  // when email confirmation means the new account has no token yet.
-  await setGuestModeActive(false);
-
   // Supabase returns session: null when email confirmation is enabled. That
   // is a successful registration, not a failed login, so only require a token
   // for sign-in/refresh. If confirmation is disabled and a real session is
@@ -489,11 +489,23 @@ export async function logout() {
  * social sessions and the DELETE 401'd (audit H-1).
  */
 export async function deleteAccount() {
+  // Account deletion can revoke the provider session before the response has
+  // finished propagating through the app. Suppress automatic auth redirects
+  // from that first session-drop; the caller performs one deliberate stack
+  // reset after local cleanup. Without this, two Login screens are mounted.
+  beginExplicitSignOut();
   // eslint-disable-next-line @typescript-eslint/no-require-imports
   const { apiClient } = require('./api/client') as typeof import('./api/client');
-  const response = await apiClient<ApiResponse<{ message?: string }>>('/api/delete-account', {
-    method: 'DELETE',
-  });
+  let response: ApiResponse<{ message?: string }>;
+  try {
+    response = await apiClient<ApiResponse<{ message?: string }>>('/api/delete-account', {
+      method: 'DELETE',
+    });
+  } catch (error) {
+    // Deletion did not complete, so normal auth guarding should resume now.
+    endExplicitSignOut();
+    throw error;
+  }
 
   clearAuthTokens();
   await markLoggedOut();

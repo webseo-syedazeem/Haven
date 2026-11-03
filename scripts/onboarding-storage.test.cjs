@@ -22,7 +22,6 @@ function loadOnboarding(options = {}) {
   const storage = new Map();
   let apiCalls = 0;
   const apiRequests = [];
-  const importPayloads = [];
   const source = fs.readFileSync(path.join(root, 'lib/onboarding.ts'), 'utf8');
   const compiled = ts.transpileModule(source, {
     compilerOptions: {
@@ -70,25 +69,6 @@ function loadOnboarding(options = {}) {
           },
         };
       }
-      if (id === '@/lib/api/account') {
-        return {
-          accountApi: {
-            importGuestData: async (payload) => {
-              apiCalls += 1;
-              importPayloads.push(JSON.parse(JSON.stringify(payload)));
-              if (options.importError) throw options.importError;
-              return {
-                favourites_added: 0,
-                favourites_skipped: 0,
-                playlists_created: 0,
-                playlist_items_skipped: 0,
-                preferences_applied: false,
-                onboarding_applied: options.onboardingApplied ?? true,
-              };
-            },
-          },
-        };
-      }
       if (id === '@/lib/api/recommendations') {
         return {
           DEFAULT_RECOMMENDATION_ALTERNATIVES: 3,
@@ -110,7 +90,6 @@ function loadOnboarding(options = {}) {
     api: module.exports,
     apiCallCount: () => apiCalls,
     apiRequests,
-    importPayloads,
     storedAnswers: () => storage.get(ANSWERS_KEY),
   };
 }
@@ -140,7 +119,7 @@ test('Focus answers persist in the exact backend shape with integer minutes', as
   });
   assert.equal(typeof stored.target_minutes, 'number');
   assert.equal(
-    harness.api.isGuestOnboardingReady(await harness.api.getOnboardingAnswers()),
+    harness.api.isOnboardingReady(await harness.api.getOnboardingAnswers()),
     true
   );
   assert.equal(harness.apiCallCount(), 0);
@@ -168,7 +147,7 @@ test('Relax answers persist in the exact backend shape without an API call', asy
     calming_moments: 'In the evenings',
   });
   assert.equal(
-    harness.api.isGuestOnboardingReady(await harness.api.getOnboardingAnswers()),
+    harness.api.isOnboardingReady(await harness.api.getOnboardingAnswers()),
     true
   );
   assert.equal(harness.apiCallCount(), 0);
@@ -289,7 +268,7 @@ test('an authenticated Focus completion posts only Focus fields and clears local
   assert.equal(harness.storedAnswers().mode, null);
 });
 
-test('guest-to-account Relax import is mode-scoped and clears only after acceptance', async () => {
+test('a complete local Relax draft is submitted through the authenticated onboarding endpoint', async () => {
   const harness = loadOnboarding();
 
   await harness.api.saveOnboardingAnswers({
@@ -298,22 +277,25 @@ test('guest-to-account Relax import is mode-scoped and clears only after accepta
     relax_causes: ['Work'],
     calming_moments: 'In the evenings',
   });
-  await harness.api.markGuestOnboardingComplete();
-  await harness.api.migrateGuestOnboardingAfterAuth();
+  await harness.api.markOnboardingDraftComplete();
+  await harness.api.submitOnboardingDraftAfterAuth();
 
-  assert.deepEqual(harness.importPayloads, [
+  assert.deepEqual(harness.apiRequests, [
     {
-      mode: 'relax',
-      main_goal: 'Be more present',
-      relax_causes: ['Work'],
-      calming_moments: 'In the evenings',
+      path: '/api/onboarding',
+      body: {
+        mode: 'relax',
+        main_goal: 'Be more present',
+        relax_causes: ['Work'],
+        calming_moments: 'In the evenings',
+      },
     },
   ]);
   assert.equal(harness.storedAnswers().mode, null);
 });
 
-test('failed guest import retains every local onboarding answer for retry', async () => {
-  const harness = loadOnboarding({ importError: new Error('offline') });
+test('failed authenticated draft submission retains every local onboarding answer', async () => {
+  const harness = loadOnboarding({ apiError: new Error('offline') });
 
   await harness.api.saveOnboardingAnswers({
     mode: 'sleep',
@@ -321,9 +303,9 @@ test('failed guest import retains every local onboarding answer for retry', asyn
     mode_areas: ['Falling asleep'],
     target_minutes: 45,
   });
-  await harness.api.markGuestOnboardingComplete();
+  await harness.api.markOnboardingDraftComplete();
 
-  await assert.rejects(() => harness.api.migrateGuestOnboardingAfterAuth(), /offline/);
+  await assert.rejects(() => harness.api.submitOnboardingDraftAfterAuth(), /offline/);
   assert.deepEqual(harness.storedAnswers(), {
     mode: 'sleep',
     mode_breakers: ['Outside noise'],
@@ -335,7 +317,7 @@ test('failed guest import retains every local onboarding answer for retry', asyn
   });
 });
 
-test('continuing as a guest marks local completion without an onboarding request', async () => {
+test('a signed-out onboarding draft never sends an API request', async () => {
   const harness = loadOnboarding({ hasActiveSession: false });
 
   await harness.api.saveOnboardingAnswers({
@@ -384,8 +366,8 @@ test('incomplete authenticated answers are never submitted or cleared', async ()
   });
 });
 
-test('an import response that declines onboarding keeps local answers pending', async () => {
-  const harness = loadOnboarding({ onboardingApplied: false });
+test('an onboarding API failure keeps local answers pending', async () => {
+  const harness = loadOnboarding({ apiError: new Error('rejected') });
 
   await harness.api.saveOnboardingAnswers({
     mode: 'relax',
@@ -393,11 +375,11 @@ test('an import response that declines onboarding keeps local answers pending', 
     relax_causes: ['Work'],
     calming_moments: 'In the evenings',
   });
-  await harness.api.markGuestOnboardingComplete();
+  await harness.api.markOnboardingDraftComplete();
 
   await assert.rejects(
-    () => harness.api.migrateGuestOnboardingAfterAuth(),
-    /did not accept the onboarding answers/
+    () => harness.api.submitOnboardingDraftAfterAuth(),
+    /rejected/
   );
 
   assert.equal(harness.apiCallCount(), 1);

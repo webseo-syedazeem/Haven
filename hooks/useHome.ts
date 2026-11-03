@@ -7,12 +7,10 @@ import {
   useIsFavourite,
   useToggleFavourite,
 } from '@/hooks/useFavourites';
-import { useGuestModeActive, useHasSession } from '@/hooks/useSession';
-import { catalogueApi } from '@/lib/api/catalogue';
+import { useHasSession } from '@/hooks/useSession';
 import { usePlayHistoryQuery, PLAY_HISTORY_QUERY_KEY } from '@/hooks/usePlayHistory';
 import { homeApi, type Collection, type Soundscape } from '@/lib/api/home';
 import type { PlayHistoryRow } from '@/lib/api/player';
-import { getGuestOnboardingAnswers } from '@/lib/onboarding';
 
 /**
  * Favourites live in `useFavourites` so every screen shares one cache and one
@@ -24,7 +22,6 @@ export { useFavourites, useFavouriteSoundscapes, useIsFavourite, useToggleFavour
 export const HOME_QUERY_KEYS = {
   continueListening: ['home', 'continue-listening'] as const,
   recommended: ['home', 'recommended'] as const,
-  guestModeRecommended: ['home', 'guest-mode-recommended'] as const,
   playHistory: PLAY_HISTORY_QUERY_KEY,
   favourites: FAVOURITES_QUERY_KEY,
   newToPassage: ['home', 'library', 'recently_added'] as const,
@@ -35,23 +32,6 @@ export const HOME_QUERY_KEYS = {
 
 const SHORT_SESSION_MAX_SECONDS = 600;
 const RAIL_LIMIT = 10;
-
-async function getGuestModeSoundscapes() {
-  const answers = await getGuestOnboardingAnswers();
-  if (!answers.mode) return [];
-
-  const grouped = await catalogueApi.byMode(answers.mode);
-  const seen = new Set<string>();
-
-  return Object.values(grouped.soundscapes)
-    .flat()
-    .filter((soundscape) => {
-      if (!soundscape.id || seen.has(soundscape.id)) return false;
-      seen.add(soundscape.id);
-      return true;
-    })
-    .slice(0, RAIL_LIMIT);
-}
 
 /** Signed in only — the endpoint 401s without a bearer token. */
 export function useContinueListening() {
@@ -72,15 +52,11 @@ export function useContinueListening() {
  */
 export function useRecommended() {
   const hasSession = useHasSession();
-  const guestModeActive = useGuestModeActive();
-
   return useQuery({
-    queryKey: guestModeActive
-      ? HOME_QUERY_KEYS.guestModeRecommended
-      : HOME_QUERY_KEYS.recommended,
-    queryFn: guestModeActive ? getGuestModeSoundscapes : homeApi.recommended,
-    enabled: hasSession || guestModeActive,
-    select: (items) => (hasSession || guestModeActive ? items : []),
+    queryKey: HOME_QUERY_KEYS.recommended,
+    queryFn: homeApi.recommended,
+    enabled: hasSession,
+    select: (items) => (hasSession ? items : []),
   });
 }
 
@@ -103,13 +79,16 @@ function dedupeSoundscapes(rows: PlayHistoryRow[]): Soundscape[] {
 }
 
 export function useNewToPassage() {
+  const hasSession = useHasSession();
   return useQuery({
     queryKey: HOME_QUERY_KEYS.newToPassage,
     queryFn: () => homeApi.library({ sort: 'recently_added', limit: RAIL_LIMIT }),
+    enabled: hasSession,
   });
 }
 
 export function useShortSessions() {
+  const hasSession = useHasSession();
   return useQuery({
     queryKey: HOME_QUERY_KEYS.shortSessions,
     queryFn: () =>
@@ -118,20 +97,24 @@ export function useShortSessions() {
         max_duration: SHORT_SESSION_MAX_SECONDS,
         limit: RAIL_LIMIT,
       }),
+    enabled: hasSession,
   });
 }
 
 export function usePopularCollections() {
+  const hasSession = useHasSession();
   return useQuery<Collection[]>({
     queryKey: HOME_QUERY_KEYS.popularCollections,
     queryFn: homeApi.popularCollections,
+    enabled: hasSession,
   });
 }
 
 export function useSoundscape(id?: string) {
+  const hasSession = useHasSession();
   return useQuery({
     queryKey: HOME_QUERY_KEYS.soundscape(id ?? ''),
     queryFn: () => homeApi.soundscape(id!),
-    enabled: !!id,
+    enabled: hasSession && !!id,
   });
 }

@@ -55,7 +55,6 @@ test('a late play rejection for A cannot overwrite the successful state of B', a
 function createPlayer({
   saved = null, catalogue = tracks, hasSession = false, seekError = null,
   storedLoopEnabled, localSettingsFail = false, playStarts = true,
-  guestMode = false, guestSaved = null,
   playbackSettings = {
     background_playback: true,
     default_timer_minutes: null,
@@ -72,9 +71,7 @@ function createPlayer({
   const calls = {
     loads: [], seeks: [], saves: [], history: [], volumes: [], stop: 0, reset: 0,
     subscribes: 0, setups: 0, loopEnabled: [], backgroundPlayback: [], localSettingWrites: [],
-    guestStorageWrites: [], guestStorageRemovals: [],
   };
-  let storedGuest = guestSaved === null ? null : JSON.stringify(guestSaved);
   let storedLoop = storedLoopEnabled;
   let hookIndex = 0;
   let dirty = true;
@@ -186,21 +183,6 @@ function createPlayer({
     },
     '@/hooks/useSession': {
       useHasSession: () => hasSession,
-      useGuestModeActive: () => guestMode,
-    },
-    '@react-native-async-storage/async-storage': {
-      __esModule: true,
-      default: {
-        getItem: async () => storedGuest,
-        setItem: async (key, value) => {
-          storedGuest = value;
-          calls.guestStorageWrites.push({ key, value: JSON.parse(value) });
-        },
-        removeItem: async (key) => {
-          storedGuest = null;
-          calls.guestStorageRemovals.push(key);
-        },
-      },
     },
     '@/hooks/usePreferences': { usePlaybackSettings: () => ({ data: playbackSettings }) },
     '@/lib/api/preferences': { PLAYBACK_SETTING_DEFAULTS: {
@@ -291,7 +273,6 @@ function createPlayer({
     calls,
     engine,
     warnings,
-    get guestSaved() { return storedGuest === null ? null : JSON.parse(storedGuest); },
     settle,
     /** The engine's give-up, in its order: the resume position, the failure, then the released player. */
     async failPlayback(position) {
@@ -407,57 +388,6 @@ test('save and stop preserve progress, while resume restores the full saved queu
   assert.equal(player.state.soundscape.id, 'c');
   await player.background();
   assert.equal(player.calls.saves.at(-1).soundscape_id, 'c');
-});
-
-test('guest playback is saved locally without calling the account player-state API', async () => {
-  const player = createPlayer({ guestMode: true });
-  await player.settle();
-  await player.act('playSoundscape', tracks[1], { queue: tracks });
-  await player.act('seek', 37);
-  await player.act('setTimer', 10);
-  await player.background();
-
-  assert.equal(player.calls.saves.length, 0);
-  assert.equal(player.guestSaved.soundscape.id, 'b');
-  assert.deepEqual(ids(player.guestSaved.queue), ['a', 'b', 'c']);
-  assert.equal(player.guestSaved.positionSeconds, 37);
-  assert.equal(player.guestSaved.durationSeconds, 180);
-  assert.equal(player.guestSaved.timerMinutes, 10);
-});
-
-test('a guest relaunch restores the locally saved Continue Listening state', async () => {
-  const player = createPlayer({
-    guestMode: true,
-    guestSaved: {
-      soundscape: tracks[1],
-      queue: tracks,
-      positionSeconds: 52,
-      durationSeconds: 180,
-      timerMinutes: null,
-      savedAt: new Date(0).toISOString(),
-    },
-  });
-  await player.settle();
-
-  assert.equal(player.state.resumable.soundscape.id, 'b');
-  assert.deepEqual(ids(player.state.resumable.queue), ['a', 'b', 'c']);
-  assert.equal(player.state.resumable.positionSeconds, 52);
-
-  await player.act('resume');
-  assert.equal(player.calls.loads.at(-1).track.id, 'b');
-  assert.equal(player.calls.loads.at(-1).startAt, 52);
-});
-
-test('forgetting a guest session removes its locally saved player state', async () => {
-  const player = createPlayer({ guestMode: true });
-  await player.act('playSoundscape', tracks[0]);
-  await player.act('seek', 24);
-  await player.background();
-  assert.ok(player.guestSaved);
-
-  await player.act('stop', { forgetResumable: true });
-  assert.equal(player.guestSaved, null);
-  assert.equal(player.calls.guestStorageRemovals.length, 1);
 });
 
 test('cold resume restores saved queue order, removes missing tracks and finds current index', async () => {

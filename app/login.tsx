@@ -195,7 +195,7 @@ export default function LoginScreen() {
           ) : null}
           <AuthSocialButton disabled={isSubmitting} icon={googleIcon} label={'Continue with Google'} onPress={() => void handleGooglePress()} />
         </View>
-        <Pressable accessibilityRole={'button'} hitSlop={8} onPress={() => router.push(origin === 'guest-sign-out' ? '/welcome?from=guest-sign-out' : '/welcome')} style={styles.signupButton}>
+        <Pressable accessibilityRole={'button'} hitSlop={8} onPress={() => router.push('/welcome')} style={styles.signupButton}>
           <Text style={styles.signupPrompt}>Don&apos;t have an account? <Text style={styles.signupLink}>Sign up</Text></Text>
         </Pressable>
         </View>

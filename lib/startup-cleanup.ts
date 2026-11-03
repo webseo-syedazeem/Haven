@@ -52,4 +52,14 @@ function cleanupLegacyDownloads(): void {
 export async function runStartupCleanup(): Promise<void> {
   cleanupLegacyRecentsAudio();
   cleanupLegacyDownloads();
+  // One release-cycle compatibility cleanup for keys written by the removed
+  // guest-mode implementation. These keys are never read or written elsewhere.
+  const AsyncStorage = (await import('@react-native-async-storage/async-storage')).default;
+  await AsyncStorage.multiRemove(['is_guest', 'passage.guest.player-state.v1']).catch(() => undefined);
+  if (Platform.OS === 'web') {
+    globalThis.localStorage?.removeItem('passage.settings.guest_mode_active');
+  } else {
+    const SecureStore = await import('expo-secure-store');
+    await SecureStore.deleteItemAsync('passage.settings.guest_mode_active').catch(() => undefined);
+  }
 }

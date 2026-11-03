@@ -80,13 +80,9 @@ export async function setLocalSettingStrict<T>(key: string, value: T): Promise<v
 export const LOCAL_SETTING_KEYS = {
   /** 24h "HH:MM" for the wind-down reminder. */
   reminderTime: 'reminder_time',
-  /** Legacy guest flag, read once when migrating older installs to AsyncStorage. */
-  guestModeActive: 'guest_mode_active',
   /** The player's "Continuous loop" (repeat-one) toggle. */
   loopEnabled: 'loop_enabled',
 } as const;
-
-export const GUEST_MODE_ACTIVE_DEFAULT = false;
 
 /** Analytics is opt-in: nothing is sent until the user turns it on. */
 export const REMINDER_TIME_DEFAULT = '21:30';

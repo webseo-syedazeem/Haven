@@ -6,7 +6,6 @@ import { Animated, ImageBackground, Pressable, StyleSheet, Text, View } from 're
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { ConfirmDialog } from '@/components/ConfirmDialog';
-import { useAccountRequiredPrompt } from '@/components/auth/AccountRequiredPrompt';
 import { SwipeTabsWrapper } from '@/components/navigation/SwipeTabsWrapper';
 import { AvatarPreview } from '@/components/profile/AvatarPreview';
 import { ProfileAvatar } from '@/components/profile/ProfileAvatar';
@@ -15,7 +14,6 @@ import { Toast, useToast } from '@/components/Toast';
 import { PassageColors, PassageSpacing, Typography } from '@/constants/design';
 import { AppFonts } from '@/constants/theme';
 import { useTabContentInset } from '@/hooks/use-bottom-safe-spacing';
-import { useGuestModeActive, useHasSession } from '@/hooks/useSession';
 import { useUser } from '@/hooks/useUser';
 import { getDisplayName, getProfileEmail } from '@/lib/api/user';
 import { clearUserSession } from '@/lib/auth/clearSession';
@@ -45,15 +43,11 @@ export default function ProfileScreen() {
   const queryClient = useQueryClient();
   const insets = useSafeAreaInsets();
   const bottomInset = useTabContentInset();
-  const hasSession = useHasSession();
-  const isGuest = useGuestModeActive();
   const { stop } = usePlayerActions();
-  const { showAccountRequiredPrompt } = useAccountRequiredPrompt();
   const { notice, showToast } = useToast();
 
   const { data: me, isInitialLoading, isError, refetch } = useUser();
   const [avatarPreviewVisible, setAvatarPreviewVisible] = useState(false);
-  const [guestLoginVisible, setGuestLoginVisible] = useState(false);
   const [signOutVisible, setSignOutVisible] = useState(false);
   const [signingOut, setSigningOut] = useState(false);
   const scrollAnim = useRef(new Animated.Value(0)).current;
@@ -70,33 +64,17 @@ export default function ProfileScreen() {
   // The cached profile outlives a failed refresh, so a real email beats the
   // offline notice — that line is for a device that has never fetched one.
   const tagline =
-    isGuest
-      ? 'Browsing as guest'
-      : email ||
+    email ||
         (isError
           ? 'Your details are offline right now.'
           : isInitialLoading
             ? 'Loading your details…'
             : 'Signed in to Passage');
 
-  function openProfileRoute(route: Href, requiresAccount = true) {
-    if (requiresAccount && isGuest) {
-      showAccountRequiredPrompt({
-        title: 'Log in to continue',
-        message: 'Log in to manage your account settings.',
-      });
-      return;
-    }
-
+  function openProfileRoute(route: Href) {
     router.push(route);
   }
 
-  // Keep the guest session intact while the account screen is open. Successful
-  // authentication owns the transition; backing out returns to the same guest data.
-  function openLoginWithoutDiscardingGuestData() {
-    setGuestLoginVisible(false);
-    router.push('/welcome?from=guest-sign-out' as Href);
-  }
 
   async function confirmSignOut() {
     setSigningOut(true);
@@ -151,7 +129,7 @@ export default function ProfileScreen() {
                 />
               </Pressable>
 
-              <Text style={styles.name}>{displayName || (hasSession ? 'Your profile' : 'Guest')}</Text>
+              <Text style={styles.name}>{displayName || 'Your profile'}</Text>
               <Text style={styles.tagline}>{tagline}</Text>
 
               {isError && (
@@ -183,27 +161,19 @@ export default function ProfileScreen() {
                   key={row.label}
                   label={row.label}
                   onPress={() =>
-                    openProfileRoute(row.route as Href, row.requiresAccount)
+                    openProfileRoute(row.route as Href)
                   }
                 />
               ))}
             </SettingsGroup>
 
             <SettingsGroup>
-              {hasSession ? (
-                <SettingsRow
-                  icon="log-out-outline"
-                  label="Sign out"
-                  onPress={() => setSignOutVisible(true)}
-                  showChevron={false}
-                />
-              ) : (
-                <SettingsRow
-                  icon="log-in-outline"
-                  label="Sign in"
-                  onPress={() => setGuestLoginVisible(true)}
-                />
-              )}
+              <SettingsRow
+                icon="log-out-outline"
+                label="Sign out"
+                onPress={() => setSignOutVisible(true)}
+                showChevron={false}
+              />
             </SettingsGroup>
 
             <Text style={styles.version}>Passage · Focus · Sleep · Relax</Text>
@@ -219,17 +189,6 @@ export default function ProfileScreen() {
           imageUrl={profileImageUrl}
           onClose={() => setAvatarPreviewVisible(false)}
           visible={avatarPreviewVisible}
-        />
-
-        <ConfirmDialog
-          cancelLabel="Stay as guest"
-          confirmLabel="Sign up or log in"
-          icon="cloud-upload-outline"
-          message="Your guest data is saved only on this device. Sign up or log in to keep it. If you leave guest mode without an account, it will be deleted."
-          onCancel={() => setGuestLoginVisible(false)}
-          onConfirm={openLoginWithoutDiscardingGuestData}
-          title="Save your guest data?"
-          visible={guestLoginVisible}
         />
 
         <ConfirmDialog

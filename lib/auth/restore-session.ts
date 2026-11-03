@@ -11,11 +11,7 @@ import {
   readCachedProfile,
   wasLoggedIn,
 } from '@/lib/auth/offline-session';
-import {
-  finishSessionRestore,
-  hydrateGuestMode,
-  isGuestModeActive,
-} from '@/lib/auth/session-state';
+import { finishSessionRestore } from '@/lib/auth/session-state';
 import { clearAuthTokens, refreshSession, setAccessToken, setAuthTokens } from '@/lib/passage-api';
 import { queryClient } from '@/lib/query-client';
 import { supabase } from '@/lib/supabase';
@@ -91,16 +87,6 @@ async function offlineOutcome(): Promise<SessionRestoreStatus> {
 
 async function runRestore(): Promise<SessionRestoreStatus> {
   try {
-    // Before anything else: a device that left off in guest mode must stay
-    // gated from authenticated queries for this launch too, not just for the
-    // session that set the flag.
-    await hydrateGuestMode();
-
-    // Guest mode is an explicit durable choice. Do not inspect, validate or
-    // refresh any account token while it is active; launch goes straight to
-    // the public app and every token-only query stays disabled.
-    if (isGuestModeActive()) return 'signed-out';
-
     let accessToken = await getStoredItem(ACCESS_TOKEN_KEY);
     if (!accessToken) {
       for (const key of LEGACY_ACCESS_TOKEN_KEYS) {

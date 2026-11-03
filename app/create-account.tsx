@@ -137,7 +137,7 @@ export default function CreateAccountScreen() {
           <OnboardingContinueButton label={'Create account'} loading={isSubmitting} onPress={() => void handleCreateAccount()} style={styles.primaryButton} />
         </View>
 
-        <Pressable accessibilityRole={'button'} hitSlop={8} onPress={() => router.replace(origin === 'guest-sign-out' ? '/login?origin=guest-sign-out' : '/login')} style={styles.signInButton}>
+        <Pressable accessibilityRole={'button'} hitSlop={8} onPress={() => router.replace('/login')} style={styles.signInButton}>
           <Text style={styles.signInPrompt}>Already have an account? <Text style={styles.signInLink}>Sign in</Text></Text>
         </Pressable>
         </View>

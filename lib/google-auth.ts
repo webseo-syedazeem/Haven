@@ -74,8 +74,8 @@ export const signInWithGoogle = async () => {
       await cacheProfile(me);
     } catch (profileError) {
       // The provider session is already real. Let the caller continue to the
-      // strict onboarding import/retry state instead of presenting guest mode
-      // after a secondary profile projection failed.
+      // strict onboarding retry state after a secondary profile projection
+      // failed.
       console.warn('[auth] Google profile sync remains pending', profileError);
     }
 

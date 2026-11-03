@@ -25,7 +25,10 @@ export default function RelaxTrustScreen() {
           <Text style={styles.quoteAttribution}>{'—'} The Passage Team</Text>
         </View>
       ) : null}
-      <RelaxContinueButton label="Preview the soundscapes" onPress={() => router.push('/onboarding/try-passage?mode=relax' as Href)} />
+      <RelaxContinueButton
+        label="Preview the soundscapes"
+        onPress={() => router.push('/onboarding/try-passage?mode=relax' as Href)}
+      />
       <Text style={styles.footerNote}>Three one-minute previews. No commitment.</Text>
     </View>}
     header={<RelaxStepHeader currentStep={8} onBack={() => safeGoBack(router)} />}>

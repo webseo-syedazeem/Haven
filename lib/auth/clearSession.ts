@@ -4,8 +4,8 @@ import type { QueryClient } from '@tanstack/react-query';
 import { apiClient, clearStoredAccessToken } from '@/lib/api/client';
 import { markLoggedOut } from '@/lib/auth/offline-session';
 import { setIntroSeen } from '@/lib/auth/intro-flag';
-import { beginExplicitSignOut, setGuestModeActive } from '@/lib/auth/session-state';
-import { resetGuestOnboardingState } from '@/lib/onboarding';
+import { beginExplicitSignOut } from '@/lib/auth/session-state';
+import { resetOnboardingDraft } from '@/lib/onboarding';
 import { clearAuthTokens } from '@/lib/passage-api';
 import { clearPersistedQueryCache } from '@/lib/query-persist';
 import { supabase } from '@/lib/supabase';
@@ -71,12 +71,9 @@ export async function clearUserSession(queryClient: QueryClient) {
   posthog?.reset();
   Sentry.setUser(null);
   await setAnalyticsConsent(false);
-  // Signing out must never leave guest mode on: back from the sign-in screen
-  // would otherwise drop the person into the guest app they did not choose.
-  await setGuestModeActive(false);
   // Leftover onboarding progress would send the next launch back into
   // onboarding; a signed-out person belongs on Login instead.
-  await resetGuestOnboardingState();
+  await resetOnboardingDraft();
   await setIntroSeen();
 
   // Order matters: clearing the client first means the persister's own

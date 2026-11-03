@@ -17,7 +17,7 @@ import {
 import { clearPersistedQueryCache } from '@/lib/query-persist';
 import { queryClient } from '@/lib/query-client';
 import { supabase } from '@/lib/supabase';
-import { setGuestModeActive, setSessionSource } from '@/lib/auth/session-state';
+import { setSessionSource } from '@/lib/auth/session-state';
 
 // All known SecureStore keys this app ever writes to
 const SECURE_STORE_KEYS = [
@@ -27,7 +27,6 @@ const SECURE_STORE_KEYS = [
   // local-settings
   'passage.settings.analytics_enabled',
   'passage.settings.reminder_time',
-  'passage.settings.guest_mode_active',
   'passage.settings.loop_enabled',
   // supabase chunked session key
   'sb-wqludhqymhcyrjhazjcq-auth-token',
@@ -38,7 +37,7 @@ const SECURE_STORE_KEYS = [
 ];
 
 async function hardReset() {
-  // 1. Wipe all AsyncStorage (is_intro, is_guest, offline-session, etc.)
+  // 1. Wipe app-private AsyncStorage.
   try {
     await AsyncStorage.clear();
   } catch {}
@@ -58,7 +57,6 @@ async function hardReset() {
   // 4. Clear in-memory session state
   setSessionSource('passage', false);
   setSessionSource('supabase', false);
-  await setGuestModeActive(false);
 
   // 5. Clear React Query cache — memory + disk
   queryClient.clear();

@@ -1,7 +1,7 @@
 import {
-  getGuestOnboardingAnswers,
-  restoreGuestOnboardingAnswers,
-  type GuestOnboardingAnswers,
+  getOnboardingAnswers,
+  restoreOnboardingAnswers,
+  type OnboardingAnswers,
 } from '@/lib/onboarding';
 import { getLocalSetting, setLocalSetting } from '@/lib/local-settings';
 import { queryClient } from '@/lib/query-client';
@@ -27,8 +27,8 @@ export function isOnboardingReplayActive(): boolean {
 
 /** Snapshots the current local onboarding answers and marks a replay active. */
 export async function beginOnboardingReplay(): Promise<void> {
-  const snapshot = await getGuestOnboardingAnswers();
-  await setLocalSetting<GuestOnboardingAnswers | null>(REPLAY_SNAPSHOT_KEY, snapshot);
+  const snapshot = await getOnboardingAnswers();
+  await setLocalSetting<OnboardingAnswers | null>(REPLAY_SNAPSHOT_KEY, snapshot);
   replayActive = true;
 }
 
@@ -40,7 +40,7 @@ export async function beginOnboardingReplay(): Promise<void> {
  */
 export async function endOnboardingReplay(): Promise<void> {
   replayActive = false;
-  await setLocalSetting<GuestOnboardingAnswers | null>(REPLAY_SNAPSHOT_KEY, null);
+  await setLocalSetting<OnboardingAnswers | null>(REPLAY_SNAPSHOT_KEY, null);
   await queryClient.invalidateQueries({ queryKey: ['onboarding'] }).catch(() => undefined);
 }
 
@@ -54,12 +54,12 @@ export async function endOnboardingReplay(): Promise<void> {
  */
 export async function recoverAbandonedOnboardingReplay(): Promise<void> {
   replayActive = false;
-  const snapshot = await getLocalSetting<GuestOnboardingAnswers | null>(
+  const snapshot = await getLocalSetting<OnboardingAnswers | null>(
     REPLAY_SNAPSHOT_KEY,
     null
   );
   if (!snapshot) return;
 
-  await restoreGuestOnboardingAnswers(snapshot);
-  await setLocalSetting<GuestOnboardingAnswers | null>(REPLAY_SNAPSHOT_KEY, null);
+  await restoreOnboardingAnswers(snapshot);
+  await setLocalSetting<OnboardingAnswers | null>(REPLAY_SNAPSHOT_KEY, null);
 }

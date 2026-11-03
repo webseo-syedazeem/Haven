@@ -35,7 +35,7 @@ import {
   useRecommended,
   useShortSessions,
 } from '@/hooks/useHome';
-import { useGuestModeActive, useHasSession } from '@/hooks/useSession';
+import { useHasSession } from '@/hooks/useSession';
 import { useUser } from '@/hooks/useUser';
 import type { Collection, Soundscape } from '@/lib/api/home';
 import { prefetchArtwork } from '@/lib/notification-artwork';
@@ -170,7 +170,6 @@ export default function HomeScreen() {
   const [homeTime, setHomeTime] = useState(getHomeTimeState);
   const [sceneReviewIndex, setSceneReviewIndex] = useState<number | null>(null);
   const hasSession = useHasSession();
-  const guestModeActive = useGuestModeActive();
   const { playSoundscape, resume } = usePlayerActions();
   const { soundscape: currentTrack, resumable } = usePlayerState();
 
@@ -226,8 +225,7 @@ export default function HomeScreen() {
             favourites.refetch(),
           ]
         : [];
-      const recommendationRefresh =
-        hasSession || guestModeActive ? [recommended.refetch()] : [];
+      const recommendationRefresh = hasSession ? [recommended.refetch()] : [];
 
       await Promise.allSettled([
         ...accountRefreshes,
@@ -242,7 +240,6 @@ export default function HomeScreen() {
   }, [
     continueListening,
     favourites,
-    guestModeActive,
     hasSession,
     newToPassage,
     popularCollections,

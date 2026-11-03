@@ -10,7 +10,7 @@ import type { ModeId } from '@/constants/modes';
 import { RELAX_ONBOARDING } from '@/constants/relax-onboarding';
 import { AppFonts } from '@/constants/theme';
 import { safeGoBack } from '@/lib/navigation';
-import { getOnboardingAnswers, type GuestOnboardingAnswers } from '@/lib/onboarding';
+import { getOnboardingAnswers, type OnboardingAnswers } from '@/lib/onboarding';
 
 const FIT_BANNER = {
   focus: require('@/assets/images/your-fit-focus-designer-v2.webp'),
@@ -65,7 +65,7 @@ const DEFAULT_CHALLENGE: Record<ModeId, string> = {
   relax: 'Overthinking & tension',
 };
 
-function buildFitRows(answers: GuestOnboardingAnswers, mode: ModeId) {
+function buildFitRows(answers: OnboardingAnswers, mode: ModeId) {
   const settingValue =
     answers.environments.length > 0
       ? answers.environments.join(', ')

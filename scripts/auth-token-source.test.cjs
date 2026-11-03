@@ -85,7 +85,7 @@ function createHarness({ responses, supabase, passage }) {
         };
       }
       if (id === '@/lib/auth/session-state') {
-        return { isGuestModeActive: () => false, setSessionSource: () => {} };
+        return { setSessionSource: () => {} };
       }
       if (id === '@/lib/auth/offline-session') return { markLoggedOut: async () => {} };
       if (id === '@/lib/passage-api') return passage;

@@ -47,9 +47,9 @@ export default function FirstRecommendationsScreen() {
     );
   }, [query.data]);
 
-  // Neither button marks onboarding complete here: guest mode is only ever
-  // entered from the explicit "Continue as guest" tap on /welcome, so the
-  // picked track (if any) is just passed along for that screen to play.
+  // Authentication is completed before this screen can be reached. The
+  // selected track is passed to the welcome transition without changing the
+  // onboarding completion state here.
   const enterWithoutTrack = () => {
     if (starting) return;
     router.push('/welcome' as Href);

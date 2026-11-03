@@ -5,7 +5,7 @@ import { apiClient } from '@/lib/api/client';
 import { userApi, type MeApiResponse } from '@/lib/api/user';
 import { cacheProfile, markLoggedIn } from '@/lib/auth/offline-session';
 import { setSessionSource } from '@/lib/auth/session-state';
-import { migrateGuestOnboardingAfterAuth } from '@/lib/onboarding';
+import { submitOnboardingDraftAfterAuth } from '@/lib/onboarding';
 import { queryClient } from '@/lib/query-client';
 
 export function isEmailConfirmed(user: User | null | undefined): boolean {
@@ -40,7 +40,7 @@ export async function completeSupabaseAuth(session: Session): Promise<MeApiRespo
   // offline. Keep its local pending state intact; the verified screen offers a
   // retry while still allowing the user to continue into the app.
   try {
-    await migrateGuestOnboardingAfterAuth();
+    await submitOnboardingDraftAfterAuth();
   } catch (error) {
     console.warn('[onboarding] guest answers remain pending after auth', error);
   }

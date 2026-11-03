@@ -1,8 +1,6 @@
 import type { ModeId } from '@/constants/modes';
 import { DURATION_STEP_ENABLED } from '@/constants/onboarding';
-import type { ImportGuestDataPayload, ImportGuestDataResult } from '@/lib/api/account';
 import { apiClient } from '@/lib/api/client';
-import { accountApi } from '@/lib/api/account';
 import type { Soundscape } from '@/lib/api/home';
 import type { DetailPreference } from '@/lib/api/preferences';
 import {
@@ -24,7 +22,7 @@ import { queryClient } from '@/lib/query-client';
  * camelCase aliases remain temporarily so older, non-current onboarding
  * screens and guest recommendation code can read previously stored progress.
  */
-export type GuestOnboardingAnswers = {
+export type OnboardingAnswers = {
   mode: ModeId | null;
   mode_breakers: string[];
   mode_areas: string[];
@@ -53,10 +51,10 @@ export type GuestOnboardingAnswers = {
   sessionLength: string | null;
 };
 
-export type GuestOnboardingAnswersPatch = Partial<GuestOnboardingAnswers>;
+export type OnboardingAnswersPatch = Partial<OnboardingAnswers>;
 
 export type OnboardingAnswersPayload = Pick<
-  GuestOnboardingAnswers,
+  OnboardingAnswers,
   | 'mode'
   | 'mode_breakers'
   | 'mode_areas'
@@ -81,7 +79,7 @@ export type ModeScopedOnboardingPayload =
       calming_moments: string;
     };
 
-export type GuestOnboardingStatus = {
+export type OnboardingDraftStatus = {
   completed: boolean;
   pendingAuth: boolean;
   migrated: boolean;
@@ -101,7 +99,7 @@ export type OnboardingResumeRoute =
   | '/backed-by-science'
   | '/onboarding/relax-your-fit';
 
-export const DEFAULT_GUEST_ONBOARDING_ANSWERS: GuestOnboardingAnswers = {
+export const DEFAULT_ONBOARDING_ANSWERS: OnboardingAnswers = {
   mode: null,
   mode_breakers: [],
   mode_areas: [],
@@ -122,12 +120,12 @@ export const DEFAULT_GUEST_ONBOARDING_ANSWERS: GuestOnboardingAnswers = {
   sessionLength: null,
 };
 
-export const GUEST_RECOMMENDATIONS_QUERY_KEY = [
+export const ONBOARDING_RECOMMENDATIONS_QUERY_KEY = [
   'onboarding',
-  'guest-recommendations',
+  'recommendations',
 ] as const;
 
-let authenticatedOnboardingAnswers: GuestOnboardingAnswers = DEFAULT_GUEST_ONBOARDING_ANSWERS;
+let authenticatedOnboardingAnswers: OnboardingAnswers = DEFAULT_ONBOARDING_ANSWERS;
 let authenticatedOnboardingCompletedThisSession = false;
 
 type OnboardingSaveResponse = {
@@ -135,15 +133,15 @@ type OnboardingSaveResponse = {
   preferences: Record<string, unknown> | null;
 };
 
-function definedPatch(patch: GuestOnboardingAnswersPatch): GuestOnboardingAnswersPatch {
+function definedPatch(patch: OnboardingAnswersPatch): OnboardingAnswersPatch {
   return Object.fromEntries(
     Object.entries(patch).filter(([, value]) => value !== undefined)
-  ) as GuestOnboardingAnswersPatch;
+  ) as OnboardingAnswersPatch;
 }
 
 function canonicalPatch(
-  patch: GuestOnboardingAnswersPatch
-): GuestOnboardingAnswersPatch {
+  patch: OnboardingAnswersPatch
+): OnboardingAnswersPatch {
   const next = definedPatch(patch);
 
   if (next.mode === undefined && next.startingMode !== undefined) {
@@ -171,7 +169,7 @@ function canonicalPatch(
   return next;
 }
 
-function toStoredAnswers(answers: GuestOnboardingAnswers): OnboardingAnswersPayload {
+function toStoredAnswers(answers: OnboardingAnswers): OnboardingAnswersPayload {
   return {
     mode: answers.mode,
     mode_breakers: answers.mode_breakers,
@@ -184,10 +182,10 @@ function toStoredAnswers(answers: GuestOnboardingAnswers): OnboardingAnswersPayl
 }
 
 export function toModeScopedOnboardingPayload(
-  answers: GuestOnboardingAnswers
+  answers: OnboardingAnswers
 ): ModeScopedOnboardingPayload {
   const value = normaliseAnswers(answers);
-  if (!isGuestOnboardingReady(value) || !value.mode) {
+  if (!isOnboardingReady(value) || !value.mode) {
     throw new Error('Complete each personalisation step before finishing onboarding.');
   }
 
@@ -208,8 +206,8 @@ export function toModeScopedOnboardingPayload(
   };
 }
 
-/** Guest/offline fallback keys. Authenticated completion lives on the server profile. */
-export const GUEST_ONBOARDING_STORAGE_KEYS = {
+/** Local draft keys. Authenticated completion lives on the server profile. */
+export const ONBOARDING_STORAGE_KEYS = {
   answers: 'onboarding.answers.v1',
   completed: 'onboarding.completed',
   pendingAuth: 'onboarding.pending_auth',
@@ -260,7 +258,7 @@ function hasOwn(row: Record<string, unknown>, key: string): boolean {
   return Object.prototype.hasOwnProperty.call(row, key);
 }
 
-function normaliseAnswers(value: unknown): GuestOnboardingAnswers {
+function normaliseAnswers(value: unknown): OnboardingAnswers {
   const row = isRecord(value) ? value : {};
   const rawMode = hasOwn(row, 'mode') ? row.mode : row.startingMode;
   const mode = MODES.includes(rawMode as ModeId)
@@ -317,23 +315,23 @@ function normaliseAnswers(value: unknown): GuestOnboardingAnswers {
   };
 }
 
-export async function getGuestOnboardingAnswers(): Promise<GuestOnboardingAnswers> {
+export async function getOnboardingDraft(): Promise<OnboardingAnswers> {
   const stored = await getLocalSetting<unknown>(
-    GUEST_ONBOARDING_STORAGE_KEYS.answers,
-    DEFAULT_GUEST_ONBOARDING_ANSWERS
+    ONBOARDING_STORAGE_KEYS.answers,
+    DEFAULT_ONBOARDING_ANSWERS
   );
   return normaliseAnswers(stored);
 }
 
 /** Required O5-O11 answers, with an empty exclusion list representing None. */
-export function isGuestOnboardingReady(
-  answers: GuestOnboardingAnswers
+export function isOnboardingReady(
+  answers: OnboardingAnswers
 ): boolean {
   return getIncompleteOnboardingRoute(answers) === null;
 }
 
 /** True when this device has at least one persisted data-collection answer. */
-export function hasOnboardingProgress(answers: GuestOnboardingAnswers): boolean {
+export function hasOnboardingProgress(answers: OnboardingAnswers): boolean {
   const value = normaliseAnswers(answers);
   return Boolean(
     value.mode ||
@@ -353,7 +351,7 @@ export function hasOnboardingProgress(answers: GuestOnboardingAnswers): boolean 
  * at the first screen immediately after that branch's final question.
  */
 export function getOnboardingResumeRoute(
-  answers: GuestOnboardingAnswers
+  answers: OnboardingAnswers
 ): OnboardingResumeRoute {
   const value = normaliseAnswers(answers);
 
@@ -375,7 +373,7 @@ export function getOnboardingResumeRoute(
 }
 
 export function getIncompleteOnboardingRoute(
-  answers: GuestOnboardingAnswers
+  answers: OnboardingAnswers
 ): IncompleteOnboardingRoute | null {
   if (!answers.mode) return '/select-focus';
 
@@ -397,10 +395,10 @@ export function getIncompleteOnboardingRoute(
  * Persists a partial step immediately. Undefined properties are ignored so a
  * screen can pass optional form state without clearing earlier answers.
  */
-export async function saveGuestOnboardingAnswers(
-  patch: GuestOnboardingAnswersPatch
-): Promise<GuestOnboardingAnswers> {
-  const current = await getGuestOnboardingAnswers();
+export async function saveOnboardingDraft(
+  patch: OnboardingAnswersPatch
+): Promise<OnboardingAnswers> {
+  const current = await getOnboardingDraft();
   const merged: Record<string, unknown> = { ...current };
   const cleanPatch = canonicalPatch(patch);
 
@@ -425,34 +423,34 @@ export async function saveGuestOnboardingAnswers(
   }
 
   const next = normaliseAnswers(merged);
-  await setLocalSetting(GUEST_ONBOARDING_STORAGE_KEYS.answers, toStoredAnswers(next));
+  await setLocalSetting(ONBOARDING_STORAGE_KEYS.answers, toStoredAnswers(next));
   return next;
 }
 
-export async function getOnboardingAnswers(): Promise<GuestOnboardingAnswers> {
-  const stored = await getGuestOnboardingAnswers();
+export async function getOnboardingAnswers(): Promise<OnboardingAnswers> {
+  const stored = await getOnboardingDraft();
   authenticatedOnboardingAnswers = stored;
   return stored;
 }
 
 /**
  * Writes back a previously read answer set verbatim, bypassing the merge and
- * mode-switch-clearing rules `saveGuestOnboardingAnswers` applies to a patch.
+ * mode-switch-clearing rules `saveOnboardingAnswers` applies to a patch.
  * Used only to restore a snapshot taken before an abandoned re-run of
  * onboarding (see lib/onboarding-replay.ts).
  */
-export async function restoreGuestOnboardingAnswers(
-  answers: GuestOnboardingAnswers
+export async function restoreOnboardingAnswers(
+  answers: OnboardingAnswers
 ): Promise<void> {
   const next = normaliseAnswers(answers);
-  await setLocalSetting(GUEST_ONBOARDING_STORAGE_KEYS.answers, toStoredAnswers(next));
+  await setLocalSetting(ONBOARDING_STORAGE_KEYS.answers, toStoredAnswers(next));
   authenticatedOnboardingAnswers = next;
 }
 
 export async function saveOnboardingAnswers(
-  patch: GuestOnboardingAnswersPatch
-): Promise<GuestOnboardingAnswers> {
-  const next = await saveGuestOnboardingAnswers(definedPatch(patch));
+  patch: OnboardingAnswersPatch
+): Promise<OnboardingAnswers> {
+  const next = await saveOnboardingDraft(definedPatch(patch));
   authenticatedOnboardingAnswers = next;
   authenticatedOnboardingCompletedThisSession = false;
   return next;
@@ -460,12 +458,12 @@ export async function saveOnboardingAnswers(
 
 export async function completeOnboardingAnswers(): Promise<void> {
   if (!hasActiveSession()) {
-    await markGuestOnboardingComplete();
+    await markOnboardingDraftComplete();
     return;
   }
 
   const answers = await getOnboardingAnswers();
-  if (!isGuestOnboardingReady(answers)) {
+  if (!isOnboardingReady(answers)) {
     console.warn('[onboarding] refusing to submit incomplete local answers');
     throw new Error('Complete each personalisation step before finishing onboarding.');
   }
@@ -488,7 +486,7 @@ export async function completeOnboardingAnswers(): Promise<void> {
 
 export async function finishOnboardingForAppEntry(): Promise<void> {
   if (!hasActiveSession()) {
-    await markGuestOnboardingComplete();
+    await markOnboardingDraftComplete();
     // Bust all home rails so they fetch fresh personalised data when the tabs
     // mount — the same invalidation authenticated users get via completeOnboardingAnswers.
     await Promise.all([
@@ -503,38 +501,38 @@ export async function finishOnboardingForAppEntry(): Promise<void> {
   }
 }
 
-export async function isGuestOnboardingComplete(): Promise<boolean> {
+export async function isOnboardingDraftComplete(): Promise<boolean> {
   const stored =
-    (await getLocalSetting(GUEST_ONBOARDING_STORAGE_KEYS.completed, false)) === true;
+    (await getLocalSetting(ONBOARDING_STORAGE_KEYS.completed, false)) === true;
   if (!stored) return false;
-  return isGuestOnboardingReady(await getGuestOnboardingAnswers());
+  return isOnboardingReady(await getOnboardingAnswers());
 }
 
-export async function setGuestOnboardingComplete(completed: boolean): Promise<void> {
-  await setLocalSetting(GUEST_ONBOARDING_STORAGE_KEYS.completed, completed);
+export async function setOnboardingDraftComplete(completed: boolean): Promise<void> {
+  await setLocalSetting(ONBOARDING_STORAGE_KEYS.completed, completed);
 }
 
-export async function isGuestOnboardingPendingAuth(): Promise<boolean> {
+export async function isOnboardingDraftPendingAuth(): Promise<boolean> {
   return (
-    (await getLocalSetting(GUEST_ONBOARDING_STORAGE_KEYS.pendingAuth, false)) === true
+    (await getLocalSetting(ONBOARDING_STORAGE_KEYS.pendingAuth, false)) === true
   );
 }
 
-export async function setGuestOnboardingPendingAuth(pending: boolean): Promise<void> {
-  await setLocalSetting(GUEST_ONBOARDING_STORAGE_KEYS.pendingAuth, pending);
+export async function setOnboardingDraftPendingAuth(pending: boolean): Promise<void> {
+  await setLocalSetting(ONBOARDING_STORAGE_KEYS.pendingAuth, pending);
 }
 
-export async function hasMigratedGuestOnboarding(): Promise<boolean> {
+export async function hasSubmittedOnboardingDraft(): Promise<boolean> {
   return (
-    (await getLocalSetting(GUEST_ONBOARDING_STORAGE_KEYS.migrated, false)) === true
+    (await getLocalSetting(ONBOARDING_STORAGE_KEYS.migrated, false)) === true
   );
 }
 
-export async function getGuestOnboardingStatus(): Promise<GuestOnboardingStatus> {
+export async function getOnboardingDraftStatus(): Promise<OnboardingDraftStatus> {
   const [completed, pendingAuth, migrated] = await Promise.all([
-    isGuestOnboardingComplete(),
-    isGuestOnboardingPendingAuth(),
-    hasMigratedGuestOnboarding(),
+    isOnboardingDraftComplete(),
+    isOnboardingDraftPendingAuth(),
+    hasSubmittedOnboardingDraft(),
   ]);
   return { completed, pendingAuth, migrated };
 }
@@ -543,45 +541,45 @@ export async function getGuestOnboardingStatus(): Promise<GuestOnboardingStatus>
  * Called once the guest reaches the end of onboarding. A later successful
  * account authentication can consume the pending migration.
  */
-export async function markGuestOnboardingComplete(): Promise<void> {
-  const answers = await getGuestOnboardingAnswers();
-  if (!isGuestOnboardingReady(answers)) {
+export async function markOnboardingDraftComplete(): Promise<void> {
+  const answers = await getOnboardingAnswers();
+  if (!isOnboardingReady(answers)) {
     throw new Error(
       'Complete each personalisation step before finishing onboarding.'
     );
   }
 
   await Promise.all([
-    setGuestOnboardingComplete(true),
-    setGuestOnboardingPendingAuth(true),
-    setLocalSetting(GUEST_ONBOARDING_STORAGE_KEYS.migrated, false),
+    setOnboardingDraftComplete(true),
+    setOnboardingDraftPendingAuth(true),
+    setLocalSetting(ONBOARDING_STORAGE_KEYS.migrated, false),
   ]);
 }
 
 /** Clears local progress, for an explicit restart rather than normal sign-out. */
-export async function resetGuestOnboardingState(): Promise<void> {
+export async function resetOnboardingDraft(): Promise<void> {
   await Promise.all([
     setLocalSetting(
-      GUEST_ONBOARDING_STORAGE_KEYS.answers,
-      toStoredAnswers(DEFAULT_GUEST_ONBOARDING_ANSWERS)
+      ONBOARDING_STORAGE_KEYS.answers,
+      toStoredAnswers(DEFAULT_ONBOARDING_ANSWERS)
     ),
-    setGuestOnboardingComplete(false),
-    setGuestOnboardingPendingAuth(false),
-    setLocalSetting(GUEST_ONBOARDING_STORAGE_KEYS.migrated, false),
+    setOnboardingDraftComplete(false),
+    setOnboardingDraftPendingAuth(false),
+    setLocalSetting(ONBOARDING_STORAGE_KEYS.migrated, false),
   ]);
 }
 
 async function clearLocalOnboardingAnswersAfterSubmit(): Promise<void> {
   await Promise.all([
     setLocalSetting(
-      GUEST_ONBOARDING_STORAGE_KEYS.answers,
-      toStoredAnswers(DEFAULT_GUEST_ONBOARDING_ANSWERS)
+      ONBOARDING_STORAGE_KEYS.answers,
+      toStoredAnswers(DEFAULT_ONBOARDING_ANSWERS)
     ),
-    setGuestOnboardingComplete(false),
-    setGuestOnboardingPendingAuth(false),
-    setLocalSetting(GUEST_ONBOARDING_STORAGE_KEYS.migrated, true),
+    setOnboardingDraftComplete(false),
+    setOnboardingDraftPendingAuth(false),
+    setLocalSetting(ONBOARDING_STORAGE_KEYS.migrated, true),
   ]);
-  authenticatedOnboardingAnswers = DEFAULT_GUEST_ONBOARDING_ANSWERS;
+  authenticatedOnboardingAnswers = DEFAULT_ONBOARDING_ANSWERS;
 }
 
 function lower(value: string): string {
@@ -601,9 +599,9 @@ function exclusionValues(soundscape: Soundscape): string[] {
   ].map(lower);
 }
 
-export function isGuestRecommendationExcluded(
+export function isRecommendationExcluded(
   soundscape: Soundscape,
-  answers: GuestOnboardingAnswers
+  answers: OnboardingAnswers
 ): boolean {
   const values = exclusionValues(soundscape);
 
@@ -679,9 +677,9 @@ function freeTextMatchScore(signals: string[], haystack: string[]): number {
 }
 
 /** Scores one public candidate using only answers stored on this device. */
-export function scoreGuestRecommendation(
+export function scoreRecommendation(
   soundscape: Soundscape,
-  answers: GuestOnboardingAnswers
+  answers: OnboardingAnswers
 ): number {
   const haystack = searchableValues(soundscape);
   let score = 0;
@@ -733,9 +731,9 @@ export function scoreGuestRecommendation(
  * popularity order, giving guests a deterministic fallback when signals are
  * sparse.
  */
-export function rankGuestRecommendations(
+export function rankRecommendations(
   candidates: Soundscape[],
-  answers: GuestOnboardingAnswers
+  answers: OnboardingAnswers
 ): Soundscape[] {
   const seen = new Set<string>();
 
@@ -743,12 +741,12 @@ export function rankGuestRecommendations(
     .filter((candidate) => {
       if (!candidate.id || !candidate.file_url?.trim() || seen.has(candidate.id)) return false;
       seen.add(candidate.id);
-      return !isGuestRecommendationExcluded(candidate, answers);
+      return !isRecommendationExcluded(candidate, answers);
     })
     .map((candidate, index) => ({
       candidate,
       index,
-      score: scoreGuestRecommendation(candidate, answers),
+      score: scoreRecommendation(candidate, answers),
     }))
     .sort((left, right) => right.score - left.score || left.index - right.index)
     .map(({ candidate }) => candidate);
@@ -766,7 +764,7 @@ function assertAlternativesCount(count: number) {
 
 export function rankPublicRecommendations(
   publicRecommendations: Recommendations,
-  answers: GuestOnboardingAnswers,
+  answers: OnboardingAnswers,
   alternativesCount: number = DEFAULT_RECOMMENDATION_ALTERNATIVES
 ): Recommendations {
   assertAlternativesCount(alternativesCount);
@@ -776,7 +774,7 @@ export function rankPublicRecommendations(
       : []),
     ...publicRecommendations.alternatives,
   ];
-  const ranked = rankGuestRecommendations(candidates, answers);
+  const ranked = rankRecommendations(candidates, answers);
 
   return {
     best_match: ranked[0] ?? null,
@@ -785,16 +783,15 @@ export function rankPublicRecommendations(
 }
 
 /**
- * Loads the widest public candidate set allowed by the endpoint, then applies
- * the guest's device-local answers without requiring an auth token.
+ * Ranks authenticated recommendations using the current onboarding draft.
  */
-export async function getGuestRecommendations(
-  answers?: GuestOnboardingAnswers,
+export async function getDraftRecommendations(
+  answers?: OnboardingAnswers,
   alternativesCount: number = DEFAULT_RECOMMENDATION_ALTERNATIVES
 ): Promise<Recommendations> {
   assertAlternativesCount(alternativesCount);
   const [storedAnswers, publicRecommendations] = await Promise.all([
-    answers ? Promise.resolve(normaliseAnswers(answers)) : getGuestOnboardingAnswers(),
+    answers ? Promise.resolve(normaliseAnswers(answers)) : getOnboardingAnswers(),
     recommendationsApi.get(MAX_RECOMMENDATION_ALTERNATIVES),
   ]);
 
@@ -806,83 +803,19 @@ export async function getGuestRecommendations(
 }
 
 export function getOnboardingRecommendationsQueryKey() {
-  return [
-    'onboarding',
-    hasActiveSession() ? 'authenticated-recommendations' : 'guest-recommendations',
-  ] as const;
+  return ONBOARDING_RECOMMENDATIONS_QUERY_KEY;
 }
 
 export async function getOnboardingRecommendations(
   alternativesCount: number = DEFAULT_RECOMMENDATION_ALTERNATIVES
 ): Promise<Recommendations> {
-  if (hasActiveSession()) {
-    return recommendationsApi.get(alternativesCount);
-  }
-
-  return getGuestRecommendations(undefined, alternativesCount);
+  return recommendationsApi.get(alternativesCount);
 }
 
-/** Builds the same mode-scoped fields accepted by the guest import controller. */
-export function toImportGuestDataPayload(
-  answers: GuestOnboardingAnswers
-): ImportGuestDataPayload {
-  return toModeScopedOnboardingPayload(answers);
-}
-
-let migrationInFlight: Promise<ImportGuestDataResult | null> | null = null;
-
-async function performGuestOnboardingMigration(): Promise<ImportGuestDataResult | null> {
-  const status = await getGuestOnboardingStatus();
-
-  if (!status.completed || !status.pendingAuth || status.migrated) return null;
-
-  const answers = await getGuestOnboardingAnswers();
-  const result = await accountApi.importGuestData(
-    toImportGuestDataPayload(answers)
-  );
-  if (!result.onboarding_applied) {
-    throw new Error(
-      result.onboarding_note || 'The account did not accept the onboarding answers.'
-    );
-  }
-
-  // The request above is the commit point. A thrown request leaves every local
-  // answer untouched; after success, the account becomes the source of truth.
-  try {
-    await clearLocalOnboardingAnswersAfterSubmit();
-  } catch (error) {
-    console.warn('[onboarding] imported, but local answers could not be cleared', error);
-  }
-  await Promise.all([
-    queryClient.invalidateQueries({
-      queryKey: ['preferences', 'sound'],
-      refetchType: 'none',
-    }),
-    queryClient.invalidateQueries({
-      queryKey: ['home', 'recommended'],
-      refetchType: 'none',
-    }),
-    queryClient.invalidateQueries({
-      queryKey: ['library'],
-      refetchType: 'none',
-    }),
-  ]).catch(() => undefined);
-  return result;
-}
-
-/**
- * Safe to call after every sign-in method. Concurrent callers share one
- * request, completed migrations no-op, and failed requests remain pending.
- */
-export async function migrateGuestOnboardingAfterAuth(): Promise<ImportGuestDataResult | null> {
-  if (migrationInFlight) return migrationInFlight;
-
-  const migration = performGuestOnboardingMigration();
-  migrationInFlight = migration;
-
-  try {
-    return await migration;
-  } finally {
-    if (migrationInFlight === migration) migrationInFlight = null;
-  }
+/** Submits a complete local draft after authentication, including older installs. */
+export async function submitOnboardingDraftAfterAuth(): Promise<void> {
+  if (!hasActiveSession()) return;
+  const answers = await getOnboardingDraft();
+  if (!hasOnboardingProgress(answers) || !isOnboardingReady(answers)) return;
+  await completeOnboardingAnswers();
 }

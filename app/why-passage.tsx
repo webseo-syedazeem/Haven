@@ -7,7 +7,6 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { OnboardingPillButton } from '@/components/onboarding/OnboardingPillButton';
 import { OnboardingStepHeader } from '@/components/onboarding/OnboardingStepHeader';
 import { AppFonts } from '@/constants/theme';
-import { isGuestModeActive, setGuestModeActive } from '@/lib/auth/session-state';
 import { safeGoBack } from '@/lib/navigation';
 
 const heroImage = require('@/assets/images/why-passage-field-recording-v2.webp');
@@ -57,10 +56,7 @@ export default function WhyPassageScreen() {
       <OnboardingStepHeader
         activeColor="#FFFFFF"
         currentStep={2}
-        onBack={enteredViaAuthenticatedResume ? undefined : async () => {
-          if (isGuestModeActive()) await setGuestModeActive(false);
-          safeGoBack(router);
-        }}
+        onBack={enteredViaAuthenticatedResume ? undefined : () => safeGoBack(router)}
         showBack={!enteredViaAuthenticatedResume}
         totalSteps={4}
       />

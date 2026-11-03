@@ -50,7 +50,7 @@ export default function TrustScreen() {
         </View>
       )}
       <OnboardingContinueButton
-        label={'Preview the soundscapes'}
+        label="Preview the soundscapes"
         onPress={() => router.push(`/onboarding/try-passage?mode=${mode}` as Href)}
         showArrow
         variant={mode === 'sleep' ? 'lavender' : 'amber'}

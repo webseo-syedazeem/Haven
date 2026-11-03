@@ -1,7 +1,7 @@
 import { ApiError, NetworkError, isAuthFailure, isNetworkError } from '@/lib/api/errors';
 import { supabase } from '@/lib/supabase';
 import * as SecureStore from 'expo-secure-store';
-import { isGuestModeActive, setSessionSource } from '@/lib/auth/session-state';
+import { setSessionSource } from '@/lib/auth/session-state';
 import { markLoggedOut } from '@/lib/auth/offline-session';
 import { clearAuthTokens, getAccessToken, getRefreshToken, refreshSession } from '@/lib/passage-api';
 import { Platform } from 'react-native';
@@ -27,36 +27,6 @@ const RATE_LIMIT_MAX_DELAY_MS = 10_000;
 
 function apiUrl(path: string): string {
   return `${API_BASE_URL}${path}`;
-}
-
-const TOKEN_REQUIRED_PATH_PREFIXES = [
-  '/api/me',
-  '/api/update-name',
-  '/api/change-password',
-  '/api/upload-profile-image',
-  '/api/remove-profile-image',
-  '/api/favourites',
-  '/api/play-history',
-  '/api/home/continue-listening',
-  '/api/home/recommended',
-  '/api/player/state',
-  '/api/playlists',
-  '/api/preferences',
-  '/api/account',
-  '/api/onboarding',
-  '/api/notifications',
-  '/api/support/my-requests',
-] as const;
-
-function assertGuestMayCall(path: string): void {
-  if (
-    isGuestModeActive() &&
-    TOKEN_REQUIRED_PATH_PREFIXES.some(
-      (prefix) => path === prefix || path.startsWith(`${prefix}/`) || path.startsWith(`${prefix}?`)
-    )
-  ) {
-    throw new Error('Please log in to use this account feature.');
-  }
 }
 
 function getWebStorage() {
@@ -315,10 +285,6 @@ export async function apiClient<T>(
   path: string,
   options: RequestInit = {}
 ): Promise<T> {
-  // Defense in depth: UI queries/actions are gated too, but an accidental
-  // manual refetch or deep link still must not put a token-only request on the
-  // wire while the explicit guest flag is active.
-  assertGuestMayCall(path);
   const { token, source } = await resolveRequestToken();
 
   const res = await sendWithRateLimitRetry(
@@ -353,9 +319,8 @@ export async function apiClient<T>(
 }
 
 /**
- * For endpoints that must work before an account exists. Unlike `apiClient` it
- * never looks up or sends a token, so a stale session cannot leak into (or
- * sign out because of) a guest request.
+ * For authentication endpoints that must work before an account session exists.
+ * It never looks up or sends a stale bearer token.
  */
 export async function publicApiClient<T>(path: string, options: RequestInit = {}): Promise<T> {
   return readEnvelope<T>(
@@ -405,7 +370,6 @@ export async function apiClientFormData<T>(
   formData: FormData,
   method = 'POST'
 ): Promise<T> {
-  assertGuestMayCall(path);
   const { token, source } = await resolveRequestToken();
 
   const sendForm = async (bearer: string | null): Promise<Response> => {

@@ -23,7 +23,7 @@ import {
   completeOnboardingAnswers,
   getOnboardingAnswers,
   saveOnboardingAnswers,
-  type GuestOnboardingAnswersPatch,
+  type OnboardingAnswersPatch,
 } from '@/lib/onboarding';
 
 const questionsBackground = require('@/assets/images/relax-questions-bg.webp');
@@ -55,7 +55,7 @@ function answerValues(
 function answerPatch(
   answerKey: RelaxAnswerKey,
   values: string[]
-): GuestOnboardingAnswersPatch {
+): OnboardingAnswersPatch {
   if (answerKey === 'relaxCauses') return { relaxCauses: values };
   if (answerKey === 'mainGoal') return { mainGoal: values[0] ?? null };
   return { calmingMoments: values[0] ?? null };

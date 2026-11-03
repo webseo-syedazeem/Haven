@@ -2,7 +2,6 @@ import { Directory, File, Paths } from 'expo-file-system';
 import { Platform } from 'react-native';
 
 import type { MeApiResponse } from '@/lib/api/user';
-import { setGuestModeActive } from '@/lib/auth/session-state';
 
 /**
  * What the app knows about the signed-in user without asking the server.
@@ -113,9 +112,6 @@ export async function wasLoggedIn(): Promise<boolean | null> {
 
 /** Called after every confirmed sign in, sign up, refresh and session restore. */
 export async function markLoggedIn(): Promise<void> {
-  // A real session now exists — an earlier "Continue as guest" on this
-  // device must not keep gating authenticated queries.
-  await setGuestModeActive(false);
   await patch({ isLogged: true });
 }
 

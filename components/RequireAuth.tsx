@@ -1,29 +1,21 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import { type ReactNode, useEffect } from 'react';
+import { type ReactNode } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { PassageColors, PassageRadius, PassageSpacing } from '@/constants/design';
 import { AppFonts } from '@/constants/theme';
-import {
-  useGuestModeActive,
-  useHasSession,
-  useSessionRestoring,
-} from '@/hooks/useSession';
+import { useHasSession, useSessionRestoring } from '@/hooks/useSession';
 import { isExplicitSignOutInFlight } from '@/lib/auth/session-state';
-import { useAccountRequiredPrompt } from '@/components/auth/AccountRequiredPrompt';
 
 /**
  * The gate in front of the screens that only mean something for a signed-in
  * account: the profile settings, and the Saved tab's server-backed segments.
  *
- * It is a gate, not guest mode. Home, Explore, Library, soundscape detail and
- * the player stay open to anyone, because browsing is meant to work without an
- * account. What this covers is the narrower case of a screen whose entire
- * contents come from `/api/me`-shaped endpoints, which without a session shows
- * a spinner that never resolves or an error that blames the network for
- * something that is not its fault.
+ * This component is a defensive screen-level gate for account-backed views.
+ * The root navigation boundary separately prevents every protected route from
+ * mounting without a verified session.
  *
  * WHY IT WRAPS RATHER THAN RETURNS EARLY: `children` is an element, not a
  * rendered component. React only calls the child when this actually renders it,
@@ -50,7 +42,6 @@ export function RequireAuth({
   waiting?: ReactNode;
 }) {
   const hasSession = useHasSession();
-  const isGuest = useGuestModeActive();
   const isRestoring = useSessionRestoring();
 
   if (hasSession) return <>{children}</>;
@@ -66,32 +57,7 @@ export function RequireAuth({
   // to avoid a flash of the gate during that brief window.
   if (isExplicitSignOutInFlight()) return <GateSpinner />;
 
-  if (isGuest) {
-    return <GuestAuthGate />;
-  }
-
   return <SignInPrompt message={message} showBack={showBack} title={title} />;
-}
-
-function GuestAuthGate() {
-  const router = useRouter();
-  const { showAccountRequiredPrompt } = useAccountRequiredPrompt();
-
-  useEffect(() => {
-    showAccountRequiredPrompt({
-      title: 'Please log in',
-    });
-
-    // Keep the shared prompt over the screen the guest came from. Rendering the
-    // full-page sign-in gate here placed a second login UI behind the modal.
-    if (router.canGoBack()) {
-      router.back();
-    } else {
-      router.replace('/(tabs)/profile');
-    }
-  }, [router, showAccountRequiredPrompt]);
-
-  return <View style={styles.guestGatePlaceholder} />;
 }
 
 /**
@@ -174,10 +140,6 @@ const styles = StyleSheet.create({
     backgroundColor: PassageColors.background,
     flex: 1,
     justifyContent: 'center',
-  },
-  guestGatePlaceholder: {
-    backgroundColor: PassageColors.background,
-    flex: 1,
   },
   header: {
     alignItems: 'center',

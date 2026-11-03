@@ -95,14 +95,12 @@ test('the launch screen recovers an abandoned replay before any routing decision
   const source = read('app/index.tsx');
   const effectBodyStart = source.indexOf('void (async () => {');
   const recoverIndex = source.indexOf('await recoverAbandonedOnboardingReplay();');
-  const resetBranchIndex = source.indexOf("if (reset === '1')");
-  // The first CALL to getOnboardingResumeRoute, not its import higher up.
-  const firstResumeRouteCall = source.indexOf('getOnboardingResumeRoute(', effectBodyStart);
+  const restoreSessionIndex = source.indexOf('await restoreSession();', effectBodyStart);
 
   assert.ok(recoverIndex > -1, 'index.tsx must call recoverAbandonedOnboardingReplay');
   assert.ok(effectBodyStart > -1 && recoverIndex > effectBodyStart);
-  assert.ok(recoverIndex < resetBranchIndex);
-  assert.ok(recoverIndex < firstResumeRouteCall);
+  assert.ok(restoreSessionIndex > -1, 'index.tsx must restore the authenticated session');
+  assert.ok(recoverIndex < restoreSessionIndex);
 });
 
 test('the final onboarding screen ends the replay only on a successful submit, never on the incomplete-answers bounce or a failure', () => {

@@ -33,7 +33,7 @@ import {
 } from '@/lib/onboarding';
 import { endOnboardingReplay, isOnboardingReplayActive } from '@/lib/onboarding-replay';
 import { setIntroSeen } from '@/lib/auth/intro-flag';
-import { hasActiveSession, isGuestModeActive } from '@/lib/auth/session-state';
+import { hasActiveSession } from '@/lib/auth/session-state';
 import { resetToMainApp, safeGoBack } from '@/lib/navigation';
 import { toPreviewTrack } from '@/lib/player/types';
 import { useScopedPlayer } from '@/lib/player/useScopedPlayer';
@@ -248,13 +248,9 @@ export default function TryPassageScreen() {
       await finishOnboardingForAppEntry();
       await setIntroSeen();
       if (isOnboardingReplayActive()) await endOnboardingReplay();
-      if (hasActiveSession() || isGuestModeActive()) {
-        // Signed in or already chosen as guest on the account screen, so there is
-        // nothing left to choose.
+      if (hasActiveSession()) {
         resetToMainApp(router);
       } else {
-        // Reaching the end of onboarding is not consent to guest mode. The
-        // account screen is the only place that offers that explicit choice.
         router.push('/welcome?from=explore');
       }
     } catch {

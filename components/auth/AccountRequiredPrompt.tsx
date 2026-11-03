@@ -18,7 +18,6 @@ import {
   Typography,
 } from '@/constants/design';
 import { AppFonts } from '@/constants/theme';
-import { useGuestModeActive } from '@/hooks/useSession';
 
 type PromptOptions = {
   title?: string;
@@ -36,13 +35,11 @@ const AccountRequiredPromptContext = createContext<AccountRequiredPromptValue>({
 });
 
 const DEFAULT_TITLE = 'Log in to continue';
-const DEFAULT_MESSAGE =
-  'To keep your guest details, please sign up or log in. Otherwise, your guest data will be removed when guest mode ends.';
+const DEFAULT_MESSAGE = 'Create an account or log in to continue.';
 
-/** One app-wide, centered account prompt shared by every guest-only gate. */
+/** One app-wide, centered account prompt for signed-out access attempts. */
 export function AccountRequiredPromptProvider({ children }: { children: ReactNode }) {
   const router = useRouter();
-  const isGuest = useGuestModeActive();
   const [prompt, setPrompt] = useState<Required<PromptOptions> | null>(null);
 
   const dismissAccountRequiredPrompt = useCallback(() => setPrompt(null), []);
@@ -60,10 +57,8 @@ export function AccountRequiredPromptProvider({ children }: { children: ReactNod
 
   const openLoginFlow = useCallback(() => {
     dismissAccountRequiredPrompt();
-    router.push(
-      (isGuest ? '/welcome?from=guest-sign-out' : '/welcome') as Href
-    );
-  }, [dismissAccountRequiredPrompt, isGuest, router]);
+    router.push('/welcome' as Href);
+  }, [dismissAccountRequiredPrompt, router]);
 
   return (
     <AccountRequiredPromptContext.Provider value={value}>

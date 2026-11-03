@@ -6,15 +6,10 @@ import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-nati
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { MiniPlayer } from '@/components/MiniPlayer';
-import { useAccountRequiredPrompt } from '@/components/auth/AccountRequiredPrompt';
 import { PASSAGE_TAB_BAR_HEIGHT, PassageColors } from '@/constants/design';
 import { AppFonts } from '@/constants/theme';
 import { isExplicitSignOutInFlight } from '@/lib/auth/session-state';
-import {
-  useGuestModeActive,
-  useHasSession,
-  useSessionRestoring,
-} from '@/hooks/useSession';
+import { useHasSession, useSessionRestoring } from '@/hooks/useSession';
 
 const menuIcons: Record<string, keyof typeof Ionicons.glyphMap> = {
   index: 'home-outline',
@@ -34,9 +29,6 @@ const activeMenuIcons: Record<string, keyof typeof Ionicons.glyphMap> = {
 
 function FloatingTabBar({ state, descriptors, navigation }: BottomTabBarProps) {
   const insets = useSafeAreaInsets();
-  const isGuest = useGuestModeActive();
-  const { showAccountRequiredPrompt } = useAccountRequiredPrompt();
-
   return (
     <View style={styles.dock}>
       {/* Sits directly above the bar, so it is present on every tab. */}
@@ -70,15 +62,6 @@ function FloatingTabBar({ state, descriptors, navigation }: BottomTabBarProps) {
               accessibilityState={isFocused ? { selected: true } : {}}
               key={route.key}
               onPress={() => {
-                if (route.name === 'saved' && isGuest) {
-                  showAccountRequiredPrompt({
-                    title: 'Please log in',
-                    message:
-                      'Log in to see your favourites, playlists, and recently played soundscapes.',
-                  });
-                  return;
-                }
-
                 const event = navigation.emit({
                   type: 'tabPress',
                   target: route.key,
@@ -105,7 +88,6 @@ function FloatingTabBar({ state, descriptors, navigation }: BottomTabBarProps) {
 export default function TabLayout() {
   const segments = useSegments();
   const hasSession = useHasSession();
-  const isGuest = useGuestModeActive();
   const isRestoring = useSessionRestoring();
   const tabsAreActive = segments[0] === '(tabs)';
 
@@ -117,16 +99,13 @@ export default function TabLayout() {
     );
   }
 
-  // The main app is reachable only through a confirmed session or the one
-  // explicit "Continue as guest" action. Stale navigation history and deep
-  // links must not silently turn a signed-out person into a guest.
-  //
+  // Stale navigation history and deep links cannot bypass authentication.
   // `isExplicitSignOutInFlight()` is skipped while an explicit sign-out or
   // account deletion is already clearing the session and about to navigate
   // to login itself — otherwise this fires on the same drop in `hasSession`
   // and lands on `/login?launch=1` moments before the explicit call lands on
   // `/login?signedOut=1`, mounting the login screen twice.
-  if (tabsAreActive && !hasSession && !isGuest && !isExplicitSignOutInFlight()) {
+  if (tabsAreActive && !hasSession && !isExplicitSignOutInFlight()) {
     return <Redirect href="/login?launch=1" />;
   }
   return (
