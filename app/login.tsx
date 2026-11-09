@@ -38,15 +38,12 @@ const background = require('@/assets/images/auth-login-oak-blue-hour-v6.webp');
 
 export default function LoginScreen() {
   const router = useRouter();
-  const { signedOut, from, launch, origin } = useLocalSearchParams<{
-    signedOut?: string;
-    from?: string;
+  const { launch, signedOut } = useLocalSearchParams<{
     launch?: string;
-    origin?: string;
+    signedOut?: string;
   }>();
-  const isFromIntro = from === 'intro';
+  const isLaunchEntry = launch === '1';
   const isSignedOut = signedOut === '1';
-  const isSignedOutLaunch = launch === '1';
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [passwordVisible, setPasswordVisible] = useState(false);
@@ -62,12 +59,16 @@ export default function LoginScreen() {
   }, []);
 
   const goBack = useCallback(() => {
-    if (isFromIntro || isSignedOut || isSignedOutLaunch) {
-      void clearIntroSeen().then(() => router.replace('/?reset=1'));
-    } else {
-      safeGoBack(router);
+    if (isSignedOut) {
+      void clearIntroSeen().then(() => router.dismissTo('/?reset=1'));
+      return;
     }
-  }, [isFromIntro, isSignedOut, isSignedOutLaunch, router]);
+    if (isLaunchEntry) {
+      router.dismissTo('/?reset=1');
+      return;
+    }
+    safeGoBack(router, '/?reset=1');
+  }, [isLaunchEntry, isSignedOut, router]);
 
   useFocusEffect(useCallback(() => {
     const subscription = BackHandler.addEventListener('hardwareBackPress', () => {

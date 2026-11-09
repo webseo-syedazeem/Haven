@@ -1,7 +1,6 @@
-import { useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useState } from 'react';
 import {
-  Alert,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -22,9 +21,14 @@ import { safeGoBack } from '@/lib/navigation';
 
 const background = require('@/assets/images/auth-reset-pond-realistic.webp');
 
+function firstParam(value: string | string[] | undefined): string {
+  return Array.isArray(value) ? value[0] ?? '' : value ?? '';
+}
+
 export default function ResetPasswordScreen() {
   const router = useRouter();
-  const [email, setEmail] = useState('');
+  const params = useLocalSearchParams<{ email?: string | string[] }>();
+  const [email, setEmail] = useState(() => firstParam(params.email));
   const [emailError, setEmailError] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -45,11 +49,11 @@ export default function ResetPasswordScreen() {
     setIsSubmitting(true);
 
     try {
-      const response = await forgotPassword(trimmedEmail);
-      Alert.alert(
-        'Reset link sent',
-        response.data?.message ?? 'Check your inbox for a secure link to choose a new password.'
-      );
+      await forgotPassword(trimmedEmail);
+      router.replace({
+        pathname: '/reset-email-sent',
+        params: { email: trimmedEmail },
+      } as never);
     } catch (error) {
       const parsed = parseAuthError(error, 'Unable to send a reset link right now.');
       const nextEmailError = parsed.fields.email ??

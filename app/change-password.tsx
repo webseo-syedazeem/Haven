@@ -1,4 +1,3 @@
-import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useState } from 'react';
 import { Alert, KeyboardAvoidingView, Platform, StyleSheet, Text, View } from 'react-native';
@@ -13,9 +12,12 @@ import {
   passwordIssue,
   type AuthFieldErrors,
 } from '@/lib/auth/form-errors';
+import { beginExplicitSignOut, endExplicitSignOut } from '@/lib/auth/session-state';
 import { changePassword, resetPassword } from '@/lib/passage-api';
 import { safeGoBack } from '@/lib/navigation';
 import { supabase } from '@/lib/supabase';
+
+const recoveryBackground = require('@/assets/images/password-top-forest-realistic-final.webp');
 
 function firstParam(value: string | string[] | undefined) {
   return Array.isArray(value) ? value[0] : value;
@@ -83,6 +85,7 @@ export default function ChangePasswordScreen() {
         }
         await resetPassword({ newPassword, token });
         // Don't leave the one-time recovery session active after the reset.
+        beginExplicitSignOut();
         try {
           await supabase.auth.signOut();
         } catch {
@@ -92,13 +95,15 @@ export default function ChangePasswordScreen() {
         await changePassword({ oldPassword, newPassword });
       }
 
-      Alert.alert('Password updated', 'Your password has been updated successfully.');
       setOldPassword('');
       setNewPassword('');
       setConfirmPassword('');
 
       if (isResetFlow) {
-        router.replace('/login');
+        router.replace('/password-reset-success');
+        endExplicitSignOut();
+      } else {
+        Alert.alert('Password updated', 'Your password has been updated successfully.');
       }
     } catch (error) {
       const parsed = parseAuthError(error, 'Unable to update your password right now.');
@@ -126,13 +131,11 @@ export default function ChangePasswordScreen() {
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       style={styles.keyboardView}>
       <OnboardingScaffold
+        backgroundImage={isResetFlow ? recoveryBackground : undefined}
+        backgroundOverlayColor="rgba(7, 11, 16, 0.24)"
         contentContainerStyle={styles.scrollContent}
         onBack={() => safeGoBack(router, isResetFlow ? '/login' : '/')}>
         <View style={styles.content}>
-          <View style={styles.iconCircle}>
-            <Ionicons color={PassageColors.accent} name="key-outline" size={27} />
-          </View>
-
           <Text style={styles.heading}>
             {isResetFlow ? 'Choose a new password' : 'Change your password'}
           </Text>
@@ -251,18 +254,7 @@ const styles = StyleSheet.create({
     fontSize: 36,
     fontWeight: '400',
     lineHeight: 41,
-    marginTop: 24,
     textAlign: 'center',
-  },
-  iconCircle: {
-    alignItems: 'center',
-    alignSelf: 'center',
-    borderColor: PassageColors.accent,
-    borderRadius: 28,
-    borderWidth: 1,
-    height: 56,
-    justifyContent: 'center',
-    width: 56,
   },
   keyboardView: {
     backgroundColor: PassageColors.background,

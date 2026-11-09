@@ -39,6 +39,8 @@ const PUBLIC_AUTH_ROUTES = new Set([
   'verify-email',
   'verified',
   'reset-password',
+  'reset-email-sent',
+  'password-reset-success',
   'auth/callback',
 ]);
 
@@ -205,6 +207,11 @@ function RootLayout() {
                   options={{ gestureEnabled: false, headerShown: false }}
                 />
                 <Stack.Screen name="reset-password" options={{ headerShown: false }} />
+                <Stack.Screen name="reset-email-sent" options={{ headerShown: false }} />
+                <Stack.Screen
+                  name="password-reset-success"
+                  options={{ gestureEnabled: false, headerShown: false }}
+                />
                 <Stack.Screen name="change-password" options={{ headerShown: false }} />
                 <Stack.Screen name="onboarding/situation" options={{ headerShown: false }} />
                 <Stack.Screen name="onboarding/personalise" options={{ headerShown: false }} />

@@ -1,6 +1,6 @@
 import { LinearGradient } from 'expo-linear-gradient';
 import { useFocusEffect } from '@react-navigation/native';
-import { type Href, useRouter } from 'expo-router';
+import { type Href, useLocalSearchParams, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, BackHandler, ImageBackground, Pressable, StyleSheet, Text, View } from 'react-native';
@@ -15,11 +15,13 @@ import { ME_QUERY_KEY } from '@/hooks/useUser';
 import type { MeApiResponse } from '@/lib/api/user';
 import { profileNeedsOnboarding, resetToAuthenticatedOnboarding } from '@/lib/auth/onboarding-routing';
 import { restoreSession } from '@/lib/auth/restore-session';
-import { hasSeenIntro, setIntroSeen } from '@/lib/auth/intro-flag';
+import { clearIntroSeen, hasSeenIntro, setIntroSeen } from '@/lib/auth/intro-flag';
 import {
   getOnboardingAnswers,
   getOnboardingResumeRoute,
   hasOnboardingProgress,
+  isOnboardingDraftComplete,
+  resetOnboardingDraft,
 } from '@/lib/onboarding';
 import { recoverAbandonedOnboardingReplay } from '@/lib/onboarding-replay';
 import { queryClient } from '@/lib/query-client';
@@ -28,15 +30,30 @@ const welcomeBackground = require('@/assets/images/first-onboarding-cedar-trail-
 
 export default function FirstPageScreen() {
   const router = useRouter();
+  const { reset } = useLocalSearchParams<{ reset?: string }>();
   const [checking, setChecking] = useState(true);
   const handleLoginPress = useSinglePress(() => {
     void setIntroSeen();
     router.push('/login?from=intro');
   });
   const handleGetStartedPress = useSinglePress(() => {
-    void getOnboardingAnswers()
-      .then((answers) => router.push(getOnboardingResumeRoute(answers) as Href))
-      .catch(() => router.push('/why-passage'));
+    void (async () => {
+      try {
+        // Returning here after the final Explore action means the user chose to
+        // start over. Clear answers and every completion/migration marker so
+        // the new run cannot inherit preferences from the finished draft.
+        if (await isOnboardingDraftComplete()) {
+          await Promise.all([resetOnboardingDraft(), clearIntroSeen()]);
+          router.push('/why-passage');
+          return;
+        }
+
+        const answers = await getOnboardingAnswers();
+        router.push(getOnboardingResumeRoute(answers) as Href);
+      } catch (error) {
+        console.warn('[onboarding] could not prepare Get started', error);
+      }
+    })();
   });
 
   useFocusEffect(useCallback(() => {
@@ -49,6 +66,15 @@ export default function FirstPageScreen() {
 
   useEffect(() => {
     let active = true;
+
+    // Login's back action explicitly requests the public first screen. The
+    // Index route may be reused from navigation history, and restoreSession()
+    // is memoized, so bypass both or it can redirect straight back to Login.
+    if (reset === '1') {
+      setChecking(false);
+      return () => { active = false; };
+    }
+
     void (async () => {
       await recoverAbandonedOnboardingReplay();
       const status = await restoreSession();
@@ -56,6 +82,15 @@ export default function FirstPageScreen() {
 
       if (status === 'signed-out') {
         try {
+          // Reaching the final Explore action is a durable boundary: once the
+          // draft is complete, a later launch must go straight to sign in
+          // instead of deriving an onboarding resume route from the still-
+          // persisted answers.
+          if (await isOnboardingDraftComplete()) {
+            router.replace('/login?launch=1');
+            return;
+          }
+
           const answers = await getOnboardingAnswers();
           if (hasOnboardingProgress(answers)) {
             router.replace(getOnboardingResumeRoute(answers) as Href);
@@ -81,7 +116,7 @@ export default function FirstPageScreen() {
       router.replace('/(tabs)');
     })();
     return () => { active = false; };
-  }, [router]);
+  }, [reset, router]);
 
   if (checking) {
     return <View style={styles.loading}><StatusBar style="light" /><ActivityIndicator color={PassageColors.accent} size="large" /></View>;

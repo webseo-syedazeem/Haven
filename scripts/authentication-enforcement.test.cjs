@@ -24,6 +24,22 @@ test('root navigation and tabs redirect signed-out deep links to login', () => {
   assert.match(tabs, /!hasSession && !isExplicitSignOutInFlight\(\)/);
 });
 
+test('login back resets only after sign-out and otherwise follows auth history', () => {
+  const login = read('app/login.tsx');
+  const entry = read('app/index.tsx');
+  assert.match(login, /const isSignedOut = signedOut === '1'/);
+  assert.match(login, /if \(isSignedOut\) \{[\s\S]{0,180}router\.dismissTo\('\/\?reset=1'\)/);
+  assert.match(login, /const isLaunchEntry = launch === '1'/);
+  assert.match(login, /if \(isLaunchEntry\) \{\s*router\.dismissTo\('\/\?reset=1'\)/);
+  assert.match(login, /safeGoBack\(router, '\/\?reset=1'\)/);
+  assert.match(login, /clearIntroSeen\(\)\.then\(\(\) => router\.dismissTo\('\/\?reset=1'\)\)/);
+  assert.match(entry, /if \(reset === '1'\) \{\s*setChecking\(false\);/);
+  assert.ok(
+    entry.indexOf("if (reset === '1')") < entry.indexOf('await restoreSession()'),
+    'the explicit public reset must bypass the memoized session restore result'
+  );
+});
+
 test('Get started includes the public three-clip preview before authentication', () => {
   const entry = read('app/index.tsx');
   const trust = read('app/onboarding/trust.tsx');
@@ -38,6 +54,39 @@ test('Get started includes the public three-clip preview before authentication',
     assert.match(screen, /\/onboarding\/try-passage/);
   }
   assert.match(rootLayout, /'onboarding\/try-passage'/);
+});
+
+test('completed public onboarding resumes at login instead of the preview', () => {
+  const entry = read('app/index.tsx');
+  const completedCheck = entry.indexOf('if (await isOnboardingDraftComplete())');
+  const progressCheck = entry.indexOf('if (hasOnboardingProgress(answers))');
+
+  assert.ok(completedCheck > -1, 'launch must read the durable onboarding completion flag');
+  assert.ok(
+    completedCheck < progressCheck,
+    'completion must win before persisted answers are interpreted as resumable progress'
+  );
+  assert.match(
+    entry.slice(completedCheck, progressCheck),
+    /router\.replace\('\/login\?launch=1'\)/
+  );
+});
+
+test('Get started clears a completed draft before deliberately restarting onboarding', () => {
+  const entry = read('app/index.tsx');
+  const handlerStart = entry.indexOf('const handleGetStartedPress');
+  const handlerEnd = entry.indexOf('useFocusEffect', handlerStart);
+  const handler = entry.slice(handlerStart, handlerEnd);
+
+  assert.match(handler, /if \(await isOnboardingDraftComplete\(\)\)/);
+  assert.match(handler, /resetOnboardingDraft\(\)/);
+  assert.match(handler, /clearIntroSeen\(\)/);
+  assert.match(handler, /router\.push\('\/why-passage'\)/);
+  assert.ok(
+    handler.indexOf('resetOnboardingDraft()') < handler.indexOf("router.push('/why-passage')"),
+    'the completed draft must be deleted before the fresh onboarding route opens'
+  );
+  assert.match(handler, /getOnboardingResumeRoute\(answers\)/);
 });
 
 test('removed session state exposes authenticated sources only', () => {
