@@ -245,6 +245,8 @@ function createEngineHarness({ artworkCache = null, platformOS = 'android' } = {
       if (id === 'react-native') return { Platform: { OS: platformOS } };
       if (id === '@/assets/audio/end-tone.wav') return 'end-tone.wav';
       if (id === './types') return { getArtworkCache: () => artworkCache, reportPlayerDiagnostic: (event) => diagnostics.push(plain(event)) };
+      // buildAudioSource is tested in audio-source.test.cjs; here just pass the URL through.
+      if (id === './audioSource') return { buildAudioSource: async (track) => track.url };
       throw new Error('Unexpected engine dependency: ' + id);
     },
     setTimeout(callback, delay) {
@@ -842,6 +844,7 @@ test('offline recovery waits without hammering and retries immediately when inte
   assert.equal(seen.failures, 0);
 
   harness.setNetworkState({ isConnected: true, isInternetReachable: true });
+  await harness.flush(); // reload() is now async; flush lets buildAudioSource resolve
   assert.equal(named(native.calls, 'replace').length, 2);
   assert.match(harness.warnings.at(-1), /connection was restored/);
 });
@@ -975,6 +978,7 @@ test('a native seek that rejects is contained and goes through the same reload',
   native.seekError = new Error('seek failed');
 
   await harness.engine.seekTo(900);
+  await harness.flush(); // reload() is now async; flush lets buildAudioSource resolve
   assert.equal(named(native.calls, 'replace').length, 2);
   assert.match(harness.warnings.join('\n'), /rejected a seek; reloading at 900s/);
 

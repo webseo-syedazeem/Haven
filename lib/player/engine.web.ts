@@ -5,6 +5,11 @@ import type { PlayerEngine } from './types';
  * playback the app relies on: on web the app renders the player UI but playback
  * stays unavailable, so every call is a no-op rather than a crash. Keeping this
  * file separate is also what stops the web bundle pulling the native module in.
+ *
+ * Protected audio (/soundscapes/*) is not supported on web: a <audio> / media
+ * element cannot have custom request headers, so Bearer tokens cannot be
+ * delivered with Range requests. The app is iOS-only; this stub exists only to
+ * let the web bundle compile cleanly.
  */
 const noop = async () => {};
 

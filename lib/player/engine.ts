@@ -4,8 +4,10 @@ import {
   setIsAudioActiveAsync,
   type AudioMetadata,
   type AudioPlayer,
+  type AudioSource,
   type AudioStatus,
 } from 'expo-audio';
+import { buildAudioSource } from './audioSource';
 import * as Network from 'expo-network';
 import { Platform } from 'react-native';
 
@@ -497,17 +499,31 @@ export function createPlayerEngine(options: EngineOptions = {}): PlayerEngine {
    * Opens the current source afresh and plays once it lands on `seconds`.
    * `replace` is the only thing that makes ExoPlayer fetch again after a failed
    * load, and it gives AVPlayer a new item on iOS.
+   *
+   * Re-resolves the Bearer token on every reload so an expired token is
+   * refreshed automatically when the stall watchdog retries the stream.
    */
-  function reload(seconds: number) {
+  async function reload(seconds: number) {
     const current = player;
     const track = currentTrack;
     if (!current || !track) return;
     playRequest += 1;
     waitingForSession = false;
 
+    // Capture before the async token resolution so a concurrent load invalidates us.
+    const gen = sourceGeneration;
+    let src: AudioSource;
+    try {
+      src = await buildAudioSource(track);
+    } catch {
+      src = track.url;
+    }
+    // Bail if a new track was loaded or the player was torn down during resolution.
+    if (player !== current || sourceGeneration !== gen) return;
+
     try {
       current.pause();
-      current.replace(track.url);
+      current.replace(src);
       current.loop = nativeLoopEnabled;
     } catch (error) {
       console.warn('[player] reload failed', error);
@@ -812,6 +828,16 @@ export function createPlayerEngine(options: EngineOptions = {}): PlayerEngine {
       const request = ++loadRequest;
       if (!(await setup()) || request !== loadRequest) return;
 
+      // Resolve the audio source (and Bearer token for /soundscapes/* URLs) before
+      // touching any player state so a concurrent load can invalidate us cleanly.
+      let src: AudioSource;
+      try {
+        src = await buildAudioSource(track);
+      } catch {
+        src = track.url;
+      }
+      if (request !== loadRequest) return;
+
       const current = ensurePlayer();
 
       sourceGeneration += 1;
@@ -838,7 +864,7 @@ export function createPlayerEngine(options: EngineOptions = {}): PlayerEngine {
       // `replace` keeps playing when the old source was playing, and the provider
       // decides when playback starts, so pause first and let it call `play`.
       current.pause();
-      current.replace(track.url);
+      current.replace(src);
       nativeLoopEnabled = loopEnabled && track.isLoop === true;
       current.loop = nativeLoopEnabled;
       hasSource = true;

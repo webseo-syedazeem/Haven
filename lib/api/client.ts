@@ -69,7 +69,7 @@ export type ResolvedToken = { token: string | null; source: TokenSource | null }
  *   after signing in (audit C-1). A live Supabase session therefore takes
  *   precedence over any older SecureStore copy a previous build may have left.
  */
-async function resolveRequestToken(): Promise<ResolvedToken> {
+export async function resolveRequestToken(): Promise<ResolvedToken> {
   const inMemory = getAccessToken();
   if (inMemory) return { token: inMemory, source: 'passage' };
 
