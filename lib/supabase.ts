@@ -2,7 +2,7 @@ import 'react-native-url-polyfill/auto';
 import { createClient } from '@supabase/supabase-js';
 import { setSessionSource } from './auth/session-state';
 import * as SecureStore from 'expo-secure-store';
-import { Platform } from 'react-native';
+import { AppState, type AppStateStatus, Platform } from 'react-native';
 import { realtimeTransport } from './realtimeTransport';
 
 const supabaseUrl = 'https://wqludhqymhcyrjhazjcq.supabase.co';
@@ -145,3 +145,28 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
 supabase.auth.onAuthStateChange((_event, session) => {
   setSessionSource('supabase', Boolean(session?.access_token));
 });
+
+/**
+ * `autoRefreshToken: true` only runs its refresh timer while supabase-js has been
+ * told the app is in the foreground — that signal is `startAutoRefresh()`, and
+ * without wiring it here the timer never starts. Apple/Google sessions (whose
+ * rotating token only supabase-js can refresh) then go stale after ~1h. The most
+ * visible symptom was audio: the native player attaches one Bearer token for the
+ * whole stream, so a token that quietly expired mid-session produced 401s on
+ * Soundscapes for social sign-ins. Starting the timer in the foreground and
+ * stopping it in the background is the pattern Supabase's React Native docs require.
+ */
+if (Platform.OS !== 'web') {
+  const syncAutoRefresh = (status: AppStateStatus) => {
+    if (status === 'active') {
+      void supabase.auth.startAutoRefresh();
+    } else {
+      void supabase.auth.stopAutoRefresh();
+    }
+  };
+
+  // The app is in the foreground when this module first loads, so start now
+  // rather than waiting for the first state change.
+  syncAutoRefresh(AppState.currentState);
+  AppState.addEventListener('change', syncAutoRefresh);
+}
