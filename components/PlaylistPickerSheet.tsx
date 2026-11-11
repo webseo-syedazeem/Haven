@@ -72,13 +72,12 @@ export function PlaylistPickerSheet({
     setError(null);
 
     try {
-      await addToPlaylist(playlistId, soundscape.id);
-      setAddedIds((current) => [...current, playlistId]);
-      onDone?.(`Added to ${playlistName}.`);
-    } catch (caught) {
-      // The API rejects a duplicate with a 400, which is worth saying plainly.
-      const message = caught instanceof Error ? caught.message : '';
-      setError(/already/i.test(message) ? 'Already in that playlist.' : 'Could not add to playlist.');
+      const result = await addToPlaylist(playlistId, soundscape.id, soundscape);
+      // A duplicate is a soft success: show the tick, just with a clearer message.
+      setAddedIds((current) => (current.includes(playlistId) ? current : [...current, playlistId]));
+      onDone?.(result?.alreadyExisted ? `Already in ${playlistName}.` : `Added to ${playlistName}.`);
+    } catch {
+      setError('Could not add to playlist.');
     } finally {
       setPendingId(null);
     }

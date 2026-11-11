@@ -74,6 +74,10 @@ test('the notification artwork cache is still registered and resolves a cached c
         }, Paths: { document: 'file:///doc/', cache: 'file:///cache/' } };
       }
       if (id === 'react-native') return { Platform: { OS: 'ios' } };
+      if (id === '@/lib/audio-file-cache') {
+        // The transparent replay cache — injected, not a user-facing download.
+        return { audioFileCache: { cachedUri: async () => null, warm: () => {} } };
+      }
       if (id === '@/lib/notification-artwork') {
         return {
           getCachedNotificationArtwork: (url) => {
@@ -87,7 +91,10 @@ test('the notification artwork cache is still registered and resolves a cached c
         };
       }
       if (id === '@/lib/player/types') {
-        return { setArtworkCache: (cache) => { registered = cache; } };
+        return {
+          setArtworkCache: (cache) => { registered = cache; },
+          setAudioFileCache: () => {},
+        };
       }
       throw new Error('Unexpected startup-cleanup dependency: ' + id);
     },

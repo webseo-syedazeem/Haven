@@ -121,6 +121,36 @@ export function getArtworkCache(): ArtworkCache | null {
   return artworkCache;
 }
 
+/**
+ * A transparent on-device cache of recently played soundscape audio, so a replay
+ * starts instantly and works offline — never a user-facing download. Injected
+ * (like ArtworkCache) rather than imported by the engine, so the engine/provider
+ * tests never pull in expo-file-system. With none registered, playback simply
+ * always streams.
+ */
+export type AudioFileCache = {
+  /** Local file:// URI for an already-cached soundscape, or null. */
+  cachedUri: (trackId: string) => Promise<string | null>;
+  /** Fire-and-forget: cache this soundscape's audio for next time. */
+  warm: (trackId: string, url: string) => void;
+  /**
+   * Signal that a (possibly already-cached) soundscape just started playing.
+   * Immediately cancels any in-progress cache download so the new track's stream
+   * and artwork get the network first. Called on every play, cached or streamed.
+   */
+  notePlay: (trackId: string) => void;
+};
+
+let audioFileCache: AudioFileCache | null = null;
+
+export function setAudioFileCache(cache: AudioFileCache | null) {
+  audioFileCache = cache;
+}
+
+export function getAudioFileCache(): AudioFileCache | null {
+  return audioFileCache;
+}
+
 export function toPlayableTrack(soundscape: Soundscape): PlayableTrack | null {
   const url = soundscape.file_url?.trim();
   if (!url) return null;

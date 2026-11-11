@@ -1,11 +1,12 @@
 import { Directory, Paths } from 'expo-file-system';
 import { Platform } from 'react-native';
 
+import { audioFileCache } from '@/lib/audio-file-cache';
 import {
   fetchNotificationArtwork,
   getCachedNotificationArtwork,
 } from '@/lib/notification-artwork';
-import { setArtworkCache } from '@/lib/player/types';
+import { setArtworkCache, setAudioFileCache } from '@/lib/player/types';
 
 /**
  * Registered once, at import time, exactly where `lib/offline-audio.ts` used to
@@ -18,6 +19,11 @@ setArtworkCache({
   cached: getCachedNotificationArtwork,
   fetch: fetchNotificationArtwork,
 });
+
+// Transparent recently-played audio cache (instant replay / offline). Injected
+// here, app-side only, so the engine and its bare-VM tests never import
+// expo-file-system.
+setAudioFileCache(audioFileCache);
 
 /** Removes audio left by the retired automatic recents cache. */
 function cleanupLegacyRecentsAudio(): void {
