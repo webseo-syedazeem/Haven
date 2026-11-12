@@ -12,7 +12,7 @@ import {
   type ProductEventProperties,
 } from '@/lib/analytics-events'
 
-const API_BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL?.trim().replace(/\/+$/, '') || 'https://passagesounds.app'
+const API_BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL?.trim().replace(/\/+$/, '') || 'https://api.passagesounds.app'
 export const ONBOARDING_PROGRESS_KEY = 'passage.analytics.onboarding_progress'
 export const ANALYTICS_CONSENT_KEY = 'passage.settings.analytics_enabled'
 export const analyticsSessionId = Crypto.randomUUID()

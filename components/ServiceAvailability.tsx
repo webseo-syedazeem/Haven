@@ -10,7 +10,7 @@ import {
   subscribeToServiceStatus,
 } from '@/lib/service-status'
 
-const API_BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL?.trim().replace(/\/+$/, '') || 'https://passagesounds.app'
+const API_BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL?.trim().replace(/\/+$/, '') || 'https://api.passagesounds.app'
 
 async function checkHealth() {
   try {

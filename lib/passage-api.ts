@@ -10,7 +10,7 @@ import {
 } from '@/lib/auth/session-state';
 import { supabase } from '@/lib/supabase';
 
-const REMOTE_API_BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL?.trim().replace(/\/+$/, '') || 'https://passagesounds.app';
+const REMOTE_API_BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL?.trim().replace(/\/+$/, '') || 'https://api.passagesounds.app';
 const API_BASE_URL = Platform.OS === 'web' ? '/api-proxy' : REMOTE_API_BASE_URL;
 const ACCESS_TOKEN_KEY = 'passage.auth.access_token';
 const REFRESH_TOKEN_KEY = 'passage.auth.refresh_token';

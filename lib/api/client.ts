@@ -6,7 +6,7 @@ import { markLoggedOut } from '@/lib/auth/offline-session';
 import { clearAuthTokens, getAccessToken, getRefreshToken, refreshSession } from '@/lib/passage-api';
 import { Platform } from 'react-native';
 
-export const API_BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL?.trim().replace(/\/+$/, '') || 'https://passagesounds.app';
+export const API_BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL?.trim().replace(/\/+$/, '') || 'https://api.passagesounds.app';
 if (!process.env.EXPO_PUBLIC_API_BASE_URL && !__DEV__) {
   console.warn('[Passage] EXPO_PUBLIC_API_BASE_URL is not set — using fallback domain. Set this in your EAS production environment.');
 }
