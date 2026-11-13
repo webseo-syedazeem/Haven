@@ -15,6 +15,22 @@ function isSoundscapePath(url: string): boolean {
   }
 }
 
+/** A signed URL must outlive a full soundscape (~1h) so a stream never dies mid-play. */
+const MIN_SIGNED_URL_LIFE_MS = 90 * 60_000;
+
+/** True if the URL already carries a valid signature that is not about to expire. */
+function isFreshSignedUrl(url: string): boolean {
+  try {
+    const parsed = new URL(url);
+    const sig = parsed.searchParams.get('sig');
+    const exp = Number(parsed.searchParams.get('exp'));
+    if (!sig || !Number.isFinite(exp)) return false;
+    return exp * 1_000 - Date.now() > MIN_SIGNED_URL_LIFE_MS;
+  } catch {
+    return false;
+  }
+}
+
 type StreamUrlResponse = {
   data: { url: string; expires_at: number };
 };
@@ -93,6 +109,13 @@ export async function buildAudioSource(track: PlayableTrack): Promise<AudioSourc
     if (localUri) {
       return localUri;
     }
+  }
+
+  // Fast path: the backend already handed us a fresh signed CDN URL in the
+  // metadata, so play it straight from the CDN with no /stream round-trip.
+  if (isFreshSignedUrl(track.url)) {
+    cache?.warm(track.id, track.url);
+    return track.url;
   }
 
   const signedUrl = await resolveSignedStreamUrl(track);

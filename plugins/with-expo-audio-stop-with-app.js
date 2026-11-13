@@ -35,6 +35,8 @@ const BECOMING_NOISY_PATCH_MARKER =
   'Passage: pause on headset/Bluetooth disconnect and keep the radio awake while playing.';
 const AUDIO_FOCUS_PATCH_MARKER =
   'Passage: take audio focus so playback pauses when another app plays (YouTube, calls, etc.).';
+const BUFFER_PATCH_MARKER =
+  'Passage: start playback sooner by trimming the initial buffer.';
 
 function patchAudioControlsServiceSource(source) {
   if (source.includes(TASK_REMOVAL_PATCH_MARKER)) return source;
@@ -128,6 +130,45 @@ function patchAudioPlayerSource(source) {
         `$2.setHandleAudioBecomingNoisy(true)\n` +
         `$2.setWakeMode(C.WAKE_MODE_NETWORK)\n` +
         `$2.build(),`
+    );
+  }
+
+  // Start sooner. ExoPlayer waits for ~2.5s of audio before it begins playing
+  // (DefaultLoadControl's default). Trim the "buffer before playback" threshold
+  // so the first sound arrives faster, while keeping the large steady-state
+  // min/max buffer so playback does not stall mid-stream.
+  if (!next.includes(BUFFER_PATCH_MARKER)) {
+    // Add the DefaultLoadControl import next to the ExoPlayer import when present
+    // (the real source has it; a minimal test fixture may not).
+    const exoImport = 'import androidx.media3.exoplayer.ExoPlayer\n';
+    if (
+      next.includes(exoImport) &&
+      !next.includes('import androidx.media3.exoplayer.DefaultLoadControl')
+    ) {
+      next = next.replace(
+        exoImport,
+        `${exoImport}import androidx.media3.exoplayer.DefaultLoadControl\n`
+      );
+    }
+
+    const looperAnchor = /(\n[ \t]*\.setLooper\(context\.mainLooper\)\r?\n)/;
+    if (!looperAnchor.test(next)) {
+      throw new Error(
+        'Could not patch expo-audio AudioPlayer buffering; the ExoPlayer.Builder has changed.'
+      );
+    }
+    next = next.replace(
+      looperAnchor,
+      `$1` +
+        `    // ${BUFFER_PATCH_MARKER}\n` +
+        '    // Args: minBufferMs, maxBufferMs, bufferForPlaybackMs,\n' +
+        '    // bufferForPlaybackAfterRebufferMs. Only the last two (start/rebuffer\n' +
+        '    // thresholds) are trimmed from 2500/5000 so audio begins sooner.\n' +
+        '    .setLoadControl(\n' +
+        '      DefaultLoadControl.Builder()\n' +
+        '        .setBufferDurationsMs(50_000, 50_000, 1_000, 2_000)\n' +
+        '        .build()\n' +
+        '    )\n'
     );
   }
 

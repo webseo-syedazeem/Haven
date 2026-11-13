@@ -29,6 +29,12 @@ export type Soundscape = {
   best_use?: string | null;
   artwork_url?: string | null;
   file_url?: string | null;
+  /**
+   * A ready-to-play signed CDN URL for `file_url`, added by the backend so the
+   * app can stream straight from the CDN without a separate round-trip to mint
+   * one. Falls back to the `/stream` endpoint when absent.
+   */
+  signed_file_url?: string | null;
   /** The short clip the onboarding preview plays; `file_url` is the full soundscape. */
   preview_url?: string | null;
   mode?: SoundscapeMode | null;

@@ -137,6 +137,15 @@ test('the ExoPlayer builder patch enables audio focus and adds becoming-noisy + 
   const wake = patched.indexOf('.setWakeMode(C.WAKE_MODE_NETWORK)');
   assert.ok(noisy > attrs && wake > noisy && build > wake, 'both calls must precede build()');
 
+  // Initial-buffer trim: a LoadControl with a lowered start threshold is added
+  // before build() so the first sound arrives sooner.
+  const loadControl = patched.indexOf('.setLoadControl(');
+  assert.ok(loadControl > 0 && loadControl < build, 'a LoadControl must be added before build()');
+  assert.ok(
+    patched.includes('.setBufferDurationsMs(50_000, 50_000, 1_000, 2_000)'),
+    'the start/rebuffer thresholds must be trimmed'
+  );
+
   assert.equal(patchAudioPlayerSource(patched), patched, 'patch must be idempotent');
 });
 
@@ -159,4 +168,6 @@ test('the ExoPlayer builder patch still matches the vendored expo-audio source',
   assert.ok(!patched.includes('AudioAttributes.DEFAULT, false'));
   assert.ok(patched.includes('.setHandleAudioBecomingNoisy(true)'));
   assert.ok(patched.includes('.setWakeMode(C.WAKE_MODE_NETWORK)'));
+  assert.ok(patched.includes('.setLoadControl('));
+  assert.ok(patched.includes('import androidx.media3.exoplayer.DefaultLoadControl'));
 });

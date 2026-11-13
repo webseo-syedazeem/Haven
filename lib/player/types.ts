@@ -152,7 +152,9 @@ export function getAudioFileCache(): AudioFileCache | null {
 }
 
 export function toPlayableTrack(soundscape: Soundscape): PlayableTrack | null {
-  const url = soundscape.file_url?.trim();
+  // Prefer the backend's ready-to-play signed CDN URL so playback skips the
+  // extra round-trip; fall back to the raw file_url (signed live at play time).
+  const url = soundscape.signed_file_url?.trim() || soundscape.file_url?.trim();
   if (!url) return null;
 
   const remoteArtwork = soundscape.artwork_url?.trim();
